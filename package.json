@@ -1,0 +1,13 @@
+{
+  "name": "repeto",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "tutor-journal"
+  ],
+  "scripts": {
+    "dev:frontend": "npm run dev --workspace=tutor-journal",
+    "build:frontend": "npm run build --workspace=tutor-journal",
+    "lint:frontend": "npm run lint --workspace=tutor-journal"
+  }
+}

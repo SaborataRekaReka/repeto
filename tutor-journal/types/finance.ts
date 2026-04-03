@@ -1,0 +1,23 @@
+export type PaymentStatus = "paid" | "pending" | "overdue";
+export type PaymentMethod = "sbp" | "cash" | "transfer";
+
+export type Payment = {
+    id: string;
+    studentId: string;
+    studentName: string;
+    amount: number;
+    date: string; // DD.MM.YYYY
+    method: PaymentMethod;
+    status: PaymentStatus;
+    comment?: string;
+};
+
+export type StudentBalance = {
+    studentId: string;
+    studentName: string;
+    subject: string;
+    lessonsCount: number;
+    totalAmount: number;
+    paidAmount: number;
+    debt: number;
+};
