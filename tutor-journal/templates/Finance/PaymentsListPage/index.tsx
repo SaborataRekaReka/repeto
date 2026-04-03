@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
 import { useMediaQuery } from "react-responsive";
 import Layout from "@/components/Layout";
 import Tabs from "@/components/Tabs";
@@ -8,6 +9,7 @@ import Sorting from "@/components/Sorting";
 import TablePagination from "@/components/TablePagination";
 import Empty from "@/components/Empty";
 import Modal from "@/components/Modal";
+import CreatePaymentModal from "@/components/CreatePaymentModal";
 import Row from "./Row";
 import Item from "./Item";
 
@@ -28,10 +30,19 @@ const tabs = [
 ];
 
 const PaymentsListPage = () => {
+    const router = useRouter();
     const [tab, setTab] = useState<string>("all");
     const [search, setSearch] = useState<string>("");
     const [selected, setSelected] = useState<Payment | null>(null);
+    const [createModal, setCreateModal] = useState(false);
     const { mounted } = useHydrated();
+
+    useEffect(() => {
+        if (router.query.create === "1") {
+            setCreateModal(true);
+            router.replace("/finance/payments", undefined, { shallow: true });
+        }
+    }, [router.query.create]);
 
     const isMobile = useMediaQuery({ query: "(max-width: 767px)" });
 
@@ -57,9 +68,7 @@ const PaymentsListPage = () => {
                 <div className="flex gap-1.5 md:mt-4">
                     <button
                         className="btn-purple btn-small"
-                        onClick={() =>
-                            console.log("TODO: open record payment modal")
-                        }
+                        onClick={() => setCreateModal(true)}
                     >
                         <Icon name="add-circle" />
                         <span>Записать оплату</span>
@@ -79,9 +88,7 @@ const PaymentsListPage = () => {
                     title="Нет оплат"
                     content="Здесь будут отображаться записи об оплатах."
                     buttonText="Записать оплату"
-                    onClick={() =>
-                        console.log("TODO: open record payment modal")
-                    }
+                    onClick={() => setCreateModal(true)}
                 />
             ) : mounted && isMobile ? (
                 <div className="card">
@@ -191,6 +198,10 @@ const PaymentsListPage = () => {
                     </div>
                 )}
             </Modal>
+            <CreatePaymentModal
+                visible={createModal}
+                onClose={() => setCreateModal(false)}
+            />
         </Layout>
     );
 };

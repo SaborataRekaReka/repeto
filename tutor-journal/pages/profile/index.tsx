@@ -1,8 +1,8 @@
 import type { NextPage } from "next";
-import ProfilePage from "@/templates/Profile/ProfilePage";
+import TutorProfilePage from "@/templates/TutorProfile/ProfilePage";
 
 const Profile: NextPage = () => {
-    return <ProfilePage />;
+    return <TutorProfilePage />;
 };
 
 export default Profile;

@@ -5,8 +5,12 @@ import Tabs from "@/components/Tabs";
 import LessonDetailModal from "@/components/LessonDetailModal";
 import Profile from "./Profile";
 import LessonHistory from "./LessonHistory";
+import PaymentHistory from "./PaymentHistory";
+import NotesTab from "./NotesTab";
+import HomeworkTab from "./HomeworkTab";
 import { useHydrated } from "@/hooks/useHydrated";
 import { lessons } from "@/mocks/schedule";
+import { payments } from "@/mocks/finance-tutor";
 import {
     getInitials,
     getSubjectBgColor,
@@ -15,6 +19,10 @@ import {
     getStatusLabel,
     getStatusColor,
 } from "@/mocks/students";
+import {
+    studentNotes,
+    studentHomeworks,
+} from "@/mocks/student-details";
 import type { Student } from "@/types/student";
 import type { Lesson } from "@/types/schedule";
 
@@ -33,11 +41,60 @@ const StudentDetailPage = ({ student }: StudentDetailPageProps) => {
         { title: "Занятия", value: "lessons" },
         { title: "Оплаты", value: "payments" },
         { title: "Заметки", value: "notes" },
+        { title: "Домашка", value: "homework" },
     ];
 
     const studentLessons = lessons
         .filter((l) => l.studentName === student.name)
         .sort((a, b) => (a.date > b.date ? -1 : 1));
+
+    const studentPayments = payments.filter(
+        (p) => p.studentId === student.id
+    );
+
+    const notes = studentNotes.filter(
+        (n) => n.studentId === student.id
+    );
+
+    const homeworks = studentHomeworks.filter(
+        (h) => h.studentId === student.id
+    );
+
+    const renderTabContent = () => (
+        <>
+            {tab === "lessons" && (
+                <LessonHistory
+                    lessons={studentLessons}
+                    onLessonClick={setSelectedLesson}
+                />
+            )}
+            {tab === "payments" && (
+                <PaymentHistory payments={studentPayments} />
+            )}
+            {tab === "notes" && (
+                <NotesTab
+                    studentName={student.name}
+                    notes={notes.map((n) => ({
+                        id: n.id,
+                        date: n.date,
+                        time: n.time,
+                        text: n.text,
+                    }))}
+                />
+            )}
+            {tab === "homework" && (
+                <HomeworkTab
+                    homeworks={homeworks.map((h) => ({
+                        id: h.id,
+                        date: h.date,
+                        task: h.task,
+                        dueDate: h.dueDate,
+                        status: h.status,
+                    }))}
+                />
+            )}
+        </>
+    );
 
     return (
         <Layout title="Ученики" back>
@@ -64,24 +121,7 @@ const StudentDetailPage = ({ student }: StudentDetailPageProps) => {
                         value={tab}
                         setValue={setTab}
                     />
-                    {tab === "lessons" && (
-                        <LessonHistory
-                            lessons={studentLessons}
-                            onLessonClick={setSelectedLesson}
-                        />
-                    )}
-                    {tab === "payments" && (
-                        <div className="card px-5 py-8 text-center text-sm text-n-3 dark:text-white/50">
-                            Раздел оплат в разработке
-                        </div>
-                    )}
-                    {tab === "notes" && (
-                        <div className="card px-5 py-6">
-                            <div className="text-sm">
-                                {student.notes || "Заметок пока нет"}
-                            </div>
-                        </div>
-                    )}
+                    {renderTabContent()}
                 </>
             ) : (
                 <div className="flex pt-4">
@@ -89,10 +129,13 @@ const StudentDetailPage = ({ student }: StudentDetailPageProps) => {
                         <Profile student={student} />
                     </div>
                     <div className="w-[calc(100%-18rem)] pl-[5.125rem] 4xl:w-[calc(100%-14.68rem)] 2xl:pl-16 xl:pl-10">
-                        <LessonHistory
-                            lessons={studentLessons}
-                            onLessonClick={setSelectedLesson}
+                        <Tabs
+                            className="mb-6"
+                            items={tabs}
+                            value={tab}
+                            setValue={setTab}
                         />
+                        {renderTabContent()}
                     </div>
                 </div>
             )}

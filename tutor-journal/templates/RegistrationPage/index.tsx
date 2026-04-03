@@ -6,25 +6,24 @@ import Image from "@/components/Image";
 import SignIn from "./SignIn";
 import SignUp from "./SignUp";
 import ForgotPassword from "./ForgotPassword";
-import LoginQr from "./LoginQr";
 
 const RegistrationPage = () => {
     const [signUp, setSignUp] = useState<boolean>(false);
     const [forgotPassword, setForgotPassword] = useState<boolean>(false);
-    const [loginQr, setLoginQr] = useState<boolean>(false);
+    const [sent, setSent] = useState<boolean>(false);
     const { colorMode } = useColorMode();
     const isDarkMode = colorMode === "dark";
 
     const handleClick = () => {
         setSignUp(!signUp);
         setForgotPassword(false);
-        setLoginQr(false);
+        setSent(false);
     };
 
     return (
         <>
             <Head>
-                <title>Bruddle</title>
+                <title>РепетиторЖурнал</title>
             </Head>
             <div className="relative overflow-hidden">
                 <div className="relative z-3 flex flex-col max-w-[75rem] min-h-screen mx-auto px-7.5 py-12 xls:px-20 lg:px-8 md:px-6 md:py-8">
@@ -32,29 +31,33 @@ const RegistrationPage = () => {
                         <Logo className="w-[6.25rem]" />
                         <div className="my-auto py-12">
                             {forgotPassword ? (
-                                <ForgotPassword />
-                            ) : loginQr ? (
-                                <LoginQr />
+                                <ForgotPassword
+                                    sent={sent}
+                                    onSent={() => setSent(true)}
+                                    onBack={() => {
+                                        setForgotPassword(false);
+                                        setSent(false);
+                                    }}
+                                />
                             ) : signUp ? (
                                 <SignUp />
                             ) : (
                                 <SignIn
                                     onRecover={() => setForgotPassword(true)}
-                                    onLoginQr={() => setLoginQr(true)}
                                 />
                             )}
                         </div>
                         <div className="text-sm">
                             {signUp || forgotPassword
-                                ? "Already registered?"
-                                : "You don’t have an account"}
+                                ? "Уже есть аккаунт?"
+                                : "Нет аккаунта?"}
                             <button
                                 className="ml-1.5 font-bold transition-colors hover:text-purple-1"
                                 onClick={handleClick}
                             >
                                 {signUp || forgotPassword
-                                    ? "Sign in to your account"
-                                    : "Create an account"}
+                                    ? "Войти"
+                                    : "Создать аккаунт"}
                             </button>
                         </div>
                     </div>

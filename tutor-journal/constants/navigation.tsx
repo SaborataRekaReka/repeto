@@ -25,10 +25,20 @@ export const navigation = [
         url: "/finance/payments",
     },
     {
+        title: "Пакеты",
+        icon: "card",
+        url: "/finance/packages",
+    },
+    {
         title: "Уведомления",
         icon: "email",
         counter: 3,
         url: "/notifications",
+    },
+    {
+        title: "Настройки",
+        icon: "setup",
+        url: "/settings",
     },
 ];
 

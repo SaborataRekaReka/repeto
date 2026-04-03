@@ -1,33 +1,30 @@
 import { Menu, Transition } from "@headlessui/react";
+import { useRouter } from "next/router";
 import Icon from "@/components/Icon";
 
 type CreateProps = {};
 
 const Create = ({}: CreateProps) => {
+    const router = useRouter();
+
     const buttons = [
         {
             id: "0",
-            title: "New Project",
-            icon: "projects",
-            onClick: () => console.log("New Project"),
+            title: "Новый ученик",
+            icon: "add-member",
+            onClick: () => router.push("/students?create=1"),
         },
         {
             id: "1",
-            title: "New Task",
-            icon: "task",
-            onClick: () => console.log("New Task"),
+            title: "Новое занятие",
+            icon: "event",
+            onClick: () => router.push("/schedule?create=1"),
         },
         {
             id: "2",
-            title: "New Contact",
-            icon: "add-member",
-            onClick: () => console.log("New Contact"),
-        },
-        {
-            id: "3",
-            title: "New Event",
-            icon: "event",
-            onClick: () => console.log("New Event"),
+            title: "Записать оплату",
+            icon: "wallet",
+            onClick: () => router.push("/finance/payments?create=1"),
         },
     ];
 
@@ -35,7 +32,7 @@ const Create = ({}: CreateProps) => {
         <Menu className="relative md:hidden" as="div">
             <Menu.Button className="btn-purple btn-medium px-5 md:!bg-transparent md:border-none md:w-6 md:h-6 md:p-0 md:text-0">
                 <Icon className="md:!m-0" name="add-circle" />
-                <span>Create new</span>
+                <span>Создать</span>
             </Menu.Button>
             <Transition
                 enter="transition duration-100 ease-out"

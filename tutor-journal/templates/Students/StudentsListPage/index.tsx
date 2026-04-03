@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
 import { useMediaQuery } from "react-responsive";
 import Layout from "@/components/Layout";
 import Tabs from "@/components/Tabs";
@@ -11,15 +12,25 @@ import Empty from "@/components/Empty";
 import Row from "./Row";
 import Item from "./Item";
 
+import CreateStudentModal from "@/components/CreateStudentModal";
 import { useHydrated } from "@/hooks/useHydrated";
 import { students } from "@/mocks/students";
 import type { Student } from "@/types/student";
 
 const StudentsListPage = () => {
+    const router = useRouter();
     const [type, setType] = useState<string>("all");
     const [valueAll, setValueAll] = useState<boolean>(false);
     const [search, setSearch] = useState<string>("");
+    const [createModal, setCreateModal] = useState<boolean>(false);
     const { mounted } = useHydrated();
+
+    useEffect(() => {
+        if (router.query.create === "1") {
+            setCreateModal(true);
+            router.replace("/students", undefined, { shallow: true });
+        }
+    }, [router.query.create]);
 
     const types = [
         { title: "Все", value: "all" },
@@ -55,9 +66,7 @@ const StudentsListPage = () => {
                 <div className="flex gap-1.5 md:mt-4">
                     <button
                         className="btn-purple btn-small"
-                        onClick={() =>
-                            console.log("TODO: open create student modal")
-                        }
+                        onClick={() => setCreateModal(true)}
                     >
                         <Icon name="add-circle" />
                         <span>Новый ученик</span>
@@ -76,9 +85,7 @@ const StudentsListPage = () => {
                     title="Пока нет учеников"
                     content="Добавьте первого ученика, чтобы начать вести журнал занятий и оплат."
                     buttonText="Добавить ученика"
-                    onClick={() =>
-                        console.log("TODO: open create student modal")
-                    }
+                    onClick={() => setCreateModal(true)}
                 />
             ) : mounted && isMobile ? (
                 <div className="card">
@@ -125,6 +132,10 @@ const StudentsListPage = () => {
                 </table>
             )}
             {filtered.length > 0 && <TablePagination />}
+            <CreateStudentModal
+                visible={createModal}
+                onClose={() => setCreateModal(false)}
+            />
         </Layout>
     );
 };

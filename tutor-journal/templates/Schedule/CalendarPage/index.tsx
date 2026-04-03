@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import Icon from "@/components/Icon";
 import Tabs from "@/components/Tabs";
 import LessonDetailModal from "@/components/LessonDetailModal";
+import CreateLessonModal from "@/components/CreateLessonModal";
 import Month from "./Month";
 import Week from "./Week";
 import Day from "./Day";
@@ -10,8 +12,18 @@ import { MONTH_NAMES } from "@/mocks/schedule";
 import type { Lesson } from "@/types/schedule";
 
 const CalendarPage = () => {
+    const router = useRouter();
     const [type, setType] = useState<string>("month");
     const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+    const [createModal, setCreateModal] = useState(false);
+
+    useEffect(() => {
+        if (router.query.create === "1") {
+            setCreateModal(true);
+            router.replace("/schedule", undefined, { shallow: true });
+        }
+    }, [router.query.create]);
+
     // Current date for calendar navigation (start at April 3, 2026)
     const [currentDate, setCurrentDate] = useState(new Date(2026, 3, 3));
 
@@ -95,9 +107,7 @@ const CalendarPage = () => {
                 </div>
                 <button
                     className="btn-purple btn-small ml-auto md:hidden"
-                    onClick={() =>
-                        console.log("TODO: open create lesson modal")
-                    }
+                    onClick={() => setCreateModal(true)}
                 >
                     <Icon name="add-circle" />
                     <span>Новое занятие</span>
@@ -110,6 +120,10 @@ const CalendarPage = () => {
                 visible={!!selectedLesson}
                 onClose={() => setSelectedLesson(null)}
                 lesson={selectedLesson}
+            />
+            <CreateLessonModal
+                visible={createModal}
+                onClose={() => setCreateModal(false)}
             />
         </Layout>
     );

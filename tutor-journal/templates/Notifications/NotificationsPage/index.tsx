@@ -60,6 +60,7 @@ const NotificationsPage = () => {
                 <Empty
                     title="Нет уведомлений"
                     content="Здесь будут появляться уведомления об оплатах, занятиях и других событиях."
+                    buttonText=""
                 />
             ) : (
                 <div className="card">
