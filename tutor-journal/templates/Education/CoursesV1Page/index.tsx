@@ -21,7 +21,7 @@ const CoursesV1Page = () => {
                     placeholder="What do you want to learn?"
                     value={search}
                     onChange={(e: any) => setSearch(e.target.value)}
-                    onSubmit={() => console.log("Submit")}
+                    onSubmit={(e) => e.preventDefault()}
                     large
                 />
                 <div className="mb-18 text-center text-sm md:mb-10">

@@ -1,17 +1,23 @@
 import { useEffect, useState } from "react";
 import Checkbox from "@/components/Checkbox";
 
+type ChecklistItem = {
+    id: string;
+    title: string;
+    isChecked: boolean;
+};
+
 type ChecklistProps = {
-    checklist: any;
+    checklist: ChecklistItem[];
 };
 
 const Checklist = ({ checklist }: ChecklistProps) => {
-    const [checkboxes, setCheckboxes] = useState(checklist);
+    const [checkboxes, setCheckboxes] = useState<ChecklistItem[]>(checklist);
     const [checkedCount, setCheckedCount] = useState(1);
 
     useEffect(() => {
         const count = checkboxes.reduce(
-            (accumulator: any, checkbox: any) =>
+            (accumulator: number, checkbox: ChecklistItem) =>
                 accumulator + (checkbox.isChecked ? 1 : 0),
             0
         );
@@ -45,7 +51,7 @@ const Checklist = ({ checklist }: ChecklistProps) => {
                 ></div>
             </div>
             <div className="flex flex-col items-start">
-                {checklist.map((checkbox: any) => (
+                {checklist.map((checkbox: ChecklistItem) => (
                     <Checkbox
                         className="mb-3 last:mb-0"
                         label={checkbox.title}

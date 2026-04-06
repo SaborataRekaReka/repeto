@@ -59,7 +59,7 @@ const MailListPage = () => {
                     placeholder="Type to search..."
                     value={search}
                     onChange={(e: any) => setSearch(e.target.value)}
-                    onSubmit={() => console.log("Submit")}
+                    onSubmit={(e) => e.preventDefault()}
                 />
             </div>
             <div className="card">

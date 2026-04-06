@@ -21,7 +21,7 @@ const CoursesV2Page = () => {
                     placeholder="Mobile and Web Design"
                     value={search}
                     onChange={(e: any) => setSearch(e.target.value)}
-                    onSubmit={() => console.log("Submit")}
+                    onSubmit={(e) => e.preventDefault()}
                     large
                 />
                 <div className="mb-5 text-center text-sm font-bold">

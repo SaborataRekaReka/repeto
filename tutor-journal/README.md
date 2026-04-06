@@ -1,38 +1,85 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Репетитор — дневник преподавателя
 
-## Getting Started
+Веб-приложение для репетиторов: управление учениками, расписанием занятий и финансами. Построено на [Next.js](https://nextjs.org/) 13 с TypeScript и Tailwind CSS.
 
-First, run the development server:
+## Возможности
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
+- **Ученики** — список учеников с контактными данными, предметом, ставкой и балансом
+- **Расписание** — просмотр занятий по неделям и месяцам, создание новых занятий
+- **Финансы** — история оплат, пакеты занятий, отслеживание задолженностей
+- **Уведомления** — оповещения об оплатах, занятиях и системных событиях
+- **Дашборд** — сводная статистика, ближайшие занятия, долги по оплатам
+
+## Стек технологий
+
+| Слой | Технология |
+|------|-----------|
+| Фреймворк | Next.js 13 (Pages Router) |
+| Язык | TypeScript 5 |
+| Стили | Tailwind CSS 3 |
+| UI-компоненты | Headless UI, Chakra UI (color mode) |
+| Графики | Recharts |
+| Drag & Drop | @hello-pangea/dnd |
+
+## Структура проекта
+
+```
+tutor-journal/
+├── pages/          # Маршруты приложения (Next.js Pages Router)
+├── components/     # Переиспользуемые UI-компоненты
+├── templates/      # Шаблоны страниц (бизнес-логика + разметка)
+├── types/          # TypeScript-типы (Student, Lesson, Payment, …)
+├── mocks/          # Фиктивные данные для разработки
+├── hooks/          # Кастомные React-хуки
+└── constants/      # Конфигурация навигации
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Запуск
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+Требуется Node.js 18+.
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+```bash
+# Установка зависимостей
+yarn install
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+# Режим разработки (порт 3100)
+yarn dev
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+# Сборка для продакшена
+yarn build
+yarn start
+```
 
-## Learn More
+Откройте [http://localhost:3100](http://localhost:3100) в браузере.
 
-To learn more about Next.js, take a look at the following resources:
+Из корневого репозитория:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run dev:frontend    # запуск dev-сервера
+npm run build:frontend  # сборка
+npm run lint:frontend   # линтинг
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+## Основные маршруты
 
-## Deploy on Vercel
+| Путь | Описание |
+|------|----------|
+| `/dashboard` | Главный дашборд |
+| `/students` | Список учеников |
+| `/students/[id]` | Карточка ученика |
+| `/schedule` | Расписание занятий |
+| `/finance` | Финансовый обзор |
+| `/finance/payments` | История оплат |
+| `/finance/packages` | Пакеты занятий |
+| `/notifications` | Уведомления |
+| `/settings` | Настройки |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Типы данных
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+Ключевые TypeScript-интерфейсы находятся в каталоге `types/`:
+
+- `Student` — ученик (имя, предмет, класс, ставка, баланс, контакты)
+- `Lesson` — занятие (дата, время, длительность, формат, статус)
+- `Payment` — оплата (сумма, способ, статус)
+- `LessonPackage` — пакет занятий
+- `Notification` — уведомление

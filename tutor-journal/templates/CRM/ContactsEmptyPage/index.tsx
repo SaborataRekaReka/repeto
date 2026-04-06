@@ -38,7 +38,7 @@ const ContactsEmptyPage = () => {
                 visible={visible}
                 onClose={() => setVisible(false)}
             >
-                <form action="" onSubmit={() => console.log("Submit")}>
+                <form action="" onSubmit={(e) => e.preventDefault()}>
                     <div className="relative flex justify-center items-center w-[6.375rem] h-[6.375rem] mx-auto mb-6 bg-purple-3">
                         <input
                             className="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"

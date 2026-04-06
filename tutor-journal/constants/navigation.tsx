@@ -1,4 +1,18 @@
-export const navigation = [
+export type NavigationItem = {
+    title: string;
+    icon: string;
+    url: string;
+    counter?: number;
+    counterColor?: string;
+};
+
+export type NavigationMobileItem = {
+    icon: string;
+    url?: string;
+    onClick?: () => void;
+};
+
+export const navigation: NavigationItem[] = [
     {
         title: "Дашборд",
         icon: "dashboard",
@@ -42,7 +56,7 @@ export const navigation = [
     },
 ];
 
-export const navigationMobile = [
+export const navigationMobile: NavigationMobileItem[] = [
     {
         icon: "dashboard",
         url: "/dashboard",
@@ -61,6 +75,6 @@ export const navigationMobile = [
     },
     {
         icon: "dots",
-        onClick: () => console.log("Click on dots"),
+        onClick: () => {},
     },
 ];

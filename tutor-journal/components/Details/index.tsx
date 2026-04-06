@@ -7,6 +7,12 @@ import Comment from "@/components/Comment";
 import Checklist from "./Checklist";
 import Attachments from "./Attachments";
 
+type ChecklistItem = {
+    id: string;
+    title: string;
+    isChecked: boolean;
+};
+
 type DetailsProps = {
     visible: boolean;
     onClose: () => void;
@@ -14,12 +20,12 @@ type DetailsProps = {
     time?: string;
     title: string;
     info: string;
-    users: Array<string>;
+    users: string[];
     date: string;
     category: string;
     description: string;
-    checklist?: any;
-    attachments?: any;
+    checklist?: ChecklistItem[];
+    attachments?: string[];
 };
 
 const Details = ({
@@ -60,7 +66,7 @@ const Details = ({
                 <div className="md:mb-6">
                     <div className="mb-2 text-xs font-medium">Assigned to</div>
                     <div className="flex items-center">
-                        {users.map((user: any, index: number) => (
+                        {users.map((user: string, index: number) => (
                             <div className="relative w-9 h-9 mr-1" key={index}>
                                 <Image
                                     className="object-fill rounded-full"
@@ -102,7 +108,7 @@ const Details = ({
                 className="mt-8 shadow-none"
                 placeholder="Type to add your comment"
                 value={value}
-                setValue={(e: any) => setValue(e.target.value)}
+                setValue={(e) => setValue(e.target.value)}
             />
         </Modal>
     );

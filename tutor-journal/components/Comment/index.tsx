@@ -6,8 +6,8 @@ type CommentProps = {
     className?: string;
     avatar?: string;
     placeholder: string;
-    value: any;
-    setValue: any;
+    value: string;
+    setValue: React.ChangeEventHandler<HTMLTextAreaElement>;
 };
 
 const Comment = ({
@@ -21,7 +21,7 @@ const Comment = ({
         <form
             className={`flex pl-1 py-1 pr-5 bg-white border border-n-1 shadow-primary-4 md:pr-4 dark:bg-n-1 dark:border-white ${className}`}
             action=""
-            onSubmit={() => console.log("Submit")}
+            onSubmit={(e) => e.preventDefault()}
         >
             {avatar && (
                 <div className="relative self-center w-8.5 h-8.5 ml-4">

@@ -10,7 +10,7 @@ type FieldProps = {
     textarea?: boolean;
     type?: string;
     value: string;
-    onChange: any;
+    onChange: React.ChangeEventHandler<HTMLInputElement | HTMLTextAreaElement>;
     placeholder?: string;
     required?: boolean;
     icon?: string;

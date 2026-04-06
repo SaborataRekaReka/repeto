@@ -11,7 +11,7 @@ type ModalProps = {
     title?: string;
     visible: boolean;
     onClose: () => void;
-    initialFocus?: any;
+    initialFocus?: React.RefObject<HTMLElement>;
     children: React.ReactNode;
     video?: boolean;
 };

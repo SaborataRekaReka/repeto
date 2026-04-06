@@ -119,7 +119,7 @@ const LessonDetailModal = ({
                         <button
                             className="btn-purple btn-small"
                             onClick={() => {
-                                console.log("TODO: mark completed", lesson.id);
+                                // TODO: update lesson status to "completed" via API
                                 onClose();
                             }}
                         >
@@ -129,7 +129,7 @@ const LessonDetailModal = ({
                         <button
                             className="btn-stroke btn-small"
                             onClick={() => {
-                                console.log("TODO: cancel lesson", lesson.id);
+                                // TODO: update lesson status to "cancelled_tutor" via API
                                 onClose();
                             }}
                         >

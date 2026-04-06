@@ -1,10 +1,10 @@
 import { useState } from "react";
 import Modal from "@/components/Modal";
 import Field from "@/components/Field";
-import Select from "@/components/Select";
+import Select, { type SelectOption } from "@/components/Select";
 import { students } from "@/mocks/students";
 
-const methodOptions = [
+const methodOptions: SelectOption[] = [
     { id: "sbp", title: "СБП" },
     { id: "cash", title: "Наличные" },
     { id: "transfer", title: "Перевод" },
@@ -16,20 +16,31 @@ type CreatePaymentModalProps = {
 };
 
 const CreatePaymentModal = ({ visible, onClose }: CreatePaymentModalProps) => {
-    const studentOptions = students.map((s) => ({
+    const studentOptions: SelectOption[] = students.map((s) => ({
         id: s.id,
         title: s.name,
     }));
 
     const today = new Date().toISOString().slice(0, 10);
 
-    const [student, setStudent] = useState<any>(null);
+    const [student, setStudent] = useState<SelectOption | null>(null);
     const [amount, setAmount] = useState("");
     const [date, setDate] = useState(today);
-    const [method, setMethod] = useState<any>(methodOptions[0]);
+    const [method, setMethod] = useState<SelectOption>(methodOptions[0]);
     const [comment, setComment] = useState("");
+    const [errors, setErrors] = useState<Record<string, string>>({});
+
+    const validate = (): boolean => {
+        const newErrors: Record<string, string> = {};
+        if (!student) newErrors.student = "Выберите ученика";
+        if (!amount.trim() || Number(amount) <= 0)
+            newErrors.amount = "Введите корректную сумму";
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
 
     const handleSubmit = () => {
+        if (!validate()) return;
         onClose();
     };
 
@@ -48,21 +59,27 @@ const CreatePaymentModal = ({ visible, onClose }: CreatePaymentModalProps) => {
                     value={student}
                     onChange={setStudent}
                 />
+                {errors.student && (
+                    <p className="text-xs text-pink-1 -mt-2">{errors.student}</p>
+                )}
                 <Field
                     label="Сумма (₽) *"
                     type="number"
                     placeholder="4200"
                     value={amount}
-                    onChange={(e: any) => setAmount(e.target.value)}
+                    onChange={(e) => setAmount(e.target.value)}
                     required
                 />
+                {errors.amount && (
+                    <p className="text-xs text-pink-1 -mt-2">{errors.amount}</p>
+                )}
                 <div className="flex gap-4 md:flex-col">
                     <div className="flex-1">
                         <Field
                             label="Дата"
                             type="date"
                             value={date}
-                            onChange={(e: any) => setDate(e.target.value)}
+                            onChange={(e) => setDate(e.target.value)}
                         />
                     </div>
                     <div className="flex-1">
@@ -79,7 +96,7 @@ const CreatePaymentModal = ({ visible, onClose }: CreatePaymentModalProps) => {
                     type="text"
                     placeholder="За какие занятия, пакет и т.д."
                     value={comment}
-                    onChange={(e: any) => setComment(e.target.value)}
+                    onChange={(e) => setComment(e.target.value)}
                     textarea
                 />
                 <div className="flex gap-3 pt-4">

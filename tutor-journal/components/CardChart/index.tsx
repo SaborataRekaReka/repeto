@@ -1,9 +1,14 @@
 import Icon from "@/components/Icon";
 
+type LegendItem = {
+    title: string;
+    color: string;
+};
+
 type CardChartProps = {
     className?: string;
     title: string;
-    legend?: any;
+    legend?: LegendItem[];
     children: React.ReactNode;
 };
 
@@ -13,7 +18,7 @@ const CardChart = ({ className, title, legend, children }: CardChartProps) => (
             <div className="mr-auto text-h6">{title}</div>
             {legend && (
                 <div className="flex items-center mr-6 md:flex-col md:items-stretch">
-                    {legend.map((item: any, index: number) => (
+                    {legend.map((item, index: number) => (
                         <div
                             className="flex items-center mr-6 last:mr-0 text-xs font-bold md:mr-0"
                             key={index}
