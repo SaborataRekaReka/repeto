@@ -35,8 +35,8 @@ const Filters = ({}: FiltersProps) => {
                 className="ml-auto md:w-[64%]"
                 placeholder="Search"
                 value={search}
-                onChange={(e: any) => setSearch(e.target.value)}
-                onSubmit={() => console.log("Submit")}
+                onChange={(e) => setSearch(e.target.value)}
+                onSubmit={(e) => e.preventDefault()}
             />
         </div>
     );

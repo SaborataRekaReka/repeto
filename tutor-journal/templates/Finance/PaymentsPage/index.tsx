@@ -40,7 +40,7 @@ const PaymentsPage = () => {
             <form
                 className="max-w-[30.625rem] w-full mx-auto py-4"
                 action=""
-                onSubmit={() => console.log("Submit")}
+                onSubmit={(e) => e.preventDefault()}
             >
                 <Select
                     className="mb-5"

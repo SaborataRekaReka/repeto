@@ -48,8 +48,9 @@ const Row = ({ item, onClick }: RowProps) => (
                     {
                         label: "Удалить",
                         icon: "close",
-                        onClick: () =>
-                            console.log("TODO: delete payment", item.id),
+                        onClick: () => {
+                            // TODO: delete payment via API
+                        },
                         danger: true,
                     },
                 ]}

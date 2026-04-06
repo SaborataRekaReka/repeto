@@ -54,10 +54,7 @@ const DebtList = () => (
                                 onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    console.log(
-                                        "TODO: send reminder to",
-                                        student.name
-                                    );
+                                    // TODO: send payment reminder to student via messaging
                                 }}
                             >
                                 <Icon name="email" />

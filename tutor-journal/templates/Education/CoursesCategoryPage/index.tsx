@@ -46,7 +46,7 @@ const CoursesCategoryPage = () => {
                 placeholder="Mobile and Web Development"
                 value={search}
                 onChange={(e: any) => setSearch(e.target.value)}
-                onSubmit={() => console.log("Submit")}
+                onSubmit={(e) => e.preventDefault()}
                 large
             />
             <div className="flex justify-between mb-8 md:block">

@@ -2,7 +2,13 @@ import Image from "@/components/Image";
 import Icon from "@/components/Icon";
 import Actions from "./Actions";
 
-const list = [
+type ProfileListItem = {
+    title: string;
+    value: number | string;
+    counter?: number;
+};
+
+const list: ProfileListItem[] = [
     {
         title: "New tasks",
         value: 296,
@@ -43,7 +49,7 @@ const Profile = ({ actions }: ProfileProps) => (
             <div className="label-stroke min-w-[5.125rem]">Designer</div>
         </div>
         <div>
-            {list.map((item: any, index: number) => (
+            {list.map((item: ProfileListItem, index: number) => (
                 <div
                     className="mb-4 pb-4 border-b border-dashed border-n-1 last:mb-0 last:pb-0 last:border-none dark:border-white"
                     key={index}

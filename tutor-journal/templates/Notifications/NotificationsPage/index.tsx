@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import Tabs from "@/components/Tabs";
 import Empty from "@/components/Empty";
@@ -18,6 +19,7 @@ const tabs = [
 ];
 
 const NotificationsPage = () => {
+    const router = useRouter();
     const [tab, setTab] = useState<string>("all");
     const [items, setItems] = useState<Notification[]>(notifications);
 
@@ -68,9 +70,11 @@ const NotificationsPage = () => {
                         <NotificationItem
                             item={n}
                             key={n.id}
-                            onAction={() =>
-                                console.log("TODO: action for", n.id)
-                            }
+                            onAction={() => {
+                                if (n.actionUrl) {
+                                    router.push(n.actionUrl);
+                                }
+                            }}
                         />
                     ))}
                 </div>

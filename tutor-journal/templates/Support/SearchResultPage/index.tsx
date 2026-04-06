@@ -20,7 +20,7 @@ const SearchResultPage = () => {
                     placeholder="Search help articles"
                     value={search}
                     onChange={(e: any) => setSearch(e.target.value)}
-                    onSubmit={() => console.log("Submit")}
+                    onSubmit={(e) => e.preventDefault()}
                     large
                 />
                 <div className="text-center">

@@ -21,7 +21,7 @@ const EmptyPage = () => {
                         </svg>
                     }
                     buttonText="Create a message"
-                    onClick={() => console.log("Create a message")}
+                    onClick={() => {}}
                 />
             </Layout>
         </>

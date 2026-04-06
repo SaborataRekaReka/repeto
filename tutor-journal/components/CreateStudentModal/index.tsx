@@ -1,10 +1,10 @@
 import { useState } from "react";
 import Modal from "@/components/Modal";
 import Field from "@/components/Field";
-import Select from "@/components/Select";
+import Select, { type SelectOption } from "@/components/Select";
 import Icon from "@/components/Icon";
 
-const subjectOptions = [
+const subjectOptions: SelectOption[] = [
     { id: "math", title: "Математика" },
     { id: "eng", title: "Английский" },
     { id: "phys", title: "Физика" },
@@ -23,7 +23,7 @@ type CreateStudentModalProps = {
 const CreateStudentModal = ({ visible, onClose }: CreateStudentModalProps) => {
     const [name, setName] = useState("");
     const [grade, setGrade] = useState("");
-    const [subject, setSubject] = useState<any>(null);
+    const [subject, setSubject] = useState<SelectOption | null>(null);
     const [phone, setPhone] = useState("");
     const [telegram, setTelegram] = useState("");
     const [parentName, setParentName] = useState("");
@@ -32,8 +32,20 @@ const CreateStudentModal = ({ visible, onClose }: CreateStudentModalProps) => {
     const [parentEmail, setParentEmail] = useState("");
     const [rate, setRate] = useState("");
     const [notes, setNotes] = useState("");
+    const [errors, setErrors] = useState<Record<string, string>>({});
+
+    const validate = (): boolean => {
+        const newErrors: Record<string, string> = {};
+        if (!name.trim()) newErrors.name = "Введите ФИО ученика";
+        if (!subject) newErrors.subject = "Выберите предмет";
+        if (!rate.trim() || Number(rate) <= 0)
+            newErrors.rate = "Введите корректную ставку";
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
 
     const handleSubmit = () => {
+        if (!validate()) return;
         onClose();
     };
 
@@ -50,9 +62,12 @@ const CreateStudentModal = ({ visible, onClose }: CreateStudentModalProps) => {
                     type="text"
                     placeholder="Иванов Пётр Сергеевич"
                     value={name}
-                    onChange={(e: any) => setName(e.target.value)}
+                    onChange={(e) => setName(e.target.value)}
                     required
                 />
+                {errors.name && (
+                    <p className="text-xs text-pink-1 -mt-2">{errors.name}</p>
+                )}
                 <div className="flex gap-4 md:flex-col">
                     <div className="flex-1">
                         <Field
@@ -60,7 +75,7 @@ const CreateStudentModal = ({ visible, onClose }: CreateStudentModalProps) => {
                             type="text"
                             placeholder="11 или Взрослый"
                             value={grade}
-                            onChange={(e: any) => setGrade(e.target.value)}
+                            onChange={(e) => setGrade(e.target.value)}
                         />
                     </div>
                     <div className="flex-1">
@@ -71,6 +86,9 @@ const CreateStudentModal = ({ visible, onClose }: CreateStudentModalProps) => {
                             value={subject}
                             onChange={setSubject}
                         />
+                        {errors.subject && (
+                            <p className="text-xs text-pink-1 mt-1">{errors.subject}</p>
+                        )}
                     </div>
                 </div>
                 <div className="flex gap-4 md:flex-col">
@@ -80,7 +98,7 @@ const CreateStudentModal = ({ visible, onClose }: CreateStudentModalProps) => {
                             type="tel"
                             placeholder="+7 900 123-45-67"
                             value={phone}
-                            onChange={(e: any) => setPhone(e.target.value)}
+                            onChange={(e) => setPhone(e.target.value)}
                         />
                     </div>
                     <div className="flex-1">
@@ -89,7 +107,7 @@ const CreateStudentModal = ({ visible, onClose }: CreateStudentModalProps) => {
                             type="text"
                             placeholder="@username"
                             value={telegram}
-                            onChange={(e: any) => setTelegram(e.target.value)}
+                            onChange={(e) => setTelegram(e.target.value)}
                         />
                     </div>
                 </div>
@@ -103,7 +121,7 @@ const CreateStudentModal = ({ visible, onClose }: CreateStudentModalProps) => {
                         type="text"
                         placeholder="Иванова Мария Петровна"
                         value={parentName}
-                        onChange={(e: any) => setParentName(e.target.value)}
+                        onChange={(e) => setParentName(e.target.value)}
                     />
                     <div className="flex gap-4 mb-4 md:flex-col">
                         <div className="flex-1">
@@ -112,7 +130,7 @@ const CreateStudentModal = ({ visible, onClose }: CreateStudentModalProps) => {
                                 type="tel"
                                 placeholder="+7 900 765-43-21"
                                 value={parentPhone}
-                                onChange={(e: any) =>
+                                onChange={(e) =>
                                     setParentPhone(e.target.value)
                                 }
                             />
@@ -123,7 +141,7 @@ const CreateStudentModal = ({ visible, onClose }: CreateStudentModalProps) => {
                                 type="text"
                                 placeholder="@username"
                                 value={parentTelegram}
-                                onChange={(e: any) =>
+                                onChange={(e) =>
                                     setParentTelegram(e.target.value)
                                 }
                             />
@@ -134,7 +152,7 @@ const CreateStudentModal = ({ visible, onClose }: CreateStudentModalProps) => {
                         type="email"
                         placeholder="parent@email.com"
                         value={parentEmail}
-                        onChange={(e: any) => setParentEmail(e.target.value)}
+                        onChange={(e) => setParentEmail(e.target.value)}
                     />
                 </div>
                 <Field
@@ -142,15 +160,18 @@ const CreateStudentModal = ({ visible, onClose }: CreateStudentModalProps) => {
                     type="number"
                     placeholder="2100"
                     value={rate}
-                    onChange={(e: any) => setRate(e.target.value)}
+                    onChange={(e) => setRate(e.target.value)}
                     required
                 />
+                {errors.rate && (
+                    <p className="text-xs text-pink-1 -mt-2">{errors.rate}</p>
+                )}
                 <Field
                     label="Заметки"
                     type="text"
                     placeholder="Любые заметки…"
                     value={notes}
-                    onChange={(e: any) => setNotes(e.target.value)}
+                    onChange={(e) => setNotes(e.target.value)}
                     textarea
                 />
                 <div className="flex gap-3 pt-4">

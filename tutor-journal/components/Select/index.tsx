@@ -2,6 +2,11 @@ import { Listbox, Transition } from "@headlessui/react";
 import { twMerge } from "tailwind-merge";
 import Icon from "@/components/Icon";
 
+export type SelectOption = {
+    id: string;
+    title: string;
+};
+
 type SelectProps = {
     label?: string;
     className?: string;
@@ -10,9 +15,9 @@ type SelectProps = {
     classOptions?: string;
     classOption?: string;
     placeholder?: string;
-    items: any;
-    value: any;
-    onChange: any;
+    items: SelectOption[];
+    value: SelectOption | null;
+    onChange: (value: SelectOption) => void;
     up?: boolean;
     small?: boolean;
 };
@@ -77,7 +82,7 @@ const Select = ({
                                 } ${open ? "z-10" : ""} ${classOptions}`
                             )}
                         >
-                            {items.map((item: any) => (
+                            {items.map((item: SelectOption) => (
                                 <Listbox.Option
                                     className={`flex items-start px-3 py-2 rounded-sm text-sm font-bold text-n-3 transition-colors cursor-pointer hover:text-n-1 ui-selected:!bg-n-3/20 ui-selected:!text-n-1 tap-highlight-color dark:text-white/50 dark:hover:text-white dark:ui-selected:!text-white ${
                                         small ? "!py-1 !pl-4 text-xs" : ""

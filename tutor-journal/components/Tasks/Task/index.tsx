@@ -4,8 +4,10 @@ import Checkbox from "@/components/Checkbox";
 import Image from "@/components/Image";
 import Details from "@/components/Details";
 
+import { type TaskItem } from "@/components/Tasks";
+
 type TaskProps = {
-    item: any;
+    item: TaskItem;
 };
 
 const Task = ({ item }: TaskProps) => {

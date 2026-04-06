@@ -4,9 +4,21 @@ import Icon from "@/components/Icon";
 import AddTask from "./AddTask";
 import Task from "./Task";
 
+export type TaskItem = {
+    id: string;
+    title: string;
+    marker: boolean;
+    isChecked: boolean;
+    tasksDone: number;
+    tasksAll: number;
+    tasksColor: string;
+    date: string;
+    avatar: string;
+};
+
 type TasksProps = {
     classHead?: string;
-    items: any;
+    items: TaskItem[];
 };
 
 const Tasks = ({ classHead, items }: TasksProps) => {
@@ -44,7 +56,7 @@ const Tasks = ({ classHead, items }: TasksProps) => {
             </div>
             <div className="card">
                 <AddTask />
-                {items.map((task: any) => (
+                {items.map((task: TaskItem) => (
                     <Task item={task} key={task.id} />
                 ))}
             </div>

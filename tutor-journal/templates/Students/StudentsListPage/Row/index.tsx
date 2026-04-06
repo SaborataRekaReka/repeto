@@ -72,20 +72,23 @@ const Row = ({ item }: RowProps) => {
                         {
                             label: "Назначить занятие",
                             icon: "calendar",
-                            onClick: () =>
-                                console.log("TODO: schedule for", item.name),
+                            onClick: () => {
+                                // TODO: open CreateLessonModal pre-filled with student
+                            },
                         },
                         {
                             label: "Написать",
                             icon: "email",
-                            onClick: () =>
-                                console.log("TODO: message", item.name),
+                            onClick: () => {
+                                // TODO: open messaging with student
+                            },
                         },
                         {
                             label: "Архивировать",
                             icon: "close",
-                            onClick: () =>
-                                console.log("TODO: archive", item.id),
+                            onClick: () => {
+                                // TODO: update student status to "archived" via API
+                            },
                             danger: true,
                         },
                     ]}

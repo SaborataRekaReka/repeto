@@ -4,8 +4,8 @@ type SearchProps = {
     className?: string;
     placeholder: string;
     value: string;
-    onChange: any;
-    onSubmit: any;
+    onChange: React.ChangeEventHandler<HTMLInputElement>;
+    onSubmit: React.FormEventHandler<HTMLFormElement>;
     large?: boolean;
 };
 

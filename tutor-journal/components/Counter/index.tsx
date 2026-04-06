@@ -5,7 +5,7 @@ type CounterProps = {
     label?: string;
     title: string;
     value: number;
-    setValue: any;
+    setValue: (value: number) => void;
 };
 
 const Counter = ({

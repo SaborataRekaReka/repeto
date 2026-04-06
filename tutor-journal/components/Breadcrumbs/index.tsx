@@ -1,13 +1,18 @@
 import Link from "next/link";
 import Icon from "@/components/Icon";
 
+type BreadcrumbItem = {
+    title: string;
+    url?: string;
+};
+
 type BreadcrumbsProps = {
-    items: any;
+    items: BreadcrumbItem[];
 };
 
 const Breadcrumbs = ({ items }: BreadcrumbsProps) => (
     <div className="mb-2 text-xs">
-        {items.map((item: any, index: number) =>
+        {items.map((item, index: number) =>
             item.url ? (
                 <span key={index}>
                     <Link

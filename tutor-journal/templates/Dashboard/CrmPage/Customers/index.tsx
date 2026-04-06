@@ -22,7 +22,7 @@ const Customers = ({}: CustomersProps) => {
                 placeholder="Type to search"
                 value={search}
                 onChange={(e: any) => setSearch(e.target.value)}
-                onSubmit={() => console.log("Submit")}
+                onSubmit={(e) => e.preventDefault()}
             />
             <div>
                 {customers.map((customer) => (
