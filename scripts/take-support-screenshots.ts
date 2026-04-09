@@ -14,8 +14,8 @@ const PORTAL_TOKEN = 'demo-portal-token-ivanov';
 const TUTOR_SLUG = 'demo-tutor';
 
 // Two output dirs: articles/ for per-article screenshots, root for generic ones
-const ARTICLE_DIR = path.resolve(__dirname, '../tutor-journal/public/images/support/articles');
-const GENERIC_DIR = path.resolve(__dirname, '../tutor-journal/public/images/support');
+const ARTICLE_DIR = path.resolve(__dirname, '../frontend/public/images/support/articles');
+const GENERIC_DIR = path.resolve(__dirname, '../frontend/public/images/support');
 
 type Shot = {
   name: string;
