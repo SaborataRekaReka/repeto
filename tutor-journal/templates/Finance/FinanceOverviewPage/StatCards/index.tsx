@@ -1,59 +1,121 @@
+import Link from "next/link";
 import Icon from "@/components/Icon";
-import { financeStats } from "@/mocks/finance-tutor";
+import { useFinanceStats } from "@/hooks/usePayments";
 
-const cards = [
-    {
-        title: "Доход за месяц",
-        value: financeStats.incomeMonth,
-        subtitle: "+12% к прошлому",
-        icon: "wallet",
-        color: "bg-green-2 dark:bg-green-1/20",
-    },
-    {
-        title: "Ожидается",
-        value: financeStats.expected,
-        subtitle: `${financeStats.expectedCount} ${financeStats.expectedCount === 1 ? "ученик" : "учеников"}`,
-        icon: "calendar",
-        color: "bg-yellow-2 dark:bg-yellow-1/20",
-    },
-    {
-        title: "Задолженность",
-        value: financeStats.overdue,
-        subtitle: `${financeStats.overdueCount} ${financeStats.overdueCount === 1 ? "ученик" : "ученика"}`,
-        icon: "email",
-        color: "bg-pink-2 dark:bg-pink-1/20",
-    },
-];
+type FinanceCardKey = "totalIncome" | "totalPending" | "totalDebt";
+type FinanceTrendKey =
+    | "incomeChangePercent"
+    | "pendingChangePercent"
+    | "debtChangePercent";
 
-const StatCards = () => (
-    <div className="flex -mx-1.5 mb-5 md:block md:mx-0">
-        {cards.map((card, i) => (
-            <div
-                className="w-[calc(33.333%-0.75rem)] mx-1.5 px-5 py-4.5 card md:w-full md:mx-0 md:mb-3 md:last:mb-0"
-                key={i}
-            >
-                <div className="flex justify-between items-center mb-2">
-                    <div className="text-xs font-medium text-n-3 dark:text-white/50">
-                        {card.title}
-                    </div>
-                    <div
-                        className={`flex items-center justify-center w-8 h-8 rounded-full ${card.color}`}
+const formatTrendValue = (trend: number) => {
+    const formatted = trend.toLocaleString("ru-RU", {
+        maximumFractionDigits: 2,
+    });
+    return `${trend > 0 ? "+" : ""}${formatted}%`;
+};
+
+const StatCards = () => {
+    const { data: stats, loading } = useFinanceStats();
+
+    const cards: Array<{
+        title: string;
+        key: FinanceCardKey;
+        trendKey: FinanceTrendKey;
+        href: string;
+        color: string;
+        parameters: number[];
+    }> = [
+        {
+            title: "Доход за месяц",
+            key: "totalIncome",
+            trendKey: "incomeChangePercent",
+            href: "/finance/payments",
+            color: "#98E9AB",
+            parameters: [62, 42, 74, 55, 36, 68],
+        },
+        {
+            title: "Запланировано",
+            key: "totalPending",
+            trendKey: "pendingChangePercent",
+            href: "/schedule",
+            color: "#FAE8A4",
+            parameters: [56, 30, 64, 48, 33, 60],
+        },
+        {
+            title: "Задолженность",
+            key: "totalDebt",
+            trendKey: "debtChangePercent",
+            href: "/finance/payments",
+            color: "#E99898",
+            parameters: [54, 38, 70, 58, 34, 64],
+        },
+    ];
+
+    return (
+        <div className="flex -mx-2.5 mb-5 md:block md:mx-0">
+            {cards.map((card) => {
+                const value = stats?.[card.key] ?? 0;
+                const trend = stats?.[card.trendKey] ?? 0;
+
+                return (
+                    <Link
+                        href={card.href}
+                        className="flex w-[calc(33.333%-1.25rem)] mx-2.5 pl-5 pr-7 py-4 card transition-shadow hover:shadow-primary-4 lg:px-4 md:w-full md:px-5 md:mx-0 md:mb-4 md:last:mb-0"
+                        key={card.key}
                     >
-                        <Icon
-                            className="icon-18 dark:fill-white"
-                            name={card.icon}
-                        />
-                    </div>
-                </div>
-                <div className="text-h4">
-                    {card.value.toLocaleString("ru-RU")} ₽
-                </div>
-                <div className="mt-1 text-xs text-n-3 dark:text-white/50">
-                    {card.subtitle}
-                </div>
-            </div>
-        ))}
-    </div>
-);
+                        <div className="mr-auto min-w-0">
+                            <div className="mb-1.5 text-sm text-n-3 dark:text-white/75">
+                                {card.title}
+                            </div>
+                            <div className="mb-1.5 text-h4 lg:text-h5 md:text-h4">
+                                {loading
+                                    ? "—"
+                                    : value.toLocaleString("ru-RU") + " ₽"}
+                            </div>
+                            {loading ? (
+                                <div className="text-xs font-bold text-n-3 dark:text-white/50">
+                                    —
+                                </div>
+                            ) : (
+                                <div
+                                    className={`flex items-center text-xs font-bold ${
+                                        trend >= 0
+                                            ? "text-green-1 fill-green-1"
+                                            : "text-pink-1 fill-pink-1"
+                                    }`}
+                                >
+                                    <Icon
+                                        className="mr-1 fill-inherit"
+                                        name={
+                                            trend >= 0
+                                                ? "arrow-up-right"
+                                                : "arrow-down-right"
+                                        }
+                                    />
+                                    {formatTrendValue(trend)}
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex space-x-3 lg:space-x-2 md:space-x-3">
+                            {card.parameters.map((parameter, index) => (
+                                <div
+                                    className="relative w-1 h-[4.82rem] rounded-1"
+                                    style={{ backgroundColor: card.color }}
+                                    key={index}
+                                >
+                                    <div
+                                        className="absolute left-0 right-0 bottom-0 bg-n-1/30 rounded-1 dark:bg-white/35"
+                                        style={{ height: `${parameter}%` }}
+                                    ></div>
+                                </div>
+                            ))}
+                        </div>
+                    </Link>
+                );
+            })}
+        </div>
+    );
+};
 
 export default StatCards;

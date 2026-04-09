@@ -1,39 +1,93 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import Search from "@/components/Search";
-import TablePagination from "@/components/TablePagination";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import Post from "./Post";
 
-import { searchResults } from "@/mocks/support";
+import { articles } from "@/mocks/support";
 
 const SearchResultPage = () => {
+    const router = useRouter();
+    const queryParam = (router.query.q as string) || "";
     const [search, setSearch] = useState<string>("");
 
+    useEffect(() => {
+        if (queryParam) setSearch(queryParam);
+    }, [queryParam]);
+
+    const handleSearch = (e: any) => {
+        e.preventDefault();
+        if (search.trim()) {
+            router.push(`/support/search-result?q=${encodeURIComponent(search.trim())}`);
+        }
+    };
+
+    const results = useMemo(() => {
+        if (!queryParam) return [];
+        const q = queryParam.toLowerCase();
+        return articles.filter(
+            (a) =>
+                a.title.toLowerCase().includes(q) ||
+                a.intro.toLowerCase().includes(q) ||
+                a.category.toLowerCase().includes(q) ||
+                a.steps.some((s) => s.toLowerCase().includes(q))
+        );
+    }, [queryParam]);
+
+    const breadcrumbs = [
+        { title: "Поддержка", url: "/support" },
+        { title: queryParam ? `Поиск: ${queryParam}` : "Поиск" },
+    ];
+
     return (
-        <Layout title="Help Center" background>
+        <Layout title="Поддержка">
+            <Breadcrumbs items={breadcrumbs} />
             <div className="max-w-[41.25rem] w-full mx-auto mb-18 pt-12 md:mb-10 md:pt-6">
                 <div className="mb-6 text-center text-h1 md:text-h3">
-                    How can we help you?
+                    Результаты поиска
                 </div>
                 <Search
                     className="mb-3.5"
-                    placeholder="Search help articles"
+                    placeholder="Поиск по статьям"
                     value={search}
                     onChange={(e: any) => setSearch(e.target.value)}
-                    onSubmit={() => console.log("Submit")}
+                    onSubmit={handleSearch}
                     large
                 />
-                <div className="text-center">
-                    For example <strong>How to create an account</strong>
+            </div>
+            {results.length > 0 ? (
+                <>
+                    <div className="mb-5 text-sm font-bold">
+                        Найдено статей: {results.length}
+                    </div>
+                    <div className="">
+                        {results.map((post) => (
+                            <Post
+                                item={{
+                                    id: post.id,
+                                    title: post.title,
+                                    content: post.intro,
+                                }}
+                                key={post.id}
+                            />
+                        ))}
+                    </div>
+                </>
+            ) : queryParam ? (
+                <div className="text-center py-10">
+                    <div className="mb-2 text-h5">Ничего не найдено</div>
+                    <div className="text-sm text-n-3 dark:text-white/50">
+                        Попробуйте другой запрос или посмотрите{" "}
+                        <a
+                            className="text-purple-1 hover:text-purple-2 font-bold"
+                            href="/support/categories"
+                        >
+                            все категории
+                        </a>
+                    </div>
                 </div>
-            </div>
-            <div className="mb-5 text-sm font-bold">Search results</div>
-            <div className="">
-                {searchResults.map((post) => (
-                    <Post item={post} key={post.id} />
-                ))}
-            </div>
-            <TablePagination />
+            ) : null}
         </Layout>
     );
 };

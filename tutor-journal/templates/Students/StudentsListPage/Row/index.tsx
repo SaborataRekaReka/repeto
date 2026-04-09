@@ -15,9 +15,11 @@ import {
 
 type RowProps = {
     item: Student;
+    onScheduleLesson?: () => void;
+    onMessage?: () => void;
 };
 
-const Row = ({ item }: RowProps) => {
+const Row = ({ item, onScheduleLesson, onMessage }: RowProps) => {
     const [value, setValue] = useState<boolean>(false);
     const router = useRouter();
 
@@ -72,14 +74,12 @@ const Row = ({ item }: RowProps) => {
                         {
                             label: "Назначить занятие",
                             icon: "calendar",
-                            onClick: () =>
-                                console.log("TODO: schedule for", item.name),
+                            onClick: () => onScheduleLesson?.(),
                         },
                         {
                             label: "Написать",
                             icon: "email",
-                            onClick: () =>
-                                console.log("TODO: message", item.name),
+                            onClick: () => onMessage?.(),
                         },
                         {
                             label: "Архивировать",

@@ -3,7 +3,11 @@ export type NotificationType =
     | "payment_overdue"
     | "lesson_reminder"
     | "lesson_cancelled"
+    | "reschedule_requested"
     | "homework_submitted"
+    | "booking_new"
+    | "booking_confirmed"
+    | "booking_rejected"
     | "system";
 
 export type Notification = {
@@ -15,4 +19,7 @@ export type Notification = {
     read: boolean;
     actionLabel?: string;
     actionUrl?: string;
+    bookingRequestId?: string;
+    studentId?: string;
+    lessonId?: string;
 };

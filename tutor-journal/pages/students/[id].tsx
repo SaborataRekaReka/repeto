@@ -1,25 +1,22 @@
-import type { GetServerSideProps, NextPage } from "next";
+import type { NextPage } from "next";
+import { useRouter } from "next/router";
 import StudentDetailPage from "@/templates/Students/StudentDetailPage";
-import { students } from "@/mocks/students";
-import type { Student } from "@/types/student";
+import { useStudent } from "@/hooks/useStudents";
 
-type Props = {
-    student: Student;
-};
+const StudentDetail: NextPage = () => {
+    const router = useRouter();
+    const { id } = router.query as { id: string };
+    const { data: student, loading, refetch } = useStudent(id);
 
-const StudentDetail: NextPage<Props> = ({ student }) => {
-    return <StudentDetailPage student={student} />;
-};
-
-export const getServerSideProps: GetServerSideProps<Props> = async (context) => {
-    const { id } = context.params as { id: string };
-    const student = students.find((s) => s.id === id);
-
-    if (!student) {
-        return { notFound: true };
+    if (!student && loading) {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <div className="text-n-3">Загрузка...</div>
+            </div>
+        );
     }
 
-    return { props: { student } };
+    return <StudentDetailPage student={student} onRefresh={refetch} />;
 };
 
 export default StudentDetail;

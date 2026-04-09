@@ -3,7 +3,10 @@ import Layout from "@/components/Layout";
 import LessonDetailModal from "@/components/LessonDetailModal";
 import StatCards from "./StatCards";
 import TodaySchedule from "./TodaySchedule";
+import WeekSchedule from "./WeekSchedule";
 import IncomeChart from "./IncomeChart";
+import ConversionRate from "./ConversionRate";
+import ExpiringPackages from "./ExpiringPackages";
 import DebtList from "./DebtList";
 import RecentPayments from "./RecentPayments";
 import type { Lesson } from "@/types/schedule";
@@ -14,15 +17,28 @@ const DashboardPage = () => {
     return (
         <Layout title="Дашборд">
             <StatCards />
-            <div className="flex -mx-2.5 lg:block lg:mx-0">
-                <div className="w-[calc(66.666%-1.25rem)] mx-2.5 lg:w-full lg:mx-0 lg:mb-5">
+            <div className="grid grid-cols-3 gap-5 lg:grid-cols-1">
+                <div className="col-span-2 lg:col-span-1">
                     <IncomeChart />
-                    <RecentPayments />
+                    <div className="grid grid-cols-2 gap-5 mt-5 md:grid-cols-1">
+                        <ConversionRate />
+                        <ExpiringPackages />
+                    </div>
+                    <div className="mt-5">
+                        <RecentPayments />
+                    </div>
                 </div>
-                <div className="w-[calc(33.333%-1.25rem)] mx-2.5 lg:w-full lg:mx-0">
+                <div>
                     <TodaySchedule
                         onLessonClick={(lesson) => setSelectedLesson(lesson)}
                     />
+                    <div className="mt-5">
+                        <WeekSchedule
+                            onLessonClick={(lesson) =>
+                                setSelectedLesson(lesson)
+                            }
+                        />
+                    </div>
                     <div className="mt-5">
                         <DebtList />
                     </div>

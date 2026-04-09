@@ -8,7 +8,7 @@ type PostProps = {
 const Post = ({ item }: PostProps) => (
     <Link
         className="flex flex-col items-start w-[calc(33.333%-1.25rem)] mt-2.5 mx-2.5 p-5 card transition-colors hover:border-purple-1 hover:text-purple-1 lg:w-full lg:mx-0"
-        href="/support/article"
+        href={item.id ? `/support/article?id=${item.id}` : "/support/article"}
     >
         <div className="min-w-[7.25rem] mb-3.5 label-stroke text-center text-n-1">
             {item.category}
@@ -19,7 +19,7 @@ const Post = ({ item }: PostProps) => (
         </div>
         <div className="flex items-center mt-auto text-xs font-bold text-n-1 dark:text-white">
             <Icon className="mr-1.5 dark:fill-white" name="arrow-next" />
-            Read more
+            Читать далее
         </div>
     </Link>
 );

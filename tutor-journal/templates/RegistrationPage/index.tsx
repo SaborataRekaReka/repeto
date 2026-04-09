@@ -23,7 +23,7 @@ const RegistrationPage = () => {
     return (
         <>
             <Head>
-                <title>РепетиторЖурнал</title>
+                <title>Repeto</title>
             </Head>
             <div className="relative overflow-hidden">
                 <div className="relative z-3 flex flex-col max-w-[75rem] min-h-screen mx-auto px-7.5 py-12 xls:px-20 lg:px-8 md:px-6 md:py-8">

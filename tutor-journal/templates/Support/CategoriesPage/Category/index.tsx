@@ -1,6 +1,5 @@
 import Link from "next/link";
 import Image from "@/components/Image";
-import Icon from "@/components/Icon";
 
 type CategoryProps = {
     item: any;
@@ -18,27 +17,17 @@ const Category = ({ item }: CategoryProps) => (
             />
         </div>
         <div className="mb-3 text-h6">{item.title}</div>
-        <div className="flex flex-col items-start mb-4">
+        <div className="flex flex-col items-start">
             {item.links.map((link: any, index: number) => (
                 <Link
                     className="mb-2.5 text-sm font-bold text-purple-1 transition-colors hover:text-purple-2 last:mb-0"
-                    href="/support/article"
+                    href={link.articleId ? `/support/article?id=${link.articleId}` : "/support/article"}
                     key={index}
                 >
-                    {link}
+                    {link.title || link}
                 </Link>
             ))}
         </div>
-        <Link
-            className="group flex items-center text-xs font-bold text-n-1 transition-colors dark:text-white hover:!text-purple-1"
-            href="/support/categories"
-        >
-            <Icon
-                className="mr-1.5 transition-colors dark:fill-white group-hover:fill-purple-1"
-                name="arrow-next"
-            />
-            See more articles
-        </Link>
     </div>
 );
 

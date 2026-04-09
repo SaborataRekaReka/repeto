@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import Icon from "@/components/Icon";
@@ -8,7 +8,10 @@ import CreateLessonModal from "@/components/CreateLessonModal";
 import Month from "./Month";
 import Week from "./Week";
 import Day from "./Day";
+import AvailabilityEditor from "./AvailabilityEditor";
 import { MONTH_NAMES } from "@/mocks/schedule";
+import { useLessons } from "@/hooks/useLessons";
+import { toLocalDateKey } from "@/lib/dates";
 import type { Lesson } from "@/types/schedule";
 
 const CalendarPage = () => {
@@ -17,6 +20,17 @@ const CalendarPage = () => {
     const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
     const [createModal, setCreateModal] = useState(false);
 
+    const [editLesson, setEditLesson] = useState<Lesson | null>(null);
+
+    const handleEdit = (lesson: Lesson) => {
+        setEditLesson(lesson);
+        setCreateModal(true);
+    };
+
+    const handleDelete = (lessonId: string) => {
+        console.log("TODO: delete lesson from backend", lessonId);
+    };
+
     useEffect(() => {
         if (router.query.create === "1") {
             setCreateModal(true);
@@ -24,8 +38,29 @@ const CalendarPage = () => {
         }
     }, [router.query.create]);
 
-    // Current date for calendar navigation (start at April 3, 2026)
-    const [currentDate, setCurrentDate] = useState(new Date(2026, 3, 3));
+    // Current date for calendar navigation (start at today)
+    const [currentDate, setCurrentDate] = useState(new Date());
+
+    // Calculate date range for API fetch based on view type
+    const dateRange = useMemo(() => {
+        const d = currentDate;
+        if (type === "month") {
+            const from = new Date(d.getFullYear(), d.getMonth() - 1, 20);
+            const to = new Date(d.getFullYear(), d.getMonth() + 1, 10);
+            return { from: toLocalDateKey(from), to: toLocalDateKey(to) };
+        }
+        if (type === "week") {
+            const start = new Date(d);
+            const dow = start.getDay();
+            start.setDate(start.getDate() - (dow === 0 ? 6 : dow - 1));
+            const end = new Date(start);
+            end.setDate(end.getDate() + 6);
+            return { from: toLocalDateKey(start), to: toLocalDateKey(end) };
+        }
+        return { from: toLocalDateKey(d), to: toLocalDateKey(d) };
+    }, [currentDate, type]);
+
+    const { data: lessons = [] } = useLessons(dateRange);
 
     const types = [
         { title: "Месяц", value: "month" },
@@ -80,6 +115,7 @@ const CalendarPage = () => {
 
     return (
         <Layout title="Расписание">
+            <AvailabilityEditor />
             <div className="relative flex mb-6 lg:flex-wrap md:mb-5">
                 <Tabs
                     className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 lg:static lg:w-full lg:translate-x-0 lg:translate-y-0 lg:ml-0 lg:mb-4"
@@ -113,17 +149,23 @@ const CalendarPage = () => {
                     <span>Новое занятие</span>
                 </button>
             </div>
-            {type === "month" && <Month currentDate={currentDate} onLessonClick={setSelectedLesson} />}
-            {type === "week" && <Week currentDate={currentDate} onLessonClick={setSelectedLesson} />}
-            {type === "day" && <Day currentDate={currentDate} onLessonClick={setSelectedLesson} />}
+            {type === "month" && <Month currentDate={currentDate} onLessonClick={setSelectedLesson} lessons={lessons} />}
+            {type === "week" && <Week currentDate={currentDate} onLessonClick={setSelectedLesson} lessons={lessons} />}
+            {type === "day" && <Day currentDate={currentDate} onLessonClick={setSelectedLesson} lessons={lessons} />}
             <LessonDetailModal
                 visible={!!selectedLesson}
                 onClose={() => setSelectedLesson(null)}
                 lesson={selectedLesson}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
             />
             <CreateLessonModal
                 visible={createModal}
-                onClose={() => setCreateModal(false)}
+                onClose={() => {
+                    setCreateModal(false);
+                    setEditLesson(null);
+                }}
+                lesson={editLesson}
             />
         </Layout>
     );

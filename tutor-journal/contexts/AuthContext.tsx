@@ -1,0 +1,156 @@
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  type ReactNode,
+} from 'react';
+import {
+  api,
+  setAccessToken,
+  getAccessToken,
+  resolveApiAssetUrl,
+} from '@/lib/api';
+import { useRouter } from 'next/router';
+
+type User = {
+  id: string;
+  email: string;
+  name: string;
+  slug: string;
+  phone?: string;
+  whatsapp?: string;
+  subjects: string[];
+  avatar?: string;
+  about?: string;
+  role: string;
+};
+
+function mapUser(raw: any): User {
+  return {
+    ...raw,
+    avatar: resolveApiAssetUrl(raw.avatarUrl),
+    about: raw.aboutText ?? raw.about,
+  };
+}
+
+type AuthContextType = {
+  user: User | null;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  register: (data: { email: string; password: string; name: string; phone?: string }) => Promise<void>;
+  logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
+};
+
+const AuthContext = createContext<AuthContextType | null>(null);
+
+const PUBLIC_ROUTES = ['/registration', '/t'];
+
+let refreshInFlight: Promise<void> | null = null;
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  const isPublicRoute = PUBLIC_ROUTES.some((r) => router.pathname.startsWith(r));
+
+  const refreshUser = useCallback(async () => {
+    // Deduplicate concurrent calls (React StrictMode double-invokes effects)
+    if (refreshInFlight) {
+      await refreshInFlight;
+      return;
+    }
+    const doRefresh = async () => {
+      try {
+        if (!getAccessToken()) {
+          const refreshRes = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3200/api'}/auth/refresh`,
+            { method: 'POST', credentials: 'include' }
+          );
+          if (refreshRes.ok) {
+            const data = await refreshRes.json();
+            setAccessToken(data.accessToken);
+          } else {
+            setLoading(false);
+            return;
+          }
+        }
+        const me = await api<any>('/auth/me');
+        setUser(mapUser(me));
+      } catch {
+        setUser(null);
+        setAccessToken(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    refreshInFlight = doRefresh();
+    try {
+      await refreshInFlight;
+    } finally {
+      refreshInFlight = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshUser();
+  }, [refreshUser]);
+
+  useEffect(() => {
+    if (!loading && !user && !isPublicRoute) {
+      router.replace('/registration');
+    }
+  }, [loading, user, isPublicRoute, router]);
+
+  const login = useCallback(
+    async (email: string, password: string) => {
+      const res = await api<{ user: User; accessToken: string }>('/auth/login', {
+        method: 'POST',
+        body: { email, password },
+      });
+      setAccessToken(res.accessToken);
+      setUser(mapUser(res.user));
+      router.push('/dashboard');
+    },
+    [router]
+  );
+
+  const register = useCallback(
+    async (data: { email: string; password: string; name: string; phone?: string }) => {
+      const res = await api<{ user: any; accessToken: string }>('/auth/register', {
+        method: 'POST',
+        body: data,
+      });
+      setAccessToken(res.accessToken);
+      setUser(mapUser(res.user));
+      router.push('/dashboard');
+    },
+    [router]
+  );
+
+  const logout = useCallback(async () => {
+    try {
+      await api('/auth/logout', { method: 'POST' });
+    } catch {
+      // ignore
+    }
+    setAccessToken(null);
+    setUser(null);
+    router.push('/registration');
+  }, [router]);
+
+  return (
+    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser }}>
+      {loading ? null : children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  return ctx;
+}

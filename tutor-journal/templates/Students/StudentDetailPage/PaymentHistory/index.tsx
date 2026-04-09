@@ -4,19 +4,25 @@ import { getMethodLabel, getStatusLabel, getStatusColor } from "@/mocks/finance-
 
 type PaymentHistoryProps = {
     payments: Payment[];
+    onAdd?: () => void;
 };
 
-const PaymentHistory = ({ payments }: PaymentHistoryProps) => {
+const PaymentHistory = ({ payments, onAdd }: PaymentHistoryProps) => {
     const totalPaid = payments
         .filter((p) => p.status === "paid")
-        .reduce((sum, p) => sum + p.amount, 0);
-    const totalDebt = payments
-        .filter((p) => p.status === "overdue" || p.status === "pending")
         .reduce((sum, p) => sum + p.amount, 0);
 
     return (
         <div className="card">
-            <div className="card-title">Оплаты</div>
+            <div className="card-head">
+                <div className="text-h6">Оплаты</div>
+                {onAdd && (
+                    <button className="btn-purple btn-small" onClick={onAdd}>
+                        <Icon name="add-circle" />
+                        <span>Записать оплату</span>
+                    </button>
+                )}
+            </div>
             {payments.length === 0 ? (
                 <div className="px-5 py-8 text-center text-sm text-n-3 dark:text-white/50">
                     Оплат пока нет
@@ -46,9 +52,9 @@ const PaymentHistory = ({ payments }: PaymentHistoryProps) => {
                                     </td>
                                     <td className="td-custom">
                                         <span
-                                            className={`px-2 py-0.5 text-xs font-bold ${getStatusColor(
+                                            className={getStatusColor(
                                                 payment.status
-                                            )}`}
+                                            )}
                                         >
                                             {getStatusLabel(payment.status)}
                                         </span>
@@ -64,14 +70,6 @@ const PaymentHistory = ({ payments }: PaymentHistoryProps) => {
                                 {totalPaid.toLocaleString("ru-RU")} ₽
                             </span>
                         </span>
-                        {totalDebt > 0 && (
-                            <span>
-                                Задолженность:{" "}
-                                <span className="font-bold text-pink-1">
-                                    {totalDebt.toLocaleString("ru-RU")} ₽
-                                </span>
-                            </span>
-                        )}
                     </div>
                 </>
             )}

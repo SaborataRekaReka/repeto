@@ -42,7 +42,7 @@ const DropdownMenu = ({ items, className }: DropdownMenuProps) => {
                 <Icon name="dots" />
             </button>
             {open && (
-                <div className="absolute right-0 top-full z-20 mt-1 min-w-[10rem] py-1 bg-white border border-n-1 shadow-lg dark:bg-n-1 dark:border-white">
+                <div className="absolute right-0 top-full z-20 mt-1 w-56 py-1 bg-white border border-n-1 rounded-sm shadow-lg overflow-hidden dark:bg-n-1 dark:border-white">
                     {items.map((item, index) => (
                         <button
                             className={`flex items-center w-full px-4 py-2 text-sm font-medium text-left transition-colors hover:bg-background dark:hover:bg-white/10 ${
@@ -59,7 +59,7 @@ const DropdownMenu = ({ items, className }: DropdownMenuProps) => {
                         >
                             {item.icon && (
                                 <Icon
-                                    className={`icon-18 mr-2 ${
+                                    className={`icon-18 shrink-0 mr-2 ${
                                         item.danger
                                             ? "fill-pink-1"
                                             : "dark:fill-white"
@@ -67,7 +67,7 @@ const DropdownMenu = ({ items, className }: DropdownMenuProps) => {
                                     name={item.icon}
                                 />
                             )}
-                            {item.label}
+                            <span className="truncate">{item.label}</span>
                         </button>
                     ))}
                 </div>

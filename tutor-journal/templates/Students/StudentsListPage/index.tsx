@@ -13,8 +13,9 @@ import Row from "./Row";
 import Item from "./Item";
 
 import CreateStudentModal from "@/components/CreateStudentModal";
+import CreateLessonModal from "@/components/CreateLessonModal";
 import { useHydrated } from "@/hooks/useHydrated";
-import { students } from "@/mocks/students";
+import { useStudents } from "@/hooks/useStudents";
 import type { Student } from "@/types/student";
 
 const StudentsListPage = () => {
@@ -23,6 +24,8 @@ const StudentsListPage = () => {
     const [valueAll, setValueAll] = useState<boolean>(false);
     const [search, setSearch] = useState<string>("");
     const [createModal, setCreateModal] = useState<boolean>(false);
+    const [lessonModal, setLessonModal] = useState(false);
+    const [lessonStudent, setLessonStudent] = useState<Student | null>(null);
     const { mounted } = useHydrated();
 
     useEffect(() => {
@@ -43,15 +46,26 @@ const StudentsListPage = () => {
         query: "(max-width: 767px)",
     });
 
-    const filtered = students.filter((s: Student) => {
-        const matchesTab =
-            type === "all" || s.status === type;
-        const matchesSearch =
-            !search ||
-            s.name.toLowerCase().includes(search.toLowerCase()) ||
-            s.subject.toLowerCase().includes(search.toLowerCase());
-        return matchesTab && matchesSearch;
+    const { data: studentsData, loading } = useStudents({
+        status: type === "all" ? undefined : type,
+        search: search || undefined,
+        limit: 50,
     });
+    const filtered = studentsData?.data || [];
+
+    const handleScheduleLesson = (student: Student) => {
+        setLessonStudent(student);
+        setLessonModal(true);
+    };
+
+    const handleMessage = (student: Student) => {
+        if (student.whatsapp) {
+            const num = student.whatsapp.replace(/[^+\d]/g, "");
+            window.open(`https://wa.me/${num}`, "_blank");
+        } else if (student.phone) {
+            window.open(`tel:${student.phone.replace(/[^+\d]/g, "")}`, "_self");
+        }
+    };
 
     return (
         <Layout title="Ученики">
@@ -126,7 +140,12 @@ const StudentsListPage = () => {
                     </thead>
                     <tbody>
                         {filtered.map((student) => (
-                            <Row item={student} key={student.id} />
+                            <Row
+                                item={student}
+                                key={student.id}
+                                onScheduleLesson={() => handleScheduleLesson(student)}
+                                onMessage={() => handleMessage(student)}
+                            />
                         ))}
                     </tbody>
                 </table>
@@ -135,6 +154,18 @@ const StudentsListPage = () => {
             <CreateStudentModal
                 visible={createModal}
                 onClose={() => setCreateModal(false)}
+            />
+            <CreateLessonModal
+                visible={lessonModal}
+                onClose={() => {
+                    setLessonModal(false);
+                    setLessonStudent(null);
+                }}
+                defaultStudent={
+                    lessonStudent
+                        ? { id: lessonStudent.id, name: lessonStudent.name }
+                        : null
+                }
             />
         </Layout>
     );

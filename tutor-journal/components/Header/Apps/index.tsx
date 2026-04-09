@@ -9,7 +9,7 @@ const Apps = ({}: AppsProps) => {
     return (
         <Menu className="relative mr-7 md:hidden" as="div">
             <Menu.Button className="btn-transparent-dark btn-medium ui-open:text-purple-1 ui-open:fill-purple-1">
-                <Icon className="-mt-0.25" name="puzzle" />
+                <Icon className="-mt-0.25" name="apps" />
                 <span>Apps</span>
             </Menu.Button>
             <Transition

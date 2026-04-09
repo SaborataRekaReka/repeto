@@ -16,6 +16,8 @@ type FieldProps = {
     icon?: string;
     image?: string;
     currency?: string;
+    autoComplete?: string;
+    name?: string;
 };
 
 const Field = ({
@@ -31,6 +33,8 @@ const Field = ({
     icon,
     image,
     currency,
+    autoComplete,
+    name,
 }: FieldProps) => {
     const [visiblePassword, setVisiblePassword] = useState<boolean>(false);
 
@@ -57,6 +61,8 @@ const Field = ({
                             onChange={onChange}
                             placeholder={placeholder}
                             required={required}
+                            autoComplete={autoComplete}
+                            name={name}
                         ></textarea>
                     ) : (
                         <input
@@ -79,6 +85,8 @@ const Field = ({
                             onChange={onChange}
                             placeholder={placeholder}
                             required={required}
+                            autoComplete={autoComplete}
+                            name={name}
                         />
                     )}
                     {icon && type !== "password" && !success && !error && (

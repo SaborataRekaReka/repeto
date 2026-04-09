@@ -3,6 +3,7 @@ import Modal from "@/components/Modal";
 import Field from "@/components/Field";
 import Select from "@/components/Select";
 import Icon from "@/components/Icon";
+import { createStudent } from "@/hooks/useStudents";
 
 const subjectOptions = [
     { id: "math", title: "Математика" },
@@ -25,16 +26,38 @@ const CreateStudentModal = ({ visible, onClose }: CreateStudentModalProps) => {
     const [grade, setGrade] = useState("");
     const [subject, setSubject] = useState<any>(null);
     const [phone, setPhone] = useState("");
-    const [telegram, setTelegram] = useState("");
+    const [whatsapp, setWhatsapp] = useState("");
     const [parentName, setParentName] = useState("");
     const [parentPhone, setParentPhone] = useState("");
-    const [parentTelegram, setParentTelegram] = useState("");
+    const [parentWhatsapp, setParentWhatsapp] = useState("");
     const [parentEmail, setParentEmail] = useState("");
     const [rate, setRate] = useState("");
     const [notes, setNotes] = useState("");
+    const [saving, setSaving] = useState(false);
 
-    const handleSubmit = () => {
-        onClose();
+    const handleSubmit = async () => {
+        if (!name.trim() || !subject || !rate) return;
+        setSaving(true);
+        try {
+            await createStudent({
+                name: name.trim(),
+                subject: subject.title,
+                rate: Number(rate),
+                grade: grade || undefined,
+                phone: phone || undefined,
+                whatsapp: whatsapp || undefined,
+                parentName: parentName || undefined,
+                parentPhone: parentPhone || undefined,
+                parentWhatsapp: parentWhatsapp || undefined,
+                parentEmail: parentEmail || undefined,
+                notes: notes || undefined,
+            } as any);
+            onClose();
+        } catch (err) {
+            console.error("Failed to create student:", err);
+        } finally {
+            setSaving(false);
+        }
     };
 
     return (
@@ -85,11 +108,11 @@ const CreateStudentModal = ({ visible, onClose }: CreateStudentModalProps) => {
                     </div>
                     <div className="flex-1">
                         <Field
-                            label="Telegram ученика"
-                            type="text"
-                            placeholder="@username"
-                            value={telegram}
-                            onChange={(e: any) => setTelegram(e.target.value)}
+                            label="WhatsApp ученика"
+                            type="tel"
+                            placeholder="+79001234567"
+                            value={whatsapp}
+                            onChange={(e: any) => setWhatsapp(e.target.value)}
                         />
                     </div>
                 </div>
@@ -119,12 +142,12 @@ const CreateStudentModal = ({ visible, onClose }: CreateStudentModalProps) => {
                         </div>
                         <div className="flex-1">
                             <Field
-                                label="Telegram родителя"
-                                type="text"
-                                placeholder="@username"
-                                value={parentTelegram}
+                                label="WhatsApp родителя"
+                                type="tel"
+                                placeholder="+79007654321"
+                                value={parentWhatsapp}
                                 onChange={(e: any) =>
-                                    setParentTelegram(e.target.value)
+                                    setParentWhatsapp(e.target.value)
                                 }
                             />
                         </div>

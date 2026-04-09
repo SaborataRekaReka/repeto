@@ -1,4 +1,4 @@
-export type PaymentStatus = "paid" | "pending" | "overdue";
+export type PaymentStatus = "paid";
 export type PaymentMethod = "sbp" | "cash" | "transfer";
 
 export type Payment = {

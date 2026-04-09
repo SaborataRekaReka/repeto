@@ -5,14 +5,17 @@ export type Student = {
     name: string;
     subject: string;
     grade: string; // "11" or "Взрослый"
+    age?: number; // student's age
     rate: number; // rubles per lesson
     balance: number; // positive = overpaid, negative = debt
     status: StudentStatus;
     phone?: string;
-    telegram?: string;
+    whatsapp?: string;
+    telegram?: string; // legacy, kept for data compatibility
     parentName?: string;
     parentPhone?: string;
-    parentTelegram?: string;
+    parentWhatsapp?: string;
+    parentTelegram?: string; // legacy
     parentEmail?: string;
     notes?: string;
 };

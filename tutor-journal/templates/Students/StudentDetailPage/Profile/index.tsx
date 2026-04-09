@@ -1,3 +1,4 @@
+import { useState } from "react";
 import Icon from "@/components/Icon";
 import type { Student } from "@/types/student";
 import {
@@ -11,12 +12,17 @@ import {
 
 type ProfileProps = {
     student: Student;
+    onMessage?: () => void;
+    onPortalLink?: () => void;
+    onEdit?: () => void;
 };
 
-const Profile = ({ student }: ProfileProps) => {
+const Profile = ({ student, onMessage, onPortalLink, onEdit }: ProfileProps) => {
+
     const contactItems = [
         student.phone && { title: "Телефон", content: student.phone },
-        student.telegram && { title: "Telegram", content: student.telegram },
+        student.whatsapp && { title: "WhatsApp", content: student.whatsapp },
+        student.telegram && { title: "Telegram (устар.)", content: student.telegram },
         student.parentName && {
             title: "Родитель",
             content: student.parentName,
@@ -25,8 +31,12 @@ const Profile = ({ student }: ProfileProps) => {
             title: "Тел. родителя",
             content: student.parentPhone,
         },
+        student.parentWhatsapp && {
+            title: "WhatsApp родителя",
+            content: student.parentWhatsapp,
+        },
         student.parentTelegram && {
-            title: "Telegram родителя",
+            title: "Telegram родителя (устар.)",
             content: student.parentTelegram,
         },
         student.parentEmail && {
@@ -93,12 +103,25 @@ const Profile = ({ student }: ProfileProps) => {
                     )}
                 </div>
                 <div className="flex mt-5 pt-5 border-t border-dashed border-n-1 lg:mt-6 lg:pt-0 lg:border-none dark:border-white">
-                    <button className="btn-purple btn-medium grow dark:border-transparent">
-                        <Icon name="add-circle" />
-                        <span>Назначить занятие</span>
-                    </button>
-                    <button className="btn-stroke btn-medium btn-square shrink-0 ml-1.5">
+                    <button
+                        className="btn-stroke btn-medium btn-square shrink-0"
+                        onClick={onMessage}
+                    >
                         <Icon name="email" />
+                    </button>
+                    <button
+                        className="btn-stroke btn-medium btn-square shrink-0 ml-1.5"
+                        onClick={onPortalLink}
+                        title="Ссылка для ученика"
+                    >
+                        <Icon name="external-link" />
+                    </button>
+                    <button
+                        className="btn-stroke btn-medium btn-square shrink-0 ml-1.5"
+                        onClick={onEdit}
+                        title="Редактировать"
+                    >
+                        <Icon name="edit" />
                     </button>
                 </div>
             </div>

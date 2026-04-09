@@ -10,7 +10,7 @@ type ArticleProps = {
 const Article = ({ className, classIcon, item }: ArticleProps) => (
     <Link
         className={`flex items-center p-5 card transition-colors hover:border-purple-1 hover:text-purple-1 md:p-4 ${className}`}
-        href="/support/article"
+        href={item.id ? `/support/article?id=${item.id}` : "/support/article"}
     >
         <div
             className={`flex justify-center items-center shrink-0 w-12 h-12 mr-3 border border-n-1 dark:border-white dark:bg-white ${classIcon}`}

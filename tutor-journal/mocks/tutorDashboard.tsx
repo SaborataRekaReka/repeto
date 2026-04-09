@@ -49,7 +49,7 @@ export const statCards = [
 ];
 
 // --- Today's lessons (April 3, 2026) ---
-export const todayLessons = lessons.filter((l) => l.date === "2026-04-03");
+export const todayLessons = lessons.filter((l) => l.date === "03.04.2026");
 
 // --- Debt list ---
 export const debtStudents = students.filter((s) => s.balance < 0);

@@ -3,7 +3,8 @@ export type LessonStatus =
     | "completed"
     | "cancelled_student"
     | "cancelled_tutor"
-    | "no_show";
+    | "no_show"
+    | "reschedule_pending";
 
 export type LessonFormat = "online" | "offline";
 
@@ -11,6 +12,7 @@ export type SubjectColor = "purple" | "green" | "yellow";
 
 export type Lesson = {
     id: string;
+    studentId?: string;
     studentName: string;
     subject: string;
     date: string; // ISO date string YYYY-MM-DD

@@ -68,7 +68,7 @@ export const payments: Payment[] = [
         amount: 2200,
         date: "27.03.2026",
         method: "transfer",
-        status: "pending",
+        status: "paid",
     },
     {
         id: "p8",
@@ -95,7 +95,7 @@ export const payments: Payment[] = [
         amount: 3200,
         date: "20.03.2026",
         method: "cash",
-        status: "overdue",
+        status: "paid",
     },
     {
         id: "p11",
@@ -113,7 +113,7 @@ export const payments: Payment[] = [
         amount: 2200,
         date: "15.03.2026",
         method: "sbp",
-        status: "overdue",
+        status: "paid",
     },
     {
         id: "p13",
@@ -157,25 +157,11 @@ export function getMethodLabel(method: PaymentMethod): string {
 }
 
 export function getStatusLabel(status: PaymentStatus): string {
-    switch (status) {
-        case "paid":
-            return "Оплачено";
-        case "pending":
-            return "Ожидает";
-        case "overdue":
-            return "Просрочено";
-    }
+    return "Оплачено";
 }
 
 export function getStatusColor(status: PaymentStatus): string {
-    switch (status) {
-        case "paid":
-            return "bg-green-1 text-n-1";
-        case "pending":
-            return "bg-yellow-1 text-n-1";
-        case "overdue":
-            return "bg-pink-1 text-n-1";
-    }
+    return "label-green";
 }
 
 // --- Student balances for finance overview ---
@@ -241,18 +227,10 @@ export const financeStats = {
     incomeMonth: payments
         .filter((p) => p.status === "paid")
         .reduce((sum, p) => sum + p.amount, 0),
-    expected: payments
-        .filter((p) => p.status === "pending")
-        .reduce((sum, p) => sum + p.amount, 0),
-    expectedCount: new Set(
-        payments.filter((p) => p.status === "pending").map((p) => p.studentId)
-    ).size,
-    overdue: payments
-        .filter((p) => p.status === "overdue")
-        .reduce((sum, p) => sum + p.amount, 0),
-    overdueCount: new Set(
-        payments.filter((p) => p.status === "overdue").map((p) => p.studentId)
-    ).size,
+    expected: 0,
+    expectedCount: 0,
+    overdue: 0,
+    overdueCount: 0,
 };
 
 // --- Income chart data (by week) ---

@@ -2,6 +2,8 @@ import Link from "next/link";
 import Layout from "@/components/Layout";
 import Icon from "@/components/Icon";
 import { getInitials } from "@/mocks/students";
+import { useAuth } from "@/contexts/AuthContext";
+import { useDashboardStats } from "@/hooks/useDashboard";
 import {
     BarChart,
     Bar,
@@ -10,20 +12,6 @@ import {
     Tooltip,
     ResponsiveContainer,
 } from "recharts";
-
-const tutorProfile = {
-    name: "Смирнов Алексей Иванович",
-    email: "tutor@repetitorjournal.ru",
-    subjects: ["Математика", "Физика"],
-    about: "Преподаю математику и физику 10 лет. Подготовка к ЕГЭ и ОГЭ. Кандидат физ.-мат. наук.",
-};
-
-const stats = [
-    { label: "Активных учеников", value: "24" },
-    { label: "Занятий за месяц", value: "68" },
-    { label: "Доход за месяц", value: "87 400 ₽" },
-    { label: "С нами", value: "6 месяцев" },
-];
 
 const activityData = [
     { day: "Пн", lessons: 5 },
@@ -36,6 +24,15 @@ const activityData = [
 ];
 
 const TutorProfilePage = () => {
+    const { user } = useAuth();
+    const { data: dashStats } = useDashboardStats();
+
+    const stats = [
+        { label: "Активных учеников", value: String(dashStats?.activeStudents ?? "—") },
+        { label: "Занятий за месяц", value: String(dashStats?.lessonsThisMonth ?? "—") },
+        { label: "Доход за месяц", value: dashStats ? `${dashStats.incomeThisMonth.toLocaleString("ru-RU")} ₽` : "—" },
+        { label: "С нами", value: "—" },
+    ];
     return (
         <Layout title="Профиль">
             <div className="flex lg:flex-col-reverse pt-4">
@@ -108,17 +105,17 @@ const TutorProfilePage = () => {
                     <div className="card">
                         <div className="p-5">
                             <div className="flex items-center justify-center w-[7.5rem] h-[7.5rem] mx-auto mb-4 rounded-full bg-purple-3 text-2xl font-bold text-n-1 dark:bg-purple-1/20">
-                                {getInitials(tutorProfile.name)}
+                                {getInitials(user?.name || "")}
                             </div>
                             <div className="text-center">
                                 <div className="text-h5">
-                                    {tutorProfile.name}
+                                    {user?.name || ""}
                                 </div>
                                 <div className="mt-1 text-xs text-n-3 dark:text-white/50">
-                                    {tutorProfile.email}
+                                    {user?.email || ""}
                                 </div>
                                 <div className="flex flex-wrap justify-center gap-1.5 mt-3">
-                                    {tutorProfile.subjects.map((s) => (
+                                    {(user?.subjects || []).map((s) => (
                                         <span
                                             key={s}
                                             className="label-stroke text-xs"
@@ -127,25 +124,18 @@ const TutorProfilePage = () => {
                                         </span>
                                     ))}
                                 </div>
-                                {tutorProfile.about && (
+                                {user?.about && (
                                     <div className="mt-4 pt-4 border-t border-dashed border-n-1 text-sm text-left dark:border-white">
-                                        {tutorProfile.about}
+                                        {user.about}
                                     </div>
                                 )}
                             </div>
-                            <div className="flex flex-col gap-2 mt-5 pt-5 border-t border-dashed border-n-1 dark:border-white">
+                            <div className="mt-5 pt-5 border-t border-dashed border-n-1 dark:border-white">
                                 <Link
                                     href="/settings"
-                                    className="btn-purple btn-medium w-full"
+                                    className="btn-purple btn-medium w-full inline-flex items-center justify-center"
                                 >
-                                    <Icon name="settings" />
-                                    <span>Редактировать</span>
-                                </Link>
-                                <Link
-                                    href="/settings"
-                                    className="btn-stroke btn-medium w-full"
-                                >
-                                    <Icon name="settings" />
+                                    <Icon name="setup" />
                                     <span>Настройки</span>
                                 </Link>
                             </div>

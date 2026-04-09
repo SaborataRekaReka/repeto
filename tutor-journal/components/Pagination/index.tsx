@@ -46,7 +46,7 @@ const Pagination = ({}: PaginationProps) => {
                 5
             </button>
             <button className="btn-stroke btn-small ml-12">
-                <span>Next</span>
+                <span>Вперёд</span>
                 <Icon name="arrow-next" />
             </button>
         </div>

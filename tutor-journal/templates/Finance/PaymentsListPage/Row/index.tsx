@@ -27,7 +27,7 @@ const Row = ({ item, onClick }: RowProps) => (
         <td className="td-custom text-sm">{getMethodLabel(item.method)}</td>
         <td className="td-custom">
             <span
-                className={`inline-flex items-center px-2 py-0.5 text-xs font-bold rounded-sm ${getStatusColor(
+                className={`${getStatusColor(
                     item.status
                 )}`}
             >

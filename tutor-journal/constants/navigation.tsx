@@ -6,7 +6,7 @@ export const navigation = [
     },
     {
         title: "Ученики",
-        icon: "profile",
+        icon: "team",
         url: "/students",
     },
     {
@@ -26,19 +26,28 @@ export const navigation = [
     },
     {
         title: "Пакеты",
-        icon: "card",
+        icon: "layers",
         url: "/finance/packages",
     },
     {
+        title: "Материалы",
+        icon: "folder",
+        url: "/files",
+    },
+    {
         title: "Уведомления",
-        icon: "email",
-        counter: 3,
+        icon: "notification-bell",
         url: "/notifications",
     },
     {
         title: "Настройки",
         icon: "setup",
         url: "/settings",
+    },
+    {
+        title: "Поддержка",
+        icon: "info-circle",
+        url: "/support",
     },
 ];
 
@@ -48,7 +57,7 @@ export const navigationMobile = [
         url: "/dashboard",
     },
     {
-        icon: "profile",
+        icon: "team",
         url: "/students",
     },
     {

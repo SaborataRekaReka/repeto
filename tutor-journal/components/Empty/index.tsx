@@ -44,17 +44,17 @@ const Empty = ({
             )}
             <div className="mb-2 -mx-4 text-h1 md:text-h3">{title}</div>
             <div className="max-w-[23.5rem] mx-auto mb-12">{content}</div>
-            {buttonUrl ? (
+            {buttonText && buttonUrl ? (
                 <Link className="btn-purple btn-shadow" href={buttonUrl}>
                     <Icon name={buttonIcon || "add-circle"} />
                     <span>{buttonText}</span>
                 </Link>
-            ) : (
+            ) : buttonText ? (
                 <button className="btn-purple btn-shadow" onClick={onClick}>
                     <Icon name={buttonIcon || "add-circle"} />
                     <span>{buttonText}</span>
                 </button>
-            )}
+            ) : null}
         </div>
     </div>
 );

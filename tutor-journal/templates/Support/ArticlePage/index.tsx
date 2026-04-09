@@ -1,102 +1,142 @@
-import { useState } from "react";
+import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import Article from "@/components/Article";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import Image from "@/components/Image";
 
-import { topCommunityPosts, menuArticles } from "@/mocks/support";
-
-const breadcrumbs = [
-    {
-        title: "Help Center",
-        url: "/support",
-    },
-    {
-        title: "Account",
-        url: "/support/categories",
-    },
-    {
-        title: "Funds reports",
-    },
-];
+import {
+    topCommunityPosts,
+    menuArticles,
+    articles,
+    getArticleVisuals,
+} from "@/mocks/support";
 
 const ArticlePage = () => {
-    const [activeId, setActiveId] = useState<string>("0");
+    const router = useRouter();
+    const articleId = (router.query.id as string) || "start-1";
+
+    const article = articles.find((a) => a.id === articleId) || articles[0];
+    const articleVisuals = getArticleVisuals(article);
+
+    const breadcrumbs = [
+        {
+            title: "Поддержка",
+            url: "/support",
+        },
+        {
+            title: article.category,
+            url: "/support/categories",
+        },
+        {
+            title: article.title,
+        },
+    ];
+
+    // Filter related articles (same category, different id)
+    const relatedArticles = articles
+        .filter((a) => a.categoryId === article.categoryId && a.id !== article.id)
+        .slice(0, 3);
+
+    const handleMenuClick = (menuItem: { id: string; title: string }) => {
+        const firstArticle = articles.find((a) => a.categoryId === menuItem.id);
+        if (firstArticle) {
+            router.push(`/support/article?id=${firstArticle.id}`);
+        }
+    };
 
     return (
-        <Layout title="Help Center">
+        <Layout title="Поддержка">
             <div className="flex lg:block">
                 <div className="grow">
                     <Breadcrumbs items={breadcrumbs} />
                     <div className="mb-8 text-h1 lg:mb-5 lg:text-h2">
-                        Getting started: funds reports
+                        {article.title}
                     </div>
                     <div className="mb-6 pt-5 px-5 pb-7 card md:p-0 md:border-none md:bg-transparent dark:md:bg-transparent">
-                        <p className="mb-5">
-                            There is no better advertisement campaign that is
-                            low cost and also successful at the same time. Great
-                            business ideas when utilized effectively can save
-                            lots of money. This is not only easy for those who
-                            work full-time as an advertiser.
-                        </p>
+                        <p className="mb-5">{article.intro}</p>
                         <ol className="list-decimal mb-5 pl-10 pr-5 py-4 border border-dashed border-n-1 text-sm font-bold dark:border-white">
-                            <li>
-                                Fliers and business cards can be tacked on such
-                                bulletin boards.
-                            </li>
-                            <li>
-                                But before doing so, check out with the human
-                                resource department
-                            </li>
-                            <li>
-                                Parents are required to be in regular touch with
-                                the teachers to know
-                            </li>
-                            <li>
-                                Do not miss this opportunity and spread the
-                                word. Hand them the business card
-                            </li>
+                            {article.steps.map((step, i) => (
+                                <li key={i}>{step}</li>
+                            ))}
                         </ol>
-                        <p className="mb-5">
-                            Get involved with fundraiser at schools, as it’s a
-                            nice approach to market business. Prior to handing
-                            out the order received, collect all necessary
-                            information like business card pack, fliers, with
-                            proper information. Information can be based on what
-                            is the company about, what are the products and
-                            services provided, or how to get information in
-                            touch with the company. In each individual order,
-                            carefully place all of them and seal the package
-                            properly.{" "}
-                        </p>
-                        <p className="text-sm font-medium text-n-3 dark:text-white/50">
-                            Note: Voice mails can be put to good use, other than
-                            recording messages. They can help to deliver the
-                            marketing message. Greet with a brief message,
-                            following with website and email address.
-                        </p>
+                        {article.note && (
+                            <p className="text-sm font-medium text-n-3 dark:text-white/50">
+                                Примечание: {article.note}
+                            </p>
+                        )}
+                        {articleVisuals.length > 0 && (
+                            <div className="mt-6">
+                                <div className="mb-3 text-sm font-bold">
+                                    Скриншоты интерфейса
+                                </div>
+                                <div className="grid grid-cols-2 gap-3 md:grid-cols-1">
+                                    {articleVisuals.map((visual) => (
+                                        <div
+                                            className="p-3 border border-dashed border-n-1 dark:border-white"
+                                            key={visual.src}
+                                        >
+                                            <div className="overflow-hidden border border-n-1 dark:border-white">
+                                                <Image
+                                                    className="w-full h-auto"
+                                                    src={visual.src}
+                                                    width={1280}
+                                                    height={760}
+                                                    alt={visual.alt}
+                                                />
+                                            </div>
+                                            <div className="mt-2 text-xs text-n-3 dark:text-white/70">
+                                                {visual.caption}
+                                            </div>
+                                            {visual.href && (
+                                                <button
+                                                    className="mt-2 text-xs font-bold text-purple-1 transition-colors hover:text-purple-1/75"
+                                                    onClick={() =>
+                                                        router.push(visual.href as string)
+                                                    }
+                                                    type="button"
+                                                >
+                                                    Открыть раздел
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
-                    <div className="mb-5 text-sm font-bold">
-                        This also may help you
-                    </div>
-                    <div className="">
-                        {topCommunityPosts.map((article) => (
-                            <Article
-                                className="-mt-0.25 !border-n-1 dark:!border-white"
-                                classIcon="xl:hidden"
-                                item={article}
-                                key={article.id}
-                            />
-                        ))}
-                    </div>
+                    {relatedArticles.length > 0 && (
+                        <>
+                            <div className="mb-5 text-sm font-bold">
+                                Также может быть полезно
+                            </div>
+                            <div className="">
+                                {relatedArticles.map((a) => (
+                                    <Article
+                                        className="-mt-0.25 !border-n-1 dark:!border-white"
+                                        classIcon="xl:hidden"
+                                        item={{
+                                            id: a.id,
+                                            icon: topCommunityPosts[0]?.icon || "/images/bag.svg",
+                                            title: a.title,
+                                            content: a.intro,
+                                        }}
+                                        key={a.id}
+                                    />
+                                ))}
+                            </div>
+                        </>
+                    )}
                 </div>
                 <div className="flex flex-col items-start shrink-0 w-[19rem] ml-12 pt-10 4xl:w-[13rem] lg:hidden">
                     {menuArticles.map((button) => (
                         <button
                             className={`mb-5 text-sm font-bold transition-colors hover:text-purple-1 last:mb-0 ${
-                                activeId === button.id ? "text-purple-1" : ""
+                                article.categoryId === button.id
+                                    ? "text-purple-1"
+                                    : ""
                             }`}
                             key={button.id}
-                            onClick={() => setActiveId(button.id)}
+                            onClick={() => handleMenuClick(button)}
                         >
                             {button.title}
                         </button>

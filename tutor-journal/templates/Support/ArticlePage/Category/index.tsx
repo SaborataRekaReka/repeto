@@ -22,10 +22,10 @@ const Category = ({ item }: CategoryProps) => (
             {item.links.map((link: any, index: number) => (
                 <Link
                     className="mb-2.5 text-sm font-bold text-purple-1 transition-colors hover:text-purple-2 last:mb-0"
-                    href="/support/article"
+                    href={link.articleId ? `/support/article?id=${link.articleId}` : "/support/article"}
                     key={index}
                 >
-                    {link}
+                    {link.title || link}
                 </Link>
             ))}
         </div>
@@ -37,7 +37,7 @@ const Category = ({ item }: CategoryProps) => (
                 className="mr-1.5 transition-colors group-hover:fill-purple-1"
                 name="arrow-next"
             />
-            See more articles
+            Ещё статьи
         </Link>
     </div>
 );

@@ -1,18 +1,18 @@
 import Layout from "@/components/Layout";
 import StatCards from "./StatCards";
-import IncomeChart from "./IncomeChart";
-import PaymentMethods from "./PaymentMethods";
+import IncomeByStudents from "./IncomeByStudents";
+import PeriodSummary from "./PeriodSummary";
 import BalanceTable from "./BalanceTable";
 
 const FinanceOverviewPage = () => (
     <Layout title="Финансы">
         <StatCards />
-        <div className="flex -mx-2.5 lg:block lg:mx-0">
-            <div className="w-[calc(66.666%-1.25rem)] mx-2.5 lg:w-full lg:mx-0 lg:mb-5">
-                <IncomeChart />
+        <div className="flex items-stretch -mx-2.5 mt-5 md:block md:mx-0">
+            <div className="w-[calc(50%-1.25rem)] mx-2.5 md:w-full md:mx-0 md:mb-5">
+                <IncomeByStudents />
             </div>
-            <div className="w-[calc(33.333%-1.25rem)] mx-2.5 lg:w-full lg:mx-0">
-                <PaymentMethods />
+            <div className="w-[calc(50%-1.25rem)] mx-2.5 md:w-full md:mx-0">
+                <PeriodSummary />
             </div>
         </div>
         <BalanceTable />

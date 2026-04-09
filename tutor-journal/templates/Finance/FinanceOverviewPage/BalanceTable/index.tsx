@@ -1,15 +1,20 @@
 import Link from "next/link";
-import { studentBalances } from "@/mocks/finance-tutor";
+import { useRouter } from "next/router";
+import { useStudentBalances } from "@/hooks/usePayments";
 
-const BalanceTable = () => (
+const BalanceTable = () => {
+    const router = useRouter();
+    const { data: balancesData, loading } = useStudentBalances();
+    const studentBalances = balancesData?.data || [];
+    return (
     <div className="card mt-5">
         <div className="card-head">
             <div className="text-h6">Баланс учеников</div>
             <Link
                 href="/finance/payments"
-                className="btn-stroke btn-small ml-auto"
+                className="text-xs font-bold transition-colors hover:text-purple-1"
             >
-                Все оплаты
+                Все →
             </Link>
         </div>
         {/* desktop */}
@@ -26,7 +31,11 @@ const BalanceTable = () => (
                 </thead>
                 <tbody>
                     {studentBalances.map((s) => (
-                        <tr key={s.studentId}>
+                        <tr
+                            key={s.studentId}
+                            className="cursor-pointer hover:bg-n-3/10 transition-colors dark:hover:bg-white/5"
+                            onClick={() => router.push(`/students/${s.studentId}`)}
+                        >
                             <td className="td-custom">
                                 <div className="font-semibold">
                                     {s.studentName}
@@ -71,7 +80,8 @@ const BalanceTable = () => (
             {studentBalances.map((s) => (
                 <div
                     key={s.studentId}
-                    className="px-5 py-3 border-t border-n-1 first:border-none dark:border-white"
+                    className="px-5 py-3 border-t border-n-1 first:border-none dark:border-white cursor-pointer hover:bg-n-3/10 transition-colors dark:hover:bg-white/5"
+                    onClick={() => router.push(`/students/${s.studentId}`)}
                 >
                     <div className="flex items-center justify-between mb-1">
                         <span className="font-semibold">{s.studentName}</span>
@@ -102,6 +112,7 @@ const BalanceTable = () => (
             ))}
         </div>
     </div>
-);
+    );
+};
 
 export default BalanceTable;

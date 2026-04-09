@@ -28,7 +28,7 @@ const Item = ({ item, onClick }: ItemProps) => (
                 {item.amount.toLocaleString("ru-RU")} ₽
             </span>
             <span
-                className={`mt-0.5 inline-flex items-center px-2 py-0.5 text-xs font-bold rounded-sm ${getStatusColor(
+                className={`mt-0.5 ${getStatusColor(
                     item.status
                 )}`}
             >

@@ -1026,7 +1026,7 @@ export const transactionDetails = [
     },
     {
         title: "Received Time",
-        value: "2021-06-11 01:36",
+        value: "11.06.2021 01:36",
     },
     {
         title: "Size",

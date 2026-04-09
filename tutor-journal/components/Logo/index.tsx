@@ -1,30 +1,19 @@
 import Link from "next/link";
-import { useColorMode } from "@chakra-ui/color-mode";
 import Image from "@/components/Image";
 
 type TestProps = {
     className?: string;
-    light?: boolean;
 };
 
-const Test = ({ className, light }: TestProps) => {
-    const { colorMode } = useColorMode();
-    const isDarkMode = colorMode === "dark";
-
+const Test = ({ className }: TestProps) => {
     return (
-        <Link className={`flex w-[7.125rem] ${className}`} href="/">
+        <Link className={`flex w-[9.75rem] ${className}`} href="/">
             <Image
                 className="w-full h-auto"
-                src={
-                    light
-                        ? "/images/logo-light.svg"
-                        : isDarkMode
-                        ? "/images/logo-light.svg"
-                        : "/images/logo-dark.svg"
-                }
-                width={113}
-                height={25}
-                alt="Bruddle"
+                src="/logo.svg"
+                width={1178}
+                height={174}
+                alt="Repeto"
                 priority
             />
         </Link>

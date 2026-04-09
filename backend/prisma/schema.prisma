@@ -1,0 +1,526 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Auth & Users ──
+
+model User {
+  id           String @id @default(uuid())
+  email        String @unique
+  passwordHash String @map("password_hash")
+  name         String
+  phone        String?
+  whatsapp     String?
+  slug         String? @unique
+  published    Boolean @default(false)
+  timezone     String  @default("Europe/Moscow")
+  avatarUrl    String? @map("avatar_url")
+
+  // Professional
+  subjects       String[] @default([])
+  subjectDetails Json?    @map("subject_details")
+  aboutText      String?  @map("about_text")
+  tagline        String?
+  vk             String?
+  website        String?
+  format         String?
+  offlineAddress String?  @map("offline_address")
+  lessonsCount Int      @default(0) @map("lessons_count")
+  rating       Decimal? @db.Decimal(2, 1)
+
+  // Tax / legal
+  taxStatus TaxStatus @default(INDIVIDUAL) @map("tax_status")
+
+  // Settings (embedded JSON)
+  notificationSettings Json? @map("notification_settings")
+  cancelPolicySettings Json? @map("cancel_policy_settings")
+  paymentSettings      Json? @map("payment_settings")
+
+  // Integrations
+  yukassaShopId       String? @map("yukassa_shop_id")
+  yukassaSecretKey    String? @map("yukassa_secret_key")
+  googleCalendarToken  Json?   @map("google_calendar_token")
+  googleCalendarEmail  String? @map("google_calendar_email")
+  yandexCalendarToken  Json?   @map("yandex_calendar_token")
+  yandexCalendarEmail  String? @map("yandex_calendar_email")
+  yandexCalendarLogin  String? @map("yandex_calendar_login")
+  yandexDiskToken      Json?   @map("yandex_disk_token")
+  yandexDiskRootPath  String? @map("yandex_disk_root_path")
+  yandexDiskEmail     String? @map("yandex_disk_email")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  students      Student[]
+  lessons       Lesson[]
+  payments      Payment[]
+  packages      Package[]
+  notifications Notification[]
+  files         FileRecord[]
+  refreshTokens RefreshToken[]
+  availability  TutorAvailability[]
+  availabilityOverrides AvailabilityOverride[]
+  bookingRequests BookingRequest[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+enum TaxStatus {
+  INDIVIDUAL
+  SELF_EMPLOYED
+  SOLE_TRADER
+}
+
+// ── Students ──
+
+model Student {
+  id      String        @id @default(uuid())
+  userId  String        @map("user_id")
+  name    String
+  subject String
+  grade   String?
+  age     Int?
+  rate    Int
+  status  StudentStatus @default(ACTIVE)
+
+  // Contacts
+  phone    String?
+  whatsapp String?
+  telegram String? // legacy
+  email    String?
+
+  // Parent
+  parentName     String? @map("parent_name")
+  parentPhone    String? @map("parent_phone")
+  parentWhatsapp String? @map("parent_whatsapp")
+  parentTelegram String? @map("parent_telegram") // legacy
+  parentEmail    String? @map("parent_email")
+
+  notes String?
+
+  // Portal
+  portalToken          String?   @unique @map("portal_token")
+  portalTokenCreatedAt DateTime? @map("portal_token_created_at")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessons       Lesson[]
+  payments      Payment[]
+  packages      Package[]
+  lessonNotes   LessonNote[]
+  homework      Homework[]
+  notifications Notification[]
+  fileShares    FileShare[]
+
+  @@index([userId, status])
+  @@index([userId, name])
+  @@map("students")
+}
+
+enum StudentStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+// ── Lessons ──
+
+model Lesson {
+  id          String       @id @default(uuid())
+  userId      String       @map("user_id")
+  studentId   String       @map("student_id")
+  subject     String
+  scheduledAt DateTime     @map("scheduled_at")
+  duration    Int
+  format      LessonFormat @default(ONLINE)
+  location    String?
+  rate        Int
+  status      LessonStatus @default(PLANNED)
+
+  // Recurrence
+  recurrenceGroupId String? @map("recurrence_group_id")
+
+  // Cancellation
+  cancelReason     String?   @map("cancel_reason")
+  cancelledAt      DateTime? @map("cancelled_at")
+  lateCancelCharge Int?      @map("late_cancel_charge")
+
+  // Reschedule
+  rescheduleNewTime DateTime? @map("reschedule_new_time")
+
+  // Calendar sync
+  googleCalendarEventId  String? @map("google_calendar_event_id")
+  yandexCalendarEventUid String? @map("yandex_calendar_event_uid")
+
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  student       Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  notes         LessonNote[]
+  homework      Homework[]
+  notifications Notification[]
+
+  @@index([userId, scheduledAt])
+  @@index([studentId, scheduledAt])
+  @@index([recurrenceGroupId])
+  @@map("lessons")
+}
+
+enum LessonFormat {
+  ONLINE
+  OFFLINE
+}
+
+enum LessonStatus {
+  PLANNED
+  COMPLETED
+  CANCELLED_STUDENT
+  CANCELLED_TUTOR
+  NO_SHOW
+  RESCHEDULE_PENDING
+}
+
+// ── Notes ──
+
+model LessonNote {
+  id        String  @id @default(uuid())
+  studentId String  @map("student_id")
+  lessonId  String? @map("lesson_id")
+  content   String
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  lesson  Lesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+
+  @@index([studentId, createdAt])
+  @@map("lesson_notes")
+}
+
+// ── Homework ──
+
+model Homework {
+  id          String         @id @default(uuid())
+  studentId   String         @map("student_id")
+  lessonId    String?        @map("lesson_id")
+  task        String
+  dueAt       DateTime?      @map("due_at")
+  status      HomeworkStatus @default(PENDING)
+  attachments String[]       @default([])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  lesson  Lesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+
+  @@index([studentId, dueAt])
+  @@map("homework")
+}
+
+enum HomeworkStatus {
+  PENDING
+  COMPLETED
+  OVERDUE
+}
+
+// ── Payments ──
+
+model Payment {
+  id        String        @id @default(uuid())
+  userId    String        @map("user_id")
+  studentId String        @map("student_id")
+  amount    Int
+  method    PaymentMethod
+  status    PaymentStatus @default(PENDING)
+  date      DateTime      @default(now())
+  comment   String?
+
+  // ЮKassa
+  externalPaymentId String? @unique @map("external_payment_id")
+
+  // Receipt (НПД)
+  receiptStatus ReceiptStatus @default(NOT_NEEDED) @map("receipt_status")
+  receiptUrl    String?       @map("receipt_url")
+
+  // Package link
+  packageId String? @map("package_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  student Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  package Package? @relation(fields: [packageId], references: [id], onDelete: SetNull)
+
+  @@index([userId, date])
+  @@index([studentId, status])
+  @@index([userId, status])
+  @@map("payments")
+}
+
+enum PaymentMethod {
+  SBP
+  CASH
+  TRANSFER
+  YUKASSA
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  OVERDUE
+  REFUNDED
+}
+
+enum ReceiptStatus {
+  NOT_NEEDED
+  NEEDED
+  ATTACHED
+}
+
+// ── Packages ──
+
+model Package {
+  id           String        @id @default(uuid())
+  userId       String        @map("user_id")
+  studentId    String        @map("student_id")
+  subject      String
+  lessonsTotal Int           @map("lessons_total")
+  lessonsUsed  Int           @default(0) @map("lessons_used")
+  totalPrice   Int           @map("total_price")
+  status       PackageStatus @default(ACTIVE)
+  validUntil   DateTime?     @map("valid_until")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  student  Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  payments Payment[]
+
+  @@index([userId, status])
+  @@index([studentId])
+  @@map("packages")
+}
+
+enum PackageStatus {
+  ACTIVE
+  COMPLETED
+  EXPIRED
+}
+
+// ── Notifications ──
+
+model Notification {
+  id               String           @id @default(uuid())
+  userId           String           @map("user_id")
+  studentId        String?          @map("student_id")
+  lessonId         String?          @map("lesson_id")
+  bookingRequestId String?          @map("booking_request_id")
+  type             NotificationType
+  title            String
+  description      String
+  read             Boolean          @default(false)
+  actionUrl        String?          @map("action_url")
+
+  // Delivery
+  channel NotificationChannel?
+  sentAt  DateTime?            @map("sent_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  student        Student?        @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  lesson         Lesson?         @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  bookingRequest BookingRequest? @relation(fields: [bookingRequestId], references: [id], onDelete: SetNull)
+
+  @@index([userId, read, createdAt])
+  @@index([userId, type])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  PAYMENT_RECEIVED
+  PAYMENT_OVERDUE
+  LESSON_REMINDER
+  LESSON_CANCELLED
+  RESCHEDULE_REQUESTED
+  HOMEWORK_SUBMITTED
+  PACKAGE_EXPIRING
+  BOOKING_NEW
+  BOOKING_CONFIRMED
+  BOOKING_REJECTED
+  SYSTEM
+}
+
+enum NotificationChannel {
+  EMAIL
+  PUSH
+  WHATSAPP
+  SMS
+}
+
+// ── Files ──
+
+model FileRecord {
+  id            String        @id @default(uuid())
+  userId        String        @map("user_id")
+  name          String
+  type          FileType
+  extension     String?
+  size          String?
+  cloudProvider CloudProvider @map("cloud_provider")
+  cloudUrl      String        @map("cloud_url")
+  parentId      String?       @map("parent_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shares FileShare[]
+
+  @@index([userId, parentId])
+  @@map("files")
+}
+
+model FileShare {
+  id        String @id @default(uuid())
+  fileId    String @map("file_id")
+  studentId String @map("student_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  file    FileRecord @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  student Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([fileId, studentId])
+  @@map("file_shares")
+}
+
+enum FileType {
+  FILE
+  FOLDER
+}
+
+enum CloudProvider {
+  YANDEX_DISK
+  GOOGLE_DRIVE
+}
+
+// ── Audit Log ──
+
+model AuditLog {
+  id       String  @id @default(uuid())
+  userId   String? @map("user_id")
+  action   String
+  entity   String
+  entityId String  @map("entity_id")
+  details  Json?
+  ip       String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId, createdAt])
+  @@index([entity, entityId])
+  @@map("audit_logs")
+}
+
+// ── Tutor Availability ──
+
+model TutorAvailability {
+  id        String @id @default(uuid())
+  userId    String @map("user_id")
+  dayOfWeek Int    @map("day_of_week") // 0=Mon, 1=Tue, ..., 6=Sun
+  startTime String @map("start_time")  // "09:00"
+  endTime   String @map("end_time")    // "09:30"
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dayOfWeek, startTime])
+  @@index([userId, dayOfWeek])
+  @@map("tutor_availability")
+}
+
+model AvailabilityOverride {
+  id     String @id @default(uuid())
+  userId String @map("user_id")
+  date   DateTime @db.Date          // конкретная дата
+  startTime String @map("start_time")
+  endTime   String @map("end_time")
+  isBlocked Boolean @default(false) @map("is_blocked") // true = убрать слот, false = добавить
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date, startTime])
+  @@index([userId, date])
+  @@map("availability_overrides")
+}
+
+// ── Booking Requests ──
+
+model BookingRequest {
+  id         String        @id @default(uuid())
+  userId     String        @map("user_id") // tutor's userId
+  subject    String
+  date       DateTime      @db.Date
+  startTime  String        @map("start_time")
+  duration   Int           @default(30)
+
+  // Requester info
+  clientName  String @map("client_name")
+  clientPhone String @map("client_phone")
+  clientEmail String? @map("client_email")
+  comment     String?
+
+  status BookingStatus @default(PENDING)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notifications Notification[]
+
+  @@index([userId, status])
+  @@index([userId, date])
+  @@map("booking_requests")
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+  CANCELLED
+}

@@ -106,13 +106,21 @@ export function getNotificationIcon(type: NotificationType): string {
         case "payment_received":
             return "money-in";
         case "payment_overdue":
-            return "info-circle";
+            return "money-out";
         case "lesson_reminder":
-            return "calendar";
+            return "clock";
         case "lesson_cancelled":
             return "close";
+        case "reschedule_requested":
+            return "calendar";
         case "homework_submitted":
             return "document";
+        case "booking_new":
+            return "add-member";
+        case "booking_confirmed":
+            return "check-circle";
+        case "booking_rejected":
+            return "close";
         case "system":
             return "info-circle";
     }
@@ -128,8 +136,16 @@ export function getNotificationColor(type: NotificationType): string {
             return "bg-yellow-2 dark:bg-yellow-1/20";
         case "lesson_cancelled":
             return "bg-pink-2 dark:bg-pink-1/20";
+        case "reschedule_requested":
+            return "bg-yellow-2 dark:bg-yellow-1/20";
         case "homework_submitted":
             return "bg-purple-2 dark:bg-purple-1/20";
+        case "booking_new":
+            return "bg-purple-2 dark:bg-purple-1/20";
+        case "booking_confirmed":
+            return "bg-green-2 dark:bg-green-1/20";
+        case "booking_rejected":
+            return "bg-pink-2 dark:bg-pink-1/20";
         case "system":
             return "bg-n-4 dark:bg-white/10";
     }
@@ -144,6 +160,10 @@ export function getNotificationCategory(
             return "payments";
         case "lesson_reminder":
         case "lesson_cancelled":
+        case "reschedule_requested":
+        case "booking_new":
+        case "booking_confirmed":
+        case "booking_rejected":
             return "schedule";
         default:
             return "other";

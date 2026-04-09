@@ -1,12 +1,20 @@
 import Link from "next/link";
-import Icon from "@/components/Icon";
 import { useMediaQuery } from "react-responsive";
 import { useHydrated } from "@/hooks/useHydrated";
-import { recentPayments } from "@/mocks/tutorDashboard";
+import { useRecentPayments } from "@/hooks/useDashboard";
+
+const getStatusLabel = (status: string) =>
+    status === "received" ? "Получен" : "Ожидается";
+
+const getStatusClass = (status: string) =>
+    status === "received"
+        ? "label-green min-w-[5.5rem]"
+        : "label-stroke-yellow min-w-[5.5rem]";
 
 const RecentPayments = () => {
     const { mounted } = useHydrated();
     const isMobile = useMediaQuery({ query: "(max-width: 767px)" });
+    const { data: recentPayments = [], loading } = useRecentPayments();
 
     return (
         <div className="card">
@@ -19,36 +27,34 @@ const RecentPayments = () => {
                     Все →
                 </Link>
             </div>
-            {mounted && isMobile ? (
-                <div>
+            {loading ? (
+                <div className="px-5 py-8 text-center text-n-3">Загрузка...</div>
+            ) : recentPayments.length === 0 ? (
+                <div className="px-5 py-8 text-center text-xs font-medium text-n-3 dark:text-white/50">
+                    Пока оплат не было
+                </div>
+            ) : mounted && isMobile ? (
+                <div className="p-4 space-y-2.5">
                     {recentPayments.map((p) => (
                         <div
-                            className="flex items-center justify-between px-4 py-3 border-t border-n-1 first:border-none dark:border-white"
+                            className="border border-n-1 dark:border-white px-3.5 py-3 bg-white dark:bg-n-1"
                             key={p.id}
                         >
-                            <div>
+                            <div className="flex items-start justify-between gap-3 mb-1.5">
                                 <div className="text-sm font-bold">
                                     {p.studentName}
                                 </div>
+                                <div className="text-sm font-bold text-green-1 shrink-0">
+                                    +{p.amount.toLocaleString("ru-RU")} ₽
+                                </div>
+                            </div>
+                            <div className="flex items-center justify-between">
                                 <div className="text-xs text-n-3 dark:text-white/50">
                                     {p.date} · {p.method}
                                 </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm font-bold text-green-1">
-                                    +{p.amount.toLocaleString("ru-RU")} ₽
+                                <span className={getStatusClass(p.status)}>
+                                    {getStatusLabel(p.status)}
                                 </span>
-                                <div
-                                    className={`px-2 py-0.5 text-xs font-bold ${
-                                        p.status === "received"
-                                            ? "bg-green-1 text-n-1"
-                                            : "bg-yellow-1 text-n-1"
-                                    }`}
-                                >
-                                    {p.status === "received"
-                                        ? "Получен"
-                                        : "Ожидается"}
-                                </div>
                             </div>
                         </div>
                     ))}
@@ -73,24 +79,16 @@ const RecentPayments = () => {
                                 <td className="td-custom text-sm font-bold">
                                     {p.studentName}
                                 </td>
-                                <td className="td-custom text-sm font-bold text-right text-green-1">
+                                <td className="td-custom text-sm font-bold text-right">
                                     +{p.amount.toLocaleString("ru-RU")} ₽
                                 </td>
                                 <td className="td-custom text-sm lg:hidden">
                                     {p.method}
                                 </td>
                                 <td className="td-custom">
-                                    <div
-                                        className={`inline-block px-2 py-0.5 text-xs font-bold ${
-                                            p.status === "received"
-                                                ? "bg-green-1 text-n-1"
-                                                : "bg-yellow-1 text-n-1"
-                                        }`}
-                                    >
-                                        {p.status === "received"
-                                            ? "Получен"
-                                            : "Ожидается"}
-                                    </div>
+                                    <span className={getStatusClass(p.status)}>
+                                        {getStatusLabel(p.status)}
+                                    </span>
                                 </td>
                             </tr>
                         ))}

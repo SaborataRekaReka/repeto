@@ -8,6 +8,21 @@ export type StudentNote = {
     text: string;
 };
 
+export type HomeworkFile = {
+    id: string;
+    name: string;
+    url: string;
+};
+
+export type StudentUploadFile = {
+    id: string;
+    name: string;
+    size: string;
+    uploadedAt: string;
+    expiresAt: string;
+    url: string;
+};
+
 export type StudentHomework = {
     id: string;
     studentId: string;
@@ -15,6 +30,8 @@ export type StudentHomework = {
     task: string;
     dueDate: string;
     status: "not_done" | "done" | "overdue";
+    linkedFiles?: HomeworkFile[];
+    studentUploads?: StudentUploadFile[];
 };
 
 export const studentNotes: StudentNote[] = [
@@ -77,6 +94,9 @@ export const studentHomeworks: StudentHomework[] = [
         task: "§14, №3-7. Квадратные уравнения через дискриминант.",
         dueDate: "До 7 апр",
         status: "not_done",
+        linkedFiles: [
+            { id: "f1", name: "Квадратные уравнения — теория.pdf", url: "#" },
+        ],
     },
     {
         id: "hw2",
@@ -85,6 +105,16 @@ export const studentHomeworks: StudentHomework[] = [
         task: "Степени и корни: задания 12-18 из сборника.",
         dueDate: "До 3 апр",
         status: "done",
+        studentUploads: [
+            {
+                id: "su1",
+                name: "Решение_12-18.jpg",
+                size: "1.2 МБ",
+                uploadedAt: "2 апр 2026",
+                expiresAt: "5 апр 2026",
+                url: "#",
+            },
+        ],
     },
     {
         id: "hw3",
@@ -93,6 +123,10 @@ export const studentHomeworks: StudentHomework[] = [
         task: "Параметрические уравнения: 5 задач из доп. материала.",
         dueDate: "До 1 апр",
         status: "overdue",
+        linkedFiles: [
+            { id: "f2", name: "Параметры — доп. задачи.pdf", url: "#" },
+            { id: "f3", name: "Видео-разбор параметров.mp4", url: "#" },
+        ],
     },
     {
         id: "hw4",

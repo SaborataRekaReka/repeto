@@ -10,5 +10,6 @@ export type LessonPackage = {
     totalPrice: number;
     status: PackageStatus;
     validUntil: string;
+    validUntilValue?: string;
     createdAt: string;
 };

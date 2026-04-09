@@ -1,10 +1,11 @@
 import LessonDot from "../LessonDot";
-import { lessons } from "@/mocks/schedule";
+import { toLocalDateKey } from "@/lib/dates";
 import type { Lesson } from "@/types/schedule";
 
 type DayProps = {
     currentDate: Date;
     onLessonClick?: (lesson: Lesson) => void;
+    lessons?: Lesson[];
 };
 
 const DAY_NAMES_FULL = [
@@ -16,37 +17,64 @@ const MONTH_NAMES_GEN = [
     "июля", "августа", "сентября", "октября", "ноября", "декабря",
 ];
 
-function generateTimeSlots(): string[] {
-    const slots: string[] = [];
-    for (let h = 8; h <= 20; h++) {
-        slots.push(`${h}:00`);
-        slots.push(`${h}:30`);
+function normalizeTime(value: string) {
+    return value.length === 4 ? `0${value}` : value;
+}
+
+function parseTimeToMinutes(value: string) {
+    const [hh, mm] = normalizeTime(value).split(":").map(Number);
+    return hh * 60 + mm;
+}
+
+function getTimeBounds(dayLessons: Lesson[]) {
+    const defaultStartHour = 8;
+    const defaultEndHour = 21;
+
+    if (dayLessons.length === 0) {
+        return { startHour: defaultStartHour, endHour: defaultEndHour };
     }
-    slots.push("21:00");
+
+    const minStart = Math.min(...dayLessons.map((l) => parseTimeToMinutes(l.startTime)));
+    const maxEnd = Math.max(...dayLessons.map((l) => parseTimeToMinutes(l.endTime)));
+
+    return {
+        startHour: Math.min(defaultStartHour, Math.floor(minStart / 60)),
+        endHour: Math.max(defaultEndHour, Math.ceil(maxEnd / 60)),
+    };
+}
+
+function generateTimeSlots(startHour: number, endHour: number): string[] {
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const slots: string[] = [];
+    for (let h = startHour; h < endHour; h++) {
+        slots.push(`${pad(h)}:00`);
+        slots.push(`${pad(h)}:30`);
+    }
+    slots.push(`${pad(endHour)}:00`);
     return slots;
 }
 
-const TIME_SLOTS = generateTimeSlots();
-
-const Day = ({ currentDate, onLessonClick }: DayProps) => {
+const Day = ({ currentDate, onLessonClick, lessons = [] }: DayProps) => {
     const classTitleTime =
         "flex items-end justify-center w-12 h-8 py-0.5 border-b border-r border-n-1 text-sm font-medium dark:border-white/40";
     const classValueTime =
         "h-8 px-3 py-1 border-b border-r border-n-1 dark:border-white/40";
 
-    // Time labels: 8:00–21:00
+    const iso = toLocalDateKey(currentDate);
+    const dayLessons = lessons.filter((l) => l.date === iso);
+    const { startHour, endHour } = getTimeBounds(dayLessons);
+    const timeSlots = generateTimeSlots(startHour, endHour);
+
     const timeLabels: string[] = [];
-    for (let h = 8; h <= 20; h++) {
-        timeLabels.push(`${h}:00`);
+    for (let h = startHour; h < endHour; h++) {
+        timeLabels.push(`${String(h).padStart(2, "0")}:00`);
         timeLabels.push("");
     }
-    timeLabels.push("21:00");
+    timeLabels.push(`${String(endHour).padStart(2, "0")}:00`);
 
-    const iso = currentDate.toISOString().slice(0, 10);
-    const dayLessons = lessons.filter((l) => l.date === iso);
-    const hours = TIME_SLOTS.map((time) => ({
+    const hours = timeSlots.map((time) => ({
         time,
-        lesson: dayLessons.find((l) => l.startTime === time),
+        lesson: dayLessons.find((l) => normalizeTime(l.startTime) === time),
     }));
 
     const dayName = DAY_NAMES_FULL[currentDate.getDay()];

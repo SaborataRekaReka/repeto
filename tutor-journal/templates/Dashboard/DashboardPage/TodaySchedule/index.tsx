@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Icon from "@/components/Icon";
-import { todayLessons } from "@/mocks/tutorDashboard";
+import { useTodayLessons } from "@/hooks/useDashboard";
 import { shortName } from "@/mocks/schedule";
 import type { Lesson } from "@/types/schedule";
 
@@ -36,10 +36,18 @@ const statusColor = (status: Lesson["status"]) => {
     }
 };
 
-const TodaySchedule = ({ onLessonClick }: TodayScheduleProps) => (
+const TodaySchedule = ({ onLessonClick }: TodayScheduleProps) => {
+    const { data: todayLessons = [], loading } = useTodayLessons();
+    const today = new Date();
+    const dayLabel = today.toLocaleDateString("ru-RU", {
+        day: "numeric",
+        month: "long",
+    });
+
+    return (
     <div className="card">
         <div className="card-head">
-            <div className="mr-auto text-h6">Сегодня, 3 апреля</div>
+            <div className="mr-auto text-h6">Сегодня, {dayLabel}</div>
             <Link
                 href="/schedule"
                 className="text-xs font-bold transition-colors hover:text-purple-1"
@@ -47,16 +55,13 @@ const TodaySchedule = ({ onLessonClick }: TodayScheduleProps) => (
                 Всё расписание →
             </Link>
         </div>
-        {todayLessons.length === 0 ? (
+        {loading ? (
+            <div className="px-5 py-10 text-center text-n-3">Загрузка...</div>
+        ) : todayLessons.length === 0 ? (
             <div className="px-5 py-10 text-center">
-                <div className="mb-2 text-lg">Сегодня занятий нет 🎉</div>
-                <Link
-                    href="/schedule"
-                    className="btn-purple btn-small inline-flex"
-                >
-                    <Icon name="add-circle" />
-                    <span>Запланировать</span>
-                </Link>
+                <div className="mb-3 text-xs font-medium text-n-3 dark:text-white/50">
+                    Занятий на сегодня нет
+                </div>
             </div>
         ) : (
             <div>
@@ -102,6 +107,7 @@ const TodaySchedule = ({ onLessonClick }: TodayScheduleProps) => (
             </div>
         )}
     </div>
-);
+    );
+};
 
 export default TodaySchedule;

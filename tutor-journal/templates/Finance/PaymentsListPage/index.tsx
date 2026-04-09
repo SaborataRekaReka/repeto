@@ -14,8 +14,8 @@ import Row from "./Row";
 import Item from "./Item";
 
 import { useHydrated } from "@/hooks/useHydrated";
+import { usePayments } from "@/hooks/usePayments";
 import {
-    payments,
     getMethodLabel,
     getStatusLabel,
     getStatusColor,
@@ -25,8 +25,6 @@ import type { Payment, PaymentStatus } from "@/types/finance";
 const tabs = [
     { title: "Все", value: "all" },
     { title: "Оплачено", value: "paid" },
-    { title: "Ожидает", value: "pending" },
-    { title: "Просрочено", value: "overdue" },
 ];
 
 const PaymentsListPage = () => {
@@ -46,13 +44,14 @@ const PaymentsListPage = () => {
 
     const isMobile = useMediaQuery({ query: "(max-width: 767px)" });
 
-    const filtered = payments.filter((p) => {
-        const matchesTab =
-            tab === "all" || p.status === (tab as PaymentStatus);
-        const matchesSearch =
-            !search ||
-            p.studentName.toLowerCase().includes(search.toLowerCase());
-        return matchesTab && matchesSearch;
+    const { data: paymentsData, loading } = usePayments({
+        status: tab === "all" ? undefined : tab,
+        page: 1,
+        limit: 50,
+    });
+    const filtered = (paymentsData?.data || []).filter((p) => {
+        if (!search) return true;
+        return p.studentName.toLowerCase().includes(search.toLowerCase());
     });
 
     return (
@@ -177,7 +176,7 @@ const PaymentsListPage = () => {
                                     Статус
                                 </span>
                                 <span
-                                    className={`inline-flex items-center px-2 py-0.5 text-xs font-bold rounded-sm ${getStatusColor(
+                                    className={`${getStatusColor(
                                         selected.status
                                     )}`}
                                 >

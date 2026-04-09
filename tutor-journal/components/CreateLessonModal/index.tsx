@@ -1,8 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Modal from "@/components/Modal";
 import Field from "@/components/Field";
 import Select from "@/components/Select";
-import { students } from "@/mocks/students";
+import SearchableSelect from "@/components/SearchableSelect";
+import Checkbox from "@/components/Checkbox";
+import { useStudents } from "@/hooks/useStudents";
+import { createLesson, updateLesson } from "@/hooks/useLessons";
+import type { Lesson } from "@/types/schedule";
 
 const subjectOptions = [
     { id: "math", title: "Математика" },
@@ -29,12 +33,18 @@ const formatOptions = [
 type CreateLessonModalProps = {
     visible: boolean;
     onClose: () => void;
+    lesson?: Lesson | null;
+    defaultStudent?: { id: string; name: string } | null;
 };
 
-const CreateLessonModal = ({ visible, onClose }: CreateLessonModalProps) => {
-    const studentOptions = students.map((s) => ({
+const CreateLessonModal = ({ visible, onClose, lesson, defaultStudent }: CreateLessonModalProps) => {
+    const isEdit = !!lesson;
+    const { data: studentsData } = useStudents({ limit: 200 });
+    const studentOptions = (studentsData?.data || []).map((s) => ({
         id: s.id,
         title: s.name,
+        subject: s.subject,
+        rate: s.rate,
     }));
 
     const [student, setStudent] = useState<any>(null);
@@ -48,14 +58,95 @@ const CreateLessonModal = ({ visible, onClose }: CreateLessonModalProps) => {
     const [repeat, setRepeat] = useState(false);
     const [note, setNote] = useState("");
 
-    const handleSubmit = () => {
-        onClose();
+    useEffect(() => {
+        if (lesson) {
+            const matchedStudent = studentOptions.find(
+                (s) => s.title === lesson.studentName
+            );
+            setStudent(matchedStudent || null);
+            const matchedSubject = subjectOptions.find(
+                (s) => s.title === lesson.subject
+            );
+            setSubject(
+                matchedSubject || { id: lesson.subject, title: lesson.subject }
+            );
+            setDate(lesson.date);
+            setTime(lesson.startTime);
+            const dur = durationOptions.find(
+                (d) => d.id === String(lesson.duration)
+            );
+            setDuration(dur || durationOptions[2]);
+            const fmt = formatOptions.find((f) => f.id === lesson.format);
+            setFormat(fmt || formatOptions[0]);
+            setCost(String(lesson.rate));
+            setNote(lesson.notes || "");
+        } else {
+            if (defaultStudent) {
+                const matched = studentOptions.find(
+                    (s) => s.id === defaultStudent.id
+                );
+                setStudent(matched || { id: defaultStudent.id, title: defaultStudent.name });
+            } else {
+                setStudent(null);
+            }
+            setSubject(null);
+            setDate("");
+            setTime("");
+            setDuration(durationOptions[2]);
+            setFormat(formatOptions[0]);
+            setLocation("");
+            setCost("");
+            setRepeat(false);
+            setNote("");
+        }
+    }, [lesson, defaultStudent, visible]);
+
+    useEffect(() => {
+        if (student && !isEdit) {
+            const matched = studentOptions.find((s: any) => s.id === student.id);
+            if (matched) {
+                if (!subject) {
+                    const matchedSubject = subjectOptions.find((s) => s.title === (matched as any).subject);
+                    setSubject(matchedSubject || { id: (matched as any).subject, title: (matched as any).subject });
+                }
+                if (!cost) setCost(String((matched as any).rate || ""));
+            }
+        }
+    }, [student]);
+
+    const handleSubmit = async () => {
+        if (!student || !subject || !date || !time) return;
+        try {
+            const scheduledAt = new Date(`${date}T${time}`).toISOString();
+            if (isEdit && lesson) {
+                await updateLesson(lesson.id, {
+                    subject: subject.title,
+                    scheduledAt,
+                    duration: Number(duration.id),
+                    format: format.id.toUpperCase(),
+                    location: location || undefined,
+                    rate: Number(cost) || undefined,
+                });
+            } else {
+                await createLesson({
+                    studentId: student.id,
+                    subject: subject.title,
+                    scheduledAt,
+                    duration: Number(duration.id),
+                    format: format.id.toUpperCase(),
+                    rate: Number(cost) || undefined,
+                });
+            }
+            onClose();
+        } catch (err) {
+            console.error("Failed to save lesson:", err);
+        }
     };
 
     return (
         <Modal
             classWrap="max-w-[36rem]"
-            title="Новое занятие"
+            title={isEdit ? "Редактировать занятие" : "Новое занятие"}
             visible={visible}
             onClose={onClose}
         >
@@ -67,12 +158,13 @@ const CreateLessonModal = ({ visible, onClose }: CreateLessonModalProps) => {
                     value={student}
                     onChange={setStudent}
                 />
-                <Select
+                <SearchableSelect
                     label="Предмет *"
-                    placeholder="Выберите предмет"
+                    placeholder="Введите или выберите предмет"
                     items={subjectOptions}
                     value={subject}
                     onChange={setSubject}
+                    allowCustom
                 />
                 <div className="flex gap-4 md:flex-col">
                     <div className="flex-1">
@@ -126,17 +218,11 @@ const CreateLessonModal = ({ visible, onClose }: CreateLessonModalProps) => {
                     value={cost}
                     onChange={(e: any) => setCost(e.target.value)}
                 />
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                    <input
-                        type="checkbox"
-                        className="w-5 h-5 rounded border-2 border-n-1 dark:border-white"
-                        checked={repeat}
-                        onChange={(e) => setRepeat(e.target.checked)}
-                    />
-                    <span className="text-sm font-bold">
-                        Повторять еженедельно
-                    </span>
-                </label>
+                <Checkbox
+                    label="Повторять еженедельно"
+                    value={repeat}
+                    onChange={() => setRepeat(!repeat)}
+                />
                 <Field
                     label="Заметка"
                     type="text"

@@ -1,18 +1,20 @@
 import LessonDot from "../LessonDot";
 import Icon from "@/components/Icon";
-import { lessons, DAY_NAMES_SHORT } from "@/mocks/schedule";
+import { toLocalDateKey } from "@/lib/dates";
+import { DAY_NAMES_SHORT } from "@/mocks/schedule";
 import type { Lesson, MonthDay } from "@/types/schedule";
 
 type MonthProps = {
     currentDate: Date;
     onLessonClick?: (lesson: Lesson) => void;
+    lessons?: Lesson[];
 };
 
-function getLessonsByDate(date: string): Lesson[] {
+function getLessonsByDate(lessons: Lesson[], date: string): Lesson[] {
     return lessons.filter((l) => l.date === date);
 }
 
-function generateMonthGrid(currentDate: Date): MonthDay[] {
+function generateMonthGrid(currentDate: Date, allLessons: Lesson[]): MonthDay[] {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const firstDay = new Date(year, month, 1);
@@ -30,26 +32,26 @@ function generateMonthGrid(currentDate: Date): MonthDay[] {
     for (let i = prefixDays - 1; i >= 0; i--) {
         const d = prevMonthLast.getDate() - i;
         const dt = new Date(year, month - 1, d);
-        const iso = dt.toISOString().slice(0, 10);
+        const iso = toLocalDateKey(dt);
         days.push({
             day: d,
             month: "",
             year,
             isCurrentMonth: false,
-            lessons: getLessonsByDate(iso),
+            lessons: getLessonsByDate(allLessons, iso),
         });
     }
 
     // Current month days
     for (let d = 1; d <= lastDay.getDate(); d++) {
         const dt = new Date(year, month, d);
-        const iso = dt.toISOString().slice(0, 10);
+        const iso = toLocalDateKey(dt);
         days.push({
             day: d,
             month: "",
             year,
             isCurrentMonth: true,
-            lessons: getLessonsByDate(iso),
+            lessons: getLessonsByDate(allLessons, iso),
         });
     }
 
@@ -58,13 +60,13 @@ function generateMonthGrid(currentDate: Date): MonthDay[] {
     if (remaining < 7) {
         for (let d = 1; d <= remaining; d++) {
             const dt = new Date(year, month + 1, d);
-            const iso = dt.toISOString().slice(0, 10);
+            const iso = toLocalDateKey(dt);
             days.push({
                 day: d,
                 month: "",
                 year,
                 isCurrentMonth: false,
-                lessons: getLessonsByDate(iso),
+                lessons: getLessonsByDate(allLessons, iso),
             });
         }
     }
@@ -72,9 +74,12 @@ function generateMonthGrid(currentDate: Date): MonthDay[] {
     return days;
 }
 
-const Month = ({ currentDate, onLessonClick }: MonthProps) => {
-    const monthDays = generateMonthGrid(currentDate);
-    const today = currentDate.getDate();
+const Month = ({ currentDate, onLessonClick, lessons = [] }: MonthProps) => {
+    const monthDays = generateMonthGrid(currentDate, lessons);
+    const now = new Date();
+    const realToday = now.getDate();
+    const realMonth = now.getMonth();
+    const realYear = now.getFullYear();
     const currentMonth = currentDate.getMonth();
     const currentYear = currentDate.getFullYear();
 
@@ -95,7 +100,9 @@ const Month = ({ currentDate, onLessonClick }: MonthProps) => {
                 <div
                     className={`w-[calc(100%/7)] h-[8.125rem] pt-2 px-3 pb-4 border-r border-t border-n-1 lg:h-[7.6rem] md:h-[7.6rem] md:px-0 md:text-center dark:border-white/40 ${
                         item.isCurrentMonth &&
-                        item.day === today
+                        item.day === realToday &&
+                        currentMonth === realMonth &&
+                        currentYear === realYear
                             ? "bg-purple-3 dark:bg-purple-1/10"
                             : ""
                     }`}

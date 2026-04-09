@@ -42,7 +42,7 @@ const Create = ({}: CreateProps) => {
                 leaveFrom="transform scale-100 opacity-100"
                 leaveTo="transform scale-95 opacity-0"
             >
-                <Menu.Items className="absolute top-full right-0 w-[14.69rem] mt-2.5 py-2 border border-n-1 rounded-sm bg-white shadow-primary-4 dark:bg-n-1 dark:border-white">
+<Menu.Items className="absolute top-full right-0 w-56 mt-2.5 py-2 border border-n-1 rounded-sm bg-white shadow-primary-4 overflow-hidden dark:bg-n-1 dark:border-white">
                     {buttons.map((button) => (
                         <Menu.Item
                             className="flex items-center w-full h-10 mb-1.5 px-6.5 text-sm font-bold last:mb-0 transition-colors hover:bg-n-3/10 dark:hover:bg-white/20"
@@ -51,10 +51,10 @@ const Create = ({}: CreateProps) => {
                             onClick={button.onClick}
                         >
                             <Icon
-                                className="-mt-0.25 mr-3 dark:fill-white"
+                                className="-mt-0.25 mr-3 shrink-0 dark:fill-white"
                                 name={button.icon}
                             />
-                            {button.title}
+                            <span className="truncate">{button.title}</span>
                         </Menu.Item>
                     ))}
                 </Menu.Items>
