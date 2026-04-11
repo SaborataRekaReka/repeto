@@ -167,17 +167,31 @@ export class DashboardService {
     });
   }
 
-  async getConversion(userId: string) {
+  async getConversion(userId: string, period: 'month' | 'quarter' | 'year' = 'month') {
     const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    let from: Date;
+    let to: Date;
+
+    switch (period) {
+      case 'quarter':
+        from = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+        to = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+        break;
+      case 'year':
+        from = new Date(now.getFullYear() - 1, now.getMonth(), 1);
+        to = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+        break;
+      default:
+        from = new Date(now.getFullYear(), now.getMonth(), 1);
+        to = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    }
 
     const [completedLessons, paidPayments] = await Promise.all([
       this.prisma.lesson.aggregate({
         where: {
           userId,
           status: 'COMPLETED',
-          scheduledAt: { gte: monthStart, lte: monthEnd },
+          scheduledAt: { gte: from, lte: to },
         },
         _sum: { rate: true },
         _count: true,
@@ -186,7 +200,7 @@ export class DashboardService {
         where: {
           userId,
           status: 'PAID',
-          date: { gte: monthStart, lte: monthEnd },
+          date: { gte: from, lte: to },
         },
         _sum: { amount: true },
         _count: true,

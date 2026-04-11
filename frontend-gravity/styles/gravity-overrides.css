@@ -1,0 +1,1220 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,100..700;1,100..700&display=swap');
+
+.g-root {
+    --g-font-family-monospace: 'Roboto Mono', 'Monaco', 'Consolas', 'Liberation Mono', 'Ubuntu Mono', 'DejaVu Sans Mono', 'Courier New', 'Courier', monospace;
+    --g-font-family-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.g-root_theme_light {
+    --g-color-private-brand-50: rgb(203 255 92 / 0.1);
+    --g-color-private-brand-100: rgb(203 255 92 / 0.15);
+    --g-color-private-brand-150: rgb(203 255 92 / 0.2);
+    --g-color-private-brand-200: rgb(203 255 92 / 0.3);
+    --g-color-private-brand-250: rgb(203 255 92 / 0.4);
+    --g-color-private-brand-300: rgb(203 255 92 / 0.5);
+    --g-color-private-brand-350: rgb(203 255 92 / 0.6);
+    --g-color-private-brand-400: rgb(203 255 92 / 0.7);
+    --g-color-private-brand-450: rgb(203 255 92 / 0.8);
+    --g-color-private-brand-500: rgb(203 255 92 / 0.9);
+    --g-color-private-brand-550: rgb(203 255 92);
+    --g-color-private-brand-550-solid: rgb(203 255 92);
+    --g-color-private-brand-1000-solid: rgb(59 63 43);
+    --g-color-private-brand-950-solid: rgb(68 74 46);
+    --g-color-private-brand-900-solid: rgb(85 97 51);
+    --g-color-private-brand-850-solid: rgb(102 119 57);
+    --g-color-private-brand-800-solid: rgb(119 142 63);
+    --g-color-private-brand-750-solid: rgb(135 165 69);
+    --g-color-private-brand-700-solid: rgb(152 187 75);
+    --g-color-private-brand-650-solid: rgb(169 210 80);
+    --g-color-private-brand-600-solid: rgb(186 232 86);
+    --g-color-private-brand-500-solid: rgb(208 255 108);
+    --g-color-private-brand-450-solid: rgb(213 255 125);
+    --g-color-private-brand-400-solid: rgb(219 255 141);
+    --g-color-private-brand-350-solid: rgb(224 255 157);
+    --g-color-private-brand-300-solid: rgb(229 255 174);
+    --g-color-private-brand-250-solid: rgb(234 255 190);
+    --g-color-private-brand-200-solid: rgb(239 255 206);
+    --g-color-private-brand-150-solid: rgb(245 255 222);
+    --g-color-private-brand-100-solid: rgb(247 255 231);
+    --g-color-private-brand-50-solid: rgb(250 255 239);
+
+    --g-color-text-brand: rgb(112 48 217);
+    --g-color-text-brand-heavy: rgb(112 48 217);
+    --g-color-text-link: rgb(136 64 245);
+    --g-color-text-link-hover: rgb(88 32 184);
+    --g-color-text-link-visited: var(--g-color-private-purple-550-solid);
+    --g-color-text-link-visited-hover: var(--g-color-private-purple-800-solid);
+    --g-color-base-background: rgb(242, 242, 242);
+    --g-color-base-float: rgb(255, 255, 255);
+    --g-color-base-brand: rgb(174 122 255);
+    --g-color-base-brand-hover: rgb(155 95 255);
+    --g-color-base-selection: rgb(174 122 255 / 0.2);
+    --g-color-base-selection-hover: rgb(174 122 255 / 0.3);
+    --g-color-line-brand: rgb(174 122 255);
+    --repeto-bg: rgb(242, 242, 242);
+}
+
+.g-root_theme_dark {
+    --g-color-private-brand-50: rgb(203 255 92 / 0.1);
+    --g-color-private-brand-100: rgb(203 255 92 / 0.15);
+    --g-color-private-brand-150: rgb(203 255 92 / 0.2);
+    --g-color-private-brand-200: rgb(203 255 92 / 0.3);
+    --g-color-private-brand-250: rgb(203 255 92 / 0.4);
+    --g-color-private-brand-300: rgb(203 255 92 / 0.5);
+    --g-color-private-brand-350: rgb(203 255 92 / 0.6);
+    --g-color-private-brand-400: rgb(203 255 92 / 0.7);
+    --g-color-private-brand-450: rgb(203 255 92 / 0.8);
+    --g-color-private-brand-500: rgb(203 255 92 / 0.9);
+    --g-color-private-brand-550: rgb(203 255 92);
+    --g-color-private-brand-550-solid: rgb(203 255 92);
+    --g-color-private-brand-1000-solid: rgb(247 255 231);
+    --g-color-private-brand-950-solid: rgb(245 255 222);
+    --g-color-private-brand-900-solid: rgb(239 255 206);
+    --g-color-private-brand-850-solid: rgb(234 255 190);
+    --g-color-private-brand-800-solid: rgb(229 255 174);
+    --g-color-private-brand-750-solid: rgb(224 255 157);
+    --g-color-private-brand-700-solid: rgb(219 255 141);
+    --g-color-private-brand-650-solid: rgb(213 255 125);
+    --g-color-private-brand-600-solid: rgb(208 255 108);
+    --g-color-private-brand-500-solid: rgb(186 232 86);
+    --g-color-private-brand-450-solid: rgb(169 210 80);
+    --g-color-private-brand-400-solid: rgb(152 187 75);
+    --g-color-private-brand-350-solid: rgb(135 165 69);
+    --g-color-private-brand-300-solid: rgb(119 142 63);
+    --g-color-private-brand-250-solid: rgb(102 119 57);
+    --g-color-private-brand-200-solid: rgb(85 97 51);
+    --g-color-private-brand-150-solid: rgb(68 74 46);
+    --g-color-private-brand-100-solid: rgb(59 63 43);
+    --g-color-private-brand-50-solid: rgb(51 52 40);
+
+    --g-color-text-brand: rgb(196 165 255);
+    --g-color-text-brand-heavy: rgb(210 190 255);
+    --g-color-text-brand-contrast: var(--g-color-text-dark-primary);
+    --g-color-text-link: rgb(196 165 255);
+    --g-color-text-link-hover: rgb(220 205 255);
+    --g-color-text-link-visited: var(--g-color-private-purple-700-solid);
+    --g-color-text-link-visited-hover: var(--g-color-private-purple-850-solid);
+    --g-color-base-background: rgb(34, 29, 34);
+    --g-color-base-brand: rgb(174 122 255);
+    --g-color-base-brand-hover: rgb(196 165 255);
+    --g-color-base-selection: rgb(174 122 255 / 0.25);
+    --g-color-base-selection-hover: rgb(174 122 255 / 0.35);
+    --g-color-line-brand: rgb(196 165 255);
+    --repeto-bg: rgb(34, 29, 34);
+}
+
+:root {
+    --repeto-bg: rgb(242, 242, 242);
+    --repeto-card-radius: 16px;
+    --repeto-card-shadow: 0 1px 3px rgba(174, 122, 255, 0.06), 0 4px 16px rgba(174, 122, 255, 0.04);
+    --repeto-card-shadow-hover: 0 4px 24px rgba(174, 122, 255, 0.12);
+}
+
+:where(html.dark, :root[data-theme="dark"], body.dark) {
+    --repeto-bg: rgb(34, 29, 34);
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    background: var(--repeto-bg) !important;
+    color: var(--g-color-text-primary);
+    min-height: 100vh;
+}
+
+/* ============ Global Card Overrides ============ */
+.g-card {
+    border-radius: var(--repeto-card-radius) !important;
+    box-shadow: var(--repeto-card-shadow) !important;
+    border: 1px solid rgba(174, 122, 255, 0.08) !important;
+    transition: box-shadow 0.25s ease, transform 0.25s ease !important;
+}
+.g-card:hover {
+    box-shadow: var(--repeto-card-shadow-hover) !important;
+}
+
+.g-root_theme_light .g-card {
+    background: rgb(255, 255, 255) !important;
+}
+
+/* ============ Sidebar ============ */
+.repeto-sidebar {
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    bottom: 16px;
+    width: 240px;
+    background: var(--g-color-base-float);
+    border-radius: 14px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08);
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+    overflow: visible;
+    transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.repeto-sidebar--collapsed {
+    width: 56px;
+}
+
+.repeto-sidebar__logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 20px 16px 12px;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--g-color-text-primary);
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.repeto-sidebar--collapsed .repeto-sidebar__logo {
+    padding: 20px 10px 12px;
+    justify-content: center;
+    gap: 0;
+}
+
+.repeto-sidebar__logo-icon {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.repeto-sidebar__logo-text {
+    display: flex;
+    align-items: center;
+    opacity: 1;
+    transition: opacity 0.18s ease;
+}
+
+.repeto-sidebar:not(.repeto-sidebar--collapsed) .repeto-sidebar__logo-icon {
+    display: none;
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-sidebar:not(.repeto-sidebar--collapsed) .repeto-sidebar__logo-icon {
+    display: flex;
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-sidebar:not(.repeto-sidebar--collapsed) .repeto-logo--full {
+    width: 108px;
+    max-width: 108px;
+}
+
+.repeto-sidebar--collapsed .repeto-sidebar__logo-text {
+    display: none;
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+}
+
+.repeto-logo {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.repeto-logo--icon {
+    width: 32px;
+    height: 32px;
+}
+
+.repeto-logo--full {
+    width: 118px;
+    max-width: 118px;
+}
+
+.repeto-logo--dark {
+    display: none;
+}
+
+.repeto-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-logo--light {
+    display: none;
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-logo--dark {
+    display: block;
+}
+
+.repeto-sidebar__nav {
+    flex: 1;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.repeto-sidebar--collapsed .repeto-sidebar__nav {
+    padding: 8px 4px;
+}
+
+.repeto-sidebar__item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    text-decoration: none;
+    color: var(--g-color-text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    background: none;
+    width: 100%;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.repeto-sidebar--collapsed .repeto-sidebar__item {
+    padding: 9px 0;
+    justify-content: center;
+    gap: 0;
+}
+
+.repeto-sidebar__item-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+}
+
+.repeto-sidebar__item-text {
+    opacity: 1;
+    transition: opacity 0.18s ease;
+}
+
+.repeto-sidebar--collapsed .repeto-sidebar__item-text {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+}
+
+.repeto-sidebar__badge {
+    position: absolute;
+    top: -3px;
+    right: -4px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #22C55E;
+}
+
+.repeto-sidebar__item:hover {
+    background: rgba(174, 122, 255, 0.06);
+    color: var(--g-color-text-primary);
+}
+
+.repeto-sidebar__item--active {
+    background: linear-gradient(135deg, rgba(174, 122, 255, 0.12) 0%, rgba(112, 48, 217, 0.08) 100%);
+    color: var(--g-color-text-brand);
+    font-weight: 600;
+}
+
+.repeto-sidebar__item--active:hover {
+    background: linear-gradient(135deg, rgba(174, 122, 255, 0.16) 0%, rgba(112, 48, 217, 0.12) 100%);
+}
+
+.repeto-sidebar__divider {
+    height: 1px;
+    background: var(--g-color-line-generic);
+    margin: 8px 12px;
+}
+
+.repeto-sidebar--collapsed .repeto-sidebar__divider {
+    margin: 8px 6px;
+}
+
+.repeto-sidebar__footer {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px;
+}
+
+.repeto-sidebar--collapsed .repeto-sidebar__footer {
+    padding: 8px 4px;
+}
+
+.repeto-sidebar__profile-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--g-color-text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.15s;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.repeto-sidebar__profile-btn:hover {
+    background: rgba(174, 122, 255, 0.06);
+    color: var(--g-color-text-primary);
+}
+
+.repeto-sidebar--collapsed .repeto-sidebar__profile-btn {
+    padding: 8px 0;
+    justify-content: center;
+    gap: 0;
+}
+
+.repeto-sidebar__edge-toggle {
+    position: absolute;
+    top: 50%;
+    right: -16px;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 94px;
+    cursor: pointer;
+    z-index: 120;
+    overflow: visible;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
+.repeto-sidebar__edge-toggle:focus,
+.repeto-sidebar__edge-toggle:focus-visible {
+    outline: none;
+}
+
+/* ============ Main content ============ */
+.repeto-content {
+    margin-left: 264px;
+    min-height: 100vh;
+    padding: 0 32px 28px;
+    background: var(--repeto-bg);
+    transition: margin-left 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.repeto-content--sidebar-collapsed {
+    margin-left: 80px;
+}
+
+/* ============ Header ============ */
+.repeto-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    margin: 0 -32px;
+    padding: 0 32px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--repeto-bg);
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s;
+}
+
+.repeto-header__left {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.repeto-header__right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.repeto-header-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(174, 122, 255, 0.1);
+    color: var(--g-color-text-brand);
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-left: 4px;
+}
+
+.repeto-header-avatar:hover {
+    background: rgba(174, 122, 255, 0.18);
+}
+
+.repeto-notification-dot {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #22C55E;
+    border: 1.5px solid var(--repeto-bg);
+}
+
+/* ============ Search dropdown ============ */
+.repeto-search-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 4px;
+    width: 320px;
+    background: var(--g-color-base-float);
+    border: 1px solid var(--g-color-line-generic);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    z-index: 100;
+}
+
+.repeto-search-dropdown__label {
+    padding: 10px 14px 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--g-color-text-secondary);
+}
+
+.repeto-search-dropdown__item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 14px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.12s;
+}
+
+.repeto-search-dropdown__item:hover {
+    background: rgba(174, 122, 255, 0.04);
+}
+
+/* ============ File icons in dark theme ============ */
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-file-icon {
+    filter: invert(1) brightness(1.2);
+}
+
+/* ============ Avatar helpers ============ */
+.repeto-avatar {
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    flex-shrink: 0;
+    color: var(--g-color-text-brand);
+    background: rgba(174, 122, 255, 0.1);
+}
+
+.repeto-avatar--sm {
+    width: 32px;
+    height: 32px;
+    font-size: 11px;
+}
+
+.repeto-avatar--md {
+    width: 36px;
+    height: 36px;
+    font-size: 12px;
+}
+
+.repeto-avatar--lg {
+    width: 72px;
+    height: 72px;
+    font-size: 22px;
+    font-weight: 700;
+}
+
+/* ============ Student detail page ============ */
+.repeto-student-layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 20px;
+    align-items: start;
+}
+
+.repeto-student-sidebar {
+    background: var(--g-color-base-float);
+    border: 1px solid var(--g-color-line-generic);
+    border-radius: 12px;
+    overflow: hidden;
+    position: sticky;
+    top: 80px;
+}
+
+.repeto-student-nav-item {
+    display: block;
+    width: 100%;
+    padding: 10px 20px;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--g-color-text-primary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: background 0.12s;
+    border-radius: 0;
+}
+
+.repeto-student-nav-item:hover {
+    background: var(--g-color-base-generic-hover);
+}
+
+.repeto-student-nav-item--active {
+    background: var(--g-color-base-brand-hover);
+    color: var(--g-color-text-brand-heavy);
+    font-weight: 600;
+}
+
+.repeto-student-content {
+    min-width: 0;
+}
+
+.repeto-student-mobile-tabs {
+    display: none;
+    margin-bottom: 16px;
+}
+
+@media (max-width: 900px) {
+    .repeto-student-layout {
+        grid-template-columns: 1fr;
+    }
+    .repeto-student-sidebar {
+        position: static;
+    }
+    .repeto-student-nav-item {
+        display: none;
+    }
+    .repeto-student-mobile-tabs {
+        display: block;
+    }
+    .repeto-avatar--lg {
+        width: 56px;
+        height: 56px;
+        font-size: 18px;
+    }
+}
+
+.repeto-content__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+}
+
+/* ============ Native inputs (date/time) styled to match Gravity UI ============ */
+.repeto-native-input {
+    width: 100%;
+    height: 28px;
+    padding: 0 8px;
+    font-size: 13px;
+    font-family: inherit;
+    border: 1px solid var(--g-color-line-generic);
+    border-radius: 6px;
+    background: var(--g-color-base-generic);
+    color: var(--g-color-text-primary);
+    outline: none;
+    transition: border-color 0.15s;
+    box-sizing: border-box;
+}
+.repeto-native-input:focus {
+    border-color: var(--g-color-line-brand);
+    box-shadow: 0 0 0 2px var(--g-color-sfx-focus);
+}
+.repeto-native-input::-webkit-calendar-picker-indicator {
+    opacity: 0.5;
+    cursor: pointer;
+}
+
+/* ============ Students page ============ */
+.repeto-students-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.repeto-students-toolbar__tabs {
+    display: flex;
+    gap: 2px;
+    background: var(--g-color-base-generic);
+    border-radius: 8px;
+    padding: 2px;
+}
+
+.repeto-students-toolbar__tab {
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--g-color-text-secondary);
+    transition: all 0.15s;
+}
+
+.repeto-students-toolbar__tab:hover {
+    color: var(--g-color-text-primary);
+}
+
+.repeto-students-toolbar__tab--active {
+    background: var(--g-color-base-float);
+    color: var(--g-color-text-primary);
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.repeto-students-toolbar__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Students table */
+.repeto-students-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.repeto-students-table th {
+    color: var(--g-color-text-secondary);
+    font-weight: 500;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--g-color-line-generic);
+}
+
+.repeto-students-table td {
+    padding: 12px 14px;
+    font-size: 14px;
+    border-bottom: 1px solid var(--g-color-line-generic);
+    vertical-align: middle;
+}
+
+.repeto-students-table tr:last-child td {
+    border-bottom: none;
+}
+
+.repeto-students-table tbody tr {
+    cursor: pointer;
+    transition: background 0.12s;
+}
+
+.repeto-students-table tbody tr:hover {
+    background: rgba(174, 122, 255, 0.03);
+}
+
+/* ============ Dashboard grid ============ */
+.repeto-dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 20px;
+}
+
+.repeto-dashboard-grid__main {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.repeto-dashboard-grid__aside {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.repeto-dashboard-grid .g-card {
+    background: var(--g-color-base-float);
+}
+
+/* ============ Stat cards row ============ */
+.repeto-stat-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+
+/* ============ Card section header ============ */
+.repeto-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px 14px;
+}
+
+.repeto-card-body {
+    padding: 0 20px 20px;
+    min-width: 0;
+}
+
+/* ============ Dashboard income card ============ */
+.repeto-income-card,
+.repeto-conversion-card {
+    min-width: 0;
+}
+
+.repeto-income-card__header,
+.repeto-conversion-card__header {
+    gap: 12px;
+}
+
+.repeto-income-card__periods {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px;
+    background: var(--g-color-base-generic);
+    border-radius: 10px;
+    flex-shrink: 0;
+}
+
+.repeto-income-card__period-tab {
+    border: none;
+    background: transparent;
+    color: var(--g-color-text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.repeto-income-card__period-tab:hover {
+    color: var(--g-color-text-primary);
+}
+
+.repeto-income-card__period-tab--active {
+    background: var(--g-color-base-float);
+    color: var(--g-color-text-primary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.repeto-income-card__legend {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+}
+
+.repeto-income-card__bar {
+    height: 10px;
+    border-radius: 999px;
+    background: var(--g-color-base-generic);
+    display: flex;
+    overflow: hidden;
+}
+
+.repeto-income-card__bar-part {
+    height: 100%;
+}
+
+.repeto-income-card__bar-part--received {
+    background: linear-gradient(90deg, #98E9AB, #68CF99);
+}
+
+.repeto-income-card__bar-part--expected {
+    background: linear-gradient(90deg, #C6A6FF, #AE7AFF);
+}
+
+.repeto-income-card__amounts {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.repeto-income-card__amount-line {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.repeto-income-card__amount-label {
+    color: var(--g-color-text-secondary);
+    font-size: 13px;
+}
+
+.repeto-income-card__amount-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--g-color-text-primary);
+    text-align: right;
+}
+
+.repeto-income-card__total {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px dashed var(--g-color-line-generic);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.repeto-income-card__total-value {
+    font-size: 24px;
+    line-height: 1.1;
+    font-weight: 700;
+    color: var(--g-color-text-primary);
+    text-align: right;
+}
+
+/* ============ Dashboard conversion card ============ */
+.repeto-conversion-card__content {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.repeto-conversion-card__hero {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.repeto-conversion-card__pct {
+    font-size: 36px;
+    line-height: 1;
+    font-weight: 700;
+    color: var(--g-color-text-primary);
+}
+
+.repeto-conversion-card__delta {
+    display: inline-flex;
+    align-items: center;
+    height: 24px;
+    padding: 0 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+}
+
+.repeto-conversion-card__stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.repeto-conversion-card__stat-value {
+    text-align: right;
+    min-width: 0;
+}
+
+/* ============ Finance summary grid ============ */
+.repeto-finance-summary-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.3fr);
+    gap: 8px;
+    align-items: stretch;
+}
+
+.repeto-finance-summary-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.repeto-finance-summary-metric,
+.repeto-finance-cancel-card {
+    min-width: 0;
+}
+
+@media (max-width: 1240px) {
+    .repeto-finance-summary-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 767px) {
+    .repeto-finance-summary-metrics {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ============ Two-column sub-grid ============ */
+.repeto-two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.repeto-dashboard-grid,
+.repeto-dashboard-grid__main,
+.repeto-dashboard-grid__aside,
+.repeto-two-col {
+    width: 100%;
+    min-width: 0;
+}
+
+.repeto-dashboard-grid > *,
+.repeto-two-col > * {
+    min-width: 0;
+}
+
+/* ============ Progress bar ============ */
+.repeto-progress-track {
+    height: 8px;
+    background: var(--g-color-base-generic);
+    border-radius: 99px;
+    overflow: hidden;
+}
+
+.repeto-progress-fill {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* ============ Table overrides ============ */
+.repeto-table th {
+    color: var(--g-color-text-secondary);
+    font-weight: 500;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--g-color-line-generic);
+    text-align: left;
+}
+
+.repeto-table td {
+    padding: 12px 14px;
+    font-size: 14px;
+    border-bottom: 1px solid var(--g-color-line-generic);
+}
+
+.repeto-table tr:last-child td {
+    border-bottom: none;
+}
+
+.repeto-table tr {
+    transition: background 0.15s;
+}
+
+.repeto-table tbody tr:hover {
+    background: rgba(174, 122, 255, 0.03);
+}
+
+/* ============ Lesson item in sidebar lists ============ */
+.repeto-lesson-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 16px;
+    cursor: pointer;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    transition: background 0.15s;
+    border-bottom: 1px solid var(--g-color-line-generic);
+}
+
+.repeto-lesson-item:hover {
+    background: rgba(174, 122, 255, 0.04);
+}
+
+.repeto-lesson-item:last-child {
+    border-bottom: none;
+}
+
+.repeto-week-lesson-row {
+    background: transparent;
+}
+
+.repeto-week-lesson-row:hover {
+    background: rgba(174, 122, 255, 0.04);
+}
+
+/* ============ Fade-in animation ============ */
+@keyframes repeto-fade-up {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.repeto-animate-in {
+    animation: repeto-fade-up 0.4s ease-out both;
+}
+
+.repeto-animate-in:nth-child(2) { animation-delay: 0.05s; }
+.repeto-animate-in:nth-child(3) { animation-delay: 0.1s; }
+.repeto-animate-in:nth-child(4) { animation-delay: 0.15s; }
+.repeto-animate-in:nth-child(5) { animation-delay: 0.2s; }
+.repeto-animate-in:nth-child(6) { animation-delay: 0.25s; }
+
+/* ============ Responsive ============ */
+@media (max-width: 1200px) {
+    .repeto-dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+    .repeto-stat-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .repeto-sidebar {
+        display: none;
+    }
+    .repeto-content,
+    .repeto-content--sidebar-collapsed {
+        margin-left: 0;
+        padding: 0 16px 16px;
+    }
+    .repeto-header {
+        margin: 0 -16px;
+        padding: 0 16px;
+    }
+    .repeto-stat-cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .repeto-two-col {
+        grid-template-columns: 1fr;
+    }
+    .repeto-card-header {
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .repeto-income-card__periods {
+        width: auto;
+        max-width: 100%;
+        align-self: flex-start;
+        overflow-x: auto;
+        justify-content: flex-start;
+    }
+    .repeto-income-card__amount-line,
+    .repeto-income-card__total,
+    .repeto-conversion-card__stat-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .repeto-income-card__amount-value,
+    .repeto-income-card__total-value,
+    .repeto-conversion-card__stat-value {
+        text-align: left;
+    }
+    .repeto-conversion-card__pct {
+        font-size: 32px;
+    }
+    .repeto-students-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .repeto-search-dropdown {
+        width: 280px;
+    }
+}
+
+/* ============ Yandex-style thin scrollbar (calendar grid) ============ */
+.repeto-calendar-scroll::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+.repeto-calendar-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+.repeto-calendar-scroll::-webkit-scrollbar-thumb {
+    background: rgba(174, 122, 255, 0.25);
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+.repeto-calendar-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(174, 122, 255, 0.45);
+}
+/* Firefox */
+.repeto-calendar-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(174, 122, 255, 0.25) transparent;
+}
+
+/* Calendar header row: pale purple in light, solid in dark */
+.repeto-calendar-header {
+    background: rgba(174, 122, 255, 0.08);
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-calendar-header {
+    background: var(--g-color-base-float);
+}
+
+/* ============ Thin scrollbar (finance income by students) ============ */
+.repeto-income-students-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+
+.repeto-income-students-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.repeto-income-students-scroll::-webkit-scrollbar-thumb {
+    background: rgba(133, 140, 148, 0.4);
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background-clip: content-box;
+}
+
+.repeto-income-students-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(133, 140, 148, 0.65);
+    background-clip: content-box;
+}
+
+/* Firefox */
+.repeto-income-students-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(133, 140, 148, 0.55) transparent;
+}

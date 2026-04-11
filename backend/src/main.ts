@@ -34,8 +34,14 @@ async function bootstrap() {
   app.use(cookieParser());
 
   // CORS
+  const allowedOrigins = (
+    process.env.FRONTEND_URL || 'http://localhost:3100'
+  )
+    .split(',')
+    .concat('http://localhost:3300');
+
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3100',
+    origin: allowedOrigins,
     credentials: true,
   });
 

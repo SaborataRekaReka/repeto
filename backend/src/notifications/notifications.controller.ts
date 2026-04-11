@@ -5,6 +5,7 @@ import {
   Post,
   Param,
   Query,
+  Body,
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags, ApiQuery } from '@nestjs/swagger';
@@ -99,5 +100,14 @@ export class NotificationsController {
     @CurrentUser('id') userId: string,
   ) {
     return this.notificationsService.rejectReschedule(id, userId);
+  }
+
+  @Post('send-debt-reminder/:studentId')
+  sendDebtReminder(
+    @Param('studentId', ParseUUIDPipe) studentId: string,
+    @CurrentUser('id') userId: string,
+    @Body() body: { comment?: string },
+  ) {
+    return this.notificationsService.sendDebtReminder(userId, studentId, body?.comment);
   }
 }

@@ -8,6 +8,7 @@ import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { GoogleCalendarService } from '../google-calendar/google-calendar.service';
 import { YandexCalendarService } from '../yandex-calendar/yandex-calendar.service';
+import { MessengerDeliveryService } from '../messenger/messenger-delivery.service';
 import { CreateLessonDto, UpdateLessonDto, UpdateLessonStatusDto } from './dto';
 
 @Injectable()
@@ -16,6 +17,7 @@ export class LessonsService {
     private prisma: PrismaService,
     private googleCalendar: GoogleCalendarService,
     private yandexCalendar: YandexCalendarService,
+    private messenger: MessengerDeliveryService,
   ) {}
 
   private parseFromBoundary(value: string): Date {
@@ -28,6 +30,41 @@ export class LessonsService {
     return value.includes('T')
       ? new Date(value)
       : new Date(`${value}T23:59:59.999Z`);
+  }
+
+  private formatDate(date: Date): string {
+    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+  }
+
+  private formatTime(date: Date): string {
+    return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  private async getTutorName(userId: string): Promise<string> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true },
+    });
+    return user?.name || 'Репетитор';
+  }
+
+  private notifyStudentLessonAssigned(userId: string, lesson: any) {
+    this.getTutorName(userId).then((tutorName) => {
+      const date = new Date(lesson.scheduledAt);
+      const msg = this.messenger.formatLessonAssigned(
+        lesson.student?.name || '',
+        lesson.subject,
+        this.formatDate(date),
+        this.formatTime(date),
+        tutorName,
+      );
+      this.messenger.sendToStudent({
+        type: 'lesson_assigned',
+        tutorId: userId,
+        studentId: lesson.studentId,
+        message: msg,
+      }).catch(() => {});
+    });
   }
 
   async findAll(
@@ -114,6 +151,7 @@ export class LessonsService {
       for (const lesson of created) {
         this.googleCalendar.createEvent(userId, lesson).catch(() => {});
         this.yandexCalendar.createEvent(userId, lesson).catch(() => {});
+        this.notifyStudentLessonAssigned(userId, lesson);
       }
 
       return created;
@@ -132,6 +170,9 @@ export class LessonsService {
     // Sync to Google Calendar (fire-and-forget)
     this.googleCalendar.createEvent(userId, single).catch(() => {});
     this.yandexCalendar.createEvent(userId, single).catch(() => {});
+
+    // Notify student via messenger (fire-and-forget)
+    this.notifyStudentLessonAssigned(userId, single);
 
     return single;
   }
@@ -153,6 +194,25 @@ export class LessonsService {
     // Sync to Google Calendar (fire-and-forget)
     this.googleCalendar.updateEvent(userId, updated).catch(() => {});
     this.yandexCalendar.updateEvent(userId, updated).catch(() => {});
+
+    // If scheduledAt changed, notify student about reschedule
+    if (dto.scheduledAt && lesson.scheduledAt.toISOString() !== new Date(dto.scheduledAt).toISOString()) {
+      const oldDate = lesson.scheduledAt;
+      const newDate = new Date(dto.scheduledAt);
+      const msg = this.messenger.formatLessonRescheduled(
+        updated.subject,
+        this.formatDate(oldDate),
+        this.formatTime(oldDate),
+        this.formatDate(newDate),
+        this.formatTime(newDate),
+      );
+      this.messenger.sendToStudent({
+        type: 'lesson_rescheduled',
+        tutorId: userId,
+        studentId: lesson.studentId,
+        message: msg,
+      }).catch(() => {});
+    }
 
     return updated;
   }
@@ -242,6 +302,21 @@ export class LessonsService {
     ) {
       this.googleCalendar.cancelEvent(userId, lesson.googleCalendarEventId).catch(() => {});
       this.yandexCalendar.deleteEvent(userId, lesson.yandexCalendarEventUid).catch(() => {});
+
+      // Notify student about cancellation via messenger
+      const date = lesson.scheduledAt;
+      const msg = this.messenger.formatLessonCancelled(
+        lesson.subject,
+        this.formatDate(date),
+        this.formatTime(date),
+        dto.cancelReason,
+      );
+      this.messenger.sendToStudent({
+        type: 'lesson_cancelled',
+        tutorId: userId,
+        studentId: lesson.studentId,
+        message: msg,
+      }).catch(() => {});
     }
 
     return updated;

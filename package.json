@@ -10,6 +10,8 @@
   "scripts": {
     "predev:frontend": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$ErrorActionPreference='SilentlyContinue'; try { $connPids = @(Get-NetTCPConnection -LocalPort 3100 | Select-Object -ExpandProperty OwningProcess -Unique); foreach ($processId in $connPids) { if ($processId) { Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue } } } catch {}; exit 0\"",
     "dev:frontend": "cd ./frontend && node ../node_modules/next/dist/bin/next dev -p 3100",
+    "predev:gravity": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$ErrorActionPreference='SilentlyContinue'; try { $connPids = @(Get-NetTCPConnection -LocalPort 3300 | Select-Object -ExpandProperty OwningProcess -Unique); foreach ($processId in $connPids) { if ($processId) { Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue } } } catch {}; exit 0\"",
+    "dev:gravity": "set NODE_OPTIONS=--no-addons&& npm --prefix ./frontend-gravity run dev -- -p 3300",
     "predev:backend": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$ErrorActionPreference='SilentlyContinue'; try { $connPids = @(Get-NetTCPConnection -LocalPort 3200 | Select-Object -ExpandProperty OwningProcess -Unique); foreach ($processId in $connPids) { if ($processId) { Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue } } } catch {}; exit 0\"",
     "dev:backend": "npm --prefix ./backend run start:dev",
     "start:frontend": "cd ./frontend && node ../node_modules/next/dist/bin/next start -p 3100",
@@ -21,6 +23,9 @@
     "prisma:seed": "npm --prefix ./backend run prisma:seed",
     "prisma:studio": "npm --prefix ./backend run prisma:studio",
     "test:e2e": "npx playwright test",
+    "test:ui-sim": "npx playwright test e2e/ui-simulation.spec.ts e2e/ui-simulation-expanded.spec.ts",
+    "test:ui-sim:headed": "npx playwright test e2e/ui-simulation.spec.ts e2e/ui-simulation-expanded.spec.ts --headed",
+    "test:service:full": "npm --prefix ./backend run test:e2e && npx playwright test",
     "test:e2e:headed": "npx playwright test --headed",
     "test:e2e:ui": "npx playwright test --ui",
     "test:e2e:ui:headed": "npx playwright test --ui --headed",

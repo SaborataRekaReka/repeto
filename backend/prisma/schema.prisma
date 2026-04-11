@@ -109,6 +109,10 @@ model Student {
   telegram String? // legacy
   email    String?
 
+  // Messenger chat IDs
+  telegramChatId String? @map("telegram_chat_id")
+  maxChatId      String? @map("max_chat_id")
+
   // Parent
   parentName     String? @map("parent_name")
   parentPhone    String? @map("parent_phone")
@@ -387,6 +391,8 @@ enum NotificationChannel {
   PUSH
   WHATSAPP
   SMS
+  TELEGRAM
+  MAX
 }
 
 // ── Files ──
@@ -504,6 +510,10 @@ model BookingRequest {
   clientPhone String @map("client_phone")
   clientEmail String? @map("client_email")
   comment     String?
+
+  // Messenger chat IDs (captured during booking via deep link)
+  telegramChatId String? @map("telegram_chat_id")
+  maxChatId      String? @map("max_chat_id")
 
   status BookingStatus @default(PENDING)
 

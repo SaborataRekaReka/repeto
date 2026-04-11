@@ -19,10 +19,13 @@ import { PublicModule } from './public/public.module';
 import { HealthModule } from './health/health.module';
 import { AvailabilityModule } from './availability/availability.module';
 import { FilesModule } from './files/files.module';
+import { MessengerModule } from './messenger/messenger.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 300 }]),
+    ScheduleModule.forRoot(),
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'uploads'),
       serveRoot: '/uploads',
@@ -44,6 +47,7 @@ import { FilesModule } from './files/files.module';
     PublicModule,
     HealthModule,
     AvailabilityModule,
+    MessengerModule,
   ],
   providers: [
     {

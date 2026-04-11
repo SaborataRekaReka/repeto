@@ -13,6 +13,7 @@ import {
   Prisma,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { MessengerDeliveryService } from '../messenger/messenger-delivery.service';
 
 type NotificationCreatePayload = {
   userId: string;
@@ -30,7 +31,10 @@ type NotificationCreatePayload = {
 export class NotificationsService {
   private readonly syncInFlight = new Map<string, Promise<void>>();
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private messenger: MessengerDeliveryService,
+  ) {}
 
   private async getSettings(userId: string) {
     const user = await this.prisma.user.findUnique({
@@ -514,17 +518,42 @@ export class NotificationsService {
           status: 'ACTIVE',
           portalToken: randomUUID(),
           portalTokenCreatedAt: new Date(),
+          telegramChatId: booking.telegramChatId || undefined,
+          maxChatId: booking.maxChatId || undefined,
         },
       });
     } else if (!student.portalToken) {
       // Generate portal link for existing student without one
+      const updateData: Record<string, any> = {
+        portalToken: randomUUID(),
+        portalTokenCreatedAt: new Date(),
+      };
+      // Also update chat IDs if booking has them and student doesn't
+      if (booking.telegramChatId && !student.telegramChatId) {
+        updateData.telegramChatId = booking.telegramChatId;
+      }
+      if (booking.maxChatId && !student.maxChatId) {
+        updateData.maxChatId = booking.maxChatId;
+      }
       student = await this.prisma.student.update({
         where: { id: student.id },
-        data: {
-          portalToken: randomUUID(),
-          portalTokenCreatedAt: new Date(),
-        },
+        data: updateData,
       });
+    } else {
+      // Existing student with portal token — still update chat IDs if needed
+      const updateData: Record<string, string> = {};
+      if (booking.telegramChatId && !student.telegramChatId) {
+        updateData.telegramChatId = booking.telegramChatId;
+      }
+      if (booking.maxChatId && !student.maxChatId) {
+        updateData.maxChatId = booking.maxChatId;
+      }
+      if (Object.keys(updateData).length > 0) {
+        student = await this.prisma.student.update({
+          where: { id: student.id },
+          data: updateData,
+        });
+      }
     }
 
     // Build scheduledAt from booking date + startTime
@@ -574,6 +603,28 @@ export class NotificationsService {
         read: false,
       },
     });
+
+    // Send messenger notification to student (Telegram / Max)
+    const tutorUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true },
+    });
+    const tutorName = tutorUser?.name || 'Репетитор';
+
+    const msg = this.messenger.formatLessonAssigned(
+      booking.clientName,
+      booking.subject,
+      dateStr,
+      booking.startTime,
+      tutorName,
+    );
+
+    this.messenger.sendToStudent({
+      type: 'lesson_assigned',
+      tutorId: userId,
+      studentId: student.id,
+      message: msg,
+    }).catch((e) => { /* fire-and-forget */ });
 
     return { status: 'CONFIRMED', studentId: student.id, lessonId: lesson.id };
   }
@@ -670,5 +721,72 @@ export class NotificationsService {
     });
 
     return { status: 'REJECTED', lessonId: lesson.id };
+  }
+
+  async sendDebtReminder(
+    userId: string,
+    studentId: string,
+    comment?: string,
+  ) {
+    const [tutor, student] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { name: true },
+      }),
+      this.prisma.student.findUnique({
+        where: { id: studentId },
+        select: { id: true, name: true, userId: true },
+      }),
+    ]);
+
+    if (!student) throw new NotFoundException('Ученик не найден');
+    if (student.userId !== userId) throw new ForbiddenException();
+
+    // Calculate total debt: sum of PENDING+OVERDUE payments
+    const debtPayments = await this.prisma.payment.aggregate({
+      where: {
+        userId,
+        studentId,
+        status: { in: ['PENDING', 'OVERDUE'] },
+      },
+      _sum: { amount: true },
+    });
+
+    const debtAmount = debtPayments._sum.amount || 0;
+    const tutorName = tutor?.name || 'Репетитор';
+
+    const msg = this.messenger.formatPaymentDebt(
+      student.name,
+      debtAmount,
+      tutorName,
+      comment,
+    );
+
+    const result = await this.messenger.sendToStudent({
+      type: 'payment_debt',
+      tutorId: userId,
+      studentId,
+      message: msg,
+    });
+
+    // Also create in-app notification for the tutor (record of sending)
+    await this.prisma.notification.create({
+      data: {
+        userId,
+        studentId,
+        type: 'PAYMENT_OVERDUE',
+        title: 'Напоминание об оплате отправлено',
+        description: `${student.name} · ${debtAmount.toLocaleString('ru-RU')} ₽`,
+        actionUrl: `/students/${studentId}`,
+        sentAt: new Date(),
+      },
+    });
+
+    return {
+      sent: result.telegram || result.max,
+      telegram: result.telegram,
+      max: result.max,
+      debtAmount,
+    };
   }
 }

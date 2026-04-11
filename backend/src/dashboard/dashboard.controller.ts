@@ -52,8 +52,12 @@ export class DashboardController {
   }
 
   @Get('conversion')
-  getConversion(@CurrentUser('id') userId: string) {
-    return this.dashboardService.getConversion(userId);
+  @ApiQuery({ name: 'period', required: false, enum: ['month', 'quarter', 'year'] })
+  getConversion(
+    @CurrentUser('id') userId: string,
+    @Query('period') period?: 'month' | 'quarter' | 'year',
+  ) {
+    return this.dashboardService.getConversion(userId, period);
   }
 
   @Get('expiring-packages')

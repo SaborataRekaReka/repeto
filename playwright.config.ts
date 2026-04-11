@@ -2,6 +2,7 @@ import { defineConfig } from '@playwright/test';
 
 const parsedSlowMo = Number.parseInt(process.env.PW_SLOW_MO ?? '', 10);
 const slowMo = Number.isFinite(parsedSlowMo) && parsedSlowMo > 0 ? parsedSlowMo : 0;
+const baseURL = process.env.E2E_BASE_URL ?? process.env.PW_BASE_URL ?? 'http://localhost:3300';
 
 export default defineConfig({
   testDir: './e2e',
@@ -12,7 +13,7 @@ export default defineConfig({
   reporter: 'list',
   timeout: 30_000,
   use: {
-    baseURL: 'http://localhost:3100',
+    baseURL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     headless: true,

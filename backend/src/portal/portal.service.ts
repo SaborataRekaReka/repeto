@@ -10,6 +10,8 @@ import * as fs from 'fs';
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { TelegramService } from '../messenger/telegram.service';
+import { MaxService } from '../messenger/max.service';
 
 const PORTAL_REVIEW_PREFIX = 'PORTAL_REVIEW:';
 
@@ -18,6 +20,8 @@ export class PortalService {
   constructor(
     private prisma: PrismaService,
     private notificationsService: NotificationsService,
+    private telegramService: TelegramService,
+    private maxService: MaxService,
   ) {}
 
   private parsePortalReview(content?: string | null): {
@@ -59,6 +63,7 @@ export class PortalService {
             subjects: true,
             avatarUrl: true,
             cancelPolicySettings: true,
+            notificationSettings: true,
           },
         },
         lessons: {
@@ -324,7 +329,48 @@ export class PortalService {
       recentPayments,
       homework,
       files: portalFiles,
+      notifications: await this.buildNotificationInfo(student),
     };
+  }
+
+  private async buildNotificationInfo(student: {
+    telegramChatId: string | null;
+    maxChatId: string | null;
+    portalToken: string | null;
+    user: { notificationSettings: any };
+  }) {
+    const settings = (student.user.notificationSettings as Record<string, unknown>) || {};
+    const channels = (settings.channels as string[]) || [];
+    const hasTelegram = channels.includes('TELEGRAM');
+    const hasMax = channels.includes('MAX');
+
+    if (!hasTelegram && !hasMax) return null;
+
+    const result: {
+      telegram?: { connected: boolean; deepLink?: string };
+      max?: { connected: boolean; deepLink?: string };
+    } = {};
+
+    if (hasTelegram && this.telegramService.isConfigured) {
+      const connected = !!student.telegramChatId;
+      if (connected) {
+        result.telegram = { connected: true };
+      } else {
+        const username = await this.telegramService.botUsername;
+        result.telegram = {
+          connected: false,
+          deepLink: username ? `https://t.me/${username}?start=${student.portalToken}` : undefined,
+        };
+      }
+    }
+
+    if (hasMax && this.maxService.isConfigured) {
+      const connected = !!student.maxChatId;
+      result.max = { connected: connected };
+      // Max deep links are not supported natively; we show instructions instead
+    }
+
+    return Object.keys(result).length > 0 ? result : null;
   }
 
   /**

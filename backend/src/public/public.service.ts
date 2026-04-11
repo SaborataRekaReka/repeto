@@ -2,6 +2,9 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import { AvailabilityService } from '../availability/availability.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { BotPollerService } from '../messenger/bot-poller.service';
+
+type ReminderMethod = 'telegram' | 'max' | 'email' | 'push';
 
 const PORTAL_REVIEW_PREFIX = 'PORTAL_REVIEW:';
 
@@ -11,6 +14,7 @@ export class PublicService {
     private prisma: PrismaService,
     private availability: AvailabilityService,
     private notifications: NotificationsService,
+    private botPoller: BotPollerService,
   ) {}
 
   private normalizePhone(value?: string | null): string {
@@ -31,6 +35,71 @@ export class PublicService {
     } catch {
       return null;
     }
+  }
+
+  async getBookingContactStatus(slug: string, phone?: string, email?: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { slug },
+      select: { id: true, published: true },
+    });
+
+    if (!user || !user.published) throw new NotFoundException('Tutor not found');
+
+    const normalizedPhone = this.normalizePhone(phone);
+    const normalizedEmail = email?.trim().toLowerCase();
+
+    if (!normalizedPhone && !normalizedEmail) {
+      return {
+        found: false,
+        telegramConnected: false,
+        maxConnected: false,
+        emailKnown: false,
+        portalToken: null,
+      };
+    }
+
+    const students = await this.prisma.student.findMany({
+      where: { userId: user.id },
+      select: {
+        id: true,
+        phone: true,
+        email: true,
+        portalToken: true,
+        telegramChatId: true,
+        maxChatId: true,
+      },
+    });
+
+    const matched = students.find((student) => {
+      const emailMatch =
+        !!normalizedEmail &&
+        !!student.email &&
+        student.email.trim().toLowerCase() === normalizedEmail;
+
+      const phoneMatch =
+        !!normalizedPhone &&
+        this.normalizePhone(student.phone) === normalizedPhone;
+
+      return emailMatch || phoneMatch;
+    });
+
+    if (!matched) {
+      return {
+        found: false,
+        telegramConnected: false,
+        maxConnected: false,
+        emailKnown: !!normalizedEmail,
+        portalToken: null,
+      };
+    }
+
+    return {
+      found: true,
+      telegramConnected: !!matched.telegramChatId,
+      maxConnected: !!matched.maxChatId,
+      emailKnown: !!matched.email,
+      portalToken: matched.portalToken || null,
+    };
   }
 
   async getTutorProfile(slug: string) {
@@ -145,6 +214,10 @@ export class PublicService {
       clientPhone: string;
       clientEmail?: string;
       comment?: string;
+      telegramLinkCode?: string;
+      maxLinkCode?: string;
+      reminderChannels?: ReminderMethod[];
+      reminderMinutesBefore?: number;
     },
   ) {
     const user = await this.prisma.user.findUnique({
@@ -168,6 +241,39 @@ export class PublicService {
       throw new BadRequestException('Выбранное время уже занято');
     }
 
+    // Resolve messenger link codes → chat IDs
+    const telegramChatId = data.telegramLinkCode
+      ? this.botPoller.resolveTelegramLink(data.telegramLinkCode)
+      : null;
+    const maxChatId = data.maxLinkCode
+      ? this.botPoller.resolveMaxLink(data.maxLinkCode)
+      : null;
+
+    const allowedChannels: ReminderMethod[] = ['telegram', 'max', 'email', 'push'];
+    const reminderChannels = Array.isArray(data.reminderChannels)
+      ? data.reminderChannels.filter((ch): ch is ReminderMethod => allowedChannels.includes(ch as ReminderMethod))
+      : [];
+    const reminderMinutesBefore = Number(data.reminderMinutesBefore);
+    const reminderMins = Number.isFinite(reminderMinutesBefore)
+      ? Math.max(15, Math.min(7 * 24 * 60, Math.round(reminderMinutesBefore)))
+      : undefined;
+
+    const reminderMeta = reminderChannels.length > 0
+      ? `Напоминания: ${reminderChannels.map((ch) => {
+          switch (ch) {
+            case 'telegram': return 'Telegram';
+            case 'max': return 'Max';
+            case 'email': return 'Почта';
+            case 'push': return 'Push';
+            default: return ch;
+          }
+        }).join(', ')}${reminderMins ? ` · за ${reminderMins >= 60 ? `${Math.round(reminderMins / 60)} ч` : `${reminderMins} мин`}` : ''}`
+      : null;
+
+    const mergedComment = [data.comment?.trim(), reminderMeta]
+      .filter(Boolean)
+      .join('\n\n');
+
     const booking = await this.prisma.bookingRequest.create({
       data: {
         userId: user.id,
@@ -178,7 +284,9 @@ export class PublicService {
         clientName: data.clientName,
         clientPhone: data.clientPhone,
         clientEmail: data.clientEmail,
-        comment: data.comment,
+        comment: mergedComment || undefined,
+        telegramChatId: telegramChatId || undefined,
+        maxChatId: maxChatId || undefined,
       },
     });
 
@@ -187,7 +295,7 @@ export class PublicService {
       day: 'numeric',
       month: 'long',
     });
-    const comment = data.comment?.trim();
+    const comment = mergedComment;
 
     await this.notifications.create({
       userId: user.id,
@@ -211,6 +319,7 @@ export class PublicService {
           portalToken: { not: null },
         },
         select: {
+          id: true,
           portalToken: true,
           phone: true,
           email: true,
@@ -231,6 +340,17 @@ export class PublicService {
       });
 
       portalToken = matched?.portalToken || null;
+
+      // Update existing student's chat IDs if resolved
+      if (matched && (telegramChatId || maxChatId)) {
+        const updateData: Record<string, string> = {};
+        if (telegramChatId) updateData.telegramChatId = telegramChatId;
+        if (maxChatId) updateData.maxChatId = maxChatId;
+        await this.prisma.student.update({
+          where: { id: matched.id },
+          data: updateData,
+        });
+      }
     }
 
     return {
