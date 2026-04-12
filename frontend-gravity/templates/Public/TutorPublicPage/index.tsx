@@ -29,6 +29,12 @@ type TutorProfile = {
         phone: string | null;
         whatsapp: string | null;
     };
+    cancelPolicy?: {
+        freeHours?: number;
+        lateCancelAction?: string;
+        lateAction?: string;
+        noShowAction?: string;
+    };
     memberSince: string;
     hasWorkingDays?: boolean;
 };
@@ -55,6 +61,35 @@ function formatReviewDate(raw: string): string {
         "июля", "августа", "сентября", "октября", "ноября", "декабря",
     ];
     return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function formatHoursWord(hours: number): string {
+    const abs = Math.abs(hours) % 100;
+    const last = abs % 10;
+    if (abs > 10 && abs < 20) return "часов";
+    if (last === 1) return "час";
+    if (last >= 2 && last <= 4) return "часа";
+    return "часов";
+}
+
+function formatPolicyActionLabel(action?: string): string {
+    const normalized = (action || "").trim().toLowerCase();
+
+    if (
+        normalized === "full" ||
+        normalized === "full_charge" ||
+        normalized === "charge"
+    ) {
+        return "100% стоимости занятия";
+    }
+    if (normalized === "half" || normalized === "half_charge") {
+        return "50% стоимости занятия";
+    }
+    if (normalized === "none" || normalized === "no_charge") {
+        return "без штрафа";
+    }
+
+    return action || "100% стоимости занятия";
 }
 
 function renderStars(rating: number) {
@@ -148,6 +183,13 @@ const TutorPublicPage = () => {
 
     const t = profile;
     const canBook = t.hasWorkingDays !== false;
+    const freeHours = Number(t.cancelPolicy?.freeHours ?? 24);
+    const lateCancelActionLabel = formatPolicyActionLabel(
+        t.cancelPolicy?.lateCancelAction || t.cancelPolicy?.lateAction
+    );
+    const noShowActionLabel = formatPolicyActionLabel(
+        t.cancelPolicy?.noShowAction
+    );
 
     return (
         <>
@@ -306,6 +348,21 @@ const TutorPublicPage = () => {
                         </div>
                     </Card>
 
+                    {/* Cancel policy */}
+                    <Card view="outlined" style={{ marginBottom: 16, borderRadius: 16, overflow: "hidden", background: "var(--g-color-base-float)" }}>
+                        <div style={{ padding: "16px 24px", borderBottom: "1px solid var(--g-color-line-generic)" }}>
+                            <Text variant="subheader-2">Политика отмен</Text>
+                        </div>
+                        <div style={{ padding: "20px 24px" }}>
+                            <Text variant="body-2" style={{ display: "block", lineHeight: 1.7 }}>
+                                Бесплатная отмена за <strong>{freeHours} {formatHoursWord(freeHours)}</strong> до занятия.
+                            </Text>
+                            <Text variant="body-2" style={{ display: "block", marginTop: 6, lineHeight: 1.7 }}>
+                                Поздняя отмена: <strong>{lateCancelActionLabel}</strong>. Неявка: <strong>{noShowActionLabel}</strong>.
+                            </Text>
+                        </div>
+                    </Card>
+
                     {/* Contacts */}
                     <Card view="outlined" style={{ marginBottom: 24, borderRadius: 16, overflow: "hidden", background: "var(--g-color-base-float)" }}>
                         <div style={{ padding: "16px 24px", borderBottom: "1px solid var(--g-color-line-generic)" }}>
@@ -363,7 +420,17 @@ const TutorPublicPage = () => {
                             <Button
                                 view="action"
                                 size="xl"
-                                style={{ width: "100%", justifyContent: "center", fontWeight: 600, height: 52, borderRadius: 12 }}
+                                style={{
+                                    width: "100%",
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    textAlign: "center",
+                                    lineHeight: "20px",
+                                    fontWeight: 600,
+                                    height: 52,
+                                    borderRadius: 12,
+                                }}
                             >
                                 Записаться на занятие
                             </Button>
@@ -372,7 +439,17 @@ const TutorPublicPage = () => {
                         <Button
                             view="action"
                             size="xl"
-                            style={{ width: "100%", justifyContent: "center", fontWeight: 600, height: 52, borderRadius: 12 }}
+                            style={{
+                                width: "100%",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                textAlign: "center",
+                                lineHeight: "20px",
+                                fontWeight: 600,
+                                height: 52,
+                                borderRadius: 12,
+                            }}
                             disabled
                         >
                             Запись пока не ведётся

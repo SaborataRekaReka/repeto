@@ -44,6 +44,27 @@ export class NotificationsController {
     return { count };
   }
 
+  @Get('push/public-key')
+  getPushPublicKey() {
+    return this.notificationsService.getPushPublicKey();
+  }
+
+  @Post('push/subscribe')
+  subscribePush(
+    @CurrentUser('id') userId: string,
+    @Body() body: { subscription?: unknown },
+  ) {
+    return this.notificationsService.subscribePush(userId, body?.subscription);
+  }
+
+  @Post('push/unsubscribe')
+  unsubscribePush(
+    @CurrentUser('id') userId: string,
+    @Body() body: { endpoint?: string },
+  ) {
+    return this.notificationsService.unsubscribePush(userId, body?.endpoint || '');
+  }
+
   @Patch(':id/read')
   markAsRead(
     @Param('id', ParseUUIDPipe) id: string,

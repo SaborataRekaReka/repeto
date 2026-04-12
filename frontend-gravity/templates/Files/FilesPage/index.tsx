@@ -63,6 +63,7 @@ const FilesPage = () => {
                 <StudentAccessTab
                     files={data?.files || []}
                     studentAccess={data?.studentAccess || []}
+                    onUpdated={refetch}
                 />
             )}
         </GravityLayout>

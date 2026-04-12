@@ -8,6 +8,7 @@ export type LessonPackage = {
     lessonsTotal: number;
     lessonsUsed: number;
     totalPrice: number;
+    comment?: string;
     status: PackageStatus;
     validUntil: string;
     validUntilValue?: string;

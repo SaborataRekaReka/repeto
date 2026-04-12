@@ -107,6 +107,11 @@ export class PaymentsController {
     return this.paymentsService.update(id, userId, dto);
   }
 
+  @Delete('manual/all')
+  removeManual(@CurrentUser('id') userId: string) {
+    return this.paymentsService.removeManual(userId);
+  }
+
   @Delete(':id')
   remove(
     @Param('id', ParseUUIDPipe) id: string,

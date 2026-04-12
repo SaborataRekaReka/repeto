@@ -64,7 +64,9 @@ export type PortalPackage = {
 
 export type PortalCancelPolicy = {
     freeHours: number;
-    lateAction: string;
+    lateCancelAction?: string;
+    lateAction?: string;
+    noShowAction?: string;
     lateCancelCost?: number;
 };
 

@@ -20,6 +20,51 @@ export class LessonsService {
     private messenger: MessengerDeliveryService,
   ) {}
 
+  private normalizePolicyAction(
+    action: unknown,
+    fallback: 'full' | 'half' | 'none' = 'full',
+  ): 'full' | 'half' | 'none' {
+    const normalized = String(action ?? '').trim().toLowerCase();
+
+    if (normalized === 'full' || normalized === 'full_charge' || normalized === 'charge') {
+      return 'full';
+    }
+    if (normalized === 'half' || normalized === 'half_charge') {
+      return 'half';
+    }
+    if (normalized === 'none' || normalized === 'no_charge') {
+      return 'none';
+    }
+
+    return fallback;
+  }
+
+  private mapCancelPolicy(raw: any) {
+    const freeHoursValue = Number(raw?.cancelTimeHours ?? raw?.freeHours ?? 24);
+    const freeHours = Number.isFinite(freeHoursValue) && freeHoursValue >= 0
+      ? freeHoursValue
+      : 24;
+
+    return {
+      freeHours,
+      lateCancelAction: this.normalizePolicyAction(
+        raw?.lateCancelAction ?? raw?.lateAction,
+        'full',
+      ),
+      noShowAction: this.normalizePolicyAction(raw?.noShowAction, 'full'),
+      lateCancelCost:
+        Number.isFinite(Number(raw?.lateCancelCost)) && Number(raw?.lateCancelCost) > 0
+          ? Number(raw?.lateCancelCost)
+          : undefined,
+    };
+  }
+
+  private calculatePenalty(rate: number, action: 'full' | 'half' | 'none') {
+    if (action === 'none') return null;
+    if (action === 'half') return Math.round(rate / 2);
+    return rate;
+  }
+
   private parseFromBoundary(value: string): Date {
     return value.includes('T')
       ? new Date(value)
@@ -38,6 +83,57 @@ export class LessonsService {
 
   private formatTime(date: Date): string {
     return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  private normalizeLessonNote(note: unknown): string | null {
+    if (typeof note !== 'string') return null;
+    const normalized = note.trim();
+    return normalized.length > 0 ? normalized : null;
+  }
+
+  private async upsertTutorLessonNote(
+    lessonId: string,
+    studentId: string,
+    note: unknown,
+  ) {
+    if (typeof note !== 'string') return;
+
+    const normalized = this.normalizeLessonNote(note);
+    const existing = await this.prisma.lessonNote.findFirst({
+      where: {
+        lessonId,
+        NOT: {
+          content: {
+            startsWith: 'PORTAL_REVIEW:',
+          },
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+      select: { id: true },
+    });
+
+    if (!normalized) {
+      if (existing) {
+        await this.prisma.lessonNote.delete({ where: { id: existing.id } });
+      }
+      return;
+    }
+
+    if (existing) {
+      await this.prisma.lessonNote.update({
+        where: { id: existing.id },
+        data: { content: normalized },
+      });
+      return;
+    }
+
+    await this.prisma.lessonNote.create({
+      data: {
+        studentId,
+        lessonId,
+        content: normalized,
+      },
+    });
   }
 
   private async getTutorName(userId: string): Promise<string> {
@@ -85,7 +181,21 @@ export class LessonsService {
 
     return this.prisma.lesson.findMany({
       where,
-      include: { student: { select: { id: true, name: true, subject: true } } },
+      include: {
+        student: { select: { id: true, name: true, subject: true } },
+        notes: {
+          where: {
+            NOT: {
+              content: {
+                startsWith: 'PORTAL_REVIEW:',
+              },
+            },
+          },
+          orderBy: { updatedAt: 'desc' },
+          take: 1,
+          select: { content: true, updatedAt: true },
+        },
+      },
       orderBy: { scheduledAt: 'asc' },
     });
   }
@@ -107,7 +217,8 @@ export class LessonsService {
   }
 
   async create(userId: string, dto: CreateLessonDto) {
-    const { recurrence, scheduledAt, ...rest } = dto;
+    const { recurrence, scheduledAt, notes, ...rest } = dto;
+    const normalizedNote = this.normalizeLessonNote(notes);
 
     if (recurrence?.enabled && recurrence.until && recurrence.weekdays?.length) {
       const groupId = randomUUID();
@@ -147,6 +258,16 @@ export class LessonsService {
         orderBy: { scheduledAt: 'asc' },
       });
 
+      if (normalizedNote && created.length > 0) {
+        await this.prisma.lessonNote.createMany({
+          data: created.map((lesson) => ({
+            studentId: lesson.studentId,
+            lessonId: lesson.id,
+            content: normalizedNote,
+          })),
+        });
+      }
+
       // Sync to Google Calendar (fire-and-forget)
       for (const lesson of created) {
         this.googleCalendar.createEvent(userId, lesson).catch(() => {});
@@ -167,6 +288,8 @@ export class LessonsService {
       include: { student: { select: { id: true, name: true, subject: true } } },
     });
 
+    await this.upsertTutorLessonNote(single.id, single.studentId, notes);
+
     // Sync to Google Calendar (fire-and-forget)
     this.googleCalendar.createEvent(userId, single).catch(() => {});
     this.yandexCalendar.createEvent(userId, single).catch(() => {});
@@ -182,8 +305,9 @@ export class LessonsService {
     if (!lesson) throw new NotFoundException('Lesson not found');
     if (lesson.userId !== userId) throw new ForbiddenException();
 
-    const data: any = { ...dto };
-    if (dto.scheduledAt) data.scheduledAt = new Date(dto.scheduledAt);
+    const { notes, ...lessonChanges } = dto;
+    const data: any = { ...lessonChanges };
+    if (lessonChanges.scheduledAt) data.scheduledAt = new Date(lessonChanges.scheduledAt);
 
     const updated = await this.prisma.lesson.update({
       where: { id },
@@ -191,14 +315,16 @@ export class LessonsService {
       include: { student: { select: { id: true, name: true, subject: true } } },
     });
 
+    await this.upsertTutorLessonNote(id, lesson.studentId, notes);
+
     // Sync to Google Calendar (fire-and-forget)
     this.googleCalendar.updateEvent(userId, updated).catch(() => {});
     this.yandexCalendar.updateEvent(userId, updated).catch(() => {});
 
     // If scheduledAt changed, notify student about reschedule
-    if (dto.scheduledAt && lesson.scheduledAt.toISOString() !== new Date(dto.scheduledAt).toISOString()) {
+    if (lessonChanges.scheduledAt && lesson.scheduledAt.toISOString() !== new Date(lessonChanges.scheduledAt).toISOString()) {
       const oldDate = lesson.scheduledAt;
-      const newDate = new Date(dto.scheduledAt);
+      const newDate = new Date(lessonChanges.scheduledAt);
       const msg = this.messenger.formatLessonRescheduled(
         updated.subject,
         this.formatDate(oldDate),
@@ -264,20 +390,34 @@ export class LessonsService {
       }
     }
 
-    // Late cancel charge: if student cancels < 24h before
-    if (dto.status === LessonStatus.CANCELLED_STUDENT) {
+    if (
+      dto.status === LessonStatus.CANCELLED_STUDENT ||
+      dto.status === LessonStatus.NO_SHOW
+    ) {
       const hoursUntil =
         (lesson.scheduledAt.getTime() - Date.now()) / (1000 * 60 * 60);
       const tutor = await this.prisma.user.findUnique({
         where: { id: userId },
         select: { cancelPolicySettings: true },
       });
-      const cancelPolicy = (tutor?.cancelPolicySettings as any) || {};
-      const freeHours = Number(
-        cancelPolicy.cancelTimeHours ?? cancelPolicy.freeHours ?? 24,
-      );
-      if (hoursUntil < freeHours) {
-        data.lateCancelCharge = lesson.rate;
+
+      const cancelPolicy = this.mapCancelPolicy(tutor?.cancelPolicySettings as any);
+
+      if (dto.status === LessonStatus.CANCELLED_STUDENT) {
+        if (hoursUntil < cancelPolicy.freeHours) {
+          data.lateCancelCharge =
+            cancelPolicy.lateCancelCost ??
+            this.calculatePenalty(lesson.rate, cancelPolicy.lateCancelAction);
+        } else {
+          data.lateCancelCharge = null;
+        }
+      }
+
+      if (dto.status === LessonStatus.NO_SHOW) {
+        data.lateCancelCharge = this.calculatePenalty(
+          lesson.rate,
+          cancelPolicy.noShowAction,
+        );
       }
     }
 

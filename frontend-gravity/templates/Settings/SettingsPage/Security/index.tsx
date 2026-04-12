@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { Card, Text, Button, TextInput } from "@gravity-ui/uikit";
 import { changePassword, deleteAccount } from "@/hooks/useSettings";
 import { useAuth } from "@/contexts/AuthContext";
+import { codedErrorMessage } from "@/lib/errorCodes";
 
 const Security = () => {
     const router = useRouter();
@@ -28,7 +29,7 @@ const Security = () => {
             await changePassword({ currentPassword, newPassword });
             await logout();
             router.push("/sign-in");
-        } catch (e: any) { setMsg(e?.message || "Ошибка"); setMsgOk(false); }
+        } catch (e: any) { setMsg(codedErrorMessage("SETT-SEC-PWD", e)); setMsgOk(false); }
         finally { setSaving(false); }
     };
 
@@ -36,7 +37,7 @@ const Security = () => {
         if (!deletePassword) { setDeleteMsg("Введите пароль для подтверждения"); return; }
         setDeleting(true); setDeleteMsg(null);
         try { await deleteAccount(deletePassword); router.push("/registration"); }
-        catch (e: any) { setDeleteMsg(e?.message || "Ошибка удаления"); }
+        catch (e: any) { setDeleteMsg(codedErrorMessage("SETT-SEC-DEL", e)); }
         finally { setDeleting(false); }
     };
 

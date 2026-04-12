@@ -3,6 +3,32 @@ import { api } from '@/lib/api';
 import { toLocalDateKey } from '@/lib/dates';
 import type { Lesson } from '@/types/schedule';
 
+function extractLessonNote(raw: any): string | undefined {
+  if (typeof raw?.notes === 'string') {
+    const normalized = raw.notes.trim();
+    return normalized.length > 0 ? normalized : undefined;
+  }
+
+  if (Array.isArray(raw?.notes)) {
+    const sorted = [...raw.notes]
+      .filter(
+        (item: any) =>
+          typeof item?.content === 'string' &&
+          !item.content.startsWith('PORTAL_REVIEW:'),
+      )
+      .sort((a: any, b: any) => {
+        const aTime = new Date(a?.updatedAt || a?.createdAt || 0).getTime();
+        const bTime = new Date(b?.updatedAt || b?.createdAt || 0).getTime();
+        return bTime - aTime;
+      });
+
+    const content = sorted[0]?.content?.trim?.();
+    return content ? content : undefined;
+  }
+
+  return undefined;
+}
+
 function mapLesson(raw: any): Lesson {
   const scheduledAt = new Date(raw.scheduledAt);
   const endAt = new Date(scheduledAt.getTime() + (raw.duration || 60) * 60000);
@@ -23,7 +49,7 @@ function mapLesson(raw: any): Lesson {
     format: (raw.format || 'online').toLowerCase() as Lesson['format'],
     status: (raw.status || 'planned').toLowerCase().replace(/_/g, '_') as Lesson['status'],
     rate: raw.rate || 0,
-    notes: raw.notes || undefined,
+    notes: extractLessonNote(raw),
   };
 }
 

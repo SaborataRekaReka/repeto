@@ -3,6 +3,7 @@ import { Dialog, Button, Icon, Loader, Text } from "@gravity-ui/uikit";
 import { Copy } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import { generatePortalLink } from "@/hooks/useStudents";
+import { codedErrorMessage } from "@/lib/errorCodes";
 
 type PortalLinkModalProps = {
     visible: boolean;
@@ -30,7 +31,7 @@ const PortalLinkModal = ({
             setError(null);
             generatePortalLink(studentId)
                 .then((res) => setUrl(res.portalUrl))
-                .catch(() => setError("Не удалось создать ссылку"))
+                .catch((e: any) => setError(codedErrorMessage("PORTAL-LINK", e)))
                 .finally(() => setLoading(false));
         }
         if (!visible) {

@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Card, Text, Button, Select, Switch } from "@gravity-ui/uikit";
 import { useSettings, updateNotificationSettings } from "@/hooks/useSettings";
+import { disablePushNotifications, enablePushNotifications } from "@/lib/pushNotifications";
+import { codedErrorMessage } from "@/lib/errorCodes";
 
 const reminderHours = [
     { value: "1", content: "1 час" }, { value: "2", content: "2 часа" },
@@ -56,10 +58,20 @@ const Notifications = () => {
     const handleSave = async () => {
         setSaving(true); setSaveMsg(null);
         try {
+            if (channel === "push") {
+                const pushResult = await enablePushNotifications();
+                if (!pushResult.enabled) {
+                    setSaveMsg(codedErrorMessage("SETT-NOTIF-PUSH", pushResult.reason));
+                    return;
+                }
+            } else {
+                await disablePushNotifications();
+            }
+
             await updateNotificationSettings({ channel, studentReminder, studentReminderHours, selfReminder, selfReminderMins: selfReminderVal, paymentReminder, paymentReminderDays, cancelNotify, weeklyReport, reportDay });
             await mutate();
             setSaveMsg("Сохранено");
-        } catch (e: any) { setSaveMsg(e?.message || "Ошибка сохранения"); }
+        } catch (e: any) { setSaveMsg(codedErrorMessage("SETT-NOTIF-SAVE", e)); }
         finally { setSaving(false); }
     };
 

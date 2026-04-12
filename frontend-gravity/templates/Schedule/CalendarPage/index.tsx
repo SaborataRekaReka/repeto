@@ -15,9 +15,10 @@ import Month from "./Month";
 import Week from "./Week";
 import Day from "./Day";
 import AvailabilityEditor from "./AvailabilityEditor";
-import { useLessons } from "@/hooks/useLessons";
+import { useLessons, deleteLesson } from "@/hooks/useLessons";
 import { useSettings, syncYandexCalendar } from "@/hooks/useSettings";
 import { toLocalDateKey } from "@/lib/dates";
+import { codedErrorMessage } from "@/lib/errorCodes";
 import type { Lesson } from "@/types/schedule";
 
 type ViewType = "month" | "week" | "day";
@@ -64,6 +65,7 @@ const CalendarPage = () => {
     const [selectedStatuses, setSelectedStatuses] = useState<LessonStatusFilter[]>(ALL_STATUS_VALUES);
     const [exportingYandex, setExportingYandex] = useState(false);
     const [exportStatus, setExportStatus] = useState<{ type: "ok" | "error"; text: string } | null>(null);
+    const [optimisticRemovedLessonIds, setOptimisticRemovedLessonIds] = useState<string[]>([]);
 
     const { data: settings } = useSettings();
     const hasYandexCalendar = !!settings?.hasYandexCalendar;
@@ -106,16 +108,12 @@ const CalendarPage = () => {
         } catch (error: any) {
             setExportStatus({
                 type: "error",
-                text: error?.message || "Не удалось выгрузить расписание в Яндекс.Календарь",
+                text: codedErrorMessage("SCHED-YDEX-EXP", error),
             });
         } finally {
             setExportingYandex(false);
         }
     }, [hasYandexCalendar, router]);
-
-    const handleDelete = useCallback((lessonId: string) => {
-        console.log("TODO: delete lesson from backend", lessonId);
-    }, []);
 
     useEffect(() => {
         if (router.query.create === "1") {
@@ -144,13 +142,39 @@ const CalendarPage = () => {
         return { from: toLocalDateKey(d), to: toLocalDateKey(d) };
     }, [currentDate, view]);
 
-    const { data: lessons = [] } = useLessons(dateRange);
+    const { data: lessons = [], refetch: refetchLessons } = useLessons(dateRange);
+
+    const handleDelete = useCallback(async (lessonId: string) => {
+        setOptimisticRemovedLessonIds((prev) => (
+            prev.includes(lessonId) ? prev : [...prev, lessonId]
+        ));
+
+        try {
+            await deleteLesson(lessonId);
+            await refetchLessons();
+        } catch (error: any) {
+            setOptimisticRemovedLessonIds((prev) => prev.filter((id) => id !== lessonId));
+            setExportStatus({
+                type: "error",
+                text: codedErrorMessage("LESSON-DELETE", error),
+            });
+        }
+    }, [refetchLessons]);
+
+    useEffect(() => {
+        if (optimisticRemovedLessonIds.length === 0) return;
+
+        const existingIds = new Set(lessons.map((lesson) => lesson.id));
+        setOptimisticRemovedLessonIds((prev) => prev.filter((id) => existingIds.has(id)));
+    }, [lessons, optimisticRemovedLessonIds.length]);
 
     const visibleLessons = useMemo(() => {
         if (selectedStatuses.length === 0) return [];
         const selected = new Set<LessonStatusFilter>(selectedStatuses);
-        return lessons.filter((lesson) => selected.has(lesson.status));
-    }, [lessons, selectedStatuses]);
+        return lessons.filter(
+            (lesson) => selected.has(lesson.status) && !optimisticRemovedLessonIds.includes(lesson.id)
+        );
+    }, [lessons, selectedStatuses, optimisticRemovedLessonIds]);
 
     const navigate = useCallback((direction: -1 | 1) => {
         setCurrentDate((prev) => {
@@ -317,6 +341,7 @@ const CalendarPage = () => {
                 lesson={selectedLesson}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                onUpdated={refetchLessons}
             />
             <CreateLessonModal
                 visible={createModal}
@@ -325,6 +350,7 @@ const CalendarPage = () => {
                     setCreateSlot(null);
                     setEditLesson(null);
                 }}
+                onCreated={refetchLessons}
                 lesson={editLesson}
                 defaultDate={createSlot?.date}
                 defaultTime={createSlot?.time}

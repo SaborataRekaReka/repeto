@@ -56,7 +56,7 @@ function extractErrorMessage(
     }
   }
 
-  return `API Error ${status}: ${statusText}`;
+  return 'Запрос не выполнен';
 }
 
 export function setAccessToken(token: string | null) {

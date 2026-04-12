@@ -1218,3 +1218,54 @@ body {
     scrollbar-width: thin;
     scrollbar-color: rgba(133, 140, 148, 0.55) transparent;
 }
+
+/* ============ Page transition loader ============ */
+@keyframes repeto-page-bar {
+    0%   { transform: scaleX(0); transform-origin: left; }
+    50%  { transform: scaleX(0.75); transform-origin: left; }
+    100% { transform: scaleX(1); transform-origin: left; }
+}
+
+@keyframes repeto-icon-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.6; transform: scale(0.88); }
+}
+
+.repeto-page-loader {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.repeto-page-loader__bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #AE7AFF 0%, #98E9AB 100%);
+    transform-origin: left;
+    animation: repeto-page-bar 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+    z-index: 10000;
+}
+
+.repeto-page-loader__icon {
+    width: 52px;
+    height: 52px;
+    animation: repeto-icon-pulse 1s ease-in-out infinite;
+    filter: drop-shadow(0 4px 16px rgba(174, 122, 255, 0.35));
+}
+
+/* Kill any leftover Bruddle loaders at bottom-right */
+[class*="loader"]:not(.repeto-page-loader):not(.g-loader),
+[class*="loading"]:not(.repeto-page-loader):not([class*="repeto"]):not([class*="g-"]) {
+    /* don't hide content loaders, only page-level fixed ones */
+}
+#__next-loading,
+[data-nextjs-router-loader] {
+    display: none !important;
+}

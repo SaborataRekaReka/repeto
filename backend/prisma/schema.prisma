@@ -321,6 +321,7 @@ model Package {
   lessonsTotal Int           @map("lessons_total")
   lessonsUsed  Int           @default(0) @map("lessons_used")
   totalPrice   Int           @map("total_price")
+  comment      String?
   status       PackageStatus @default(ACTIVE)
   validUntil   DateTime?     @map("valid_until")
 

@@ -6,6 +6,7 @@ import { getInitials } from "@/mocks/students";
 import { useStudents } from "@/hooks/useStudents";
 import { updateFileShare } from "@/hooks/useFiles";
 import type { FileItem } from "@/types/files";
+import { codedErrorMessage } from "@/lib/errorCodes";
 
 type ShareModalProps = {
     visible: boolean;
@@ -59,7 +60,7 @@ const ShareModal = ({ visible, item, onClose, onSaved }: ShareModalProps) => {
         setError(null);
         updateFileShare(item.id, { studentIds: Array.from(sharedIds), applyToChildren })
             .then(() => { setSaved(true); onSaved?.(); setTimeout(() => onClose(), 600); })
-            .catch((e: any) => { setError(e?.message || "Не удалось обновить доступ"); })
+            .catch((e: any) => { setError(codedErrorMessage("FILES-SHARE", e)); })
             .finally(() => { setSaving(false); });
     };
 

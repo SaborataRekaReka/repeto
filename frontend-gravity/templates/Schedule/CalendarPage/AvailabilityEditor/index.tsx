@@ -17,6 +17,8 @@ import {
     type AvailabilitySlot,
     type AvailabilityOverride,
 } from "@/hooks/useAvailability";
+import StyledDateInput from "@/components/StyledDateInput";
+import StyledTimeInput from "@/components/StyledTimeInput";
 
 const DAY_NAMES = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -469,20 +471,10 @@ const AvailabilityEditor = () => {
                                     >
                                         Дата
                                     </Text>
-                                    <input
-                                        type="date"
+                                    <StyledDateInput
                                         value={exDate}
-                                        onChange={(e) => setExDate(e.target.value)}
-                                        style={{
-                                            height: 28,
-                                            padding: "0 8px",
-                                            fontSize: 13,
-                                            border: "1px solid var(--g-color-line-generic)",
-                                            borderRadius: 6,
-                                            background: "var(--g-color-base-background)",
-                                            color: "var(--g-color-text-primary)",
-                                            outline: "none",
-                                        }}
+                                        onUpdate={setExDate}
+                                        width={150}
                                     />
                                 </div>
                                 <div>
@@ -521,20 +513,17 @@ const AvailabilityEditor = () => {
                                             >
                                                 С
                                             </Text>
-                                            <input
-                                                type="time"
+                                            <StyledTimeInput
                                                 value={exFrom}
-                                                onChange={(e) => setExFrom(e.target.value)}
-                                                step={1800}
+                                                onUpdate={setExFrom}
+                                                stepMinutes={30}
+                                                min="00:00"
+                                                max="23:30"
+                                                showClockIcon={false}
                                                 style={{
                                                     height: 28,
                                                     padding: "0 8px",
-                                                    fontSize: 13,
-                                                    border: "1px solid var(--g-color-line-generic)",
-                                                    borderRadius: 6,
-                                                    background: "var(--g-color-base-background)",
-                                                    color: "var(--g-color-text-primary)",
-                                                    outline: "none",
+                                                    width: 92,
                                                 }}
                                             />
                                         </div>
@@ -553,20 +542,17 @@ const AvailabilityEditor = () => {
                                             >
                                                 До
                                             </Text>
-                                            <input
-                                                type="time"
+                                            <StyledTimeInput
                                                 value={exTo}
-                                                onChange={(e) => setExTo(e.target.value)}
-                                                step={1800}
+                                                onUpdate={setExTo}
+                                                stepMinutes={30}
+                                                min="00:00"
+                                                max="23:30"
+                                                showClockIcon={false}
                                                 style={{
                                                     height: 28,
                                                     padding: "0 8px",
-                                                    fontSize: 13,
-                                                    border: "1px solid var(--g-color-line-generic)",
-                                                    borderRadius: 6,
-                                                    background: "var(--g-color-base-background)",
-                                                    color: "var(--g-color-text-primary)",
-                                                    outline: "none",
+                                                    width: 92,
                                                 }}
                                             />
                                         </div>

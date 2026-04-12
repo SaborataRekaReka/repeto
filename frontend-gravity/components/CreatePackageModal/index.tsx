@@ -2,14 +2,30 @@ import { useState, useEffect } from "react";
 import { Dialog, TextInput, Select, Button, Text, TextArea } from "@gravity-ui/uikit";
 import { useStudents } from "@/hooks/useStudents";
 import { createPackage, updatePackage } from "@/hooks/usePackages";
+import StyledDateInput from "@/components/StyledDateInput";
 import type { LessonPackage } from "@/types/package";
 
 const GDialog = Dialog as any;
 
+const errorWrapStyle = (invalid: boolean) =>
+    invalid
+        ? {
+              border: "1px solid var(--g-color-line-danger)",
+              borderRadius: 8,
+              padding: 2,
+          }
+        : undefined;
+
+function toPositiveNumber(value: string): number {
+    const normalized = String(value || "").replace(",", ".").trim();
+    if (!normalized) return NaN;
+    return Number(normalized);
+}
+
 type CreatePackageModalProps = {
     visible: boolean;
     onClose: () => void;
-    onCreated?: () => void;
+    onCreated?: () => void | Promise<void>;
     packageData?: LessonPackage | null;
 };
 
@@ -34,6 +50,18 @@ const CreatePackageModal = ({
     const [comment, setComment] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [touched, setTouched] = useState({
+        studentId: false,
+        subject: false,
+        lessonsCount: false,
+        totalAmount: false,
+    });
+
+    const markTouched = (
+        field: "studentId" | "subject" | "lessonsCount" | "totalAmount"
+    ) => {
+        setTouched((prev) => (prev[field] ? prev : { ...prev, [field]: true }));
+    };
 
     useEffect(() => {
         if (studentId.length && !packageData) {
@@ -46,6 +74,12 @@ const CreatePackageModal = ({
         if (!visible) return;
         setError(null);
         setSubmitting(false);
+        setTouched({
+            studentId: false,
+            subject: false,
+            lessonsCount: false,
+            totalAmount: false,
+        });
 
         if (packageData) {
             setStudentId(packageData.studentId ? [packageData.studentId] : []);
@@ -53,7 +87,7 @@ const CreatePackageModal = ({
             setLessonsCount(String(packageData.lessonsTotal || 8));
             setTotalAmount(String(packageData.totalPrice || ""));
             setValidUntil(packageData.validUntilValue || "");
-            setComment("");
+            setComment(packageData.comment || "");
             return;
         }
 
@@ -66,19 +100,38 @@ const CreatePackageModal = ({
     }, [visible, packageData]);
 
     const handleSubmit = async () => {
-        if (!studentId.length || !lessonsCount || !totalAmount || !subject) {
-            setError("Заполните обязательные поля: ученик, предмет, количество и сумма.");
+        const lessonsTotal = toPositiveNumber(lessonsCount);
+        const totalPrice = toPositiveNumber(totalAmount);
+
+        setTouched({
+            studentId: true,
+            subject: true,
+            lessonsCount: true,
+            totalAmount: true,
+        });
+
+        if (
+            !studentId.length ||
+            !subject.trim() ||
+            !Number.isFinite(lessonsTotal) ||
+            lessonsTotal <= 0 ||
+            !Number.isFinite(totalPrice) ||
+            totalPrice <= 0
+        ) {
+            setError("Заполните обязательные поля корректно.");
             return;
         }
         setSubmitting(true);
         setError(null);
         try {
+            const normalizedComment = comment.trim();
             const payload = {
                 studentId: studentId[0],
-                subject,
-                lessonsTotal: Number(lessonsCount),
-                totalPrice: Number(totalAmount),
+                subject: subject.trim(),
+                lessonsTotal,
+                totalPrice,
                 validUntil: validUntil || undefined,
+                comment: normalizedComment || null,
             };
 
             if (packageData) {
@@ -87,7 +140,7 @@ const CreatePackageModal = ({
                 await createPackage(payload);
             }
 
-            onCreated?.();
+            await onCreated?.();
             onClose();
         } catch (err) {
             console.error("Failed to save package:", err);
@@ -96,6 +149,13 @@ const CreatePackageModal = ({
             setSubmitting(false);
         }
     };
+
+    const studentError = touched.studentId && !studentId.length;
+    const subjectError = touched.subject && !subject.trim();
+    const lessonsCountError =
+        touched.lessonsCount && (!Number.isFinite(toPositiveNumber(lessonsCount)) || toPositiveNumber(lessonsCount) <= 0);
+    const totalAmountError =
+        touched.totalAmount && (!Number.isFinite(toPositiveNumber(totalAmount)) || toPositiveNumber(totalAmount) <= 0);
 
     const isEditing = !!packageData;
 
@@ -106,54 +166,87 @@ const CreatePackageModal = ({
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                     <div>
                         <Text variant="body-1" color="secondary" style={{ display: "block", marginBottom: 4 }}>Ученик *</Text>
-                        <Select
-                            size="m"
-                            width="max"
-                            placeholder="Выберите ученика"
-                            options={studentOptions}
-                            value={studentId}
-                            onUpdate={setStudentId}
-                            filterable
-                        />
+                        <div style={errorWrapStyle(studentError)} onClick={() => markTouched("studentId")}> 
+                            <Select
+                                size="m"
+                                width="max"
+                                placeholder="Выберите ученика"
+                                options={studentOptions}
+                                value={studentId}
+                                onUpdate={(value) => {
+                                    setStudentId(value);
+                                    markTouched("studentId");
+                                }}
+                                filterable
+                            />
+                        </div>
+                        {studentError && (
+                            <Text as="div" variant="caption-2" style={{ marginTop: 4, color: "var(--g-color-text-danger)" }}>
+                                Обязательное поле
+                            </Text>
+                        )}
                     </div>
                     <div>
                         <Text variant="body-1" color="secondary" style={{ display: "block", marginBottom: 4 }}>Предмет *</Text>
-                        <TextInput
-                            size="m"
-                            placeholder="Математика"
-                            value={subject}
-                            onUpdate={setSubject}
-                        />
+                        <div style={errorWrapStyle(subjectError)}>
+                            <TextInput
+                                size="m"
+                                placeholder="Математика"
+                                value={subject}
+                                onUpdate={setSubject}
+                                onBlur={() => markTouched("subject")}
+                            />
+                        </div>
+                        {subjectError && (
+                            <Text as="div" variant="caption-2" style={{ marginTop: 4, color: "var(--g-color-text-danger)" }}>
+                                Обязательное поле
+                            </Text>
+                        )}
                     </div>
                     <div style={{ display: "flex", gap: 12 }}>
                         <div style={{ flex: 1 }}>
                             <Text variant="body-1" color="secondary" style={{ display: "block", marginBottom: 4 }}>Кол-во занятий *</Text>
-                            <TextInput
-                                size="m"
-                                type="number"
-                                placeholder="8"
-                                value={lessonsCount}
-                                onUpdate={setLessonsCount}
-                            />
+                            <div style={errorWrapStyle(lessonsCountError)}>
+                                <TextInput
+                                    size="m"
+                                    type="number"
+                                    placeholder="8"
+                                    value={lessonsCount}
+                                    onUpdate={setLessonsCount}
+                                    onBlur={() => markTouched("lessonsCount")}
+                                />
+                            </div>
+                            {lessonsCountError && (
+                                <Text as="div" variant="caption-2" style={{ marginTop: 4, color: "var(--g-color-text-danger)" }}>
+                                    Введите число больше 0
+                                </Text>
+                            )}
                         </div>
                         <div style={{ flex: 1 }}>
                             <Text variant="body-1" color="secondary" style={{ display: "block", marginBottom: 4 }}>Сумма пакета (₽) *</Text>
-                            <TextInput
-                                size="m"
-                                type="number"
-                                placeholder="16800"
-                                value={totalAmount}
-                                onUpdate={setTotalAmount}
-                            />
+                            <div style={errorWrapStyle(totalAmountError)}>
+                                <TextInput
+                                    size="m"
+                                    type="number"
+                                    placeholder="16800"
+                                    value={totalAmount}
+                                    onUpdate={setTotalAmount}
+                                    onBlur={() => markTouched("totalAmount")}
+                                />
+                            </div>
+                            {totalAmountError && (
+                                <Text as="div" variant="caption-2" style={{ marginTop: 4, color: "var(--g-color-text-danger)" }}>
+                                    Введите число больше 0
+                                </Text>
+                            )}
                         </div>
                     </div>
                     <div>
                         <Text variant="body-1" color="secondary" style={{ display: "block", marginBottom: 4 }}>Действует до</Text>
-                        <TextInput
-                            size="m"
-                            type={"date" as any}
+                        <StyledDateInput
                             value={validUntil}
                             onUpdate={setValidUntil}
+                            style={{ height: 36, padding: "0 12px" }}
                         />
                     </div>
                     <div>

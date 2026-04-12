@@ -6,7 +6,7 @@ import Image from "@/components/Image";
 import Create from "./Create";
 import { useStudents } from "@/hooks/useStudents";
 import { getInitials, getSubjectBgColor } from "@/mocks/students";
-import { useUnreadCount } from "@/hooks/useNotifications";
+import { onNotificationsChanged, useUnreadCount } from "@/hooks/useNotifications";
 import { useAuth } from "@/contexts/AuthContext";
 
 type HeaderProps = {
@@ -22,8 +22,14 @@ const Header = ({ back, title }: HeaderProps) => {
     const inputRef = useRef<HTMLInputElement>(null);
     const router = useRouter();
     const { user } = useAuth();
-    const { data: unreadData } = useUnreadCount();
+    const { data: unreadData, refetch: refetchUnread } = useUnreadCount();
     const unreadCount = unreadData?.count || 0;
+
+    useEffect(() => {
+        return onNotificationsChanged(() => {
+            refetchUnread();
+        });
+    }, [refetchUnread]);
 
     useScrollPosition(({ currPos }) => {
         setHeaderStyle(currPos.y <= -1);

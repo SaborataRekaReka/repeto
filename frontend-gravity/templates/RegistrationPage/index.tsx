@@ -1,91 +1,88 @@
 import { useState } from "react";
-import { useColorMode } from "@chakra-ui/color-mode";
 import Head from "next/head";
 import Logo from "@/components/Logo";
-import Image from "@/components/Image";
 import SignIn from "./SignIn";
 import SignUp from "./SignUp";
 import ForgotPassword from "./ForgotPassword";
+import { useThemeMode } from "@/contexts/ThemeContext";
+
+type View = "signin" | "signup" | "forgot";
 
 const RegistrationPage = () => {
-    const [signUp, setSignUp] = useState<boolean>(false);
-    const [forgotPassword, setForgotPassword] = useState<boolean>(false);
-    const [sent, setSent] = useState<boolean>(false);
-    const { colorMode } = useColorMode();
-    const isDarkMode = colorMode === "dark";
-
-    const handleClick = () => {
-        setSignUp(!signUp);
-        setForgotPassword(false);
-        setSent(false);
-    };
+    const [view, setView] = useState<View>("signin");
+    const { theme } = useThemeMode();
+    const isDark = theme === "dark";
 
     return (
         <>
             <Head>
-                <title>Repeto</title>
+                <title>Repeto — Вход</title>
             </Head>
-            <div className="relative overflow-hidden">
-                <div className="relative z-3 flex flex-col max-w-[75rem] min-h-screen mx-auto px-7.5 py-12 xls:px-20 lg:px-8 md:px-6 md:py-8">
-                    <div className="flex flex-col grow max-w-[27.31rem] lg:max-w-[25rem]">
-                        <Logo className="w-[6.25rem]" />
-                        <div className="my-auto py-12">
-                            {forgotPassword ? (
-                                <ForgotPassword
-                                    sent={sent}
-                                    onSent={() => setSent(true)}
-                                    onBack={() => {
-                                        setForgotPassword(false);
-                                        setSent(false);
-                                    }}
-                                />
-                            ) : signUp ? (
-                                <SignUp />
-                            ) : (
-                                <SignIn
-                                    onRecover={() => setForgotPassword(true)}
-                                />
-                            )}
+            <div
+                style={{
+                    minHeight: "100vh",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "var(--repeto-bg)",
+                    padding: "24px 16px",
+                }}
+            >
+                <div style={{ width: "100%", maxWidth: 420 }}>
+                    {/* Logo */}
+                    <div style={{ display: "flex", justifyContent: "center", marginBottom: 28 }}>
+                        <div style={{ filter: isDark ? "brightness(0) invert(1)" : "none", transition: "filter 0.2s" }}>
+                            <Logo className="w-[8rem]" />
                         </div>
-                        <div className="text-sm">
-                            {signUp || forgotPassword
-                                ? "Уже есть аккаунт?"
-                                : "Нет аккаунта?"}
+                    </div>
+
+                    {/* Card */}
+                    <div
+                        style={{
+                            background: "var(--g-color-base-float)",
+                            borderRadius: 20,
+                            padding: "32px 32px 28px",
+                            boxShadow: "0 2px 32px rgba(174,122,255,0.10), 0 1px 4px rgba(0,0,0,0.06)",
+                            border: "1px solid rgba(174,122,255,0.10)",
+                        }}
+                    >
+                        {view === "forgot" ? (
+                            <ForgotPassword onBack={() => setView("signin")} />
+                        ) : view === "signup" ? (
+                            <SignUp />
+                        ) : (
+                            <SignIn onRecover={() => setView("forgot")} />
+                        )}
+                    </div>
+
+                    {/* Switch link */}
+                    {view !== "forgot" && (
+                        <p
+                            style={{
+                                textAlign: "center",
+                                marginTop: 20,
+                                fontSize: 14,
+                                color: "var(--g-color-text-secondary)",
+                            }}
+                        >
+                            {view === "signup" ? "Уже есть аккаунт? " : "Нет аккаунта? "}
                             <button
-                                className="ml-1.5 font-bold transition-colors hover:text-purple-1"
-                                onClick={handleClick}
+                                onClick={() => setView(view === "signup" ? "signin" : "signup")}
+                                style={{
+                                    color: "var(--g-color-text-brand)",
+                                    fontWeight: 600,
+                                    background: "none",
+                                    border: "none",
+                                    cursor: "pointer",
+                                    padding: 0,
+                                    fontSize: 14,
+                                }}
                             >
-                                {signUp || forgotPassword
-                                    ? "Войти"
-                                    : "Создать аккаунт"}
+                                {view === "signup" ? "Войти" : "Зарегистрироваться"}
                             </button>
-                        </div>
-                    </div>
-                </div>
-                <div className="absolute -z-1 inset-0 overflow-hidden pointer-events-none">
-                    <div className="absolute z-1 inset-0 bg-n-2 opacity-0 dark:opacity-80"></div>
-                    <div className="absolute top-[50%] left-[45vw] -translate-y-1/2 w-[85rem] xl:w-[60rem] lg:left-[50vw] md:-top-[25%] md:-left-[30%] md:translate-y-0 md:w-[30rem]">
-                        <Image
-                            className=""
-                            src="/images/bg.svg"
-                            width={1349}
-                            height={1216}
-                            alt=""
-                        />
-                    </div>
-                </div>
-                <div className="absolute top-1/2 right-[calc(50%-61.8125rem)] w-[61.8125rem] -translate-y-1/2 xls:right-[calc(50%-61rem)] xls:w-[55rem] lg:right-[calc(50%-64rem)] md:hidden">
-                    <Image
-                        className="w-full"
-                        src={
-                            isDarkMode
-                                ? "/images/mockup-dark.png"
-                                : "/images/mockup-light.png"
-                        }
-                        width={989}
-                        height={862}
-                        alt=""
-                    />
+                        </p>
+                    )}
                 </div>
             </div>
         </>

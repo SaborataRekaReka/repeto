@@ -20,7 +20,7 @@ import {
 import { Icon, Text, TextInput, Button, Tooltip, DropdownMenu } from "@gravity-ui/uikit";
 import type { IconData } from "@gravity-ui/uikit";
 import { useStudents } from "@/hooks/useStudents";
-import { useUnreadCount } from "@/hooks/useNotifications";
+import { onNotificationsChanged, useUnreadCount } from "@/hooks/useNotifications";
 import { useAuth } from "@/contexts/AuthContext";
 import { getInitials } from "@/mocks/students";
 
@@ -77,8 +77,14 @@ const GravityLayout = ({ title, back, children }: GravityLayoutProps) => {
     const pathname = router.asPath.split("?")[0];
     const { user } = useAuth();
     const tutorName = user?.name?.trim() || "Репетитор";
-    const { data: unreadData } = useUnreadCount();
+    const { data: unreadData, refetch: refetchUnread } = useUnreadCount();
     const unreadCount = unreadData?.count || 0;
+
+    useEffect(() => {
+        return onNotificationsChanged(() => {
+            refetchUnread();
+        });
+    }, [refetchUnread]);
 
     // Sidebar collapsed state
     const [collapsed, setCollapsed] = useState<boolean>(() => readSidebarCollapsed());

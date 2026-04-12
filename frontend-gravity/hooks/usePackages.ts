@@ -12,6 +12,7 @@ function mapPackage(raw: any): LessonPackage {
     lessonsTotal: raw.lessonsTotal,
     lessonsUsed: raw.lessonsUsed,
     totalPrice: raw.totalPrice,
+    comment: raw.comment || undefined,
     status: (raw.status || 'active').toLowerCase() as LessonPackage['status'],
     validUntil: raw.validUntil
       ? new Date(raw.validUntil).toLocaleDateString('ru-RU')
@@ -60,6 +61,7 @@ export async function createPackage(data: {
   lessonsTotal: number;
   totalPrice: number;
   validUntil?: string;
+  comment?: string | null;
 }) {
   return api('/packages', {
     method: 'POST',

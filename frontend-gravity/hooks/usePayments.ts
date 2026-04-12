@@ -60,6 +60,29 @@ export function usePayments(params?: {
   };
 }
 
+function normalizePaymentDate(date?: string): string | undefined {
+  if (!date) return undefined;
+
+  const raw = String(date).trim();
+  if (!raw) return undefined;
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    return raw;
+  }
+
+  const ru = raw.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+  if (ru) {
+    return `${ru[3]}-${ru[2]}-${ru[1]}`;
+  }
+
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) {
+    return undefined;
+  }
+
+  return parsed.toISOString();
+}
+
 export async function createPayment(data: {
   studentId: string;
   amount: number;
@@ -71,6 +94,7 @@ export async function createPayment(data: {
     method: 'POST',
     body: {
       ...data,
+      date: normalizePaymentDate(data.date),
       method: data.method.toUpperCase(),
     },
   });
@@ -82,6 +106,10 @@ export async function updatePayment(id: string, data: Record<string, unknown>) {
 
 export async function deletePayment(id: string) {
   return api(`/payments/${id}`, { method: 'DELETE' });
+}
+
+export async function deleteManualPayments() {
+  return api<{ deleted: number }>('/payments/manual/all', { method: 'DELETE' });
 }
 
 // Finance overview hooks

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, Text, Button, Select, Switch } from "@gravity-ui/uikit";
 import { useSettings, updatePolicies } from "@/hooks/useSettings";
+import { codedErrorMessage } from "@/lib/errorCodes";
 
 const cancelHours = [
     { value: "2", content: "2 часа" }, { value: "4", content: "4 часа" },
@@ -46,7 +47,7 @@ const Policies = () => {
             await updatePolicies({ cancelTimeHours: cancelTime, lateCancelAction: lateCancel, noShowAction: noShow, defaultPaymentMethod: defaultMethod, isSelfEmployed, receiptReminder });
             await mutate();
             setSaveMsg("Сохранено");
-        } catch (e: any) { setSaveMsg(e?.message || "Ошибка"); }
+        } catch (e: any) { setSaveMsg(codedErrorMessage("SETT-POL-SAVE", e)); }
         finally { setSaving(false); }
     };
     const handleReset = () => {

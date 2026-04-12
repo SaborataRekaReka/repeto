@@ -10,7 +10,13 @@ export type MessengerRecipient = {
 };
 
 export type NotificationEvent = {
-  type: 'lesson_assigned' | 'lesson_cancelled' | 'lesson_rescheduled' | 'payment_debt' | 'lesson_reminder';
+  type:
+    | 'lesson_assigned'
+    | 'lesson_cancelled'
+    | 'lesson_rescheduled'
+    | 'payment_debt'
+    | 'lesson_reminder'
+    | 'portal_access';
   tutorId: string;
   studentId: string;
   message: string;
@@ -142,6 +148,15 @@ export class MessengerDeliveryService {
       `Дата: ${date}\n` +
       `Время: ${time}\n` +
       `Репетитор: ${tutorName}`;
+  }
+
+  formatPortalAccess(
+    tutorName: string,
+    portalUrl: string,
+  ): string {
+    return `🔗 Доступ в портал ученика\n\n` +
+      `Репетитор: ${tutorName}\n` +
+      `Ссылка: ${portalUrl}`;
   }
 
   formatLessonCancelled(

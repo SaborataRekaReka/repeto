@@ -1,65 +1,106 @@
 import { useState } from "react";
-import Field from "@/components/Field";
+import { TextInput, Button, Text, Icon } from "@gravity-ui/uikit";
+import { CircleCheck } from "@gravity-ui/icons";
+import type { IconData } from "@gravity-ui/uikit";
 
 type ForgotPasswordProps = {
-    sent: boolean;
-    onSent: () => void;
     onBack: () => void;
 };
 
-const ForgotPassword = ({ sent, onSent, onBack }: ForgotPasswordProps) => {
-    const [email, setEmail] = useState<string>("");
+const LABEL_STYLE: React.CSSProperties = {
+    display: "block",
+    marginBottom: 6,
+    fontSize: 13,
+    fontWeight: 600,
+    color: "var(--g-color-text-primary)",
+};
+
+const ForgotPassword = ({ onBack }: ForgotPasswordProps) => {
+    const [email, setEmail] = useState("");
+    const [sent, setSent] = useState(false);
 
     if (sent) {
         return (
-            <div>
-                <div className="mb-1 text-h1">Письмо отправлено</div>
-                <div className="mb-8 text-sm text-n-2 dark:text-white/50">
-                    Мы отправили инструкции по восстановлению пароля на указанный email. Проверьте входящие сообщения.
-                </div>
-                <button
-                    className="btn-purple btn-shadow w-full h-14"
-                    type="button"
-                    onClick={onBack}
+            <div style={{ textAlign: "center", padding: "8px 0" }}>
+                <div
+                    style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: 56,
+                        height: 56,
+                        borderRadius: "50%",
+                        background: "rgba(34,197,94,0.12)",
+                        color: "#22C55E",
+                        marginBottom: 20,
+                    }}
                 >
-                    Назад ко входу
-                </button>
+                    <Icon data={CircleCheck as IconData} size={28} />
+                </div>
+                <Text variant="header-2" style={{ display: "block", marginBottom: 8 }}>
+                    Письмо отправлено
+                </Text>
+                <Text
+                    variant="body-1"
+                    color="secondary"
+                    style={{ display: "block", marginBottom: 28, lineHeight: 1.6 }}
+                >
+                    Проверьте входящие сообщения на{" "}
+                    <strong style={{ color: "var(--g-color-text-primary)" }}>{email}</strong>. Следуйте
+                    инструкциям в письме.
+                </Text>
+                <Button view="outlined" size="l" width="max" onClick={onBack}>
+                    ← Назад ко входу
+                </Button>
             </div>
         );
     }
 
     return (
-        <>
-            <form action="" onSubmit={(e) => { e.preventDefault(); onSent(); }}>
-                <div className="mb-1 text-h1">Забыли пароль?</div>
-                <div className="mb-12 text-sm text-n-2 dark:text-white/50">
-                    Введите email вашего аккаунта, и мы отправим инструкции по восстановлению пароля.
-                </div>
-                <Field
-                    className="mb-4.5"
-                    label="Email вашего аккаунта"
+        <form
+            onSubmit={(e) => {
+                e.preventDefault();
+                setSent(true);
+            }}
+            noValidate
+        >
+            <Text variant="header-2" style={{ display: "block", marginBottom: 6 }}>
+                Восстановление пароля
+            </Text>
+            <Text
+                variant="body-1"
+                color="secondary"
+                style={{ display: "block", marginBottom: 24, lineHeight: 1.6 }}
+            >
+                Введите email вашего аккаунта, и мы отправим инструкции по восстановлению.
+            </Text>
+
+            <div style={{ marginBottom: 24 }}>
+                <span style={LABEL_STYLE}>Email</span>
+                <TextInput
+                    size="l"
                     type="email"
-                    placeholder="Введите email"
-                    icon="email"
+                    placeholder="email@example.com"
                     value={email}
-                    onChange={(e: any) => setEmail(e.target.value)}
-                    required
+                    onUpdate={setEmail}
+                    autoComplete="email"
                 />
-                <button
-                    className="btn-purple btn-shadow w-full h-14"
-                    type="submit"
-                >
-                    Восстановить пароль
-                </button>
-                <button
-                    className="mt-4 w-full text-sm font-bold transition-colors hover:text-purple-1"
-                    type="button"
-                    onClick={onBack}
-                >
-                    ← Назад ко входу
-                </button>
-            </form>
-        </>
+            </div>
+
+            <Button
+                view="action"
+                size="xl"
+                type="submit"
+                width="max"
+                style={{ borderRadius: 12, marginBottom: 12 }}
+            >
+                Отправить инструкции
+            </Button>
+
+            <Button view="flat" size="l" width="max" onClick={onBack}>
+                ← Назад ко входу
+            </Button>
+        </form>
     );
 };
 

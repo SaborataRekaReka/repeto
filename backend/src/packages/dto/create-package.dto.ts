@@ -31,4 +31,9 @@ export class CreatePackageDto {
   @IsOptional()
   @IsDateString()
   validUntil?: string;
+
+  @ApiPropertyOptional({ description: 'Package comment' })
+  @IsOptional()
+  @IsString()
+  comment?: string;
 }

@@ -1,6 +1,8 @@
 import { useState } from "react";
 import Icon from "@/components/Icon";
 import Modal from "@/components/Modal";
+import StyledDateInput from "@/components/StyledDateInput";
+import StyledTimeInput from "@/components/StyledTimeInput";
 import { api } from "@/lib/api";
 import type { StudentPortalData, RecentLesson } from "@/types/student-portal";
 import type { PortalLesson } from "@/types/student-portal";
@@ -58,26 +60,40 @@ const LessonsTab = ({ data, token }: LessonsTabProps) => {
     const getRecentStatusClass = (status?: string) =>
         isRecentCompleted(status) ? "label-green" : "label-stroke-pink";
 
-    const normalizeLateAction = (action?: string) => {
+    const normalizePolicyAction = (action?: string) => {
         const normalized = (action || "").trim().toLowerCase();
 
-        if (!normalized || normalized === "charge") {
-            return "списание по правилам репетитора";
-        }
-        if (normalized === "no_charge") {
-            return "без списания";
-        }
-        if (normalized === "full_charge") {
+        if (
+            normalized === "full" ||
+            normalized === "full_charge" ||
+            normalized === "charge"
+        ) {
             return "100% стоимости занятия";
         }
-        if (normalized === "half_charge") {
+        if (normalized === "half" || normalized === "half_charge") {
             return "50% стоимости занятия";
         }
+        if (normalized === "none" || normalized === "no_charge") {
+            return "без списания";
+        }
+        if (!normalized) {
+            return "100% стоимости занятия";
+        }
 
-        return action || "списание по правилам репетитора";
+        return action || "100% стоимости занятия";
     };
 
-    const lateActionLabel = normalizeLateAction(data.cancelPolicy.lateAction);
+    const lateActionValue =
+        data.cancelPolicy.lateCancelAction || data.cancelPolicy.lateAction;
+    const lateActionLabel = normalizePolicyAction(lateActionValue);
+    const noShowActionLabel = normalizePolicyAction(
+        data.cancelPolicy.noShowAction
+    );
+    const lateCancelWarning = data.cancelPolicy.lateCancelCost
+        ? `Поздняя отмена! Будет списано ${data.cancelPolicy.lateCancelCost.toLocaleString("ru-RU")} ₽.`
+        : lateActionLabel === "без списания"
+          ? "Поздняя отмена! Штрафа не будет."
+          : `Поздняя отмена! Будет списано ${lateActionLabel}.`;
 
     const handleCancel = async (lesson: PortalLesson) => {
         if (cancelConfirm === lesson.id) {
@@ -286,7 +302,7 @@ const LessonsTab = ({ data, token }: LessonsTabProps) => {
                                     <p className="text-xs text-pink-1 font-bold mb-1">
                                         {lesson.canCancelFree
                                             ? `Отмена бесплатная (до занятия > ${data.cancelPolicy.freeHours} ${formatHoursWord(data.cancelPolicy.freeHours)}).`
-                                            : `Поздняя отмена! Будет списано ${data.cancelPolicy.lateCancelCost ? data.cancelPolicy.lateCancelCost.toLocaleString("ru-RU") + " ₽" : lateActionLabel}.`}
+                                            : lateCancelWarning}
                                     </p>
                                     <p className="text-xs text-n-3 dark:text-white/50">
                                         Нажмите «Отменить» ещё раз для
@@ -453,7 +469,7 @@ const LessonsTab = ({ data, token }: LessonsTabProps) => {
                         <span className="font-bold">
                             {lateActionLabel}
                         </span>
-                        .
+                        . При неявке — <span className="font-bold">{noShowActionLabel}</span>.
                     </p>
                 </div>
             </div>
@@ -478,22 +494,29 @@ const LessonsTab = ({ data, token }: LessonsTabProps) => {
                         <label className="mb-1.5 block text-xs font-bold text-n-3 dark:text-white/50">
                             Новая дата
                         </label>
-                        <input
-                            type="date"
-                            className="w-full text-sm bg-transparent border border-n-1 rounded-sm px-3 py-2.5 outline-none dark:border-white dark:text-white"
+                        <StyledDateInput
                             value={rescheduleDate}
-                            onChange={(e) => setRescheduleDate(e.target.value)}
+                            onUpdate={setRescheduleDate}
+                            style={{
+                                height: 40,
+                                padding: "0 12px",
+                                borderColor: "var(--n-1)",
+                            }}
                         />
                     </div>
                     <div>
                         <label className="mb-1.5 block text-xs font-bold text-n-3 dark:text-white/50">
                             Новое время
                         </label>
-                        <input
-                            type="time"
-                            className="w-full text-sm bg-transparent border border-n-1 rounded-sm px-3 py-2.5 outline-none dark:border-white dark:text-white"
+                        <StyledTimeInput
                             value={rescheduleTime}
-                            onChange={(e) => setRescheduleTime(e.target.value)}
+                            onUpdate={setRescheduleTime}
+                            showClockIcon={false}
+                            style={{
+                                height: 40,
+                                padding: "0 12px",
+                                borderColor: "var(--n-1)",
+                            }}
                         />
                     </div>
                     <div className="flex gap-3 pt-2">

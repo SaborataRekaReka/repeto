@@ -24,6 +24,56 @@ export class PortalService {
     private maxService: MaxService,
   ) {}
 
+  private normalizePolicyAction(
+    action: unknown,
+    fallback: 'full' | 'half' | 'none' = 'full',
+  ): 'full' | 'half' | 'none' {
+    const normalized = String(action ?? '').trim().toLowerCase();
+
+    if (normalized === 'full' || normalized === 'full_charge' || normalized === 'charge') {
+      return 'full';
+    }
+    if (normalized === 'half' || normalized === 'half_charge') {
+      return 'half';
+    }
+    if (normalized === 'none' || normalized === 'no_charge') {
+      return 'none';
+    }
+
+    return fallback;
+  }
+
+  private mapCancelPolicy(raw: any) {
+    const freeHoursValue = Number(raw?.cancelTimeHours ?? raw?.freeHours ?? 24);
+    const freeHours = Number.isFinite(freeHoursValue) && freeHoursValue >= 0
+      ? freeHoursValue
+      : 24;
+
+    const lateCancelAction = this.normalizePolicyAction(
+      raw?.lateCancelAction ?? raw?.lateAction,
+      'full',
+    );
+    const noShowAction = this.normalizePolicyAction(raw?.noShowAction, 'full');
+
+    const lateCancelCostValue = Number(raw?.lateCancelCost);
+    const lateCancelCost = Number.isFinite(lateCancelCostValue) && lateCancelCostValue > 0
+      ? lateCancelCostValue
+      : undefined;
+
+    return {
+      freeHours,
+      lateCancelAction,
+      noShowAction,
+      lateCancelCost,
+    };
+  }
+
+  private calculatePenalty(rate: number, action: 'full' | 'half' | 'none') {
+    if (action === 'none') return null;
+    if (action === 'half') return Math.round(rate / 2);
+    return rate;
+  }
+
   private parsePortalReview(content?: string | null): {
     rating: number;
     feedback?: string;
@@ -156,8 +206,8 @@ export class PortalService {
       return `${start} – ${endStr}`;
     };
 
-    const cancelPolicy = (student.user.cancelPolicySettings as any) || {};
-    const freeHours = Number(cancelPolicy.cancelTimeHours ?? cancelPolicy.freeHours ?? 24);
+    const cancelPolicy = this.mapCancelPolicy(student.user.cancelPolicySettings as any);
+    const freeHours = cancelPolicy.freeHours;
 
     const mapLesson = (l: typeof student.lessons[0]) => {
       const dt = new Date(l.scheduledAt);
@@ -321,7 +371,10 @@ export class PortalService {
         : null,
       cancelPolicy: {
         freeHours,
-        lateAction: cancelPolicy.lateAction || 'charge',
+        lateCancelAction: cancelPolicy.lateCancelAction,
+        // Keep legacy field for backward compatibility with older frontend builds.
+        lateAction: cancelPolicy.lateCancelAction,
+        noShowAction: cancelPolicy.noShowAction,
         lateCancelCost: cancelPolicy.lateCancelCost,
       },
       upcomingLessons,
@@ -447,8 +500,14 @@ export class PortalService {
       where: { id: student.userId },
       select: { cancelPolicySettings: true },
     });
-    const cp = (tutor?.cancelPolicySettings as any) || {};
-    const freeHours = Number(cp.cancelTimeHours ?? cp.freeHours ?? 24);
+    const cancelPolicy = this.mapCancelPolicy(tutor?.cancelPolicySettings as any);
+    const freeHours = cancelPolicy.freeHours;
+
+    const lateCancelCharge =
+      hoursUntil < freeHours
+        ? cancelPolicy.lateCancelCost ??
+          this.calculatePenalty(lesson.rate, cancelPolicy.lateCancelAction)
+        : null;
 
     const updated = await this.prisma.lesson.update({
       where: { id: lessonId },
@@ -456,7 +515,7 @@ export class PortalService {
         status: 'CANCELLED_STUDENT',
         cancelledAt: new Date(),
         cancelReason: 'Cancelled by student via portal',
-        lateCancelCharge: hoursUntil < freeHours ? lesson.rate : null,
+        lateCancelCharge,
       },
     });
 

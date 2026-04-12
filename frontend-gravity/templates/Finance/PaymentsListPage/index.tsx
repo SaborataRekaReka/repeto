@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import GravityLayout from "@/components/GravityLayout";
 import { Text, Card, Button, Icon, TextInput, Label, Modal, SegmentedRadioGroup } from "@gravity-ui/uikit";
-import { Plus, Magnifier } from "@gravity-ui/icons";
+import { Plus, Magnifier, TrashBin } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import CreatePaymentModal from "@/components/CreatePaymentModal";
-import { usePayments } from "@/hooks/usePayments";
+import { deleteManualPayments, usePayments } from "@/hooks/usePayments";
 import { getMethodLabel, getStatusLabel } from "@/mocks/finance-tutor";
 import type { Payment } from "@/types/finance";
+import { codedErrorMessage } from "@/lib/errorCodes";
 
 const tabOptions = [
     { value: "all", content: "Все" },
@@ -20,6 +21,9 @@ const PaymentsListPage = () => {
     const [search, setSearch] = useState("");
     const [selected, setSelected] = useState<Payment | null>(null);
     const [createModal, setCreateModal] = useState(false);
+    const [bulkDeleting, setBulkDeleting] = useState(false);
+    const [bulkDeleteMessage, setBulkDeleteMessage] = useState<string | null>(null);
+    const [bulkDeleteError, setBulkDeleteError] = useState<string | null>(null);
 
     useEffect(() => {
         if (router.query.create === "1") {
@@ -28,7 +32,7 @@ const PaymentsListPage = () => {
         }
     }, [router.query.create]);
 
-    const { data: paymentsData, loading } = usePayments({
+    const { data: paymentsData, loading, refetch: refetchPayments } = usePayments({
         status: tab === "all" ? undefined : tab,
         page: 1,
         limit: 50,
@@ -37,6 +41,37 @@ const PaymentsListPage = () => {
         if (!search) return true;
         return p.studentName.toLowerCase().includes(search.toLowerCase());
     });
+
+    const handleDeleteManual = async () => {
+        if (bulkDeleting) return;
+
+        const confirmed =
+            typeof window === "undefined"
+                ? true
+                : window.confirm(
+                      "Удалить все оплаты, добавленные вручную? Платежи из ЮKassa не будут затронуты."
+                  );
+
+        if (!confirmed) return;
+
+        setBulkDeleting(true);
+        setBulkDeleteMessage(null);
+        setBulkDeleteError(null);
+        try {
+            const result = await deleteManualPayments();
+            setSelected(null);
+            await refetchPayments();
+            setBulkDeleteMessage(
+                result.deleted > 0
+                    ? `Удалено ручных оплат: ${result.deleted}`
+                    : "Ручных оплат для удаления не найдено"
+            );
+        } catch (error) {
+            setBulkDeleteError(codedErrorMessage("PAY-BULK-DEL", error));
+        } finally {
+            setBulkDeleting(false);
+        }
+    };
 
     return (
         <GravityLayout title="Оплаты">
@@ -48,6 +83,16 @@ const PaymentsListPage = () => {
                     options={tabOptions}
                 />
                 <div style={{ display: "flex", gap: 8 }}>
+                    <Button
+                        view="outlined"
+                        size="m"
+                        onClick={handleDeleteManual}
+                        loading={bulkDeleting}
+                        disabled={bulkDeleting}
+                    >
+                        <Icon data={TrashBin as IconData} size={16} />
+                        Удалить ручные
+                    </Button>
                     <Button view="action" size="m" onClick={() => setCreateModal(true)}>
                         <Icon data={Plus as IconData} size={16} />
                         Записать оплату
@@ -62,6 +107,23 @@ const PaymentsListPage = () => {
                     />
                 </div>
             </div>
+
+            {bulkDeleteMessage && (
+                <Text
+                    variant="body-1"
+                    style={{ display: "block", marginBottom: 12, color: "#15803D" }}
+                >
+                    {bulkDeleteMessage}
+                </Text>
+            )}
+            {bulkDeleteError && (
+                <Text
+                    variant="body-1"
+                    style={{ display: "block", marginBottom: 12, color: "var(--g-color-text-danger)" }}
+                >
+                    {bulkDeleteError}
+                </Text>
+            )}
 
             {filtered.length === 0 ? (
                 <Card view="outlined" style={{ padding: "48px 24px", textAlign: "center", background: "var(--g-color-base-float)" }}>
@@ -162,6 +224,7 @@ const PaymentsListPage = () => {
             <CreatePaymentModal
                 visible={createModal}
                 onClose={() => setCreateModal(false)}
+                onCreated={refetchPayments}
             />
         </GravityLayout>
     );

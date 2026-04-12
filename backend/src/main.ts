@@ -38,7 +38,9 @@ async function bootstrap() {
     process.env.FRONTEND_URL || 'http://localhost:3100'
   )
     .split(',')
-    .concat('http://localhost:3300');
+    .concat('http://localhost:3300')
+    .concat('http://127.0.0.1:3100')
+    .concat('http://127.0.0.1:3300');
 
   app.enableCors({
     origin: allowedOrigins,

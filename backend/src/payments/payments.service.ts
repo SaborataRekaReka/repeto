@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -10,6 +11,8 @@ import { CreatePaymentDto, UpdatePaymentDto } from './dto';
 
 @Injectable()
 export class PaymentsService {
+  private readonly logger = new Logger(PaymentsService.name);
+
   constructor(
     private prisma: PrismaService,
     private notifications: NotificationsService,
@@ -109,14 +112,21 @@ export class PaymentsService {
       include: { student: { select: { id: true, name: true } } },
     });
 
-    await this.notifications.create({
-      userId,
-      studentId: payment.studentId,
-      type: 'PAYMENT_RECEIVED',
-      title: 'Оплата получена',
-      description: `${payment.student.name} · ${payment.amount.toLocaleString('ru-RU')} ₽ (${this.formatMethodLabel(payment.method)})`,
-      actionUrl: '/finance/payments',
-    });
+    try {
+      await this.notifications.create({
+        userId,
+        studentId: payment.studentId,
+        type: 'PAYMENT_RECEIVED',
+        title: 'Оплата получена',
+        description: `${payment.student.name} · ${payment.amount.toLocaleString('ru-RU')} ₽ (${this.formatMethodLabel(payment.method)})`,
+        actionUrl: '/finance/payments',
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Payment ${payment.id} was created, but notification dispatch failed`,
+        error instanceof Error ? error.stack : String(error),
+      );
+    }
 
     return payment;
   }
@@ -138,6 +148,17 @@ export class PaymentsService {
     if (payment.userId !== userId) throw new ForbiddenException();
 
     return this.prisma.payment.delete({ where: { id } });
+  }
+
+  async removeManual(userId: string) {
+    const result = await this.prisma.payment.deleteMany({
+      where: {
+        userId,
+        externalPaymentId: null,
+      },
+    });
+
+    return { deleted: result.count };
   }
 
   async exportCsv(

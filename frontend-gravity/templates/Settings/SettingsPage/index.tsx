@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import GravityLayout from "@/components/GravityLayout";
 import { Card, Text, Button, Icon, Switch, TextInput } from "@gravity-ui/uikit";
-import { Person, Gear, Bell, FileText, ArrowUpRightFromSquare, Sun, Display, Moon } from "@gravity-ui/icons";
+import { Person, Gear, Bell, FileText, ArrowUpRightFromSquare, Sun, Display, Moon, ArrowRightFromSquare } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import Account from "./Account";
 import Security from "./Security";
@@ -42,8 +43,15 @@ const navItems = [
     { id: "integrations", label: "Интеграции", icon: ArrowUpRightFromSquare },
 ];
 
+function resolveSettingsTab(tab: string | string[] | undefined): string {
+    const value = Array.isArray(tab) ? tab[0] : tab;
+    if (!value) return "account";
+    return navItems.some((item) => item.id === value) ? value : "account";
+}
+
 const SettingsPage = () => {
-    const { user } = useAuth();
+    const router = useRouter();
+    const { user, logout } = useAuth();
     const { data: settings, mutate: mutateSettings } = useSettings();
     const [type, setType] = useState<string>("account");
     const [avatarSrc, setAvatarSrc] = useState<string | null>(user?.avatar || null);
@@ -64,6 +72,12 @@ const SettingsPage = () => {
             setPublished(!!settings.published);
         }
     }, [settings, defaultSlug]);
+
+    useEffect(() => {
+        if (!router.isReady) return;
+        const tabFromQuery = resolveSettingsTab(router.query.tab);
+        setType((prev) => (prev === tabFromQuery ? prev : tabFromQuery));
+    }, [router.isReady, router.query.tab]);
 
     const savePublicPage = useCallback(async (newSlug: string, newPublished: boolean) => {
         if (!newSlug) return;
@@ -135,7 +149,11 @@ const SettingsPage = () => {
                         {navItems.map((item) => (
                             <button
                                 key={item.id}
-                                onClick={() => setType(item.id)}
+                                onClick={() => {
+                                    setType(item.id);
+                                    const query = item.id === "account" ? {} : { tab: item.id };
+                                    router.replace({ pathname: "/settings", query }, undefined, { shallow: true });
+                                }}
                                 style={{
                                     display: "flex", alignItems: "center", gap: 12,
                                     padding: "10px 16px", borderRadius: 10,
@@ -152,6 +170,27 @@ const SettingsPage = () => {
                                 {item.label}
                             </button>
                         ))}
+                    </div>
+
+                    {/* Logout */}
+                    <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--g-color-line-generic)" }}>
+                        <button
+                            onClick={() => { logout(); }}
+                            style={{
+                                display: "flex", alignItems: "center", gap: 12,
+                                padding: "10px 16px", borderRadius: 10,
+                                border: "none", cursor: "pointer", width: "100%", textAlign: "left",
+                                background: "transparent",
+                                color: "var(--g-color-text-danger)",
+                                fontWeight: 400, fontSize: 14,
+                                transition: "all 0.15s",
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(209,107,143,0.08)"; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                        >
+                            <Icon data={ArrowRightFromSquare as IconData} size={18} />
+                            Выйти из аккаунта
+                        </button>
                     </div>
 
                     {/* Public page */}

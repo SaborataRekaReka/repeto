@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import {
@@ -22,6 +22,7 @@ import {
     getPortalTokenForTutor,
     setPortalTokenForTutor,
 } from "@/lib/portalTokenStore";
+import { codedErrorMessage } from "@/lib/errorCodes";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3200/api";
 
@@ -138,6 +139,17 @@ const FIELD_LABEL_STYLE = {
     color: "var(--g-color-text-primary)",
 } as const;
 
+const ICON_BUTTON_STYLE = {
+    width: 36,
+    minWidth: 36,
+    height: 36,
+    padding: 0,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    lineHeight: 0,
+} as const;
+
 const REMINDER_METHODS: Array<{ id: ReminderMethod; label: string }> = [
     { id: "telegram", label: "Telegram" },
     { id: "max", label: "Макс" },
@@ -240,6 +252,10 @@ const BookingPage = ({ slug }: { slug: string }) => {
     const [maxLinked, setMaxLinked] = useState(false);
     const [selectedReminderMethods, setSelectedReminderMethods] = useState<ReminderMethod[]>([]);
     const [reminderMinutesBefore, setReminderMinutesBefore] = useState(180);
+    const deepLinkOpenedRef = useRef<{ telegram: boolean; max: boolean }>({
+        telegram: false,
+        max: false,
+    });
 
     // Poll link status every 3s while on step 2
     useEffect(() => {
@@ -479,12 +495,47 @@ const BookingPage = ({ slug }: { slug: string }) => {
         }
     };
 
+    const openMessengerDeepLink = (method: "telegram" | "max"): boolean => {
+        if (typeof window === "undefined") return false;
+
+        if (method === "telegram" && botUsername) {
+            window.open(
+                `https://t.me/${botUsername}?start=${linkCode}`,
+                "_blank",
+                "noopener,noreferrer"
+            );
+            return true;
+        }
+
+        if (method === "max" && maxBotUsername) {
+            window.open(
+                `https://max.ru/${maxBotUsername}?start=${linkCode}`,
+                "_blank",
+                "noopener,noreferrer"
+            );
+            return true;
+        }
+
+        return false;
+    };
+
     const toggleReminderMethod = (method: ReminderMethod) => {
-        setSelectedReminderMethods((prev) =>
-            prev.includes(method)
+        setSelectedReminderMethods((prev) => {
+            const isSelected = prev.includes(method);
+            const next = isSelected
                 ? prev.filter((m) => m !== method)
-                : [...prev, method]
-        );
+                : [...prev, method];
+
+            if (!isSelected && method === "telegram" && !telegramLinked && !deepLinkOpenedRef.current.telegram) {
+                deepLinkOpenedRef.current.telegram = openMessengerDeepLink("telegram");
+            }
+
+            if (!isSelected && method === "max" && !maxLinked && !deepLinkOpenedRef.current.max) {
+                deepLinkOpenedRef.current.max = openMessengerDeepLink("max");
+            }
+
+            return next;
+        });
     };
 
     const handleSubmit = async () => {
@@ -523,7 +574,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
             );
             if (!res.ok) {
                 const err = await res.json().catch(() => null);
-                throw new Error(err?.message || "Ошибка бронирования");
+                throw err || new Error("booking_request_failed");
             }
 
             const bookingPayload =
@@ -548,7 +599,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
 
             setStep(3);
         } catch (err: any) {
-            alert(err.message || "Не удалось отправить заявку");
+            alert(codedErrorMessage("PUBLIC-BOOKING", err));
         }
     };
 
@@ -609,18 +660,18 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                 view="flat"
                                 size="m"
                                 onClick={goBack}
-                                style={{ width: 36, minWidth: 36, height: 36, padding: 0, justifyContent: "center" }}
+                                style={ICON_BUTTON_STYLE}
                             >
-                                <Icon data={ArrowLeft as IconData} size={16} />
+                                <Icon data={ArrowLeft as IconData} size={16} style={{ display: "block" }} />
                             </Button>
                         ) : step === 0 ? (
                             <Link href={`/t/${slug}`} style={{ textDecoration: "none" }}>
                                 <Button
                                     view="flat"
                                     size="m"
-                                    style={{ width: 36, minWidth: 36, height: 36, padding: 0, justifyContent: "center" }}
+                                    style={ICON_BUTTON_STYLE}
                                 >
-                                    <Icon data={ArrowLeft as IconData} size={16} />
+                                    <Icon data={ArrowLeft as IconData} size={16} style={{ display: "block" }} />
                                 </Button>
                             </Link>
                         ) : null}
@@ -769,26 +820,26 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                     <Button
                                         view="outlined"
                                         size="m"
-                                        style={{ width: 36, minWidth: 36, height: 36, padding: 0, justifyContent: "center" }}
+                                        style={ICON_BUTTON_STYLE}
                                         onClick={() => {
                                             const d = new Date(viewMonth);
                                             d.setMonth(d.getMonth() - 1);
                                             setViewMonth(d);
                                         }}
                                     >
-                                        <Icon data={ArrowLeft as IconData} size={16} />
+                                        <Icon data={ArrowLeft as IconData} size={16} style={{ display: "block" }} />
                                     </Button>
                                     <Button
                                         view="outlined"
                                         size="m"
-                                        style={{ width: 36, minWidth: 36, height: 36, padding: 0, justifyContent: "center" }}
+                                        style={ICON_BUTTON_STYLE}
                                         onClick={() => {
                                             const d = new Date(viewMonth);
                                             d.setMonth(d.getMonth() + 1);
                                             setViewMonth(d);
                                         }}
                                     >
-                                        <Icon data={ArrowRight as IconData} size={16} />
+                                        <Icon data={ArrowRight as IconData} size={16} style={{ display: "block" }} />
                                     </Button>
                                 </div>
                             </div>
@@ -985,98 +1036,37 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
                                     {REMINDER_METHODS.map((method) => {
                                         const active = selectedReminderMethods.includes(method.id);
-                                        const connected =
-                                            method.id === "telegram"
-                                                ? telegramLinked
-                                                : method.id === "max"
-                                                    ? maxLinked
-                                                    : true;
-                                        const title =
-                                            method.id === "telegram" && telegramLinked
-                                                ? "Telegram (уже подключен)"
-                                                : method.id === "max" && maxLinked
-                                                    ? "Макс (уже подключен)"
-                                                    : method.label;
 
                                         return (
                                             <button
                                                 key={method.id}
                                                 type="button"
                                                 style={{
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    gap: 8,
                                                     height: 40,
                                                     padding: "0 14px",
-                                                    borderRadius: 10,
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
                                                     border: `1px solid ${active ? "var(--g-color-base-brand)" : "var(--g-color-line-generic)"}`,
-                                                    background: active ? "var(--g-color-base-brand)" : "var(--g-color-base-float)",
-                                                    color: active ? "var(--g-color-text-light-primary)" : "var(--g-color-text-primary)",
+                                                    borderRadius: 10,
                                                     fontSize: 14,
                                                     fontWeight: 700,
+                                                    lineHeight: 1,
+                                                    background: active
+                                                        ? "var(--g-color-base-brand)"
+                                                        : "transparent",
+                                                    color: active
+                                                        ? "var(--g-color-text-light-primary)"
+                                                        : "var(--g-color-text-primary)",
                                                     cursor: "pointer",
                                                 }}
                                                 onClick={() => toggleReminderMethod(method.id)}
                                             >
-                                                {title}
-                                                {(method.id === "telegram" || method.id === "max") && connected && " ✓"}
+                                                {method.label}
                                             </button>
                                         );
                                     })}
                                 </div>
-
-                                {selectedReminderMethods.includes("telegram") && !telegramLinked && botUsername && (
-                                    <div style={{ marginBottom: 10 }}>
-                                        <a
-                                            href={`https://t.me/${botUsername}?start=${linkCode}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            style={{
-                                                display: "inline-flex",
-                                                alignItems: "center",
-                                                gap: 8,
-                                                height: 36,
-                                                padding: "0 12px",
-                                                borderRadius: 10,
-                                                border: "1px solid var(--g-color-line-generic)",
-                                                textDecoration: "none",
-                                                fontWeight: 700,
-                                                color: "var(--g-color-text-primary)",
-                                            }}
-                                        >
-                                            Подключить Telegram
-                                        </a>
-                                    </div>
-                                )}
-
-                                {selectedReminderMethods.includes("max") && !maxLinked && (
-                                    <div style={{ marginBottom: 10 }}>
-                                        {maxBotUsername ? (
-                                            <a
-                                                href={`https://max.ru/${maxBotUsername}?start=${linkCode}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                style={{
-                                                    display: "inline-flex",
-                                                    alignItems: "center",
-                                                    height: 36,
-                                                    padding: "0 12px",
-                                                    borderRadius: 10,
-                                                    border: "1px solid var(--g-color-line-generic)",
-                                                    textDecoration: "none",
-                                                    fontWeight: 700,
-                                                    color: "var(--g-color-text-primary)",
-                                                }}
-                                            >
-                                                Подключить Макс
-                                            </a>
-                                        ) : (
-                                            <Text variant="body-1" color="secondary" style={{ fontSize: 12, display: "block", marginBottom: 6 }}>
-                                                Подключите Макс-бота{maxBotName ? ` (${maxBotName})` : ""}
-                                            </Text>
-                                        )}
-                                    </div>
-                                )}
 
                                 {selectedReminderMethods.length > 0 && (
                                     <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -1085,16 +1075,24 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                                 key={option.minutes}
                                                 type="button"
                                                 style={{
-                                                    height: 36,
+                                                    height: 40,
                                                     padding: "0 14px",
-                                                    border: "none",
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    border: `1px solid ${
+                                                        reminderMinutesBefore === option.minutes
+                                                            ? "var(--g-color-base-brand)"
+                                                            : "var(--g-color-line-generic)"
+                                                    }`,
                                                     borderRadius: 10,
                                                     fontSize: 12,
                                                     fontWeight: 700,
+                                                    lineHeight: 1,
                                                     background:
                                                         reminderMinutesBefore === option.minutes
                                                             ? "var(--g-color-base-brand)"
-                                                            : "var(--g-color-base-simple-hover)",
+                                                            : "transparent",
                                                     color:
                                                         reminderMinutesBefore === option.minutes
                                                             ? "var(--g-color-text-light-primary)"

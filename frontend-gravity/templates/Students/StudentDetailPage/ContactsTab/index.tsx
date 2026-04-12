@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { Card, Text, TextInput } from "@gravity-ui/uikit";
+import { Card, Label, Text, TextInput } from "@gravity-ui/uikit";
 import type { Student } from "@/types/student";
 
 type ContactsTabProps = {
@@ -24,6 +24,72 @@ const FieldLabel = ({ children }: { children: React.ReactNode }) => (
     >
         {children}
     </Text>
+);
+
+type MessengerStatusCardProps = {
+    title: string;
+    shortLabel: string;
+    connected: boolean;
+    connectedTint: string;
+};
+
+const MessengerStatusCard = ({
+    title,
+    shortLabel,
+    connected,
+    connectedTint,
+}: MessengerStatusCardProps) => (
+    <div
+        style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            padding: "12px 14px",
+            borderRadius: 12,
+            border: `1px solid ${connected ? connectedTint : "var(--g-color-line-generic)"}`,
+            background: connected
+                ? connectedTint
+                : "var(--g-color-base-simple-hover)",
+        }}
+    >
+        <div
+            style={{
+                width: 34,
+                height: 34,
+                borderRadius: 10,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 11,
+                fontWeight: 800,
+                letterSpacing: "0.04em",
+                background: "var(--g-color-base-float)",
+                color: "var(--g-color-text-primary)",
+                flexShrink: 0,
+            }}
+        >
+            {shortLabel}
+        </div>
+
+        <div style={{ minWidth: 0, flex: 1 }}>
+            <Text
+                as="div"
+                variant="body-2"
+                style={{ fontWeight: 700, marginBottom: 2 }}
+            >
+                {title}
+            </Text>
+            <Text as="div" variant="caption-2" color="secondary">
+                {connected
+                    ? "Уведомления будут приходить в этот канал"
+                    : "Канал пока не привязан"}
+            </Text>
+        </div>
+
+        <Label theme={connected ? "success" : "normal"} size="s">
+            {connected ? "Подключён" : "Не подключён"}
+        </Label>
+    </div>
 );
 
 const ContactsTab = ({ student, onSave }: ContactsTabProps) => {
@@ -108,17 +174,29 @@ const ContactsTab = ({ student, onSave }: ContactsTabProps) => {
                             size="m"
                         />
                     </div>
-                    <div>
-                        <FieldLabel>Telegram</FieldLabel>
-                        <Text variant="body-1" color={student.telegramChatId ? "positive" : "secondary"}>
-                            {student.telegramChatId ? "✅ Подключён" : "Не подключён"}
-                        </Text>
-                    </div>
-                    <div>
-                        <FieldLabel>Макс</FieldLabel>
-                        <Text variant="body-1" color={student.maxChatId ? "positive" : "secondary"}>
-                            {student.maxChatId ? "✅ Подключён" : "Не подключён"}
-                        </Text>
+                    <div style={{ gridColumn: "1 / -1" }}>
+                        <FieldLabel>Мессенджеры</FieldLabel>
+                        <div
+                            style={{
+                                display: "grid",
+                                gridTemplateColumns:
+                                    "repeat(auto-fit, minmax(220px, 1fr))",
+                                gap: 10,
+                            }}
+                        >
+                            <MessengerStatusCard
+                                title="Telegram"
+                                shortLabel="TG"
+                                connected={Boolean(student.telegramChatId)}
+                                connectedTint="rgba(80, 154, 255, 0.16)"
+                            />
+                            <MessengerStatusCard
+                                title="Макс"
+                                shortLabel="MX"
+                                connected={Boolean(student.maxChatId)}
+                                connectedTint="rgba(84, 209, 153, 0.16)"
+                            />
+                        </div>
                     </div>
                 </div>
             </Card>

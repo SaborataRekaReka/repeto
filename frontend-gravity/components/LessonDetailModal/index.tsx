@@ -19,6 +19,7 @@ type LessonDetailModalProps = {
     lesson: Lesson | null;
     onEdit?: (lesson: Lesson) => void;
     onDelete?: (lessonId: string) => void;
+    onUpdated?: () => void;
 };
 
 const statusLabel = (status: Lesson["status"]) => {
@@ -56,6 +57,7 @@ const LessonDetailModal = ({
     lesson,
     onEdit,
     onDelete,
+    onUpdated,
 }: LessonDetailModalProps) => {
     const [editOpen, setEditOpen] = useState(false);
     const [confirmCancel, setConfirmCancel] = useState(false);
@@ -91,6 +93,7 @@ const LessonDetailModal = ({
         setActionError(null);
         try {
             await updateLessonStatus(lesson.id, nextStatus);
+            onUpdated?.();
             onClose();
         } catch (err) {
             console.error("Failed to update lesson status:", err);
@@ -289,6 +292,7 @@ const LessonDetailModal = ({
             <CreateLessonModal
                 visible={editOpen}
                 onClose={() => { setEditOpen(false); onClose(); }}
+                onCreated={onUpdated}
                 lesson={lesson}
             />
         </>

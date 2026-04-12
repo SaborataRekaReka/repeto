@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
-import { Card, Text, Icon } from "@gravity-ui/uikit";
+import { Card, Text, Icon, Button } from "@gravity-ui/uikit";
 import { FolderOpen, ChevronDown, ArrowUpRightFromSquare } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import { getInitials } from "@/mocks/students";
 import { useStudents } from "@/hooks/useStudents";
+import { updateFileShare } from "@/hooks/useFiles";
 import type { FileItem, StudentFileAccess } from "@/types/files";
+import { codedErrorMessage } from "@/lib/errorCodes";
 
 const getFileIcon = (ext?: string) => {
     switch ((ext || "").toLowerCase()) {
@@ -19,10 +21,14 @@ const getFileIcon = (ext?: string) => {
 type StudentAccessTabProps = {
     files: FileItem[];
     studentAccess: StudentFileAccess[];
+    onUpdated?: () => Promise<void> | void;
 };
 
-const StudentAccessTab = ({ files, studentAccess }: StudentAccessTabProps) => {
+const StudentAccessTab = ({ files, studentAccess, onUpdated }: StudentAccessTabProps) => {
     const [expandedId, setExpandedId] = useState<string | null>(null);
+    const [busyStudentId, setBusyStudentId] = useState<string | null>(null);
+    const [busyItemKey, setBusyItemKey] = useState<string | null>(null);
+    const [errorByStudent, setErrorByStudent] = useState<Record<string, string>>({});
     const router = useRouter();
     const { data: studentsData } = useStudents({ limit: 100 });
     const students = studentsData?.data || [];
@@ -34,6 +40,59 @@ const StudentAccessTab = ({ files, studentAccess }: StudentAccessTabProps) => {
     const studentsWithoutAccess = students.filter(
         (s) => s.status === "active" && !accessList.find((a) => a.studentId === s.id)
     );
+
+    const clearStudentError = (studentId: string) => {
+        setErrorByStudent((prev) => {
+            if (!prev[studentId]) return prev;
+            const next = { ...prev };
+            delete next[studentId];
+            return next;
+        });
+    };
+
+    const setStudentError = (studentId: string, message: string) => {
+        setErrorByStudent((prev) => ({ ...prev, [studentId]: message }));
+    };
+
+    const handleRevokeItemAccess = async (studentId: string, item: FileItem) => {
+        const busyKey = `${studentId}:${item.id}`;
+        clearStudentError(studentId);
+        setBusyItemKey(busyKey);
+        try {
+            await updateFileShare(item.id, {
+                studentIds: item.sharedWith.filter((id) => id !== studentId),
+                applyToChildren: item.type === "folder",
+            });
+            await onUpdated?.();
+        } catch (e: any) {
+            setStudentError(studentId, codedErrorMessage("FILES-REVOKE", e));
+        } finally {
+            setBusyItemKey(null);
+        }
+    };
+
+    const handleRevokeStudentAccess = async (studentId: string) => {
+        const sharedItems = getStudentItems(studentId);
+        if (sharedItems.length === 0) return;
+
+        clearStudentError(studentId);
+        setBusyStudentId(studentId);
+        try {
+            await Promise.all(
+                sharedItems.map((item) =>
+                    updateFileShare(item.id, {
+                        studentIds: item.sharedWith.filter((id) => id !== studentId),
+                        applyToChildren: item.type === "folder",
+                    })
+                )
+            );
+            await onUpdated?.();
+        } catch (e: any) {
+            setStudentError(studentId, codedErrorMessage("FILES-REVOKE-ALL", e));
+        } finally {
+            setBusyStudentId(null);
+        }
+    };
 
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -80,6 +139,17 @@ const StudentAccessTab = ({ files, studentAccess }: StudentAccessTabProps) => {
                                             {access.foldersCount > 0 && ` · ${access.foldersCount} папок`}
                                         </Text>
                                     </div>
+                                    <Button
+                                        view="outlined-danger"
+                                        size="s"
+                                        disabled={busyStudentId === access.studentId}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleRevokeStudentAccess(access.studentId);
+                                        }}
+                                    >
+                                        {busyStudentId === access.studentId ? "Убираем..." : "Убрать доступ"}
+                                    </Button>
                                     <Icon
                                         data={ChevronDown as IconData}
                                         size={18}
@@ -123,6 +193,17 @@ const StudentAccessTab = ({ files, studentAccess }: StudentAccessTabProps) => {
                                                             {item.type === "folder" ? "Папка" : `${item.size || ""} · ${item.modifiedAt}`}
                                                         </Text>
                                                     </div>
+                                                    <Button
+                                                        view="outlined-danger"
+                                                        size="s"
+                                                        disabled={busyStudentId === access.studentId || busyItemKey === `${access.studentId}:${item.id}`}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleRevokeItemAccess(access.studentId, item);
+                                                        }}
+                                                    >
+                                                        {busyItemKey === `${access.studentId}:${item.id}` ? "Убираем..." : "Убрать"}
+                                                    </Button>
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); window.open(item.cloudUrl, "_blank", "noopener,noreferrer"); }}
                                                         title="Открыть в облаке"
@@ -136,6 +217,19 @@ const StudentAccessTab = ({ files, studentAccess }: StudentAccessTabProps) => {
                                                     </button>
                                                 </div>
                                             ))
+                                        )}
+                                        {errorByStudent[access.studentId] && (
+                                            <div
+                                                style={{
+                                                    margin: "10px 20px 0",
+                                                    padding: "8px 12px",
+                                                    borderRadius: 8,
+                                                    background: "var(--g-color-base-danger-light)",
+                                                    border: "1px solid var(--g-color-line-danger)",
+                                                }}
+                                            >
+                                                <Text variant="body-1" color="danger">{errorByStudent[access.studentId]}</Text>
+                                            </div>
                                         )}
                                         <div style={{ padding: "10px 20px", borderTop: "1px dashed var(--g-color-line-generic)" }}>
                                             <button

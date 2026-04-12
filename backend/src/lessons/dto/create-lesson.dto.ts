@@ -68,6 +68,11 @@ export class CreateLessonDto {
   @Min(0)
   rate: number;
 
+  @ApiPropertyOptional({ description: 'Tutor note for lesson' })
+  @IsOptional()
+  @IsString()
+  notes?: string;
+
   @ApiPropertyOptional({ type: RecurrenceDto })
   @IsOptional()
   @ValidateNested()

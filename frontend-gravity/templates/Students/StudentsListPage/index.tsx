@@ -41,7 +41,7 @@ const StudentsListPage = () => {
         }
     }, [router.query.create]);
 
-    const { data: studentsData, loading } = useStudents({
+    const { data: studentsData, loading, refetch: refetchStudents } = useStudents({
         status: type === "all" ? undefined : type,
         search: search || undefined,
         limit: 50,
@@ -179,6 +179,7 @@ const StudentsListPage = () => {
             <CreateStudentModal
                 visible={createModal}
                 onClose={() => setCreateModal(false)}
+                onCreated={refetchStudents}
             />
             <CreateLessonModal
                 visible={lessonModal}

@@ -430,9 +430,24 @@ export class SettingsService {
   }
 
   async updateNotifications(userId: string, dto: UpdateNotificationsDto) {
+    const current = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { notificationSettings: true },
+    });
+
+    const currentSettings =
+      current?.notificationSettings && typeof current.notificationSettings === 'object'
+        ? (current.notificationSettings as Record<string, unknown>)
+        : {};
+
+    const nextSettings = {
+      ...currentSettings,
+      ...dto,
+    };
+
     return this.prisma.user.update({
       where: { id: userId },
-      data: { notificationSettings: dto as any },
+      data: { notificationSettings: nextSettings as any },
       select: { notificationSettings: true },
     });
   }

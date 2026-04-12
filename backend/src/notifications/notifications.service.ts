@@ -14,6 +14,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MessengerDeliveryService } from '../messenger/messenger-delivery.service';
+import { PushNotificationsService } from './push-notifications.service';
 
 type NotificationCreatePayload = {
   userId: string;
@@ -34,6 +35,7 @@ export class NotificationsService {
   constructor(
     private prisma: PrismaService,
     private messenger: MessengerDeliveryService,
+    private pushNotifications: PushNotificationsService,
   ) {}
 
   private async getSettings(userId: string) {
@@ -84,6 +86,29 @@ export class NotificationsService {
     }
   }
 
+  private async maybeSendPushNotification(
+    payload: NotificationCreatePayload,
+    settings?: Record<string, unknown>,
+  ) {
+    let channel = payload.channel;
+
+    if (!channel) {
+      const settingsToUse = settings || (await this.getSettings(payload.userId));
+      channel = this.mapChannel(settingsToUse.channel);
+    }
+
+    if (channel !== NotificationChannel.PUSH) {
+      return;
+    }
+
+    await this.pushNotifications.sendToUser(payload.userId, {
+      title: payload.title,
+      body: payload.description,
+      url: payload.actionUrl || '/notifications',
+      type: payload.type,
+    });
+  }
+
   private shouldCreateNotification(
     type: NotificationType,
     settings: Record<string, unknown>,
@@ -113,7 +138,9 @@ export class NotificationsService {
       return null;
     }
 
-    return this.prisma.notification.create({ data: payload });
+    const created = await this.prisma.notification.create({ data: payload });
+    await this.maybeSendPushNotification(payload, settings);
+    return created;
   }
 
   private async syncSelfReminders(
@@ -339,16 +366,19 @@ export class NotificationsService {
 
     const received = payments._sum.amount || 0;
 
+    const payload: NotificationCreatePayload = {
+      userId,
+      type: NotificationType.SYSTEM,
+      title: 'Еженедельный отчёт',
+      description: `За 7 дней: проведено ${completedLessons}, получено ${received.toLocaleString('ru-RU')} ₽, впереди ${upcomingLessons} занятий`,
+      actionUrl: '/dashboard',
+      channel,
+    };
+
     await this.prisma.notification.create({
-      data: {
-        userId,
-        type: NotificationType.SYSTEM,
-        title: 'Еженедельный отчёт',
-        description: `За 7 дней: проведено ${completedLessons}, получено ${received.toLocaleString('ru-RU')} ₽, впереди ${upcomingLessons} занятий`,
-        actionUrl: '/dashboard',
-        channel,
-      },
+      data: payload,
     });
+    await this.maybeSendPushNotification(payload, settings);
   }
 
   private async syncAutomatedNotifications(userId: string) {
@@ -443,6 +473,18 @@ export class NotificationsService {
     });
   }
 
+  getPushPublicKey() {
+    return this.pushNotifications.getPublicKey();
+  }
+
+  subscribePush(userId: string, subscription: unknown) {
+    return this.pushNotifications.subscribe(userId, subscription);
+  }
+
+  unsubscribePush(userId: string, endpoint: string) {
+    return this.pushNotifications.unsubscribe(userId, endpoint);
+  }
+
   async create(data: {
     userId: string;
     type: any;
@@ -460,13 +502,21 @@ export class NotificationsService {
       return null;
     }
 
-    return this.prisma.notification.create({
+    const payload: NotificationCreatePayload = {
+      ...data,
+      type,
+      channel: this.mapChannel(settings.channel),
+    };
+
+    const created = await this.prisma.notification.create({
       data: {
-        ...data,
-        type,
-        channel: this.mapChannel(settings.channel),
+        ...payload,
       },
     });
+
+    await this.maybeSendPushNotification(payload, settings);
+
+    return created;
   }
 
   async confirmBooking(notificationId: string, userId: string) {
@@ -505,6 +555,7 @@ export class NotificationsService {
         phone: booking.clientPhone,
       },
     });
+    let portalTokenIssued = false;
 
     if (!student) {
       student = await this.prisma.student.create({
@@ -522,6 +573,7 @@ export class NotificationsService {
           maxChatId: booking.maxChatId || undefined,
         },
       });
+      portalTokenIssued = true;
     } else if (!student.portalToken) {
       // Generate portal link for existing student without one
       const updateData: Record<string, any> = {
@@ -539,6 +591,7 @@ export class NotificationsService {
         where: { id: student.id },
         data: updateData,
       });
+      portalTokenIssued = true;
     } else {
       // Existing student with portal token — still update chat IDs if needed
       const updateData: Record<string, string> = {};
@@ -591,23 +644,29 @@ export class NotificationsService {
     });
 
     // Create confirmation notification linked to student & lesson
+    const bookingConfirmedPayload: NotificationCreatePayload = {
+      userId,
+      type: NotificationType.BOOKING_CONFIRMED,
+      title: 'Заявка подтверждена',
+      description: `${booking.clientName} · ${booking.subject} · ${dateStr} в ${booking.startTime}`,
+      bookingRequestId: booking.id,
+      studentId: student.id,
+      lessonId: lesson.id,
+      actionUrl: `/students/${student.id}`,
+    };
+
     await this.prisma.notification.create({
       data: {
-        userId,
-        type: 'BOOKING_CONFIRMED',
-        title: 'Заявка подтверждена',
-        description: `${booking.clientName} · ${booking.subject} · ${dateStr} в ${booking.startTime}`,
-        bookingRequestId: booking.id,
-        studentId: student.id,
-        lessonId: lesson.id,
+        ...bookingConfirmedPayload,
         read: false,
       },
     });
+    await this.maybeSendPushNotification(bookingConfirmedPayload);
 
     // Send messenger notification to student (Telegram / Max)
     const tutorUser = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { name: true },
+      select: { name: true, slug: true },
     });
     const tutorName = tutorUser?.name || 'Репетитор';
 
@@ -625,6 +684,19 @@ export class NotificationsService {
       studentId: student.id,
       message: msg,
     }).catch((e) => { /* fire-and-forget */ });
+
+    if (portalTokenIssued && student.portalToken) {
+      const base = process.env.FRONTEND_URL || 'http://localhost:3100';
+      const portalUrl = `${base}/t/${tutorUser?.slug || 'tutor'}/s/${student.portalToken}`;
+      const portalMsg = this.messenger.formatPortalAccess(tutorName, portalUrl);
+
+      this.messenger.sendToStudent({
+        type: 'portal_access',
+        tutorId: userId,
+        studentId: student.id,
+        message: portalMsg,
+      }).catch((e) => { /* fire-and-forget */ });
+    }
 
     return { status: 'CONFIRMED', studentId: student.id, lessonId: lesson.id };
   }
@@ -770,17 +842,22 @@ export class NotificationsService {
     });
 
     // Also create in-app notification for the tutor (record of sending)
+    const debtPayload: NotificationCreatePayload = {
+      userId,
+      studentId,
+      type: NotificationType.PAYMENT_OVERDUE,
+      title: 'Напоминание об оплате отправлено',
+      description: `${student.name} · ${debtAmount.toLocaleString('ru-RU')} ₽`,
+      actionUrl: `/students/${studentId}`,
+    };
+
     await this.prisma.notification.create({
       data: {
-        userId,
-        studentId,
-        type: 'PAYMENT_OVERDUE',
-        title: 'Напоминание об оплате отправлено',
-        description: `${student.name} · ${debtAmount.toLocaleString('ru-RU')} ₽`,
-        actionUrl: `/students/${studentId}`,
+        ...debtPayload,
         sentAt: new Date(),
       },
     });
+    await this.maybeSendPushNotification(debtPayload);
 
     return {
       sent: result.telegram || result.max,

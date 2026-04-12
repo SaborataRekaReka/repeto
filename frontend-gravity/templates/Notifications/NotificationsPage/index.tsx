@@ -13,6 +13,7 @@ import {
     rejectReschedule,
 } from "@/hooks/useNotifications";
 import { getNotificationCategory } from "@/mocks/notifications";
+import { codedErrorMessage } from "@/lib/errorCodes";
 
 const tabOptions = [
     { value: "all", content: "Все" },
@@ -48,11 +49,7 @@ const NotificationsPage = () => {
             await action();
             await refetch();
         } catch (error) {
-            setActionError(
-                error instanceof Error
-                    ? error.message
-                    : "Не удалось выполнить действие с уведомлениями"
-            );
+            setActionError(codedErrorMessage("NOTIF-ACTION", error));
         } finally {
             setActionBusy(false);
         }

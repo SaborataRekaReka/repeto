@@ -8,6 +8,7 @@ import {
     Button,
 } from "@gravity-ui/uikit";
 import { createStudent } from "@/hooks/useStudents";
+import { codedErrorMessage } from "@/lib/errorCodes";
 
 const GDialog = Dialog as any;
 
@@ -25,6 +26,7 @@ const subjectOptions = [
 type CreateStudentModalProps = {
     visible: boolean;
     onClose: () => void;
+    onCreated?: () => void;
 };
 
 const FieldRow = ({ label, children }: { label: string; children: React.ReactNode }) => (
@@ -40,7 +42,22 @@ const FieldRow = ({ label, children }: { label: string; children: React.ReactNod
     </div>
 );
 
-const CreateStudentModal = ({ visible, onClose }: CreateStudentModalProps) => {
+const errorWrapStyle = (invalid: boolean) =>
+    invalid
+        ? {
+              border: "1px solid var(--g-color-line-danger)",
+              borderRadius: 8,
+              padding: 2,
+          }
+        : undefined;
+
+function normalizeRate(value: string): number {
+    const normalized = String(value || "").replace(",", ".").trim();
+    if (!normalized) return NaN;
+    return Number(normalized);
+}
+
+const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalProps) => {
     const [name, setName] = useState("");
     const [grade, setGrade] = useState("");
     const [subject, setSubject] = useState<string[]>([]);
@@ -53,23 +70,43 @@ const CreateStudentModal = ({ visible, onClose }: CreateStudentModalProps) => {
     const [rate, setRate] = useState("");
     const [notes, setNotes] = useState("");
     const [saving, setSaving] = useState(false);
+    const [formError, setFormError] = useState<string | null>(null);
+    const [touched, setTouched] = useState({
+        name: false,
+        subject: false,
+        rate: false,
+    });
+
+    const markTouched = (field: "name" | "subject" | "rate") => {
+        setTouched((prev) => (prev[field] ? prev : { ...prev, [field]: true }));
+    };
 
     useEffect(() => {
         if (visible) {
             setName(""); setGrade(""); setSubject([]); setPhone(""); setWhatsapp("");
             setParentName(""); setParentPhone(""); setParentWhatsapp(""); setParentEmail("");
             setRate(""); setNotes("");
+            setTouched({ name: false, subject: false, rate: false });
+            setFormError(null);
         }
     }, [visible]);
 
     const handleSubmit = async () => {
-        if (!name.trim() || !subject.length || !rate) return;
+        const normalizedRate = normalizeRate(rate);
+        setTouched({ name: true, subject: true, rate: true });
+
+        if (!name.trim() || !subject.length || !Number.isFinite(normalizedRate) || normalizedRate <= 0) {
+            setFormError("Заполните обязательные поля.");
+            return;
+        }
+
         setSaving(true);
+        setFormError(null);
         try {
             await createStudent({
                 name: name.trim(),
                 subject: subject[0],
-                rate: Number(rate),
+                rate: normalizedRate,
                 grade: grade || undefined,
                 phone: phone || undefined,
                 whatsapp: whatsapp || undefined,
@@ -79,13 +116,18 @@ const CreateStudentModal = ({ visible, onClose }: CreateStudentModalProps) => {
                 parentEmail: parentEmail || undefined,
                 notes: notes || undefined,
             } as any);
+            onCreated?.();
             onClose();
         } catch (err) {
-            console.error("Failed to create student:", err);
+            setFormError(codedErrorMessage("STUDENT-CREATE", err));
         } finally {
             setSaving(false);
         }
     };
+
+    const nameError = touched.name && !name.trim();
+    const subjectError = touched.subject && !subject.length;
+    const rateError = touched.rate && (!Number.isFinite(normalizeRate(rate)) || normalizeRate(rate) <= 0);
 
     return (
         <GDialog open={visible} onClose={onClose} size="s" hasCloseButton>
@@ -93,12 +135,20 @@ const CreateStudentModal = ({ visible, onClose }: CreateStudentModalProps) => {
             <GDialog.Body>
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                     <FieldRow label="ФИО *">
-                        <TextInput
-                            value={name}
-                            onUpdate={setName}
-                            placeholder="Иванов Пётр Сергеевич"
-                            size="m"
-                        />
+                        <div style={errorWrapStyle(nameError)}>
+                            <TextInput
+                                value={name}
+                                onUpdate={setName}
+                                onBlur={() => markTouched("name")}
+                                placeholder="Иванов Пётр Сергеевич"
+                                size="m"
+                            />
+                        </div>
+                        {nameError && (
+                            <Text as="div" variant="caption-2" style={{ marginTop: 4, color: "var(--g-color-text-danger)" }}>
+                                Обязательное поле
+                            </Text>
+                        )}
                     </FieldRow>
 
                     <div style={{ display: "flex", gap: 16 }}>
@@ -114,14 +164,24 @@ const CreateStudentModal = ({ visible, onClose }: CreateStudentModalProps) => {
                         </div>
                         <div style={{ flex: 1 }}>
                             <FieldRow label="Предмет *">
-                                <Select
-                                    options={subjectOptions}
-                                    value={subject}
-                                    onUpdate={setSubject}
-                                    placeholder="Выберите предмет"
-                                    size="m"
-                                    width="max"
-                                />
+                                <div style={errorWrapStyle(subjectError)} onClick={() => markTouched("subject")}> 
+                                    <Select
+                                        options={subjectOptions}
+                                        value={subject}
+                                        onUpdate={(value) => {
+                                            setSubject(value);
+                                            markTouched("subject");
+                                        }}
+                                        placeholder="Выберите предмет"
+                                        size="m"
+                                        width="max"
+                                    />
+                                </div>
+                                {subjectError && (
+                                    <Text as="div" variant="caption-2" style={{ marginTop: 4, color: "var(--g-color-text-danger)" }}>
+                                        Обязательное поле
+                                    </Text>
+                                )}
                             </FieldRow>
                         </div>
                     </div>
@@ -210,12 +270,20 @@ const CreateStudentModal = ({ visible, onClose }: CreateStudentModalProps) => {
                     </div>
 
                     <FieldRow label="Ставка за занятие (₽) *">
-                        <TextInput
-                            value={rate}
-                            onUpdate={setRate}
-                            placeholder="2100"
-                            size="m"
-                        />
+                        <div style={errorWrapStyle(rateError)}>
+                            <TextInput
+                                value={rate}
+                                onUpdate={setRate}
+                                onBlur={() => markTouched("rate")}
+                                placeholder="2100"
+                                size="m"
+                            />
+                        </div>
+                        {rateError && (
+                            <Text as="div" variant="caption-2" style={{ marginTop: 4, color: "var(--g-color-text-danger)" }}>
+                                Введите сумму больше 0
+                            </Text>
+                        )}
                     </FieldRow>
 
                     <FieldRow label="Заметки">
@@ -227,6 +295,12 @@ const CreateStudentModal = ({ visible, onClose }: CreateStudentModalProps) => {
                             size="m"
                         />
                     </FieldRow>
+
+                    {formError && (
+                        <Text as="div" variant="body-1" style={{ color: "var(--g-color-text-danger)" }}>
+                            {formError}
+                        </Text>
+                    )}
 
                     <div style={{ display: "flex", gap: 12, paddingTop: 4 }}>
                         <Button

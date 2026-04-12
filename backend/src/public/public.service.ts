@@ -17,6 +17,41 @@ export class PublicService {
     private botPoller: BotPollerService,
   ) {}
 
+  private normalizePolicyAction(
+    action: unknown,
+    fallback: 'full' | 'half' | 'none' = 'full',
+  ): 'full' | 'half' | 'none' {
+    const normalized = String(action ?? '').trim().toLowerCase();
+
+    if (normalized === 'full' || normalized === 'full_charge' || normalized === 'charge') {
+      return 'full';
+    }
+    if (normalized === 'half' || normalized === 'half_charge') {
+      return 'half';
+    }
+    if (normalized === 'none' || normalized === 'no_charge') {
+      return 'none';
+    }
+
+    return fallback;
+  }
+
+  private mapCancelPolicy(raw: any) {
+    const freeHoursValue = Number(raw?.cancelTimeHours ?? raw?.freeHours ?? 24);
+    const freeHours = Number.isFinite(freeHoursValue) && freeHoursValue >= 0
+      ? freeHoursValue
+      : 24;
+
+    return {
+      freeHours,
+      lateCancelAction: this.normalizePolicyAction(
+        raw?.lateCancelAction ?? raw?.lateAction,
+        'full',
+      ),
+      noShowAction: this.normalizePolicyAction(raw?.noShowAction, 'full'),
+    };
+  }
+
   private normalizePhone(value?: string | null): string {
     return (value || '').replace(/\D/g, '');
   }
@@ -119,6 +154,7 @@ export class PublicService {
         rating: true,
         phone: true,
         whatsapp: true,
+        cancelPolicySettings: true,
         createdAt: true,
       },
     });
@@ -181,6 +217,7 @@ export class PublicService {
         phone: user.phone,
         whatsapp: user.whatsapp,
       },
+      cancelPolicy: this.mapCancelPolicy(user.cancelPolicySettings as any),
       memberSince: user.createdAt,
       hasWorkingDays: weeklySlotsCount > 0,
     };

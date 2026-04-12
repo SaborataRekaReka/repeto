@@ -76,7 +76,12 @@ export class PackagesService {
     if (pkg.userId !== userId) throw new ForbiddenException();
 
     const data: any = { ...dto };
-    if (dto.validUntil) data.validUntil = new Date(dto.validUntil);
+    if (Object.prototype.hasOwnProperty.call(dto, 'validUntil')) {
+      data.validUntil = dto.validUntil ? new Date(dto.validUntil) : null;
+    }
+    if (Object.prototype.hasOwnProperty.call(dto, 'comment')) {
+      data.comment = dto.comment || null;
+    }
 
     return this.prisma.package.update({ where: { id }, data });
   }

@@ -4,6 +4,7 @@ import { Plus, Xmark } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSettings, updateAccount } from "@/hooks/useSettings";
+import { codedErrorMessage } from "@/lib/errorCodes";
 
 const formatOptions = [
     { value: "online", content: "Онлайн (Zoom / Google Meet)" },
@@ -81,7 +82,7 @@ const Account = () => {
             await Promise.all([mutateSettings(), refreshUser()]);
             setSaveMsg("Сохранено");
         } catch (e: any) {
-            setSaveMsg(e?.message || "Ошибка сохранения");
+            setSaveMsg(codedErrorMessage("SETT-ACC-SAVE", e));
         } finally { setSaving(false); }
     };
 

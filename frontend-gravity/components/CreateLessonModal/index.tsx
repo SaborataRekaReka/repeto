@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import {
     Dialog,
     TextInput,
@@ -7,55 +7,15 @@ import {
     Checkbox,
     Text,
     Button,
-    Popover,
 } from "@gravity-ui/uikit";
 import { useStudents } from "@/hooks/useStudents";
 import { createLesson, updateLesson } from "@/hooks/useLessons";
 import type { Lesson } from "@/types/schedule";
+import StyledDateInput from "@/components/StyledDateInput";
+import StyledTimeInput from "@/components/StyledTimeInput";
+import { codedErrorMessage } from "@/lib/errorCodes";
 
-const MONTH_NAMES_GEN = [
-    "январь", "февраль", "март", "апрель", "май", "июнь",
-    "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь",
-];
-const WEEK_DAY_SHORT = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 const GDialog = Dialog as any;
-const GPopover = Popover as any;
-
-function toIsoDate(date: Date) {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, "0");
-    const d = String(date.getDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
-}
-
-function parseIsoDate(value: string): Date | null {
-    if (!value) return null;
-    const [y, m, d] = value.split("-").map(Number);
-    if (!y || !m || !d) return null;
-    return new Date(y, m - 1, d);
-}
-
-function formatRuDate(value: string): string {
-    const date = parseIsoDate(value);
-    if (!date) return "";
-    const dd = String(date.getDate()).padStart(2, "0");
-    const mm = String(date.getMonth() + 1).padStart(2, "0");
-    const yyyy = date.getFullYear();
-    return `${dd}.${mm}.${yyyy}`;
-}
-
-function getMonthGrid(monthDate: Date) {
-    const start = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
-    const totalDays = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).getDate();
-    const startDow = start.getDay() === 0 ? 7 : start.getDay();
-    const leading = startDow - 1;
-
-    const cells: Array<Date | null> = [];
-    for (let i = 0; i < leading; i++) cells.push(null);
-    for (let d = 1; d <= totalDays; d++) cells.push(new Date(monthDate.getFullYear(), monthDate.getMonth(), d));
-    while (cells.length % 7 !== 0) cells.push(null);
-    return cells;
-}
 
 const subjectItems = [
     { value: "Математика", content: "Математика" },
@@ -82,6 +42,7 @@ const formatItems = [
 type CreateLessonModalProps = {
     visible: boolean;
     onClose: () => void;
+    onCreated?: (savedLesson?: Lesson | Lesson[]) => void | Promise<void>;
     lesson?: Lesson | null;
     defaultStudent?: { id: string; name: string } | null;
     defaultDate?: string;
@@ -101,9 +62,21 @@ const FieldRow = ({ label, children }: { label: string; children: React.ReactNod
     </div>
 );
 
+const errorWrapStyle = (invalid: boolean) =>
+    invalid
+        ? {
+              border: "1px solid var(--g-color-line-danger)",
+              borderRadius: 8,
+              padding: 2,
+          }
+        : undefined;
+
+type RequiredField = "student" | "subject" | "date" | "time";
+
 const CreateLessonModal = ({
     visible,
     onClose,
+    onCreated,
     lesson,
     defaultStudent,
     defaultDate,
@@ -129,18 +102,22 @@ const CreateLessonModal = ({
     const [repeat, setRepeat] = useState(false);
     const [note, setNote] = useState("");
     const [saving, setSaving] = useState(false);
-    const [calendarOpen, setCalendarOpen] = useState(false);
-    const [calendarMonth, setCalendarMonth] = useState<Date>(() => {
-        const selected = parseIsoDate(defaultDate || "");
-        const base = selected || new Date();
-        return new Date(base.getFullYear(), base.getMonth(), 1);
+    const [formError, setFormError] = useState<string | null>(null);
+    const [touched, setTouched] = useState<Record<RequiredField, boolean>>({
+        student: false,
+        subject: false,
+        date: false,
+        time: false,
     });
 
-    const calendarCells = useMemo(() => getMonthGrid(calendarMonth), [calendarMonth]);
-    const todayIso = toIsoDate(new Date());
+    const markTouched = (field: RequiredField) => {
+        setTouched((prev) => (prev[field] ? prev : { ...prev, [field]: true }));
+    };
 
     useEffect(() => {
         if (!visible) return;
+        setFormError(null);
+        setTouched({ student: false, subject: false, date: false, time: false });
 
         if (lesson) {
             const matched = students.find((s) => s.name === lesson.studentName);
@@ -151,10 +128,6 @@ const CreateLessonModal = ({
             setSubject(matchedSubject ? [matchedSubject.value] : [lesson.subject]);
             setDate(lesson.date);
             setTime(lesson.startTime);
-            const lessonDate = parseIsoDate(lesson.date);
-            if (lessonDate) {
-                setCalendarMonth(new Date(lessonDate.getFullYear(), lessonDate.getMonth(), 1));
-            }
             const dur = durationItems.find(
                 (d) => d.value === String(lesson.duration)
             );
@@ -170,9 +143,6 @@ const CreateLessonModal = ({
             setSubject([]);
             setDate(defaultDate || "");
             setTime(defaultTime || "");
-            const selectedDate = parseIsoDate(defaultDate || "");
-            const base = selectedDate || new Date();
-            setCalendarMonth(new Date(base.getFullYear(), base.getMonth(), 1));
             setDuration(["60"]);
             setFormat(["online"]);
             setLocation("");
@@ -201,36 +171,66 @@ const CreateLessonModal = ({
     }, [studentId]);
 
     const handleSubmit = async () => {
-        if (!studentId.length || !subject.length || !date || !time) return;
+        const requiresStudent = !isEdit;
+        const hasStudent = studentId.length > 0;
+        const hasSubject = subject.length > 0;
+        const hasDate = !!date;
+        const hasTime = !!time;
+
+        setTouched({
+            student: requiresStudent,
+            subject: true,
+            date: true,
+            time: true,
+        });
+
+        if ((requiresStudent && !hasStudent) || !hasSubject || !hasDate || !hasTime) {
+            setFormError("Заполните обязательные поля.");
+            return;
+        }
+
         setSaving(true);
+        setFormError(null);
         try {
             const scheduledAt = new Date(`${date}T${time}`).toISOString();
+            let savedLesson: Lesson | Lesson[] | undefined;
+
             if (isEdit && lesson) {
-                await updateLesson(lesson.id, {
+                savedLesson = await updateLesson(lesson.id, {
                     subject: subject[0],
                     scheduledAt,
                     duration: Number(duration[0]),
                     format: format[0].toUpperCase(),
                     location: location || undefined,
                     rate: Number(cost) || undefined,
+                    notes: note,
                 });
             } else {
-                await createLesson({
+                savedLesson = await createLesson({
                     studentId: studentId[0],
                     subject: subject[0],
                     scheduledAt,
                     duration: Number(duration[0]),
                     format: format[0].toUpperCase(),
+                    location: location || undefined,
                     rate: Number(cost) || undefined,
+                    notes: note,
                 });
             }
+
+            await onCreated?.(savedLesson);
             onClose();
         } catch (err) {
-            console.error("Failed to save lesson:", err);
+            setFormError(codedErrorMessage("LESSON-SAVE", err));
         } finally {
             setSaving(false);
         }
     };
+
+    const studentError = !isEdit && touched.student && !studentId.length;
+    const subjectError = touched.subject && !subject.length;
+    const dateError = touched.date && !date;
+    const timeError = touched.time && !time;
 
     return (
         <GDialog open={visible} onClose={onClose} size="s" hasCloseButton>
@@ -241,183 +241,88 @@ const CreateLessonModal = ({
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                     {!isEdit && (
                         <FieldRow label="Ученик *">
-                            <Select
-                                options={studentItems}
-                                value={studentId}
-                                onUpdate={setStudentId}
-                                placeholder="Выберите ученика"
-                                size="m"
-                                width="max"
-                                filterable
-                            />
+                            <div style={errorWrapStyle(studentError)} onClick={() => markTouched("student")}> 
+                                <Select
+                                    options={studentItems}
+                                    value={studentId}
+                                    onUpdate={(value) => {
+                                        setStudentId(value);
+                                        markTouched("student");
+                                    }}
+                                    placeholder="Выберите ученика"
+                                    size="m"
+                                    width="max"
+                                    filterable
+                                />
+                            </div>
+                            {studentError && (
+                                <Text as="div" variant="caption-2" style={{ marginTop: 4, color: "var(--g-color-text-danger)" }}>
+                                    Обязательное поле
+                                </Text>
+                            )}
                         </FieldRow>
                     )}
 
                     <FieldRow label="Предмет *">
-                        <Select
-                            options={subjectItems}
-                            value={subject}
-                            onUpdate={setSubject}
-                            placeholder="Выберите предмет"
-                            size="m"
-                            width="max"
-                            filterable
-                        />
+                        <div style={errorWrapStyle(subjectError)} onClick={() => markTouched("subject")}> 
+                            <Select
+                                options={subjectItems}
+                                value={subject}
+                                onUpdate={(value) => {
+                                    setSubject(value);
+                                    markTouched("subject");
+                                }}
+                                placeholder="Выберите предмет"
+                                size="m"
+                                width="max"
+                                filterable
+                            />
+                        </div>
+                        {subjectError && (
+                            <Text as="div" variant="caption-2" style={{ marginTop: 4, color: "var(--g-color-text-danger)" }}>
+                                Обязательное поле
+                            </Text>
+                        )}
                     </FieldRow>
 
                     <div style={{ display: "flex", gap: 16 }}>
                         <div style={{ flex: 1 }}>
                             <FieldRow label="Дата *">
-                                <GPopover
-                                    open={calendarOpen}
-                                    onOpenChange={setCalendarOpen}
-                                    placement="bottom-start"
-                                    content={
-                                        <div
-                                            style={{
-                                                background: "var(--g-color-base-background)",
-                                                border: "1px solid var(--g-color-line-generic)",
-                                                borderRadius: 10,
-                                                padding: 10,
-                                                width: 248,
-                                            }}
-                                        >
-                                            <div
-                                                style={{
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    justifyContent: "space-between",
-                                                    marginBottom: 8,
-                                                }}
-                                            >
-                                                <Button
-                                                    view="flat"
-                                                    size="s"
-                                                    onClick={() =>
-                                                        setCalendarMonth((prev) =>
-                                                            new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
-                                                        )
-                                                    }
-                                                >
-                                                    &lt;
-                                                </Button>
-                                                <Text variant="body-2" style={{ textTransform: "capitalize", fontWeight: 600 }}>
-                                                    {MONTH_NAMES_GEN[calendarMonth.getMonth()]} {calendarMonth.getFullYear()}
-                                                </Text>
-                                                <Button
-                                                    view="flat"
-                                                    size="s"
-                                                    onClick={() =>
-                                                        setCalendarMonth((prev) =>
-                                                            new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
-                                                        )
-                                                    }
-                                                >
-                                                    &gt;
-                                                </Button>
-                                            </div>
-
-                                            <div
-                                                style={{
-                                                    display: "grid",
-                                                    gridTemplateColumns: "repeat(7, 1fr)",
-                                                    gap: 4,
-                                                    marginBottom: 6,
-                                                }}
-                                            >
-                                                {WEEK_DAY_SHORT.map((dayName) => (
-                                                    <Text
-                                                        key={dayName}
-                                                        variant="caption-2"
-                                                        color="secondary"
-                                                        style={{ textAlign: "center" }}
-                                                    >
-                                                        {dayName}
-                                                    </Text>
-                                                ))}
-                                            </div>
-
-                                            <div
-                                                style={{
-                                                    display: "grid",
-                                                    gridTemplateColumns: "repeat(7, 1fr)",
-                                                    gap: 4,
-                                                }}
-                                            >
-                                                {calendarCells.map((cellDate, idx) => {
-                                                    if (!cellDate) {
-                                                        return <div key={`empty-${idx}`} style={{ height: 28 }} />;
-                                                    }
-
-                                                    const iso = toIsoDate(cellDate);
-                                                    const isSelected = iso === date;
-                                                    const isToday = iso === todayIso;
-
-                                                    return (
-                                                        <button
-                                                            key={iso}
-                                                            type="button"
-                                                            onClick={() => {
-                                                                setDate(iso);
-                                                                setCalendarOpen(false);
-                                                            }}
-                                                            style={{
-                                                                height: 28,
-                                                                borderRadius: 7,
-                                                                border: isSelected
-                                                                    ? "1px solid var(--g-color-line-brand)"
-                                                                    : "1px solid transparent",
-                                                                background: isSelected
-                                                                    ? "var(--g-color-base-brand)"
-                                                                    : isToday
-                                                                        ? "var(--g-color-base-brand-hover)"
-                                                                        : "transparent",
-                                                                color: isSelected
-                                                                    ? "var(--g-color-text-light-primary)"
-                                                                    : "var(--g-color-text-primary)",
-                                                                cursor: "pointer",
-                                                                fontSize: 12,
-                                                                fontWeight: isSelected ? 600 : 500,
-                                                            }}
-                                                        >
-                                                            {cellDate.getDate()}
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                        </div>
-                                    }
-                                >
-                                    <button
-                                        type="button"
-                                        onClick={() => setCalendarOpen((prev) => !prev)}
-                                        className="repeto-native-input"
-                                        style={{
-                                            height: 36,
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "space-between",
-                                            width: "100%",
-                                            cursor: "pointer",
-                                            padding: "0 10px",
+                                <div style={errorWrapStyle(dateError)} onClick={() => markTouched("date")}> 
+                                    <StyledDateInput
+                                        value={date}
+                                        onUpdate={(value) => {
+                                            setDate(value);
+                                            markTouched("date");
                                         }}
-                                    >
-                                        <span style={{ color: date ? "var(--g-color-text-primary)" : "var(--g-color-text-hint)" }}>
-                                            {date ? formatRuDate(date) : "Выберите дату"}
-                                        </span>
-                                        v
-                                    </button>
-                                </GPopover>
+                                        style={{ height: 36, padding: "0 10px" }}
+                                    />
+                                </div>
+                                {dateError && (
+                                    <Text as="div" variant="caption-2" style={{ marginTop: 4, color: "var(--g-color-text-danger)" }}>
+                                        Обязательное поле
+                                    </Text>
+                                )}
                             </FieldRow>
                         </div>
                         <div style={{ flex: 1 }}>
                             <FieldRow label="Время начала *">
-                                <input
-                                    type="time"
-                                    value={time}
-                                    onChange={(e) => setTime(e.target.value)}
-                                    className="repeto-native-input"
-                                />
+                                <div style={errorWrapStyle(timeError)} onClick={() => markTouched("time")}> 
+                                    <StyledTimeInput
+                                        value={time}
+                                        onUpdate={(value) => {
+                                            setTime(value);
+                                            markTouched("time");
+                                        }}
+                                        showClockIcon={false}
+                                        style={{ height: 36, padding: "0 10px" }}
+                                    />
+                                </div>
+                                {timeError && (
+                                    <Text as="div" variant="caption-2" style={{ marginTop: 4, color: "var(--g-color-text-danger)" }}>
+                                        Обязательное поле
+                                    </Text>
+                                )}
                             </FieldRow>
                         </div>
                     </div>
@@ -482,6 +387,12 @@ const CreateLessonModal = ({
                             size="m"
                         />
                     </FieldRow>
+
+                    {formError && (
+                        <Text as="div" variant="body-1" style={{ color: "var(--g-color-text-danger)" }}>
+                            {formError}
+                        </Text>
+                    )}
 
                     <div style={{ display: "flex", gap: 12, paddingTop: 4 }}>
                         <Button

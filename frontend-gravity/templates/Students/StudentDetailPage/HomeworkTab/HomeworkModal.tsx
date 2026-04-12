@@ -9,6 +9,7 @@ import {
 } from "@gravity-ui/uikit";
 import { File, TrashBin, CirclePlus } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
+import StyledDateInput from "@/components/StyledDateInput";
 import type { HomeworkFile, StudentUploadFile } from "@/mocks/student-details";
 
 type Homework = {
@@ -46,6 +47,8 @@ const HomeworkModal = ({
     const [addingFile, setAddingFile] = useState(false);
     const [fileName, setFileName] = useState("");
     const [fileUrl, setFileUrl] = useState("");
+    const [taskTouched, setTaskTouched] = useState(false);
+    const [formError, setFormError] = useState<string | null>(null);
 
     const isEdit = !!homework;
 
@@ -62,6 +65,8 @@ const HomeworkModal = ({
         setAddingFile(false);
         setFileName("");
         setFileUrl("");
+        setTaskTouched(false);
+        setFormError(null);
     }, [visible, homework]);
 
     const handleAddFile = () => {
@@ -84,9 +89,16 @@ const HomeworkModal = ({
     };
 
     const handleSave = () => {
-        if (!task.trim()) return;
+        setTaskTouched(true);
+        if (!task.trim()) {
+            setFormError("Заполните обязательные поля.");
+            return;
+        }
+        setFormError(null);
         onSave({ task: task.trim(), dueDate, linkedFiles: files });
     };
+
+    const taskError = taskTouched && !task.trim();
 
     return (
         <Dialog size="m" open={visible} onClose={onClose}>
@@ -110,13 +122,31 @@ const HomeworkModal = ({
                         >
                             Задание *
                         </Text>
-                        <TextArea
-                            value={task}
-                            onUpdate={setTask}
-                            placeholder="Опишите задание..."
-                            rows={4}
-                            size="m"
-                        />
+                        <div
+                            style={
+                                taskError
+                                    ? {
+                                          border: "1px solid var(--g-color-line-danger)",
+                                          borderRadius: 8,
+                                          padding: 2,
+                                      }
+                                    : undefined
+                            }
+                        >
+                            <TextArea
+                                value={task}
+                                onUpdate={setTask}
+                                onBlur={() => setTaskTouched(true)}
+                                placeholder="Опишите задание..."
+                                rows={4}
+                                size="m"
+                            />
+                        </div>
+                        {taskError && (
+                            <Text as="div" variant="caption-2" style={{ marginTop: 4, color: "var(--g-color-text-danger)" }}>
+                                Обязательное поле
+                            </Text>
+                        )}
                     </div>
 
                     <div>
@@ -128,11 +158,10 @@ const HomeworkModal = ({
                         >
                             Срок сдачи
                         </Text>
-                        <input
-                            type="date"
-                            className="repeto-native-input"
+                        <StyledDateInput
                             value={dueDate}
-                            onChange={(e) => setDueDate(e.target.value)}
+                            onUpdate={setDueDate}
+                            style={{ height: 36, padding: "0 12px" }}
                         />
                     </div>
 
@@ -305,6 +334,12 @@ const HomeworkModal = ({
                                 ))}
                             </div>
                         )}
+
+                    {formError && (
+                        <Text as="div" variant="body-1" style={{ color: "var(--g-color-text-danger)" }}>
+                            {formError}
+                        </Text>
+                    )}
                 </div>
             </Dialog.Body>
             <Dialog.Footer

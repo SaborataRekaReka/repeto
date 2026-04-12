@@ -20,9 +20,10 @@ import ProfileTab from "./ProfileTab";
 import ContactsTab from "./ContactsTab";
 import NotesTab from "./NotesTab";
 import HomeworkTab from "./HomeworkTab";
-import { useLessons } from "@/hooks/useLessons";
+import { useLessons, deleteLesson } from "@/hooks/useLessons";
 import { usePayments } from "@/hooks/usePayments";
 import { useSettings } from "@/hooks/useSettings";
+import { codedErrorMessage } from "@/lib/errorCodes";
 import {
     updateStudent,
     useStudentNotes,
@@ -90,9 +91,12 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
     const [tab, setTab] = useState<string>(getTabFromQuery);
     const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
     const [scheduleModal, setScheduleModal] = useState(false);
+    const [editLesson, setEditLesson] = useState<Lesson | null>(null);
     const [paymentModal, setPaymentModal] = useState(false);
     const [portalLinkModal, setPortalLinkModal] = useState(false);
     const [debtSending, setDebtSending] = useState(false);
+    const [optimisticRemovedLessonIds, setOptimisticRemovedLessonIds] = useState<string[]>([]);
+    const [lessonActionError, setLessonActionError] = useState<string | null>(null);
 
     useEffect(() => {
         const nextTab = getTabFromQuery();
@@ -124,10 +128,47 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
         }
     };
 
-    const { data: allLessons = [] } = useLessons({ studentId: student.id });
-    const studentLessons = [...allLessons].sort((a, b) =>
+    const { data: allLessons = [], refetch: refetchLessons } = useLessons({ studentId: student.id });
+    const visibleLessons = allLessons.filter(
+        (lesson) => !optimisticRemovedLessonIds.includes(lesson.id)
+    );
+    const studentLessons = [...visibleLessons].sort((a, b) =>
         a.date > b.date ? -1 : 1
     );
+
+    useEffect(() => {
+        if (optimisticRemovedLessonIds.length === 0) return;
+        const existingIds = new Set(allLessons.map((lesson) => lesson.id));
+        setOptimisticRemovedLessonIds((prev) => prev.filter((id) => existingIds.has(id)));
+    }, [allLessons, optimisticRemovedLessonIds.length]);
+
+    const handleOpenCreateLesson = () => {
+        setLessonActionError(null);
+        setEditLesson(null);
+        setScheduleModal(true);
+    };
+
+    const handleEditLesson = (lesson: Lesson) => {
+        setLessonActionError(null);
+        setEditLesson(lesson);
+        setScheduleModal(true);
+    };
+
+    const handleDeleteLesson = async (lessonId: string) => {
+        setLessonActionError(null);
+        setOptimisticRemovedLessonIds((prev) => (
+            prev.includes(lessonId) ? prev : [...prev, lessonId]
+        ));
+
+        try {
+            await deleteLesson(lessonId);
+            await refetchLessons();
+            onRefresh?.();
+        } catch (error: any) {
+            setOptimisticRemovedLessonIds((prev) => prev.filter((id) => id !== lessonId));
+            setLessonActionError(codedErrorMessage("LESSON-DELETE", error));
+        }
+    };
 
     const { data: paymentsData, refetch: refetchPayments } = usePayments({
         studentId: student.id,
@@ -165,11 +206,22 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
     const renderTabContent = () => (
         <>
             {tab === "lessons" && (
-                <LessonHistory
-                    lessons={studentLessons}
-                    onLessonClick={setSelectedLesson}
-                    onAdd={() => setScheduleModal(true)}
-                />
+                <>
+                    {lessonActionError && (
+                        <Text
+                            as="div"
+                            variant="body-2"
+                            style={{ color: "var(--g-color-text-danger)", marginBottom: 12 }}
+                        >
+                            {lessonActionError}
+                        </Text>
+                    )}
+                    <LessonHistory
+                        lessons={studentLessons}
+                        onLessonClick={setSelectedLesson}
+                        onAdd={handleOpenCreateLesson}
+                    />
+                </>
             )}
             {tab === "profile" && (
                 <ProfileTab student={local} onSave={handleInlineSave} />
@@ -404,11 +456,22 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
                 visible={!!selectedLesson}
                 onClose={() => setSelectedLesson(null)}
                 lesson={selectedLesson}
+                onEdit={handleEditLesson}
+                onDelete={handleDeleteLesson}
+                onUpdated={refetchLessons}
             />
             <CreateLessonModal
                 visible={scheduleModal}
-                onClose={() => setScheduleModal(false)}
-                defaultStudent={{ id: student.id, name: student.name }}
+                onClose={() => {
+                    setScheduleModal(false);
+                    setEditLesson(null);
+                }}
+                onCreated={async () => {
+                    await refetchLessons();
+                    onRefresh?.();
+                }}
+                lesson={editLesson}
+                defaultStudent={editLesson ? undefined : { id: student.id, name: student.name }}
             />
             <CreatePaymentModal
                 visible={paymentModal}

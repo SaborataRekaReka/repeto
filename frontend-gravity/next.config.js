@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     reactStrictMode: true,
+    devIndicators: false,
     transpilePackages: [
         "@gravity-ui/uikit",
         "@gravity-ui/icons",

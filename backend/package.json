@@ -3,8 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "prebuild": "prisma generate",
     "build": "nest build",
+    "prestart": "prisma generate",
     "start": "nest start",
+    "prestart:dev": "prisma generate",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
@@ -28,6 +31,7 @@
     "@nestjs/swagger": "^7.4.0",
     "@nestjs/throttler": "^6.0.0",
     "@prisma/client": "^5.20.0",
+    "@types/web-push": "^3.6.4",
     "bcrypt": "^5.1.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
@@ -41,7 +45,8 @@
     "pino-pretty": "^11.2.2",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
-    "uuid": "^10.0.0"
+    "uuid": "^10.0.0",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.4.0",
