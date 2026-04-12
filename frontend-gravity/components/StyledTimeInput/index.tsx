@@ -1,9 +1,7 @@
-import { useMemo, useState, type CSSProperties } from "react";
-import { Icon, Popover } from "@gravity-ui/uikit";
-import { ArrowChevronDown, Clock } from "@gravity-ui/icons";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { Icon, Popup } from "@gravity-ui/uikit";
+import { ChevronDown, Clock } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
-
-const GPopover = Popover as any;
 
 type StyledTimeInputProps = {
     value: string;
@@ -53,14 +51,18 @@ const StyledTimeInput = ({
     placeholder = "Выберите время",
     disabled,
     width = "100%",
-    className = "repeto-native-input",
+    className,
     style,
     stepMinutes = 30,
     min = "00:00",
     max = "23:30",
     showClockIcon = true,
 }: StyledTimeInputProps) => {
+    const anchorRef = useRef<HTMLButtonElement>(null);
+    const listRef = useRef<HTMLDivElement>(null);
     const [open, setOpen] = useState(false);
+    const [isHovered, setIsHovered] = useState(false);
+    const [anchorWidth, setAnchorWidth] = useState<number>(0);
 
     const options = useMemo(
         () => buildTimeOptions(stepMinutes, min, max),
@@ -69,25 +71,111 @@ const StyledTimeInput = ({
 
     const selectedValue = value || "";
 
+    useEffect(() => {
+        if (open && anchorRef.current) {
+            setAnchorWidth(anchorRef.current.offsetWidth);
+        }
+    }, [open]);
+
+    useEffect(() => {
+        if (open && listRef.current && selectedValue) {
+            const selected = listRef.current.querySelector("[data-selected='true']");
+            if (selected) {
+                selected.scrollIntoView({ block: "center" });
+            }
+        }
+    }, [open, selectedValue]);
+
     return (
-        <GPopover
-            open={open}
-            onOpenChange={(next: boolean) => {
-                if (disabled) return;
-                setOpen(next);
-            }}
-            openOnHover={false}
-            placement="bottom-start"
-            content={
+        <>
+            <button
+                ref={anchorRef}
+                type="button"
+                className={className}
+                onClick={() => {
+                    if (disabled) return;
+                    setOpen((prev) => !prev);
+                }}
+                onMouseEnter={() => {
+                    if (!disabled) setIsHovered(true);
+                }}
+                onMouseLeave={() => setIsHovered(false)}
+                onFocus={() => {
+                    if (!disabled) setIsHovered(true);
+                }}
+                onBlur={() => setIsHovered(false)}
+                disabled={disabled}
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    width,
+                    background:
+                        isHovered && !disabled
+                            ? "var(--g-color-base-simple-hover)"
+                            : "transparent",
+                    border: open
+                        ? "1px solid var(--g-color-line-brand)"
+                        : isHovered
+                          ? "1px solid var(--g-color-line-generic-hover)"
+                          : "1px solid var(--g-color-line-generic)",
+                    borderRadius: "var(--g-border-radius-m)",
+                    fontSize: 13,
+                    fontFamily: "inherit",
+                    color: "var(--g-color-text-primary)",
+                    cursor: disabled ? "default" : "pointer",
+                    opacity: disabled ? 0.5 : 1,
+                    boxSizing: "border-box",
+                    height: 36,
+                    padding: "0 12px",
+                    transition: "border-color 0.15s, background-color 0.15s",
+                    ...style,
+                }}
+            >
+                <span
+                    style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                        color: selectedValue
+                            ? "var(--g-color-text-primary)"
+                            : "var(--g-color-text-hint)",
+                    }}
+                >
+                    {showClockIcon && (
+                        <Icon data={Clock as IconData} size={14} style={{ opacity: 0.7 }} />
+                    )}
+                    {selectedValue || placeholder}
+                </span>
+                <Icon
+                    data={ChevronDown as IconData}
+                    size={16}
+                    style={{
+                        color: "var(--g-color-text-secondary)",
+                        flexShrink: 0,
+                        transform: open ? "rotate(180deg)" : "none",
+                        transition: "transform 0.15s",
+                    }}
+                />
+            </button>
+            <Popup
+                open={open}
+                anchorRef={anchorRef}
+                placement="bottom-start"
+                onClose={() => setOpen(false)}
+            >
                 <div
+                    ref={listRef}
                     style={{
                         background: "var(--g-color-base-background)",
                         border: "1px solid var(--g-color-line-generic)",
                         borderRadius: 10,
                         padding: 6,
-                        width: 170,
+                        width: anchorWidth > 0 ? anchorWidth : undefined,
+                        minWidth: 120,
                         maxHeight: 240,
                         overflowY: "auto",
+                        boxSizing: "border-box",
                     }}
                 >
                     {options.map((option) => {
@@ -97,6 +185,7 @@ const StyledTimeInput = ({
                             <button
                                 key={option}
                                 type="button"
+                                data-selected={isSelected ? "true" : undefined}
                                 onClick={() => {
                                     onUpdate(option);
                                     setOpen(false);
@@ -132,44 +221,8 @@ const StyledTimeInput = ({
                         );
                     })}
                 </div>
-            }
-        >
-            <button
-                type="button"
-                className={className}
-                onClick={() => {
-                    if (disabled) return;
-                    setOpen((prev) => !prev);
-                }}
-                disabled={disabled}
-                style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    width,
-                    cursor: disabled ? "default" : "pointer",
-                    opacity: disabled ? 0.7 : 1,
-                    ...style,
-                }}
-            >
-                <span
-                    style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 6,
-                        color: selectedValue
-                            ? "var(--g-color-text-primary)"
-                            : "var(--g-color-text-hint)",
-                    }}
-                >
-                    {showClockIcon && (
-                        <Icon data={Clock as IconData} size={14} style={{ opacity: 0.7 }} />
-                    )}
-                    {selectedValue || placeholder}
-                </span>
-                <Icon data={ArrowChevronDown as IconData} size={16} style={{ opacity: 0.7 }} />
-            </button>
-        </GPopover>
+            </Popup>
+        </>
     );
 };
 

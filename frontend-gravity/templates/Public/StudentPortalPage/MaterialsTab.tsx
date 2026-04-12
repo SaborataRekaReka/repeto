@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
-import Icon from "@/components/Icon";
+import { Card, Text, Icon, Button } from "@gravity-ui/uikit";
+import { File as FileIcon, Folder as FolderIcon, ArrowUpRightFromSquare, ChevronRight } from "@gravity-ui/icons";
+import type { IconData } from "@gravity-ui/uikit";
 import type { PortalFile, PortalHomework } from "@/types/student-portal";
 
 type MaterialsTabProps = {
@@ -12,51 +14,31 @@ const FileRow = ({ file }: { file: PortalFile }) => (
         href={file.cloudUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center justify-between p-4 hover:bg-n-4/50 transition-colors dark:hover:bg-white/5"
+        className="repeto-portal-file-row"
+        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", textDecoration: "none", transition: "background 0.12s" }}
     >
-        <div className="flex items-center gap-3 min-w-0">
-            <Icon
-                className="icon-20 shrink-0 dark:fill-white"
-                name="document"
-            />
-            <div className="min-w-0">
-                <p className="text-sm font-bold truncate">{file.name}</p>
-                {file.size && (
-                    <p className="text-xs text-n-3 dark:text-white/50">
-                        {file.size}
-                    </p>
-                )}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+            <Icon data={FileIcon as IconData} size={20} />
+            <div style={{ minWidth: 0 }}>
+                <Text variant="body-1" ellipsis style={{ fontWeight: 600 }}>{file.name}</Text>
+                {file.size && <Text variant="caption-1" color="secondary" as="div">{file.size}</Text>}
             </div>
         </div>
-        <Icon
-            className="icon-16 shrink-0 ml-3 dark:fill-white"
-            name="external-link"
-        />
+        <Icon data={ArrowUpRightFromSquare as IconData} size={16} style={{ flexShrink: 0, marginLeft: 12 }} />
     </a>
 );
 
-const FolderRow = ({
-    folder,
-    onClick,
-}: {
-    folder: PortalFile;
-    onClick: () => void;
-}) => (
+const FolderRow = ({ folder, onClick }: { folder: PortalFile; onClick: () => void }) => (
     <button
         onClick={onClick}
-        className="flex items-center justify-between w-full p-4 text-left hover:bg-n-4/50 transition-colors dark:hover:bg-white/5"
+        className="repeto-portal-file-row"
+        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "12px 16px", textAlign: "left", background: "none", border: "none", cursor: "pointer", transition: "background 0.12s" }}
     >
-        <div className="flex items-center gap-3 min-w-0">
-            <Icon
-                className="icon-20 shrink-0 fill-purple-1"
-                name="folder"
-            />
-            <p className="text-sm font-bold truncate">{folder.name}</p>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+            <Icon data={FolderIcon as IconData} size={20} style={{ color: "var(--g-color-text-brand)" }} />
+            <Text variant="body-1" ellipsis style={{ fontWeight: 600 }}>{folder.name}</Text>
         </div>
-        <Icon
-            className="icon-16 shrink-0 ml-3 fill-n-3 dark:fill-white/50"
-            name="arrow-next"
-        />
+        <Icon data={ChevronRight as IconData} size={16} style={{ flexShrink: 0, marginLeft: 12, color: "var(--g-color-text-secondary)" }} />
     </button>
 );
 
@@ -115,83 +97,73 @@ const MaterialsTab = ({ files, homework }: MaterialsTabProps) => {
 
     if (files.length === 0 && fromHomework.length === 0) {
         return (
-            <div className="card">
-                <div className="p-10 text-center">
-                    <p className="text-sm font-bold mb-1">Нет материалов</p>
-                    <p className="text-xs text-n-3 dark:text-white/50">
-                        Репетитор пока не поделился материалами. Попросите его
-                        добавить файлы в Repeto.
-                    </p>
-                </div>
-            </div>
+            <Card view="outlined" style={{ padding: "40px 24px", textAlign: "center" }}>
+                <Text variant="subheader-2" as="div" style={{ marginBottom: 4 }}>Нет материалов</Text>
+                <Text variant="body-1" color="secondary">
+                    Репетитор пока не поделился материалами. Попросите его добавить файлы в Repeto.
+                </Text>
+            </Card>
         );
     }
 
     return (
-        <div className="space-y-6">
+        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             {/* Homework files */}
             {!currentFolderId && fromHomework.length > 0 && (
-                <div className="card">
-                    <div className="card-head">
-                        <div className="text-h6">Из домашних заданий</div>
+                <Card view="outlined" style={{ overflow: "hidden" }}>
+                    <div className="repeto-card-header">
+                        <Text variant="subheader-2">Из домашних заданий</Text>
                     </div>
-                    <div className="divide-y divide-n-1 dark:divide-white">
-                        {fromHomework.map(({ file, taskLabel }) => (
-                            <a
-                                key={file.id}
-                                href={file.cloudUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center justify-between p-4 hover:bg-n-4/50 transition-colors dark:hover:bg-white/5"
-                            >
-                                <div className="flex items-center gap-3 min-w-0">
-                                    <Icon
-                                        className="icon-20 shrink-0 dark:fill-white"
-                                        name="document"
-                                    />
-                                    <div className="min-w-0">
-                                        <p className="text-sm font-bold truncate">
-                                            {file.name}
-                                        </p>
-                                        <p className="text-xs text-n-3 dark:text-white/50 truncate">
-                                            {taskLabel}
-                                        </p>
-                                    </div>
+                    {fromHomework.map(({ file, taskLabel }, i) => (
+                        <a
+                            key={file.id}
+                            href={file.cloudUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="repeto-portal-file-row"
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                padding: "12px 16px",
+                                textDecoration: "none",
+                                transition: "background 0.12s",
+                                borderTop: i > 0 ? "1px solid var(--g-color-line-generic)" : undefined,
+                            }}
+                        >
+                            <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+                                <Icon data={FileIcon as IconData} size={20} />
+                                <div style={{ minWidth: 0 }}>
+                                    <Text variant="body-1" ellipsis style={{ fontWeight: 600 }}>{file.name}</Text>
+                                    <Text variant="caption-1" color="secondary" ellipsis as="div">{taskLabel}</Text>
                                 </div>
-                                <Icon
-                                    className="icon-16 shrink-0 ml-3 dark:fill-white"
-                                    name="external-link"
-                                />
-                            </a>
-                        ))}
-                    </div>
-                </div>
+                            </div>
+                            <Icon data={ArrowUpRightFromSquare as IconData} size={16} style={{ flexShrink: 0, marginLeft: 12 }} />
+                        </a>
+                    ))}
+                </Card>
             )}
 
             {/* File browser */}
-            <div className="card">
+            <Card view="outlined" style={{ overflow: "hidden" }}>
                 {/* Breadcrumbs */}
                 {currentFolderId && (
-                    <div className="flex items-center gap-1 px-4 pt-4 pb-2 text-xs flex-wrap">
+                    <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "12px 16px 8px", flexWrap: "wrap" }}>
                         <button
-                            className="font-bold text-purple-1 hover:text-purple-2 transition-colors"
+                            style={{ fontWeight: 600, color: "var(--g-color-text-brand)", background: "none", border: "none", cursor: "pointer", fontSize: 12 }}
                             onClick={() => setCurrentFolderId(null)}
                         >
                             Материалы
                         </button>
                         {breadcrumbs.map((crumb) => (
-                            <span key={crumb.id} className="flex items-center gap-1">
-                                <span className="text-n-3 dark:text-white/50">/</span>
+                            <span key={crumb.id} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}>
+                                <Text variant="caption-1" color="secondary">/</Text>
                                 {crumb.id === currentFolderId ? (
-                                    <span className="font-bold text-n-1 dark:text-white">
-                                        {crumb.name}
-                                    </span>
+                                    <Text variant="caption-1" style={{ fontWeight: 600 }}>{crumb.name}</Text>
                                 ) : (
                                     <button
-                                        className="font-bold text-purple-1 hover:text-purple-2 transition-colors"
-                                        onClick={() =>
-                                            setCurrentFolderId(crumb.id)
-                                        }
+                                        style={{ fontWeight: 600, color: "var(--g-color-text-brand)", background: "none", border: "none", cursor: "pointer", fontSize: 12 }}
+                                        onClick={() => setCurrentFolderId(crumb.id)}
                                     >
                                         {crumb.name}
                                     </button>
@@ -202,29 +174,24 @@ const MaterialsTab = ({ files, homework }: MaterialsTabProps) => {
                 )}
 
                 {currentItems.length === 0 ? (
-                    <div className="p-8 text-center text-sm text-n-3 dark:text-white/50">
-                        {currentFolderId
-                            ? "Папка пуста"
-                            : "Нет материалов"}
+                    <div style={{ padding: "32px 16px", textAlign: "center" }}>
+                        <Text variant="body-1" color="secondary">Папка пуста</Text>
                     </div>
                 ) : (
-                    <div className="divide-y divide-n-1 dark:divide-white">
-                        {currentItems.map((item) =>
-                            item.type === "folder" ? (
-                                <FolderRow
-                                    key={item.id}
-                                    folder={item}
-                                    onClick={() =>
-                                        setCurrentFolderId(item.id)
-                                    }
-                                />
+                    currentItems.map((item, i) => (
+                        <div
+                            key={item.id}
+                            style={{ borderTop: i > 0 ? "1px solid var(--g-color-line-generic)" : undefined }}
+                        >
+                            {item.type === "folder" ? (
+                                <FolderRow folder={item} onClick={() => setCurrentFolderId(item.id)} />
                             ) : (
-                                <FileRow key={item.id} file={item} />
-                            )
-                        )}
-                    </div>
+                                <FileRow file={item} />
+                            )}
+                        </div>
+                    ))
                 )}
-            </div>
+            </Card>
         </div>
     );
 };

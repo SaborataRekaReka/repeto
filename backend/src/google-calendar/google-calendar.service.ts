@@ -36,7 +36,7 @@ export class GoogleCalendarService {
     if (process.env.GOOGLE_CALENDAR_REDIRECT_URI) {
       return process.env.GOOGLE_CALENDAR_REDIRECT_URI;
     }
-    const frontend = process.env.FRONTEND_URL || 'http://localhost:3100';
+    const frontend = process.env.FRONTEND_URL || 'http://localhost:3300';
     return `${frontend}/settings?tab=integrations&integration=google-calendar`;
   }
 

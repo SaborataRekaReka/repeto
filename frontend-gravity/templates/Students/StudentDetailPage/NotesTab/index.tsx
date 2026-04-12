@@ -79,7 +79,7 @@ const NotesTab = ({
                         onUpdate={setNewNote}
                         placeholder="Напишите заметку..."
                         rows={4}
-                        size="m"
+                        size="l"
                         autoFocus
                     />
                     <div

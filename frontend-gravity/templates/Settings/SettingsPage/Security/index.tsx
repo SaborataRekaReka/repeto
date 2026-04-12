@@ -52,15 +52,15 @@ const Security = () => {
                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                         <div>
                             <Text variant="caption-2" color="secondary" style={{ display: "block", marginBottom: 6 }}>Текущий пароль</Text>
-                            <TextInput type="password" value={currentPassword} onUpdate={setCurrentPassword} placeholder="Введите текущий пароль" size="m" />
+                            <TextInput type="password" value={currentPassword} onUpdate={setCurrentPassword} placeholder="Введите текущий пароль" size="l" />
                         </div>
                         <div>
                             <Text variant="caption-2" color="secondary" style={{ display: "block", marginBottom: 6 }}>Новый пароль</Text>
-                            <TextInput type="password" value={newPassword} onUpdate={setNewPassword} placeholder="Введите новый пароль" size="m" />
+                            <TextInput type="password" value={newPassword} onUpdate={setNewPassword} placeholder="Введите новый пароль" size="l" />
                         </div>
                         <div>
                             <Text variant="caption-2" color="secondary" style={{ display: "block", marginBottom: 6 }}>Подтверждение пароля</Text>
-                            <TextInput type="password" value={confirmPassword} onUpdate={setConfirmPassword} placeholder="Повторите новый пароль" size="m" />
+                            <TextInput type="password" value={confirmPassword} onUpdate={setConfirmPassword} placeholder="Повторите новый пароль" size="l" />
                         </div>
                     </div>
                     {msg && (
@@ -90,7 +90,7 @@ const Security = () => {
                             </Text>
                         </div>
                         {!deleteConfirm && (
-                            <Button view="outlined-danger" size="m" onClick={() => setDeleteConfirm(true)}>
+                            <Button view="outlined-danger" size="l" onClick={() => setDeleteConfirm(true)}>
                                 Удалить аккаунт
                             </Button>
                         )}
@@ -100,17 +100,17 @@ const Security = () => {
                             <Text variant="caption-2" color="secondary" style={{ display: "block", marginBottom: 6 }}>
                                 Введите пароль для подтверждения
                             </Text>
-                            <TextInput type="password" value={deletePassword} onUpdate={setDeletePassword} placeholder="Ваш пароль" size="m" />
+                            <TextInput type="password" value={deletePassword} onUpdate={setDeletePassword} placeholder="Ваш пароль" size="l" />
                             {deleteMsg && (
                                 <Text variant="body-1" style={{ display: "block", marginTop: 8, fontWeight: 600, color: "var(--g-color-text-danger)" }}>
                                     {deleteMsg}
                                 </Text>
                             )}
                             <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
-                                <Button view="outlined" size="m" onClick={() => { setDeleteConfirm(false); setDeletePassword(""); setDeleteMsg(null); }}>
+                                <Button view="outlined" size="l" onClick={() => { setDeleteConfirm(false); setDeletePassword(""); setDeleteMsg(null); }}>
                                     Отмена
                                 </Button>
-                                <Button view="outlined-danger" size="m" onClick={handleDeleteAccount} disabled={deleting}>
+                                <Button view="outlined-danger" size="l" onClick={handleDeleteAccount} disabled={deleting}>
                                     {deleting ? "Удаляем..." : "Подтвердить удаление"}
                                 </Button>
                             </div>

@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
-import { Button, Icon, Popover, Text } from "@gravity-ui/uikit";
-import { ArrowChevronDown, ArrowChevronLeft, ArrowChevronRight } from "@gravity-ui/icons";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { Button, Icon, Popup, Text } from "@gravity-ui/uikit";
+import { ChevronDown, ArrowChevronLeft, ArrowChevronRight } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 
 const MONTH_NAMES_GEN = [
@@ -8,8 +8,6 @@ const MONTH_NAMES_GEN = [
     "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь",
 ];
 const WEEK_DAY_SHORT = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
-
-const GPopover = Popover as any;
 
 type StyledDateInputProps = {
     value: string;
@@ -69,10 +67,12 @@ const StyledDateInput = ({
     placeholder = "Выберите дату",
     disabled,
     width = "100%",
-    className = "repeto-native-input",
+    className,
     style,
 }: StyledDateInputProps) => {
+    const anchorRef = useRef<HTMLButtonElement>(null);
     const [calendarOpen, setCalendarOpen] = useState(false);
+    const [isHovered, setIsHovered] = useState(false);
     const [calendarMonth, setCalendarMonth] = useState<Date>(() => {
         const base = parseIsoDate(value) || new Date();
         return new Date(base.getFullYear(), base.getMonth(), 1);
@@ -92,15 +92,77 @@ const StyledDateInput = ({
     }, [calendarOpen, value]);
 
     return (
-        <GPopover
-            open={calendarOpen}
-            onOpenChange={(next: boolean) => {
-                if (disabled) return;
-                setCalendarOpen(next);
-            }}
-            openOnHover={false}
-            placement="bottom-start"
-            content={
+        <>
+            <button
+                ref={anchorRef}
+                type="button"
+                className={className}
+                onClick={() => {
+                    if (disabled) return;
+                    setCalendarOpen((prev) => !prev);
+                }}
+                onMouseEnter={() => {
+                    if (!disabled) setIsHovered(true);
+                }}
+                onMouseLeave={() => setIsHovered(false)}
+                onFocus={() => {
+                    if (!disabled) setIsHovered(true);
+                }}
+                onBlur={() => setIsHovered(false)}
+                disabled={disabled}
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    width,
+                    background:
+                        isHovered && !disabled
+                            ? "var(--g-color-base-simple-hover)"
+                            : "transparent",
+                    border: calendarOpen
+                        ? "1px solid var(--g-color-line-brand)"
+                        : isHovered
+                          ? "1px solid var(--g-color-line-generic-hover)"
+                          : "1px solid var(--g-color-line-generic)",
+                    borderRadius: "var(--g-border-radius-m)",
+                    fontSize: 13,
+                    fontFamily: "inherit",
+                    color: "var(--g-color-text-primary)",
+                    cursor: disabled ? "default" : "pointer",
+                    opacity: disabled ? 0.5 : 1,
+                    boxSizing: "border-box",
+                    height: 36,
+                    padding: "0 12px",
+                    transition: "border-color 0.15s, background-color 0.15s",
+                    ...style,
+                }}
+            >
+                <span
+                    style={{
+                        color: value
+                            ? "var(--g-color-text-primary)"
+                            : "var(--g-color-text-hint)",
+                    }}
+                >
+                    {value ? formatRuDate(value) : placeholder}
+                </span>
+                <Icon
+                    data={ChevronDown as IconData}
+                    size={16}
+                    style={{
+                        color: "var(--g-color-text-secondary)",
+                        flexShrink: 0,
+                        transform: calendarOpen ? "rotate(180deg)" : "none",
+                        transition: "transform 0.15s",
+                    }}
+                />
+            </button>
+            <Popup
+                open={calendarOpen}
+                anchorRef={anchorRef}
+                placement="bottom-start"
+                onClose={() => setCalendarOpen(false)}
+            >
                 <div
                     style={{
                         background: "var(--g-color-base-background)",
@@ -231,38 +293,8 @@ const StyledDateInput = ({
                         })}
                     </div>
                 </div>
-            }
-        >
-            <button
-                type="button"
-                className={className}
-                onClick={() => {
-                    if (disabled) return;
-                    setCalendarOpen((prev) => !prev);
-                }}
-                disabled={disabled}
-                style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    width,
-                    cursor: disabled ? "default" : "pointer",
-                    opacity: disabled ? 0.7 : 1,
-                    ...style,
-                }}
-            >
-                <span
-                    style={{
-                        color: value
-                            ? "var(--g-color-text-primary)"
-                            : "var(--g-color-text-hint)",
-                    }}
-                >
-                    {value ? formatRuDate(value) : placeholder}
-                </span>
-                <Icon data={ArrowChevronDown as IconData} size={16} style={{ opacity: 0.7 }} />
-            </button>
-        </GPopover>
+            </Popup>
+        </>
     );
 };
 

@@ -69,7 +69,7 @@ export class SettingsService {
       return process.env.YANDEX_DISK_REDIRECT_URI;
     }
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3100';
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3300';
     return `${frontendUrl}/settings?tab=integrations&integration=yandex-disk`;
   }
 

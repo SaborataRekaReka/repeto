@@ -5,7 +5,7 @@ import { Text, Card, Button, Icon, TextInput, Label, Modal, SegmentedRadioGroup 
 import { Plus, Magnifier, TrashBin } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import CreatePaymentModal from "@/components/CreatePaymentModal";
-import { deleteManualPayments, usePayments } from "@/hooks/usePayments";
+import { deletePayment, usePayments } from "@/hooks/usePayments";
 import { getMethodLabel, getStatusLabel } from "@/mocks/finance-tutor";
 import type { Payment } from "@/types/finance";
 import { codedErrorMessage } from "@/lib/errorCodes";
@@ -20,10 +20,10 @@ const PaymentsListPage = () => {
     const [tab, setTab] = useState("all");
     const [search, setSearch] = useState("");
     const [selected, setSelected] = useState<Payment | null>(null);
+    const [pendingDelete, setPendingDelete] = useState<Payment | null>(null);
     const [createModal, setCreateModal] = useState(false);
-    const [bulkDeleting, setBulkDeleting] = useState(false);
-    const [bulkDeleteMessage, setBulkDeleteMessage] = useState<string | null>(null);
-    const [bulkDeleteError, setBulkDeleteError] = useState<string | null>(null);
+    const [deletingPaymentId, setDeletingPaymentId] = useState<string | null>(null);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
 
     useEffect(() => {
         if (router.query.create === "1") {
@@ -42,34 +42,28 @@ const PaymentsListPage = () => {
         return p.studentName.toLowerCase().includes(search.toLowerCase());
     });
 
-    const handleDeleteManual = async () => {
-        if (bulkDeleting) return;
+    const requestDeletePayment = (payment: Payment) => {
+        if (!payment.isManual || deletingPaymentId) return;
+        setDeleteError(null);
+        setPendingDelete(payment);
+    };
 
-        const confirmed =
-            typeof window === "undefined"
-                ? true
-                : window.confirm(
-                      "Удалить все оплаты, добавленные вручную? Платежи из ЮKassa не будут затронуты."
-                  );
+    const handleDeletePayment = async () => {
+        if (!pendingDelete || deletingPaymentId) return;
 
-        if (!confirmed) return;
-
-        setBulkDeleting(true);
-        setBulkDeleteMessage(null);
-        setBulkDeleteError(null);
+        const payment = pendingDelete;
+        setDeletingPaymentId(payment.id);
         try {
-            const result = await deleteManualPayments();
-            setSelected(null);
+            await deletePayment(payment.id);
+            if (selected?.id === payment.id) {
+                setSelected(null);
+            }
+            setPendingDelete(null);
             await refetchPayments();
-            setBulkDeleteMessage(
-                result.deleted > 0
-                    ? `Удалено ручных оплат: ${result.deleted}`
-                    : "Ручных оплат для удаления не найдено"
-            );
         } catch (error) {
-            setBulkDeleteError(codedErrorMessage("PAY-BULK-DEL", error));
+            setDeleteError(codedErrorMessage("PAY-DEL", error));
         } finally {
-            setBulkDeleting(false);
+            setDeletingPaymentId(null);
         }
     };
 
@@ -83,16 +77,6 @@ const PaymentsListPage = () => {
                     options={tabOptions}
                 />
                 <div style={{ display: "flex", gap: 8 }}>
-                    <Button
-                        view="outlined"
-                        size="m"
-                        onClick={handleDeleteManual}
-                        loading={bulkDeleting}
-                        disabled={bulkDeleting}
-                    >
-                        <Icon data={TrashBin as IconData} size={16} />
-                        Удалить ручные
-                    </Button>
                     <Button view="action" size="m" onClick={() => setCreateModal(true)}>
                         <Icon data={Plus as IconData} size={16} />
                         Записать оплату
@@ -102,26 +86,28 @@ const PaymentsListPage = () => {
                         placeholder="Поиск..."
                         value={search}
                         onUpdate={setSearch}
-                        startContent={<Icon data={Magnifier as IconData} size={16} />}
+                        startContent={
+                            <Icon
+                                data={Magnifier as IconData}
+                                size={16}
+                                style={{
+                                    color: "var(--g-color-text-secondary)",
+                                    marginLeft: 4,
+                                    marginRight: 2,
+                                }}
+                            />
+                        }
                         style={{ width: 220 }}
                     />
                 </div>
             </div>
 
-            {bulkDeleteMessage && (
-                <Text
-                    variant="body-1"
-                    style={{ display: "block", marginBottom: 12, color: "#15803D" }}
-                >
-                    {bulkDeleteMessage}
-                </Text>
-            )}
-            {bulkDeleteError && (
+            {deleteError && (
                 <Text
                     variant="body-1"
                     style={{ display: "block", marginBottom: 12, color: "var(--g-color-text-danger)" }}
                 >
-                    {bulkDeleteError}
+                    {deleteError}
                 </Text>
             )}
 
@@ -154,6 +140,13 @@ const PaymentsListPage = () => {
                                         {h}
                                     </th>
                                 ))}
+                                <th
+                                    style={{
+                                        padding: "10px 12px",
+                                        textAlign: "right",
+                                        width: 56,
+                                    }}
+                                />
                             </tr>
                         </thead>
                         <tbody>
@@ -188,6 +181,25 @@ const PaymentsListPage = () => {
                                             {getStatusLabel(p.status)}
                                         </Label>
                                     </td>
+                                    <td
+                                        style={{ padding: "12px 12px", textAlign: "right", width: 56 }}
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        {p.isManual ? (
+                                            <Button
+                                                view="flat"
+                                                size="s"
+                                                title="Удалить оплату"
+                                                onClick={() => requestDeletePayment(p)}
+                                                loading={deletingPaymentId === p.id}
+                                                disabled={!!deletingPaymentId || !!pendingDelete}
+                                            >
+                                                <Icon data={TrashBin as IconData} size={14} />
+                                            </Button>
+                                        ) : (
+                                            <span style={{ color: "var(--g-color-text-hint)", fontSize: 12 }}>—</span>
+                                        )}
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
@@ -216,6 +228,41 @@ const PaymentsListPage = () => {
                     <div style={{ marginTop: 20, display: "flex", justifyContent: "flex-end" }}>
                         <Button view="normal" size="m" onClick={() => setSelected(null)}>
                             Закрыть
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal
+                open={!!pendingDelete}
+                onClose={() => {
+                    if (!deletingPaymentId) setPendingDelete(null);
+                }}
+            >
+                <div style={{ padding: 24, minWidth: 360 }}>
+                    <Text variant="subheader-2" style={{ display: "block", marginBottom: 12 }}>
+                        Подтвердите удаление
+                    </Text>
+                    <Text variant="body-1" color="secondary" style={{ display: "block", marginBottom: 20 }}>
+                        Удалить оплату{pendingDelete ? `: ${pendingDelete.studentName}, ${pendingDelete.amount.toLocaleString("ru-RU")} ₽` : ""}?
+                    </Text>
+                    <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+                        <Button
+                            view="outlined"
+                            size="m"
+                            onClick={() => setPendingDelete(null)}
+                            disabled={!!deletingPaymentId}
+                        >
+                            Отмена
+                        </Button>
+                        <Button
+                            view="outlined-danger"
+                            size="m"
+                            onClick={handleDeletePayment}
+                            loading={!!deletingPaymentId}
+                            disabled={!!deletingPaymentId}
+                        >
+                            Удалить
                         </Button>
                     </div>
                 </div>

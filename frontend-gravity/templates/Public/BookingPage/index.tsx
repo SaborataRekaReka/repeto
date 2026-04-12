@@ -658,7 +658,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
                         {step > 0 && step < 3 ? (
                             <Button
                                 view="flat"
-                                size="m"
+                                size="l"
                                 onClick={goBack}
                                 style={ICON_BUTTON_STYLE}
                             >
@@ -668,7 +668,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
                             <Link href={`/t/${slug}`} style={{ textDecoration: "none" }}>
                                 <Button
                                     view="flat"
-                                    size="m"
+                                    size="l"
                                     style={ICON_BUTTON_STYLE}
                                 >
                                     <Icon data={ArrowLeft as IconData} size={16} style={{ display: "block" }} />
@@ -819,7 +819,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                 <div style={{ display: "flex", gap: 8 }}>
                                     <Button
                                         view="outlined"
-                                        size="m"
+                                        size="l"
                                         style={ICON_BUTTON_STYLE}
                                         onClick={() => {
                                             const d = new Date(viewMonth);
@@ -831,7 +831,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                     </Button>
                                     <Button
                                         view="outlined"
-                                        size="m"
+                                        size="l"
                                         style={ICON_BUTTON_STYLE}
                                         onClick={() => {
                                             const d = new Date(viewMonth);

@@ -35,7 +35,7 @@ async function bootstrap() {
 
   // CORS
   const allowedOrigins = (
-    process.env.FRONTEND_URL || 'http://localhost:3100'
+    process.env.FRONTEND_URL || 'http://localhost:3300'
   )
     .split(',')
     .concat('http://localhost:3300')

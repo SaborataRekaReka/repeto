@@ -141,7 +141,7 @@ const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalP
                                 onUpdate={setName}
                                 onBlur={() => markTouched("name")}
                                 placeholder="Иванов Пётр Сергеевич"
-                                size="m"
+                                size="l"
                             />
                         </div>
                         {nameError && (
@@ -158,7 +158,7 @@ const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalP
                                     value={grade}
                                     onUpdate={setGrade}
                                     placeholder="11 или Взрослый"
-                                    size="m"
+                                    size="l"
                                 />
                             </FieldRow>
                         </div>
@@ -173,7 +173,7 @@ const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalP
                                             markTouched("subject");
                                         }}
                                         placeholder="Выберите предмет"
-                                        size="m"
+                                        size="l"
                                         width="max"
                                     />
                                 </div>
@@ -193,7 +193,7 @@ const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalP
                                     value={phone}
                                     onUpdate={setPhone}
                                     placeholder="+7 900 123-45-67"
-                                    size="m"
+                                    size="l"
                                 />
                             </FieldRow>
                         </div>
@@ -203,7 +203,7 @@ const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalP
                                     value={whatsapp}
                                     onUpdate={setWhatsapp}
                                     placeholder="+79001234567"
-                                    size="m"
+                                    size="l"
                                 />
                             </FieldRow>
                         </div>
@@ -233,7 +233,7 @@ const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalP
                                     value={parentName}
                                     onUpdate={setParentName}
                                     placeholder="Иванова Мария Петровна"
-                                    size="m"
+                                    size="l"
                                 />
                             </FieldRow>
                             <div style={{ display: "flex", gap: 16 }}>
@@ -243,7 +243,7 @@ const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalP
                                             value={parentPhone}
                                             onUpdate={setParentPhone}
                                             placeholder="+7 900 765-43-21"
-                                            size="m"
+                                            size="l"
                                         />
                                     </FieldRow>
                                 </div>
@@ -253,7 +253,7 @@ const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalP
                                             value={parentWhatsapp}
                                             onUpdate={setParentWhatsapp}
                                             placeholder="+79007654321"
-                                            size="m"
+                                            size="l"
                                         />
                                     </FieldRow>
                                 </div>
@@ -263,7 +263,7 @@ const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalP
                                     value={parentEmail}
                                     onUpdate={setParentEmail}
                                     placeholder="parent@email.com"
-                                    size="m"
+                                    size="l"
                                 />
                             </FieldRow>
                         </div>
@@ -276,7 +276,7 @@ const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalP
                                 onUpdate={setRate}
                                 onBlur={() => markTouched("rate")}
                                 placeholder="2100"
-                                size="m"
+                                size="l"
                             />
                         </div>
                         {rateError && (
@@ -292,7 +292,7 @@ const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalP
                             onUpdate={setNotes}
                             placeholder="Любые заметки…"
                             rows={3}
-                            size="m"
+                            size="l"
                         />
                     </FieldRow>
 

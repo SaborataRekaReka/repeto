@@ -140,7 +140,7 @@ const SignUp = () => {
                 <Checkbox
                     checked={conditions}
                     onUpdate={setConditions}
-                    size="m"
+                    size="l"
                 >
                     <span style={{ fontSize: 13, color: "var(--g-color-text-secondary)" }}>
                         Согласен с условиями использования и политикой конфиденциальности

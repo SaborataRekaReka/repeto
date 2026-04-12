@@ -31,7 +31,7 @@ export class YandexCalendarService {
   }
 
   private getRedirectUri(): string {
-    const frontend = process.env.FRONTEND_URL || 'http://localhost:3100';
+    const frontend = process.env.FRONTEND_URL || 'http://localhost:3300';
     return `${frontend}/settings?tab=integrations&integration=yandex-calendar`;
   }
 

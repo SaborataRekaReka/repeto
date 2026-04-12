@@ -155,7 +155,7 @@ const ContactsTab = ({ student, onSave }: ContactsTabProps) => {
                                 handleBlur("phone", phone, student.phone)
                             }
                             placeholder="+7 900 123-45-67"
-                            size="m"
+                            size="l"
                         />
                     </div>
                     <div>
@@ -171,7 +171,7 @@ const ContactsTab = ({ student, onSave }: ContactsTabProps) => {
                                 )
                             }
                             placeholder="+79001234567"
-                            size="m"
+                            size="l"
                         />
                     </div>
                     <div style={{ gridColumn: "1 / -1" }}>
@@ -228,7 +228,7 @@ const ContactsTab = ({ student, onSave }: ContactsTabProps) => {
                                 )
                             }
                             placeholder="Иванова Мария Петровна"
-                            size="m"
+                            size="l"
                         />
                     </div>
                     <div>
@@ -244,7 +244,7 @@ const ContactsTab = ({ student, onSave }: ContactsTabProps) => {
                                 )
                             }
                             placeholder="+7 900 765-43-21"
-                            size="m"
+                            size="l"
                         />
                     </div>
                     <div>
@@ -260,7 +260,7 @@ const ContactsTab = ({ student, onSave }: ContactsTabProps) => {
                                 )
                             }
                             placeholder="+79007654321"
-                            size="m"
+                            size="l"
                         />
                     </div>
                     <div style={{ gridColumn: "1 / -1" }}>
@@ -276,7 +276,7 @@ const ContactsTab = ({ student, onSave }: ContactsTabProps) => {
                                 )
                             }
                             placeholder="parent@email.com"
-                            size="m"
+                            size="l"
                         />
                     </div>
                 </div>

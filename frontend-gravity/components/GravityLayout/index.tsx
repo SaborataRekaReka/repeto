@@ -17,7 +17,7 @@ import {
     Magnifier,
     ArrowLeft,
 } from "@gravity-ui/icons";
-import { Icon, Text, TextInput, Button, Tooltip, DropdownMenu } from "@gravity-ui/uikit";
+import { Icon, Text, TextInput, Button, Tooltip, DropdownMenu, Avatar } from "@gravity-ui/uikit";
 import type { IconData } from "@gravity-ui/uikit";
 import { useStudents } from "@/hooks/useStudents";
 import { onNotificationsChanged, useUnreadCount } from "@/hooks/useNotifications";
@@ -237,9 +237,7 @@ const GravityLayout = ({ title, back, children }: GravityLayoutProps) => {
                                 className="repeto-sidebar__profile-btn"
                                 onClick={() => router.push("/settings")}
                             >
-                                <div className="repeto-avatar repeto-avatar--sm">
-                                    {getInitials(user?.name || "U")}
-                                </div>
+                                <Avatar text={getInitials(user?.name || "U")} size="xs" theme="brand" />
                                 <span className="repeto-sidebar__item-text">{tutorName}</span>
                             </button>
                         </GTooltip>
@@ -248,9 +246,7 @@ const GravityLayout = ({ title, back, children }: GravityLayoutProps) => {
                             className="repeto-sidebar__profile-btn"
                             onClick={() => router.push("/settings")}
                         >
-                            <div className="repeto-avatar repeto-avatar--sm">
-                                {getInitials(user?.name || "U")}
-                            </div>
+                            <Avatar text={getInitials(user?.name || "U")} size="xs" theme="brand" />
                             <span className="repeto-sidebar__item-text">{tutorName}</span>
                         </button>
                     )}
@@ -313,7 +309,11 @@ const GravityLayout = ({ title, back, children }: GravityLayoutProps) => {
                                         <GIcon
                                             data={Magnifier as IconData}
                                             size={16}
-                                            style={{ color: "var(--g-color-text-secondary)", marginLeft: 4 }}
+                                            style={{
+                                                color: "var(--g-color-text-secondary)",
+                                                marginLeft: 4,
+                                                marginRight: 2,
+                                            }}
                                         />
                                     }
                                 />
@@ -345,9 +345,7 @@ const GravityLayout = ({ title, back, children }: GravityLayoutProps) => {
                                                         setSearchQuery("");
                                                     }}
                                                 >
-                                                    <div className="repeto-avatar repeto-avatar--sm">
-                                                        {getInitials(s.name)}
-                                                    </div>
+                                                    <Avatar text={getInitials(s.name)} size="xs" theme="brand" />
                                                     <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
                                                         <GText variant="body-2" style={{ display: "block", lineHeight: 1.25 }}>
                                                             {s.name}

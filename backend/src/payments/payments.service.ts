@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
   Logger,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
@@ -146,6 +147,11 @@ export class PaymentsService {
     const payment = await this.prisma.payment.findUnique({ where: { id } });
     if (!payment) throw new NotFoundException('Payment not found');
     if (payment.userId !== userId) throw new ForbiddenException();
+    if (payment.externalPaymentId) {
+      throw new BadRequestException(
+        'Оплаты из платежной системы удалять нельзя',
+      );
+    }
 
     return this.prisma.payment.delete({ where: { id } });
   }

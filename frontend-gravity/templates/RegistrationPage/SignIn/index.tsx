@@ -81,7 +81,7 @@ const SignIn = ({ onRecover }: SignInProps) => {
                     value={password}
                     onUpdate={setPassword}
                     autoComplete="current-password"
-                    rightContent={
+                    endContent={
                         <button
                             type="button"
                             onClick={() => setShowPassword((v) => !v)}

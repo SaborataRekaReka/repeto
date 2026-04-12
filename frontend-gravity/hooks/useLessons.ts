@@ -84,6 +84,7 @@ export async function createLesson(data: {
   scheduledAt: string;
   duration?: number;
   format?: string;
+  location?: string;
   rate?: number;
   notes?: string;
   recurrence?: string;

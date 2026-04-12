@@ -153,6 +153,8 @@ export function getMethodLabel(method: PaymentMethod): string {
             return "Наличные";
         case "transfer":
             return "Перевод";
+        case "yukassa":
+            return "ЮKassa";
     }
 }
 

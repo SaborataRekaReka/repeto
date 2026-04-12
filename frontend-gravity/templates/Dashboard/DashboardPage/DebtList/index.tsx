@@ -1,6 +1,6 @@
 import { useState } from "react";
 import Link from "next/link";
-import { Card, Text, Button, Icon, Modal, Loader } from "@gravity-ui/uikit";
+import { Card, Text, Button, Icon, Modal, Loader, Avatar } from "@gravity-ui/uikit";
 import type { IconData } from "@gravity-ui/uikit";
 import { Envelope, CircleCheck } from "@gravity-ui/icons";
 import { useDebts } from "@/hooks/useDashboard";
@@ -16,12 +16,12 @@ type DebtStudent = {
     balance: number;
 };
 
-const avatarGradients = [
-    "linear-gradient(135deg, #AE7AFF, #7030D9)",
-    "linear-gradient(135deg, #98E9AB, #65C88E)",
-    "linear-gradient(135deg, #C6A6FF, #8E7BFF)",
-    "linear-gradient(135deg, #73D8A8, #45B886)",
-    "linear-gradient(135deg, #AE7AFF, #8E7BFF)",
+const avatarColors = [
+    "#AE7AFF",
+    "#34A853",
+    "#8E7BFF",
+    "#45B886",
+    "#7030D9",
 ];
 
 const DEBT_COLOR = "#D16B8F";
@@ -86,26 +86,12 @@ const DebtList = () => {
                                     transition: "background 0.15s",
                                 }}
                             >
-                                <div
-                                    style={{
-                                        width: 36,
-                                        height: 36,
-                                        borderRadius: "50%",
-                                        background:
-                                            avatarGradients[
-                                                idx % avatarGradients.length
-                                            ],
-                                        color: "#fff",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        fontSize: 13,
-                                        fontWeight: 700,
-                                        flexShrink: 0,
-                                    }}
-                                >
-                                    {getInitials(student.name)}
-                                </div>
+                                <Avatar
+                                    text={getInitials(student.name)}
+                                    size="s"
+                                    theme="brand"
+                                    backgroundColor={avatarColors[idx % avatarColors.length]}
+                                />
                                 <div
                                     style={{
                                         flex: 1,
@@ -117,7 +103,7 @@ const DebtList = () => {
                                         {student.name}
                                     </Text>
                                     <Text variant="body-1" color="secondary">
-                                        style={{ color: DEBT_COLOR }}
+                                        {student.subject}
                                     </Text>
                                 </div>
                                 <div

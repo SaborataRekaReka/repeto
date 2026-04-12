@@ -1,7 +1,16 @@
 import { useEffect, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
-import Tabs from "@/components/Tabs";
+import {
+    Card,
+    Text,
+    Avatar,
+    Button,
+    Icon,
+    SegmentedRadioGroup,
+} from "@gravity-ui/uikit";
+import { ArrowUpRightFromSquare } from "@gravity-ui/icons";
+import type { IconData } from "@gravity-ui/uikit";
 import { useApi } from "@/hooks/useApi";
 import type { StudentPortalData } from "@/types/student-portal";
 import LessonsTab from "./LessonsTab";
@@ -11,16 +20,15 @@ import PaymentTab from "./PaymentTab";
 import SignUpBanner from "./SignUpBanner";
 
 import Image from "next/image";
-import Icon from "@/components/Icon";
 import ToggleTheme from "@/components/Footer/ToggleTheme";
 import { resolveApiAssetUrl } from "@/lib/api";
 import { setPortalTokenForTutor } from "@/lib/portalTokenStore";
 
 const tabItems = [
-    { title: "Занятия", value: "lessons" },
-    { title: "Домашка", value: "homework" },
-    { title: "Материалы", value: "materials" },
-    { title: "Оплата", value: "payment" },
+    { value: "lessons", content: "Занятия" },
+    { value: "homework", content: "Домашка" },
+    { value: "materials", content: "Материалы" },
+    { value: "payment", content: "Оплата" },
 ];
 
 type Props = {
@@ -40,104 +48,91 @@ const StudentPortalPage = ({ token }: Props) => {
 
     if (!token || loading) {
         return (
-            <div className="min-h-screen bg-background dark:bg-n-2 flex items-center justify-center">
-                <p className="text-sm text-n-3 dark:text-white/50">Загрузка…</p>
+            <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Text variant="body-1" color="secondary">Загрузка…</Text>
             </div>
         );
     }
 
     if (error || !d) {
         return (
-            <div className="min-h-screen bg-background dark:bg-n-2 flex items-center justify-center">
-                <div className="text-center">
-                    <p className="text-sm font-bold mb-2">Ссылка недействительна</p>
-                    <p className="text-xs text-n-3 dark:text-white/50">
+            <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ textAlign: "center" }}>
+                    <Text variant="subheader-2" as="div" style={{ marginBottom: 8 }}>Ссылка недействительна</Text>
+                    <Text variant="body-1" color="secondary">
                         Попросите репетитора отправить актуальную ссылку
-                    </p>
+                    </Text>
                 </div>
             </div>
         );
     }
+
+    const tutorInitials = d.tutorName.split(" ").slice(0, 2).map(w => w[0]).join("");
 
     return (
         <>
             <Head>
                 <title>Мои занятия — Repeto</title>
             </Head>
-            <div className="min-h-screen bg-background dark:bg-n-2">
+            <div style={{ minHeight: "100vh" }}>
                 {/* Header */}
-                <div className="border-b border-n-1 bg-white dark:bg-n-1 dark:border-white">
-                    <div className="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between md:px-4">
-                        <div className="text-sm font-bold">
-                            Repeto
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <div className="text-sm text-n-3 dark:text-white/50">
-                                {d.studentName}
-                            </div>
+                <div style={{ borderBottom: "1px solid var(--g-color-line-generic)", background: "var(--g-color-base-float)" }}>
+                    <div className="repeto-portal-container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 24px" }}>
+                        <Text variant="subheader-2">Repeto</Text>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                            <Text variant="body-1" color="secondary">{d.studentName}</Text>
                             <ToggleTheme />
                         </div>
                     </div>
                 </div>
 
-                <div className="max-w-2xl mx-auto px-6 py-6 md:px-4">
+                <div className="repeto-portal-container" style={{ padding: "24px 24px 32px" }}>
                     {/* Tutor Profile Widget */}
-                    <div className="mb-1 text-xs font-bold text-n-3 dark:text-white/50 uppercase tracking-wider">
+                    <Text variant="caption-1" color="secondary" as="div" style={{ marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600 }}>
                         Ваш репетитор
-                    </div>
-                    <div className="card mb-6">
-                        <div className="p-5 flex items-start gap-4 md:flex-col">
-                            <div className="relative w-12 h-12 rounded-full bg-purple-1 flex items-center justify-center text-white text-sm font-bold shrink-0 overflow-hidden">
+                    </Text>
+                    <Card view="outlined" style={{ marginBottom: 24, overflow: "hidden" }}>
+                        <div style={{ padding: "20px", display: "flex", alignItems: "center", gap: 16 }}>
+                            <div style={{ position: "relative", width: 48, height: 48, borderRadius: "50%", overflow: "hidden", flexShrink: 0 }}>
                                 {d.tutorAvatarUrl ? (
                                     <Image
-                                        className="object-cover"
+                                        style={{ objectFit: "cover" }}
                                         src={resolveApiAssetUrl(d.tutorAvatarUrl) || d.tutorAvatarUrl}
                                         fill
                                         alt={d.tutorName}
                                     />
                                 ) : (
-                                    d.tutorName.split(" ").slice(0, 2).map(w => w[0]).join("")
+                                    <Avatar text={tutorInitials} size="l" theme="brand" style={{ "--g-avatar-size": "48px" } as React.CSSProperties} />
                                 )}
                             </div>
-                            <div className="flex-1 min-w-0">
-                                <div className="text-sm font-bold mb-1">{d.tutorName}</div>
-                                <div className="flex flex-wrap gap-3 text-xs text-n-3 dark:text-white/50">
-                                    <a
-                                        href={`tel:${d.tutorPhone.replace(/[^+\d]/g, "")}`}
-                                        className="flex items-center gap-1 hover:text-purple-1 transition-colors"
-                                    >
-                                        {d.tutorPhone}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <Text variant="subheader-2" as="div" style={{ marginBottom: 4 }}>{d.tutorName}</Text>
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+                                    <a href={`tel:${d.tutorPhone.replace(/[^+\d]/g, "")}`} style={{ textDecoration: "none" }}>
+                                        <Text variant="caption-1" color="secondary">{d.tutorPhone}</Text>
                                     </a>
                                     {d.tutorWhatsapp && (
-                                        <a
-                                            href={`https://wa.me/${d.tutorWhatsapp}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex items-center gap-1 hover:text-purple-1 transition-colors"
-                                        >
-                                            WhatsApp
+                                        <a href={`https://wa.me/${d.tutorWhatsapp}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
+                                            <Text variant="caption-1" color="secondary">WhatsApp</Text>
                                         </a>
                                     )}
-                                    <a
-                                        href={`/t/${d.tutorSlug}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-1 hover:text-purple-1 transition-colors"
-                                    >
-                                        <Icon
-                                            className="icon-12 fill-n-3 dark:fill-white/50"
-                                            name="external-link"
-                                        />
-                                        Профиль
+                                    <a href={`/t/${d.tutorSlug}`} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}>
+                                        <Icon data={ArrowUpRightFromSquare as IconData} size={12} />
+                                        <Text variant="caption-1" color="secondary">Профиль</Text>
                                     </a>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </Card>
 
                     {/* Tabs */}
-                    <div className="mb-6 overflow-auto scrollbar-none -mx-6 px-6 md:-mx-4 md:px-4">
-                        <Tabs items={tabItems} value={tab} setValue={setTab} />
+                    <div style={{ marginBottom: 24, overflowX: "auto" }}>
+                        <SegmentedRadioGroup
+                            size="m"
+                            value={tab}
+                            onUpdate={setTab}
+                            options={tabItems}
+                        />
                     </div>
 
                     {/* Tab Content */}
@@ -151,11 +146,13 @@ const StudentPortalPage = ({ token }: Props) => {
                     <SignUpBanner notifications={d.notifications} />
 
                     {/* Footer */}
-                    <div className="mt-8 text-center text-xs text-n-3 dark:text-white/50">
-                        Работает на{" "}
-                        <Link href="/" className="font-bold hover:text-purple-1 transition-colors">
-                            Repeto
-                        </Link>
+                    <div style={{ marginTop: 32, textAlign: "center" }}>
+                        <Text variant="caption-1" color="secondary">
+                            Работает на{" "}
+                            <Link href="/" style={{ fontWeight: 600, textDecoration: "none", color: "inherit" }}>
+                                Repeto
+                            </Link>
+                        </Text>
                     </div>
                 </div>
             </div>

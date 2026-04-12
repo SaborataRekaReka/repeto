@@ -42,7 +42,7 @@ function PageTransitionLoader() {
     );
 }
 
-function AppContent({ Component, pageProps }: AppProps) {
+function AppContent({ Component, pageProps }: { Component: AppProps["Component"]; pageProps: AppProps["pageProps"] }) {
     const { theme } = useThemeMode();
     const PageComponent = Component as any;
 

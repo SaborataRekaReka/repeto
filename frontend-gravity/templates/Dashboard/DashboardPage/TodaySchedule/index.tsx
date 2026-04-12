@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Card, Text, Label, Loader } from "@gravity-ui/uikit";
+import { Card, Text, Label, Loader, Avatar } from "@gravity-ui/uikit";
 import { useTodayLessons } from "@/hooks/useDashboard";
 import { shortName } from "@/mocks/schedule";
+import { getInitials } from "@/mocks/students";
 import type { Lesson } from "@/types/schedule";
 
 type TodayScheduleProps = {
@@ -36,12 +37,10 @@ const statusLabel = (status: Lesson["status"]) => {
     }
 };
 
-const dotColor = (subject: string) => {
+const avatarColor = (subject: string) => {
     const s = subject.toLowerCase();
-    if (s.includes("математ")) return "#AE7AFF";
-    if (s.includes("физик")) return "#98E9AB";
-    if (s.includes("русс")) return "#C6A6FF";
-    if (s.includes("англ")) return "#73D8A8";
+    if (s.includes("математ") || s.includes("русс")) return "#AE7AFF";
+    if (s.includes("физик") || s.includes("англ")) return "#34A853";
     return "#AE7AFF";
 };
 
@@ -83,13 +82,14 @@ const TodaySchedule = ({ onLessonClick }: TodayScheduleProps) => {
                     {todayLessons.map((lesson) => (
                         <button
                             key={lesson.id}
+                            className="repeto-week-lesson-row"
                             onClick={() => onLessonClick(lesson)}
                             style={{
                                 display: "flex",
                                 alignItems: "center",
+                                gap: 12,
                                 width: "100%",
                                 padding: "10px 16px",
-                                background: "none",
                                 border: "none",
                                 borderTop: "1px solid var(--g-color-line-generic)",
                                 cursor: "pointer",
@@ -97,15 +97,11 @@ const TodaySchedule = ({ onLessonClick }: TodayScheduleProps) => {
                                 transition: "background 0.15s",
                             }}
                         >
-                            <span
-                                style={{
-                                    width: 6,
-                                    height: 6,
-                                    borderRadius: "50%",
-                                    background: dotColor(lesson.subject),
-                                    flexShrink: 0,
-                                    marginRight: 12,
-                                }}
+                            <Avatar
+                                text={getInitials(lesson.studentName)}
+                                size="s"
+                                theme="brand"
+                                backgroundColor={avatarColor(lesson.subject)}
                             />
                             <div style={{ flex: 1, minWidth: 0 }}>
                                 <div

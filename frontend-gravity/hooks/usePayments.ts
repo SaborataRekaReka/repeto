@@ -3,6 +3,8 @@ import { api } from '@/lib/api';
 import type { Payment, StudentBalance } from '@/types/finance';
 
 function mapPayment(raw: any): Payment {
+  const externalPaymentId = raw.externalPaymentId || undefined;
+
   return {
     id: raw.id,
     studentId: raw.studentId,
@@ -16,6 +18,8 @@ function mapPayment(raw: any): Payment {
     method: (raw.method || '').toLowerCase() as Payment['method'],
     status: (raw.status || 'pending').toLowerCase() as Payment['status'],
     comment: raw.comment || undefined,
+    externalPaymentId,
+    isManual: !externalPaymentId,
   };
 }
 

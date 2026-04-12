@@ -288,7 +288,7 @@ export class StudentsService {
       where: { id: userId },
       select: { slug: true },
     });
-    const base = process.env.FRONTEND_URL || 'http://localhost:3100';
+    const base = process.env.FRONTEND_URL || 'http://localhost:3300';
     const portalUrl = `${base}/t/${tutor?.slug || 'tutor'}/s/${token}`;
     return { token, portalUrl };
   }

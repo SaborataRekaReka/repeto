@@ -106,7 +106,7 @@ const PortalLinkModal = ({
                             <div style={{ display: "flex", gap: 8 }}>
                                 <Button
                                     view="action"
-                                    size="m"
+                                    size="l"
                                     style={{ flex: 1 }}
                                     onClick={handleCopy}
                                 >
@@ -115,7 +115,7 @@ const PortalLinkModal = ({
                                 </Button>
                                 <Button
                                     view="outlined"
-                                    size="m"
+                                    size="l"
                                     style={{ flex: 1 }}
                                     onClick={handleWhatsApp}
                                 >

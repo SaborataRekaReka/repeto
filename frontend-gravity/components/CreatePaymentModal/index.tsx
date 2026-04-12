@@ -151,7 +151,7 @@ const CreatePaymentModal = ({
                             <Text variant="body-1" color="secondary" style={{ display: "block", marginBottom: 4 }}>Ученик *</Text>
                             <div style={errorWrapStyle(studentError)} onClick={() => markTouched("studentId")}> 
                                 <Select
-                                    size="m"
+                                    size="l"
                                     width="max"
                                     placeholder="Выберите ученика"
                                     options={studentOptions}
@@ -174,7 +174,7 @@ const CreatePaymentModal = ({
                         <Text variant="body-1" color="secondary" style={{ display: "block", marginBottom: 4 }}>Сумма (₽) *</Text>
                         <div style={errorWrapStyle(amountError)}>
                             <TextInput
-                                size="m"
+                                size="l"
                                 type="text"
                                 placeholder="4200"
                                 value={amount}
@@ -200,7 +200,7 @@ const CreatePaymentModal = ({
                         <div style={{ flex: 1 }}>
                             <Text variant="body-1" color="secondary" style={{ display: "block", marginBottom: 4 }}>Способ оплаты</Text>
                             <Select
-                                size="m"
+                                size="l"
                                 width="max"
                                 options={methodOptions}
                                 value={method}
@@ -211,7 +211,7 @@ const CreatePaymentModal = ({
                     <div>
                         <Text variant="body-1" color="secondary" style={{ display: "block", marginBottom: 4 }}>Комментарий</Text>
                         <TextArea
-                            size="m"
+                            size="l"
                             placeholder="За какие занятия, пакет и т.д."
                             value={comment}
                             onUpdate={setComment}

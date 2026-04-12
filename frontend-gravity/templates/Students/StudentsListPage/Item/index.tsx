@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Text, Label } from "@gravity-ui/uikit";
+import { Text, Label, Avatar } from "@gravity-ui/uikit";
 import type { Student } from "@/types/student";
 import {
     formatBalance,
@@ -32,9 +32,7 @@ const Item = ({ item }: ItemProps) => (
             transition: "background 0.12s",
         }}
     >
-        <div className="repeto-avatar repeto-avatar--md">
-            {getInitials(item.name)}
-        </div>
+        <Avatar text={getInitials(item.name)} size="m" theme="brand" />
         <div style={{ flex: 1, minWidth: 0, padding: "0 12px" }}>
             <Text variant="body-2" ellipsis>
                 {item.name}

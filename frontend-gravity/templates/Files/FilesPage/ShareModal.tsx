@@ -69,7 +69,7 @@ const ShareModal = ({ visible, item, onClose, onSaved }: ShareModalProps) => {
     const changesMade = JSON.stringify(Array.from(sharedIds).sort()) !== JSON.stringify([...item.sharedWith].sort());
 
     return (
-        <Dialog open={visible} onClose={onClose} size="m">
+        <Dialog open={visible} onClose={onClose} size="l">
             <Dialog.Header caption="" />
             <Dialog.Body>
                 {/* Header */}
@@ -105,11 +105,21 @@ const ShareModal = ({ visible, item, onClose, onSaved }: ShareModalProps) => {
                 {activeStudents.length > 5 && (
                     <div style={{ marginBottom: 12 }}>
                         <TextInput
-                            size="m"
+                            size="l"
                             placeholder="Найти ученика..."
                             value={search}
                             onUpdate={setSearch}
-                            startContent={<Icon data={Magnifier as IconData} size={16} />}
+                            startContent={
+                                <Icon
+                                    data={Magnifier as IconData}
+                                    size={16}
+                                    style={{
+                                        color: "var(--g-color-text-secondary)",
+                                        marginLeft: 4,
+                                        marginRight: 2,
+                                    }}
+                                />
+                            }
                         />
                     </div>
                 )}
@@ -140,7 +150,7 @@ const ShareModal = ({ visible, item, onClose, onSaved }: ShareModalProps) => {
                                 <Text variant="body-1" style={{ fontWeight: 600 }}>{s.name}</Text>
                                 <Text variant="caption-2" color="secondary" style={{ display: "block" }}>{s.subject} · {s.grade} класс</Text>
                             </div>
-                            <Checkbox checked={sharedIds.has(s.id)} onUpdate={() => toggleStudent(s.id)} size="m" />
+                            <Checkbox checked={sharedIds.has(s.id)} onUpdate={() => toggleStudent(s.id)} size="l" />
                         </div>
                     ))}
                     {filteredStudents.length === 0 && (
@@ -153,7 +163,7 @@ const ShareModal = ({ visible, item, onClose, onSaved }: ShareModalProps) => {
                 {/* Apply to children */}
                 {isFolder && (
                     <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px dashed var(--g-color-line-generic)" }}>
-                        <Checkbox checked={applyToChildren} onUpdate={(v) => setApplyToChildren(v)} size="m">
+                        <Checkbox checked={applyToChildren} onUpdate={(v) => setApplyToChildren(v)} size="l">
                             Применить ко всем файлам внутри папки
                         </Checkbox>
                     </div>

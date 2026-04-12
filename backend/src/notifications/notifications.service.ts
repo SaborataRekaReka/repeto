@@ -686,7 +686,7 @@ export class NotificationsService {
     }).catch((e) => { /* fire-and-forget */ });
 
     if (portalTokenIssued && student.portalToken) {
-      const base = process.env.FRONTEND_URL || 'http://localhost:3100';
+      const base = process.env.FRONTEND_URL || 'http://localhost:3300';
       const portalUrl = `${base}/t/${tutorUser?.slug || 'tutor'}/s/${student.portalToken}`;
       const portalMsg = this.messenger.formatPortalAccess(tutorName, portalUrl);
 

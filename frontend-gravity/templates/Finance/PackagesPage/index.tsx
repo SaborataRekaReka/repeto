@@ -38,7 +38,12 @@ const PackagesPage = () => {
         status: tab === "all" ? undefined : tab,
         limit: 50,
     });
-    const filtered = packagesData?.data || [];
+    const filtered = [...(packagesData?.data || [])].sort((a, b) => {
+        const aTime = a.createdAtValue ? new Date(a.createdAtValue).getTime() : 0;
+        const bTime = b.createdAtValue ? new Date(b.createdAtValue).getTime() : 0;
+        if (aTime !== bTime) return bTime - aTime;
+        return b.id.localeCompare(a.id);
+    });
 
     const handlePackageCreated = () => {
         setTab("all");
@@ -60,6 +65,9 @@ const PackagesPage = () => {
                     Новый пакет
                 </Button>
             </div>
+            <Text variant="caption-2" color="secondary" style={{ display: "block", marginBottom: 10 }}>
+                Сортировка: сначала новые (по дате создания).
+            </Text>
 
             {loading ? (
                 <Card view="outlined" style={{ padding: "40px 24px", textAlign: "center", background: "var(--g-color-base-float)" }}>

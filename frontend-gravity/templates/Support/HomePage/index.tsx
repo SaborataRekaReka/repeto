@@ -38,7 +38,17 @@ const HomePage = () => {
                         value={search}
                         onUpdate={setSearch}
                         placeholder="Поиск по статьям..."
-                        startContent={<Icon data={Magnifier as IconData} size={18} />}
+                        startContent={
+                            <Icon
+                                data={Magnifier as IconData}
+                                size={18}
+                                style={{
+                                    color: "var(--g-color-text-secondary)",
+                                    marginLeft: 4,
+                                    marginRight: 2,
+                                }}
+                            />
+                        }
                         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleSearch(); } }}
                     />
                 </form>

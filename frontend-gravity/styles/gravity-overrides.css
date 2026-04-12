@@ -530,36 +530,6 @@ body {
 }
 
 /* ============ Avatar helpers ============ */
-.repeto-avatar {
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    flex-shrink: 0;
-    color: var(--g-color-text-brand);
-    background: rgba(174, 122, 255, 0.1);
-}
-
-.repeto-avatar--sm {
-    width: 32px;
-    height: 32px;
-    font-size: 11px;
-}
-
-.repeto-avatar--md {
-    width: 36px;
-    height: 36px;
-    font-size: 12px;
-}
-
-.repeto-avatar--lg {
-    width: 72px;
-    height: 72px;
-    font-size: 22px;
-    font-weight: 700;
-}
-
 /* ============ Student detail page ============ */
 .repeto-student-layout {
     display: grid;
@@ -577,29 +547,35 @@ body {
     top: 80px;
 }
 
-.repeto-student-nav-item {
-    display: block;
-    width: 100%;
-    padding: 10px 20px;
-    text-align: left;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--g-color-text-primary);
-    background: none;
+.repeto-student-nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    border-radius: var(--g-border-radius-l);
     border: none;
     cursor: pointer;
-    transition: background 0.12s;
-    border-radius: 0;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    color: var(--g-color-text-primary);
+    font-weight: 400;
+    font-size: 14px;
+    transition: background 0.15s, color 0.15s;
 }
 
-.repeto-student-nav-item:hover {
-    background: var(--g-color-base-generic-hover);
+.repeto-student-nav-btn:hover {
+    background: var(--g-color-base-simple-hover);
 }
 
-.repeto-student-nav-item--active {
+.repeto-student-nav-btn--active {
     background: var(--g-color-base-brand-hover);
-    color: var(--g-color-text-brand-heavy);
+    color: var(--g-color-text-brand);
     font-weight: 600;
+}
+
+.repeto-student-nav-btn--active:hover {
+    background: var(--g-color-base-brand-hover);
 }
 
 .repeto-student-content {
@@ -618,16 +594,11 @@ body {
     .repeto-student-sidebar {
         position: static;
     }
-    .repeto-student-nav-item {
+    .repeto-student-sidebar nav {
         display: none;
     }
     .repeto-student-mobile-tabs {
         display: block;
-    }
-    .repeto-avatar--lg {
-        width: 56px;
-        height: 56px;
-        font-size: 18px;
     }
 }
 
@@ -638,30 +609,6 @@ body {
     margin-bottom: 28px;
 }
 
-/* ============ Native inputs (date/time) styled to match Gravity UI ============ */
-.repeto-native-input {
-    width: 100%;
-    height: 28px;
-    padding: 0 8px;
-    font-size: 13px;
-    font-family: inherit;
-    border: 1px solid var(--g-color-line-generic);
-    border-radius: 6px;
-    background: var(--g-color-base-generic);
-    color: var(--g-color-text-primary);
-    outline: none;
-    transition: border-color 0.15s;
-    box-sizing: border-box;
-}
-.repeto-native-input:focus {
-    border-color: var(--g-color-line-brand);
-    box-shadow: 0 0 0 2px var(--g-color-sfx-focus);
-}
-.repeto-native-input::-webkit-calendar-picker-indicator {
-    opacity: 0.5;
-    cursor: pointer;
-}
-
 /* ============ Students page ============ */
 .repeto-students-toolbar {
     display: flex;
@@ -670,37 +617,6 @@ body {
     gap: 12px;
     margin-bottom: 20px;
     flex-wrap: wrap;
-}
-
-.repeto-students-toolbar__tabs {
-    display: flex;
-    gap: 2px;
-    background: var(--g-color-base-generic);
-    border-radius: 8px;
-    padding: 2px;
-}
-
-.repeto-students-toolbar__tab {
-    padding: 6px 14px;
-    border-radius: 6px;
-    border: none;
-    background: none;
-    cursor: pointer;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--g-color-text-secondary);
-    transition: all 0.15s;
-}
-
-.repeto-students-toolbar__tab:hover {
-    color: var(--g-color-text-primary);
-}
-
-.repeto-students-toolbar__tab--active {
-    background: var(--g-color-base-float);
-    color: var(--g-color-text-primary);
-    font-weight: 600;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .repeto-students-toolbar__actions {
@@ -744,6 +660,66 @@ body {
 
 .repeto-students-table tbody tr:hover {
     background: rgba(174, 122, 255, 0.03);
+}
+
+/* Students Gravity Table card */
+.repeto-students-table-card {
+    background: var(--g-color-base-float);
+    overflow: hidden;
+}
+
+.repeto-students-table-card .g-table__row {
+    cursor: pointer;
+}
+
+.repeto-students-table-card .g-table__row:hover {
+    background: var(--g-color-base-simple-hover);
+}
+
+.repeto-students-page-toolbar {
+    margin-bottom: 10px;
+    flex-wrap: nowrap;
+    align-items: center;
+}
+
+.repeto-students-page-toolbar__actions {
+    flex-wrap: nowrap;
+    margin-left: auto;
+}
+
+.repeto-students-page-search {
+    width: 220px;
+    flex: 0 0 220px;
+}
+
+@media (max-width: 1180px) {
+    .repeto-students-page-search {
+        width: 180px;
+        flex-basis: 180px;
+    }
+}
+
+.repeto-students-page-meta {
+    margin-bottom: 14px;
+}
+
+.repeto-students-page-table .g-table,
+.repeto-students-page-table .g-table__scroll-container,
+.repeto-students-page-table .g-table__table {
+    width: 100%;
+}
+
+.repeto-students-page-table .g-table__table {
+    table-layout: fixed;
+}
+
+.repeto-students-page-table .g-table__head .g-table__cell {
+    font-size: 13px;
+    color: var(--g-color-text-secondary);
+}
+
+.repeto-students-page-table .g-table__body .g-table__cell {
+    padding-block: 12px;
 }
 
 /* ============ Dashboard grid ============ */
@@ -1097,6 +1073,17 @@ body {
 .repeto-animate-in:nth-child(5) { animation-delay: 0.2s; }
 .repeto-animate-in:nth-child(6) { animation-delay: 0.25s; }
 
+/* ============ Student portal ============ */
+.repeto-portal-container {
+    max-width: 672px;
+    margin: 0 auto;
+    padding: 0 16px;
+}
+
+.repeto-portal-file-row:hover {
+    background: var(--g-color-base-simple-hover);
+}
+
 /* ============ Responsive ============ */
 @media (max-width: 1200px) {
     .repeto-dashboard-grid {
@@ -1156,6 +1143,23 @@ body {
         flex-direction: column;
         align-items: stretch;
     }
+
+    .repeto-students-page-toolbar__actions {
+        width: 100%;
+    }
+
+    .repeto-students-page-search {
+        width: 100%;
+    }
+
+    .repeto-students-page-toolbar__actions .g-button {
+        justify-content: center;
+    }
+
+    .repeto-students-page-meta {
+        margin-bottom: 12px;
+    }
+
     .repeto-search-dropdown {
         width: 280px;
     }

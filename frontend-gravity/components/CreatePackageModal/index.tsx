@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Dialog, TextInput, Select, Button, Text, TextArea } from "@gravity-ui/uikit";
 import { useStudents } from "@/hooks/useStudents";
-import { createPackage, updatePackage } from "@/hooks/usePackages";
+import { createPackage, updatePackage, deletePackage } from "@/hooks/usePackages";
 import StyledDateInput from "@/components/StyledDateInput";
 import type { LessonPackage } from "@/types/package";
 
@@ -49,6 +49,7 @@ const CreatePackageModal = ({
     const [validUntil, setValidUntil] = useState("");
     const [comment, setComment] = useState("");
     const [submitting, setSubmitting] = useState(false);
+    const [confirmDelete, setConfirmDelete] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [touched, setTouched] = useState({
         studentId: false,
@@ -74,6 +75,7 @@ const CreatePackageModal = ({
         if (!visible) return;
         setError(null);
         setSubmitting(false);
+        setConfirmDelete(false);
         setTouched({
             studentId: false,
             subject: false,
@@ -150,6 +152,29 @@ const CreatePackageModal = ({
         }
     };
 
+    const handleDelete = async () => {
+        if (!packageData || submitting) return;
+
+        setSubmitting(true);
+        setError(null);
+        try {
+            await deletePackage(packageData.id);
+            await onCreated?.();
+            onClose();
+        } catch (err) {
+            console.error("Failed to delete package:", err);
+            setError("Не удалось удалить пакет. Попробуйте снова.");
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const requestDelete = () => {
+        if (!packageData || submitting) return;
+        setError(null);
+        setConfirmDelete(true);
+    };
+
     const studentError = touched.studentId && !studentId.length;
     const subjectError = touched.subject && !subject.trim();
     const lessonsCountError =
@@ -168,7 +193,7 @@ const CreatePackageModal = ({
                         <Text variant="body-1" color="secondary" style={{ display: "block", marginBottom: 4 }}>Ученик *</Text>
                         <div style={errorWrapStyle(studentError)} onClick={() => markTouched("studentId")}> 
                             <Select
-                                size="m"
+                                size="l"
                                 width="max"
                                 placeholder="Выберите ученика"
                                 options={studentOptions}
@@ -190,7 +215,7 @@ const CreatePackageModal = ({
                         <Text variant="body-1" color="secondary" style={{ display: "block", marginBottom: 4 }}>Предмет *</Text>
                         <div style={errorWrapStyle(subjectError)}>
                             <TextInput
-                                size="m"
+                                size="l"
                                 placeholder="Математика"
                                 value={subject}
                                 onUpdate={setSubject}
@@ -208,7 +233,7 @@ const CreatePackageModal = ({
                             <Text variant="body-1" color="secondary" style={{ display: "block", marginBottom: 4 }}>Кол-во занятий *</Text>
                             <div style={errorWrapStyle(lessonsCountError)}>
                                 <TextInput
-                                    size="m"
+                                    size="l"
                                     type="number"
                                     placeholder="8"
                                     value={lessonsCount}
@@ -226,7 +251,7 @@ const CreatePackageModal = ({
                             <Text variant="body-1" color="secondary" style={{ display: "block", marginBottom: 4 }}>Сумма пакета (₽) *</Text>
                             <div style={errorWrapStyle(totalAmountError)}>
                                 <TextInput
-                                    size="m"
+                                    size="l"
                                     type="number"
                                     placeholder="16800"
                                     value={totalAmount}
@@ -252,13 +277,60 @@ const CreatePackageModal = ({
                     <div>
                         <Text variant="body-1" color="secondary" style={{ display: "block", marginBottom: 4 }}>Комментарий</Text>
                         <TextArea
-                            size="m"
+                            size="l"
                             placeholder="Примечание к пакету…"
                             value={comment}
                             onUpdate={setComment}
                             rows={2}
                         />
                     </div>
+                    {isEditing && (
+                        <div style={{ display: "flex", justifyContent: "flex-start" }}>
+                            <Button
+                                view="outlined-danger"
+                                size="m"
+                                onClick={requestDelete}
+                                disabled={submitting}
+                            >
+                                Удалить пакет
+                            </Button>
+                        </div>
+                    )}
+                    {isEditing && confirmDelete && (
+                        <div
+                            style={{
+                                padding: "12px 14px",
+                                borderRadius: 8,
+                                background: "var(--g-color-base-danger-light)",
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 8,
+                            }}
+                        >
+                            <Text variant="body-1" color="danger">
+                                Удалить пакет без возможности восстановления?
+                            </Text>
+                            <div style={{ display: "flex", gap: 8 }}>
+                                <Button
+                                    view="outlined-danger"
+                                    size="m"
+                                    onClick={handleDelete}
+                                    disabled={submitting}
+                                    loading={submitting}
+                                >
+                                    Да, удалить
+                                </Button>
+                                <Button
+                                    view="outlined"
+                                    size="m"
+                                    onClick={() => setConfirmDelete(false)}
+                                    disabled={submitting}
+                                >
+                                    Отмена
+                                </Button>
+                            </div>
+                        </div>
+                    )}
                     {error && (
                         <div style={{
                             padding: "8px 12px",

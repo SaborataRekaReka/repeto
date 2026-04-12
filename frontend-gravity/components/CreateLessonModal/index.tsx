@@ -193,7 +193,7 @@ const CreateLessonModal = ({
         setFormError(null);
         try {
             const scheduledAt = new Date(`${date}T${time}`).toISOString();
-            let savedLesson: Lesson | Lesson[] | undefined;
+            let savedLesson: unknown;
 
             if (isEdit && lesson) {
                 savedLesson = await updateLesson(lesson.id, {
@@ -218,7 +218,7 @@ const CreateLessonModal = ({
                 });
             }
 
-            await onCreated?.(savedLesson);
+            await onCreated?.(savedLesson as Lesson | Lesson[]);
             onClose();
         } catch (err) {
             setFormError(codedErrorMessage("LESSON-SAVE", err));
@@ -250,7 +250,7 @@ const CreateLessonModal = ({
                                         markTouched("student");
                                     }}
                                     placeholder="Выберите ученика"
-                                    size="m"
+                                    size="l"
                                     width="max"
                                     filterable
                                 />
@@ -273,7 +273,7 @@ const CreateLessonModal = ({
                                     markTouched("subject");
                                 }}
                                 placeholder="Выберите предмет"
-                                size="m"
+                                size="l"
                                 width="max"
                                 filterable
                             />
@@ -334,7 +334,7 @@ const CreateLessonModal = ({
                                     options={durationItems}
                                     value={duration}
                                     onUpdate={setDuration}
-                                    size="m"
+                                    size="l"
                                     width="max"
                                 />
                             </FieldRow>
@@ -345,7 +345,7 @@ const CreateLessonModal = ({
                                     options={formatItems}
                                     value={format}
                                     onUpdate={setFormat}
-                                    size="m"
+                                    size="l"
                                     width="max"
                                 />
                             </FieldRow>
@@ -357,7 +357,7 @@ const CreateLessonModal = ({
                             value={location}
                             onUpdate={setLocation}
                             placeholder="Zoom / адрес"
-                            size="m"
+                            size="l"
                         />
                     </FieldRow>
 
@@ -366,14 +366,14 @@ const CreateLessonModal = ({
                             value={cost}
                             onUpdate={setCost}
                             placeholder="2100"
-                            size="m"
+                            size="l"
                         />
                     </FieldRow>
 
                     <Checkbox
                         checked={repeat}
                         onUpdate={setRepeat}
-                        size="m"
+                        size="l"
                     >
                         Повторять еженедельно
                     </Checkbox>
@@ -384,7 +384,7 @@ const CreateLessonModal = ({
                             onUpdate={setNote}
                             placeholder="Заметка к занятию…"
                             rows={3}
-                            size="m"
+                            size="l"
                         />
                     </FieldRow>
 

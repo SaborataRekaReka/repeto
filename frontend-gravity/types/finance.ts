@@ -1,5 +1,5 @@
 export type PaymentStatus = "paid";
-export type PaymentMethod = "sbp" | "cash" | "transfer";
+export type PaymentMethod = "sbp" | "cash" | "transfer" | "yukassa";
 
 export type Payment = {
     id: string;
@@ -10,6 +10,8 @@ export type Payment = {
     method: PaymentMethod;
     status: PaymentStatus;
     comment?: string;
+    externalPaymentId?: string;
+    isManual?: boolean;
 };
 
 export type StudentBalance = {

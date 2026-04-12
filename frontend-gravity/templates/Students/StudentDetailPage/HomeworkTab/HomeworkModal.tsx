@@ -139,7 +139,7 @@ const HomeworkModal = ({
                                 onBlur={() => setTaskTouched(true)}
                                 placeholder="Опишите задание..."
                                 rows={4}
-                                size="m"
+                                size="l"
                             />
                         </div>
                         {taskError && (
@@ -247,13 +247,13 @@ const HomeworkModal = ({
                                     value={fileName}
                                     onUpdate={setFileName}
                                     placeholder="Название файла"
-                                    size="m"
+                                    size="l"
                                 />
                                 <TextInput
                                     value={fileUrl}
                                     onUpdate={setFileUrl}
                                     placeholder="https://drive.google.com/..."
-                                    size="m"
+                                    size="l"
                                 />
                                 <div style={{ display: "flex", gap: 8 }}>
                                     <Button

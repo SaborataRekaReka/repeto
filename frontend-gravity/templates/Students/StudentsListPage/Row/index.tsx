@@ -1,5 +1,5 @@
 import { useRouter } from "next/router";
-import { Text, Label, DropdownMenu, Icon, Button } from "@gravity-ui/uikit";
+import { Text, Label, DropdownMenu, Icon, Button, Avatar } from "@gravity-ui/uikit";
 import { Ellipsis } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import type { Student } from "@/types/student";
@@ -31,9 +31,7 @@ const Row = ({ item, onScheduleLesson, onMessage }: RowProps) => {
         <tr onClick={() => router.push(`/students/${item.id}`)}>
             <td>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div className="repeto-avatar repeto-avatar--md">
-                        {getInitials(item.name)}
-                    </div>
+                    <Avatar text={getInitials(item.name)} size="m" theme="brand" />
                     <Text variant="body-2">{item.name}</Text>
                 </div>
             </td>

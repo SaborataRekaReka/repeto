@@ -216,7 +216,7 @@ const FileBrowser = ({ files, cloudConnections, onUpdated }: FileBrowserProps) =
                                                     {item.type === "folder" ? (
                                                         <Icon data={FolderOpen as IconData} size={24} style={{ color: "var(--g-color-text-brand)" }} />
                                                     ) : (
-                                                        <img src={getFileIcon(item.extension)} width={20} height={20} alt="" className="repeto-file-icon" className="repeto-file-icon" />
+                                                        <img src={getFileIcon(item.extension)} width={20} height={20} alt="" className="repeto-file-icon" />
                                                     )}
                                                 </div>
                                                 <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>

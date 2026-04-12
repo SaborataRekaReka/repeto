@@ -66,15 +66,15 @@ const Policies = () => {
                 <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 20 }}>
                     <div>
                         <Text variant="caption-2" color="secondary" style={{ display: "block", marginBottom: 6 }}>Минимальное время для бесплатной отмены</Text>
-                        <div style={{ maxWidth: 260 }}><Select options={cancelHours} value={[cancelTime]} onUpdate={(v) => setCancelTime(v[0])} size="m" width="max" /></div>
+                        <div style={{ maxWidth: 260 }}><Select options={cancelHours} value={[cancelTime]} onUpdate={(v) => setCancelTime(v[0])} size="l" width="max" /></div>
                     </div>
                     <div>
                         <Text variant="caption-2" color="secondary" style={{ display: "block", marginBottom: 6 }}>Действие при поздней отмене</Text>
-                        <div style={{ maxWidth: 260 }}><Select options={cancelActions} value={[lateCancel]} onUpdate={(v) => setLateCancel(v[0])} size="m" width="max" /></div>
+                        <div style={{ maxWidth: 260 }}><Select options={cancelActions} value={[lateCancel]} onUpdate={(v) => setLateCancel(v[0])} size="l" width="max" /></div>
                     </div>
                     <div>
                         <Text variant="caption-2" color="secondary" style={{ display: "block", marginBottom: 6 }}>Действие при неявке (no-show)</Text>
-                        <div style={{ maxWidth: 260 }}><Select options={cancelActions} value={[noShow]} onUpdate={(v) => setNoShow(v[0])} size="m" width="max" /></div>
+                        <div style={{ maxWidth: 260 }}><Select options={cancelActions} value={[noShow]} onUpdate={(v) => setNoShow(v[0])} size="l" width="max" /></div>
                     </div>
                 </div>
             </Card>
@@ -86,7 +86,7 @@ const Policies = () => {
                 </div>
                 <div style={{ padding: 24 }}>
                     <Text variant="caption-2" color="secondary" style={{ display: "block", marginBottom: 6 }}>Способ оплаты по умолчанию</Text>
-                    <div style={{ maxWidth: 260 }}><Select options={paymentMethods} value={[defaultMethod]} onUpdate={(v) => setDefaultMethod(v[0])} size="m" width="max" /></div>
+                    <div style={{ maxWidth: 260 }}><Select options={paymentMethods} value={[defaultMethod]} onUpdate={(v) => setDefaultMethod(v[0])} size="l" width="max" /></div>
                     <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 12 }}>Валюта: ₽ (Российский рубль)</Text>
                 </div>
             </Card>
@@ -102,7 +102,7 @@ const Policies = () => {
                             <Text variant="body-1" style={{ fontWeight: 600, display: "block" }}>Я — самозанятый</Text>
                             <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 4 }}>Для формирования чеков через «Мой налог»</Text>
                         </div>
-                        <Switch checked={isSelfEmployed} onUpdate={setIsSelfEmployed} size="m" />
+                        <Switch checked={isSelfEmployed} onUpdate={setIsSelfEmployed} size="l" />
                     </div>
                     {isSelfEmployed && (
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -110,7 +110,7 @@ const Policies = () => {
                                 <Text variant="body-1" style={{ fontWeight: 600, display: "block" }}>Напоминать о формировании чека</Text>
                                 <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 4 }}>При каждой полученной оплате</Text>
                             </div>
-                            <Switch checked={receiptReminder} onUpdate={setReceiptReminder} size="m" />
+                            <Switch checked={receiptReminder} onUpdate={setReceiptReminder} size="l" />
                         </div>
                     )}
                 </div>
@@ -118,7 +118,7 @@ const Policies = () => {
 
             {/* Buttons */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <Button view="outlined" size="m" onClick={handleReset}>Сбросить</Button>
+                <Button view="outlined" size="l" onClick={handleReset}>Сбросить</Button>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     {saveMsg && (
                         <Text variant="body-1" style={{ fontWeight: 600, color: saveMsg === "Сохранено" ? "var(--g-color-text-positive)" : "var(--g-color-text-danger)" }}>{saveMsg}</Text>

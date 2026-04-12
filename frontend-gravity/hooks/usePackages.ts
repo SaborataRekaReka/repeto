@@ -21,6 +21,7 @@ function mapPackage(raw: any): LessonPackage {
     createdAt: raw.createdAt
       ? new Date(raw.createdAt).toLocaleDateString('ru-RU')
       : '',
+    createdAtValue: raw.createdAt ? String(raw.createdAt) : undefined,
   };
 }
 

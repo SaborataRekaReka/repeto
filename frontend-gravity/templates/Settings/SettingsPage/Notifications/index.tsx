@@ -100,7 +100,7 @@ const Notifications = () => {
                 <div style={{ marginBottom: 24 }}>
                     <Text variant="caption-2" color="secondary" style={{ display: "block", marginBottom: 6 }}>Канал уведомлений</Text>
                     <div style={{ maxWidth: 260 }}>
-                        <Select options={channels} value={[channel]} onUpdate={(v) => setChannel(v[0])} size="m" width="max" />
+                        <Select options={channels} value={[channel]} onUpdate={(v) => setChannel(v[0])} size="l" width="max" />
                     </div>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column" }}>
@@ -116,13 +116,13 @@ const Notifications = () => {
                                         <Select options={item.opts} value={[item.val!]} onUpdate={(v) => item.setVal!(v[0])} size="s" width="max" />
                                     </div>
                                 )}
-                                <Switch checked={item.on} onUpdate={(v) => item.setOn(v)} size="m" />
+                                <Switch checked={item.on} onUpdate={(v) => item.setOn(v)} size="l" />
                             </div>
                         </div>
                     ))}
                 </div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 32 }}>
-                    <Button view="outlined" size="m" onClick={handleReset}>Сбросить</Button>
+                    <Button view="outlined" size="l" onClick={handleReset}>Сбросить</Button>
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                         {saveMsg && (
                             <Text variant="body-1" style={{ fontWeight: 600, color: saveMsg === "Сохранено" ? "var(--g-color-text-positive)" : "var(--g-color-text-danger)" }}>{saveMsg}</Text>

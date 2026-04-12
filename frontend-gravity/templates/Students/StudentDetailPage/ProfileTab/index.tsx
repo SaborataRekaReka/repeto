@@ -106,7 +106,7 @@ const ProfileTab = ({ student, onSave }: ProfileTabProps) => {
                             onBlur={() =>
                                 handleBlurText("name", localName, student.name)
                             }
-                            size="m"
+                            size="l"
                         />
                     </div>
                     <div>
@@ -122,7 +122,7 @@ const ProfileTab = ({ student, onSave }: ProfileTabProps) => {
                                 )
                             }
                             placeholder="11 или Взрослый"
-                            size="m"
+                            size="l"
                         />
                     </div>
                     <div>
@@ -138,7 +138,7 @@ const ProfileTab = ({ student, onSave }: ProfileTabProps) => {
                                 )
                             }
                             placeholder="—"
-                            size="m"
+                            size="l"
                         />
                     </div>
                     <div>
@@ -149,7 +149,7 @@ const ProfileTab = ({ student, onSave }: ProfileTabProps) => {
                             onUpdate={([v]) =>
                                 persist({ subject: v } as any)
                             }
-                            size="m"
+                            size="l"
                             width="max"
                         />
                     </div>
@@ -161,7 +161,7 @@ const ProfileTab = ({ student, onSave }: ProfileTabProps) => {
                             onBlur={() =>
                                 handleBlurNumber("rate", localRate, student.rate)
                             }
-                            size="m"
+                            size="l"
                         />
                     </div>
                     <div>
@@ -172,7 +172,7 @@ const ProfileTab = ({ student, onSave }: ProfileTabProps) => {
                             onUpdate={([v]) =>
                                 persist({ status: v as StudentStatus } as any)
                             }
-                            size="m"
+                            size="l"
                             width="max"
                         />
                     </div>
@@ -198,7 +198,7 @@ const ProfileTab = ({ student, onSave }: ProfileTabProps) => {
                         )
                     }
                     placeholder="Особенности, пожелания..."
-                    size="m"
+                    size="l"
                 />
             </Card>
         </div>

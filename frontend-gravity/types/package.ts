@@ -13,4 +13,5 @@ export type LessonPackage = {
     validUntil: string;
     validUntilValue?: string;
     createdAt: string;
+    createdAtValue?: string;
 };

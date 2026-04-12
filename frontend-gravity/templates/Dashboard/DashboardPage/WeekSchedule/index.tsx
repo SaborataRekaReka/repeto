@@ -1,17 +1,16 @@
 import Link from "next/link";
-import { Card, Text, Label, Loader } from "@gravity-ui/uikit";
+import { Card, Text, Label, Loader, Avatar, User } from "@gravity-ui/uikit";
 import { useWeekLessons } from "@/hooks/useDashboard";
 import { shortName } from "@/mocks/schedule";
+import { getInitials } from "@/mocks/students";
 import type { Lesson } from "@/types/schedule";
 
 const dayNames = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
 
-const dotColor = (subject: string) => {
+const avatarColor = (subject: string) => {
     const s = subject.toLowerCase();
-    if (s.includes("математ")) return "#AE7AFF";
-    if (s.includes("физик")) return "#98E9AB";
-    if (s.includes("русс")) return "#C6A6FF";
-    if (s.includes("англ")) return "#73D8A8";
+    if (s.includes("математ") || s.includes("русс")) return "#AE7AFF";
+    if (s.includes("физик") || s.includes("англ")) return "#34A853";
     return "#AE7AFF";
 };
 
@@ -72,22 +71,15 @@ const WeekSchedule = ({ onLessonClick }: Props) => {
                             date === new Date().toISOString().slice(0, 10);
 
                         return (
-                            <div
-                                key={date}
-                                style={{
-                                    borderTop: dayIdx > 0
-                                        ? "1px solid var(--g-color-line-generic)"
-                                        : undefined,
-                                }}
-                            >
+                            <div key={date}>
+                                {dayIdx > 0 && (
+                                    <div style={{ height: 1, background: "var(--g-color-line-generic)" }} />
+                                )}
                                 <div
                                     style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: 6,
-                                        padding: "8px 16px",
+                                        padding: "10px 16px 4px",
                                         background: isToday
-                                            ? "rgba(174,122,255,0.05)"
+                                            ? "var(--g-color-base-brand-hover)"
                                             : undefined,
                                     }}
                                 >
@@ -97,21 +89,11 @@ const WeekSchedule = ({ onLessonClick }: Props) => {
                                         style={{
                                             textTransform: "uppercase",
                                             letterSpacing: "0.05em",
-                                            fontWeight: 700,
+                                            fontWeight: 600,
                                         }}
                                     >
                                         {isToday ? "Сегодня" : dayLabel}
                                     </Text>
-                                    {isToday && (
-                                        <span
-                                            style={{
-                                                width: 6,
-                                                height: 6,
-                                                borderRadius: "50%",
-                                                background: "#AE7AFF",
-                                            }}
-                                        />
-                                    )}
                                 </div>
 
                                 {grouped[date].map((lesson) => (
@@ -122,24 +104,20 @@ const WeekSchedule = ({ onLessonClick }: Props) => {
                                         style={{
                                             display: "flex",
                                             alignItems: "center",
+                                            gap: 12,
                                             width: "100%",
-                                            padding: "8px 16px",
+                                            padding: "10px 16px",
                                             border: "none",
-                                            borderTop: "1px solid var(--g-color-line-generic-hover)",
                                             cursor: "pointer",
                                             textAlign: "left",
                                             transition: "background 0.15s",
                                         }}
                                     >
-                                        <span
-                                            style={{
-                                                width: 6,
-                                                height: 6,
-                                                borderRadius: "50%",
-                                                background: dotColor(lesson.subject),
-                                                flexShrink: 0,
-                                                marginRight: 12,
-                                            }}
+                                        <Avatar
+                                            text={getInitials(lesson.studentName)}
+                                            size="s"
+                                            theme="brand"
+                                            backgroundColor={avatarColor(lesson.subject)}
                                         />
                                         <div style={{ flex: 1, minWidth: 0 }}>
                                             <div
@@ -153,7 +131,15 @@ const WeekSchedule = ({ onLessonClick }: Props) => {
                                                 <Text variant="body-2" ellipsis>
                                                     {shortName(lesson.studentName)}
                                                 </Text>
-                                                <Text variant="body-1" color="secondary" style={{ flexShrink: 0, marginLeft: 8, fontVariantNumeric: "tabular-nums" }}>
+                                                <Text
+                                                    variant="body-1"
+                                                    color="secondary"
+                                                    style={{
+                                                        flexShrink: 0,
+                                                        marginLeft: 8,
+                                                        fontVariantNumeric: "tabular-nums",
+                                                    }}
+                                                >
                                                     {lesson.startTime} – {lesson.endTime}
                                                 </Text>
                                             </div>

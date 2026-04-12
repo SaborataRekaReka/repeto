@@ -1,3 +1,4 @@
+import { Card, Text, Button } from "@gravity-ui/uikit";
 import type { StudentPortalData } from "@/types/student-portal";
 
 type PaymentTabProps = {
@@ -7,10 +8,10 @@ type PaymentTabProps = {
 const PaymentTab = ({ data }: PaymentTabProps) => {
     const balanceColor =
         data.balance < 0
-            ? "text-pink-1"
+            ? "#D16B8F"
             : data.balance > 0
-            ? "text-green-1"
-            : "text-n-3 dark:text-white/50";
+            ? "#22C55E"
+            : undefined;
 
     const packagePercent = data.package
         ? Math.round((data.package.used / data.package.total) * 100)
@@ -19,99 +20,84 @@ const PaymentTab = ({ data }: PaymentTabProps) => {
     return (
         <>
             {/* Balance */}
-            <div className="card mb-6">
-                <div className="card-head"><div className="text-h6">Баланс</div></div>
-                <div className="p-5">
-                    <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm text-n-3 dark:text-white/50">
-                            Текущий баланс
-                        </span>
-                        <span
-                            className={`text-h4 font-bold ${balanceColor}`}
-                        >
+            <Card view="outlined" style={{ marginBottom: 24, overflow: "hidden" }}>
+                <div className="repeto-card-header">
+                    <Text variant="subheader-2">Баланс</Text>
+                </div>
+                <div style={{ padding: 20 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                        <Text variant="body-1" color="secondary">Текущий баланс</Text>
+                        <Text variant="header-1" style={{ color: balanceColor, fontWeight: 700 }}>
                             {data.balance.toLocaleString("ru-RU")} ₽
-                        </span>
+                        </Text>
                     </div>
-                    <div className="flex items-center justify-between mb-4">
-                        <span className="text-sm text-n-3 dark:text-white/50">
-                            Ставка
-                        </span>
-                        <span className="text-sm font-bold">
-                            {data.ratePerLesson.toLocaleString("ru-RU")} ₽ /
-                            занятие
-                        </span>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                        <Text variant="body-1" color="secondary">Ставка</Text>
+                        <Text variant="body-2" style={{ fontWeight: 600 }}>
+                            {data.ratePerLesson.toLocaleString("ru-RU")} ₽ / занятие
+                        </Text>
                     </div>
                     {data.package && (
-                        <div className="mb-4 p-3 rounded-sm border border-n-1 dark:border-white">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-xs font-bold">
-                                    Пакет
-                                </span>
-                                <span className="text-xs text-n-3 dark:text-white/50">
-                                    {data.package.used}/{data.package.total}{" "}
-                                    занятий · до {data.package.validUntil}
-                                </span>
+                        <Card view="outlined" style={{ padding: 12, marginBottom: 16 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                                <Text variant="caption-1" style={{ fontWeight: 600 }}>Пакет</Text>
+                                <Text variant="caption-1" color="secondary">
+                                    {data.package.used}/{data.package.total} занятий · до {data.package.validUntil}
+                                </Text>
                             </div>
-                            <div className="w-full h-2 bg-n-4 rounded-full dark:bg-white/10">
+                            <div style={{ width: "100%", height: 8, borderRadius: 99, background: "var(--g-color-base-generic)", overflow: "hidden" }}>
                                 <div
-                                    className={`h-full rounded-full ${
-                                        packagePercent > 75
-                                            ? "bg-pink-1"
-                                            : packagePercent > 50
-                                            ? "bg-purple-1"
-                                            : "bg-green-1"
-                                    }`}
                                     style={{
+                                        height: "100%",
+                                        borderRadius: 99,
                                         width: `${packagePercent}%`,
+                                        background: packagePercent > 75
+                                            ? "var(--g-color-base-danger)"
+                                            : packagePercent > 50
+                                            ? "var(--g-color-base-brand)"
+                                            : "var(--g-color-base-positive)",
+                                        transition: "width 0.3s",
                                     }}
                                 />
                             </div>
-                        </div>
+                        </Card>
                     )}
                     {data.balance < 0 && data.paymentUrl && (
-                        <a
-                            href={data.paymentUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn-purple btn-shadow w-full h-12 flex items-center justify-center"
-                        >
-                            Оплатить{" "}
-                            {Math.abs(data.balance).toLocaleString("ru-RU")} ₽
+                        <a href={data.paymentUrl} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
+                            <Button view="action" size="l" width="max">
+                                Оплатить {Math.abs(data.balance).toLocaleString("ru-RU")} ₽
+                            </Button>
                         </a>
                     )}
                     {data.balance < 0 && !data.paymentUrl && (
-                        <button className="btn-purple btn-shadow w-full h-12">
-                            Оплатить{" "}
-                            {Math.abs(data.balance).toLocaleString("ru-RU")} ₽
-                        </button>
+                        <Button view="action" size="l" width="max" disabled>
+                            Оплатить {Math.abs(data.balance).toLocaleString("ru-RU")} ₽
+                        </Button>
                     )}
                 </div>
-            </div>
+            </Card>
 
             {/* Payment history */}
-            <div className="card">
-                <div className="card-head"><div className="text-h6">История оплат</div></div>
-                <div className="p-5">
-                    <div className="space-y-2">
+            <Card view="outlined" style={{ overflow: "hidden" }}>
+                <div className="repeto-card-header">
+                    <Text variant="subheader-2">История оплат</Text>
+                </div>
+                <div style={{ padding: 20 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                         {data.recentPayments.map((p) => (
-                            <div
-                                key={p.id}
-                                className="flex items-center justify-between text-sm py-1"
-                            >
-                                <div className="flex items-center gap-2">
-                                    <span className="text-n-3 dark:text-white/50 whitespace-nowrap shrink-0">
-                                        {p.date}
-                                    </span>
-                                    <span>{p.method}</span>
+                            <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                    <Text variant="body-1" color="secondary" style={{ whiteSpace: "nowrap", flexShrink: 0 }}>{p.date}</Text>
+                                    <Text variant="body-1">{p.method}</Text>
                                 </div>
-                                <span className="font-bold text-green-1">
+                                <Text variant="body-2" style={{ fontWeight: 600, color: "#22C55E" }}>
                                     +{p.amount.toLocaleString("ru-RU")} ₽
-                                </span>
+                                </Text>
                             </div>
                         ))}
                     </div>
                 </div>
-            </div>
+            </Card>
         </>
     );
 };

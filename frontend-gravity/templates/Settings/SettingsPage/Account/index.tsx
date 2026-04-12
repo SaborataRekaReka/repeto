@@ -96,31 +96,31 @@ const Account = () => {
                 <div style={{ padding: 24 }}>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                         <FormField label="ФИО">
-                            <TextInput value={name} onUpdate={setName} placeholder="Смирнов Алексей Иванович" size="m" />
+                            <TextInput value={name} onUpdate={setName} placeholder="Смирнов Алексей Иванович" size="l" />
                         </FormField>
                         <FormField label="Email">
-                            <TextInput value={email} disabled placeholder="email@example.com" size="m" />
+                            <TextInput value={email} disabled placeholder="email@example.com" size="l" />
                             <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 4 }}>
                                 Изменение email пока недоступно
                             </Text>
                         </FormField>
                         <FormField label="Телефон">
-                            <TextInput type="tel" value={phone} onUpdate={setPhone} placeholder="+7 900 123-45-67" size="m" />
+                            <TextInput type="tel" value={phone} onUpdate={setPhone} placeholder="+7 900 123-45-67" size="l" />
                         </FormField>
                         <FormField label="WhatsApp">
-                            <TextInput type="tel" value={whatsapp} onUpdate={setWhatsapp} placeholder="+79001234567" size="m" />
+                            <TextInput type="tel" value={whatsapp} onUpdate={setWhatsapp} placeholder="+79001234567" size="l" />
                         </FormField>
                         <FormField label="ВКонтакте">
-                            <TextInput value={vk} onUpdate={setVk} placeholder="https://vk.com/username" size="m" />
+                            <TextInput value={vk} onUpdate={setVk} placeholder="https://vk.com/username" size="l" />
                         </FormField>
                         <FormField label="Сайт">
-                            <TextInput value={website} onUpdate={setWebsite} placeholder="https://my-site.ru" size="m" />
+                            <TextInput value={website} onUpdate={setWebsite} placeholder="https://my-site.ru" size="l" />
                         </FormField>
                         <FormField label="Подзаголовок (для публичной страницы)" full>
-                            <TextInput value={tagline} onUpdate={setTagline} placeholder="Репетитор по математике и физике" size="m" />
+                            <TextInput value={tagline} onUpdate={setTagline} placeholder="Репетитор по математике и физике" size="l" />
                         </FormField>
                         <FormField label="О себе" full>
-                            <TextArea value={about} onUpdate={setAbout} placeholder="Подробная информация о вашем опыте, подходе, достижениях..." rows={4} size="m" />
+                            <TextArea value={about} onUpdate={setAbout} placeholder="Подробная информация о вашем опыте, подходе, достижениях..." rows={4} size="l" />
                         </FormField>
                     </div>
                 </div>
@@ -179,7 +179,7 @@ const Account = () => {
                                             value={subj.name}
                                             onUpdate={(v) => updateSubject(i, "name", v)}
                                             placeholder="Математика"
-                                            size="m"
+                                            size="l"
                                             view="clear"
                                             style={{ fontWeight: 500 }}
                                         />
@@ -188,7 +188,7 @@ const Account = () => {
                                                 value={subj.price}
                                                 onUpdate={(v) => updateSubject(i, "price", v)}
                                                 placeholder="2 100"
-                                                size="m"
+                                                size="l"
                                                 view="clear"
                                             />
                                             <span style={{
@@ -201,7 +201,7 @@ const Account = () => {
                                                 value={subj.duration}
                                                 onUpdate={(v) => updateSubject(i, "duration", v)}
                                                 placeholder="60"
-                                                size="m"
+                                                size="l"
                                                 view="clear"
                                             />
                                             <span style={{
@@ -234,11 +234,11 @@ const Account = () => {
                 </div>
                 <div style={{ padding: 24, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                     <FormField label="Формат">
-                        <Select options={formatOptions} value={[format]} onUpdate={(v) => setFormat(v[0])} size="m" width="max" />
+                        <Select options={formatOptions} value={[format]} onUpdate={(v) => setFormat(v[0])} size="l" width="max" />
                     </FormField>
                     {(format === "offline" || format === "both") && (
                         <FormField label="Адрес (очно)">
-                            <TextInput value={offlineAddress} onUpdate={setOfflineAddress} placeholder="Москва, м. Тверская" size="m" />
+                            <TextInput value={offlineAddress} onUpdate={setOfflineAddress} placeholder="Москва, м. Тверская" size="l" />
                         </FormField>
                     )}
                 </div>

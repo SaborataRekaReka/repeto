@@ -176,7 +176,7 @@ const Integrations = () => {
                                 </div>
                                 <Button
                                     view={isConnected ? "outlined" : "action"}
-                                    size="m"
+                                    size="l"
                                     disabled={saving}
                                     onClick={() => isConnected ? handleDisconnect(def.id) : handleConnect(def.id)}
                                 >
@@ -190,7 +190,7 @@ const Integrations = () => {
                                     <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(255,193,7,0.1)", marginBottom: 12 }}>
                                         <Text variant="caption-2">Автоподключение недоступно. Используйте ручное подключение по токену.</Text>
                                     </div>
-                                    <TextInput type="password" value={yandexCalToken} onUpdate={setYandexCalToken} placeholder="y0_AgAAAABk..." size="m" />
+                                    <TextInput type="password" value={yandexCalToken} onUpdate={setYandexCalToken} placeholder="y0_AgAAAABk..." size="l" />
                                     <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 8 }}>
                                         Создайте приложение на <a href="https://oauth.yandex.ru/client/new" target="_blank" rel="noopener noreferrer" style={{ color: "var(--g-color-text-brand)" }}>oauth.yandex.ru</a> и вставьте токен.
                                     </Text>
@@ -228,7 +228,7 @@ const Integrations = () => {
                                     <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(255,193,7,0.1)", marginBottom: 12 }}>
                                         <Text variant="caption-2">Автоподключение недоступно. Используйте ручное подключение по токену.</Text>
                                     </div>
-                                    <TextInput type="password" value={yandexToken} onUpdate={setYandexToken} placeholder="y0_AgAAAABk..." size="m" />
+                                    <TextInput type="password" value={yandexToken} onUpdate={setYandexToken} placeholder="y0_AgAAAABk..." size="l" />
                                     <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 8 }}>
                                         Создайте приложение на <a href="https://oauth.yandex.ru/client/new" target="_blank" rel="noopener noreferrer" style={{ color: "var(--g-color-text-brand)" }}>oauth.yandex.ru</a> и вставьте токен.
                                     </Text>
