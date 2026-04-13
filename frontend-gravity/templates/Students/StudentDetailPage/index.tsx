@@ -385,9 +385,7 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
                                         setDebtSending(true);
                                         try {
                                             await sendDebtReminder(student.id);
-                                        } catch (e) {
-                                            console.error("Debt reminder failed", e);
-                                        } finally {
+                                        } catch {
                                             setDebtSending(false);
                                         }
                                     }}

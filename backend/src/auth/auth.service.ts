@@ -3,15 +3,19 @@ import {
   UnauthorizedException,
   ConflictException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto, LoginDto } from './dto';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
@@ -102,15 +106,144 @@ export class AuthService {
     // Always return 200 to prevent email enumeration
     if (!user) return;
 
-    // TODO: send email via Resend with reset token
-    // For now, just log it
-    const resetToken = uuidv4();
-    console.log(`Password reset token for ${email}: ${resetToken}`);
+    const rawResetToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = this.hashResetToken(rawResetToken);
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    await this.prisma.passwordResetToken.deleteMany({
+      where: {
+        OR: [
+          { userId: user.id },
+          { expiresAt: { lt: new Date() } },
+        ],
+      },
+    });
+
+    await this.prisma.passwordResetToken.create({
+      data: {
+        userId: user.id,
+        tokenHash,
+        expiresAt,
+      },
+    });
+
+    const frontendUrl = process.env.FRONTEND_URL ||
+      (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3300');
+    if (!frontendUrl) {
+      this.logger.error('FRONTEND_URL is required in production for password reset links');
+      return;
+    }
+    const resetUrl = `${frontendUrl}/registration?token=${encodeURIComponent(rawResetToken)}`;
+
+    try {
+      await this.sendPasswordResetEmail(user.email, user.name, resetUrl);
+    } catch (error) {
+      // Keep response indistinguishable for security reasons.
+      this.logger.error(
+        `Failed to send password reset email for user ${user.id}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+    }
   }
 
   async resetPassword(token: string, newPassword: string) {
-    // TODO: implement token validation
-    throw new BadRequestException('Функция восстановления пароля ещё не реализована');
+    if (!token || token.length < 20) {
+      throw new BadRequestException('Некорректный токен восстановления');
+    }
+
+    const tokenHash = this.hashResetToken(token);
+    const stored = await this.prisma.passwordResetToken.findUnique({
+      where: { tokenHash },
+      select: {
+        id: true,
+        userId: true,
+        usedAt: true,
+        expiresAt: true,
+      },
+    });
+
+    if (!stored || stored.usedAt || stored.expiresAt < new Date()) {
+      throw new BadRequestException('Ссылка восстановления недействительна или истекла');
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: stored.userId },
+        data: { passwordHash },
+      });
+
+      await tx.passwordResetToken.update({
+        where: { id: stored.id },
+        data: { usedAt: new Date() },
+      });
+
+      await tx.passwordResetToken.deleteMany({
+        where: {
+          userId: stored.userId,
+          id: { not: stored.id },
+        },
+      });
+
+      await tx.refreshToken.deleteMany({ where: { userId: stored.userId } });
+    });
+  }
+
+  private hashResetToken(token: string) {
+    return crypto.createHash('sha256').update(token).digest('hex');
+  }
+
+  private async sendPasswordResetEmail(
+    email: string,
+    name: string,
+    resetUrl: string,
+  ) {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      this.logger.warn('RESEND_API_KEY is not configured. Password reset email was not sent.');
+      return;
+    }
+
+    const from = process.env.RESEND_FROM_EMAIL || 'Repeto <noreply@repeto.ru>';
+
+    const subject = 'Сброс пароля Repeto';
+    const html = [
+      `<p>Здравствуйте, ${name || 'пользователь'}.</p>`,
+      '<p>Вы запросили восстановление пароля в Repeto.</p>',
+      `<p><a href="${resetUrl}">Нажмите здесь, чтобы задать новый пароль</a></p>`,
+      '<p>Ссылка действительна 1 час.</p>',
+      '<p>Если это были не вы, просто проигнорируйте письмо.</p>',
+    ].join('');
+
+    const text = [
+      `Здравствуйте, ${name || 'пользователь'}.`,
+      '',
+      'Вы запросили восстановление пароля в Repeto.',
+      `Ссылка для сброса пароля: ${resetUrl}`,
+      'Ссылка действительна 1 час.',
+      'Если это были не вы, просто проигнорируйте письмо.',
+    ].join('\n');
+
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from,
+        to: [email],
+        subject,
+        html,
+        text,
+      }),
+    });
+
+    if (!response.ok) {
+      const details = await response.text().catch(() => 'unknown error');
+      throw new Error(`Resend error ${response.status}: ${details}`);
+    }
   }
 
   private async generateTokens(userId: string) {

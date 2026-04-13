@@ -1,13 +1,12 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { TelegramService } from './telegram.service';
 import { MaxService } from './max.service';
+import Redis from 'ioredis';
 
 /** TTL for pending booking link codes: 30 minutes */
-const LINK_TTL_MS = 30 * 60 * 1000;
-
-type PendingLink = { chatId: string; createdAt: number };
+const LINK_TTL_SEC = 30 * 60;
 
 @Injectable()
 export class BotPollerService implements OnModuleInit {
@@ -15,14 +14,14 @@ export class BotPollerService implements OnModuleInit {
   private telegramOffset?: number;
   private maxMarker?: number;
 
-  /** Temporary store: linkCode → chatId (for booking flow) */
-  private pendingTelegramLinks = new Map<string, PendingLink>();
-  private pendingMaxLinks = new Map<string, PendingLink>();
+  private readonly PREFIX_TG = 'pending:tg:';
+  private readonly PREFIX_MAX = 'pending:max:';
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly telegram: TelegramService,
     private readonly max: MaxService,
+    @Inject('REDIS') private readonly redis: Redis,
   ) {}
 
   async onModuleInit() {
@@ -34,32 +33,26 @@ export class BotPollerService implements OnModuleInit {
     }
   }
 
-  /** Resolve a pending link code → chatId. Removes it from the store. */
-  resolveTelegramLink(code: string): string | null {
-    const entry = this.pendingTelegramLinks.get(code);
-    if (!entry) return null;
-    this.pendingTelegramLinks.delete(code);
-    if (Date.now() - entry.createdAt > LINK_TTL_MS) return null;
-    return entry.chatId;
+  /** Resolve a pending link code → chatId. Removes it from Redis. */
+  async resolveTelegramLink(code: string): Promise<string | null> {
+    const chatId = await this.redis.get(this.PREFIX_TG + code);
+    if (chatId) await this.redis.del(this.PREFIX_TG + code);
+    return chatId;
   }
 
-  resolveMaxLink(code: string): string | null {
-    const entry = this.pendingMaxLinks.get(code);
-    if (!entry) return null;
-    this.pendingMaxLinks.delete(code);
-    if (Date.now() - entry.createdAt > LINK_TTL_MS) return null;
-    return entry.chatId;
+  async resolveMaxLink(code: string): Promise<string | null> {
+    const chatId = await this.redis.get(this.PREFIX_MAX + code);
+    if (chatId) await this.redis.del(this.PREFIX_MAX + code);
+    return chatId;
   }
 
-  /** Check if a link code has been consumed (without removing it). */
-  hasTelegramLink(code: string): boolean {
-    const entry = this.pendingTelegramLinks.get(code);
-    return !!entry && Date.now() - entry.createdAt <= LINK_TTL_MS;
+  /** Check if a link code exists (without removing it). */
+  async hasTelegramLink(code: string): Promise<boolean> {
+    return (await this.redis.exists(this.PREFIX_TG + code)) === 1;
   }
 
-  hasMaxLink(code: string): boolean {
-    const entry = this.pendingMaxLinks.get(code);
-    return !!entry && Date.now() - entry.createdAt <= LINK_TTL_MS;
+  async hasMaxLink(code: string): Promise<boolean> {
+    return (await this.redis.exists(this.PREFIX_MAX + code)) === 1;
   }
 
   @Cron(CronExpression.EVERY_10_SECONDS)
@@ -125,28 +118,16 @@ export class BotPollerService implements OnModuleInit {
     }
   }
 
-  /** Cleanup expired pending links every 5 minutes */
-  @Cron(CronExpression.EVERY_5_MINUTES)
-  cleanupExpiredLinks() {
-    const now = Date.now();
-    for (const [code, entry] of this.pendingTelegramLinks) {
-      if (now - entry.createdAt > LINK_TTL_MS) this.pendingTelegramLinks.delete(code);
-    }
-    for (const [code, entry] of this.pendingMaxLinks) {
-      if (now - entry.createdAt > LINK_TTL_MS) this.pendingMaxLinks.delete(code);
-    }
-  }
-
   private async handleBookingLink(
     platform: 'telegram' | 'max',
     chatId: string,
     linkCode: string,
   ) {
     if (platform === 'telegram') {
-      this.pendingTelegramLinks.set(linkCode, { chatId, createdAt: Date.now() });
+      await this.redis.set(this.PREFIX_TG + linkCode, chatId, 'EX', LINK_TTL_SEC);
       await this.telegram.sendMessage(chatId, '✅ Отлично! Уведомления будут подключены после записи на занятие.');
     } else {
-      this.pendingMaxLinks.set(linkCode, { chatId, createdAt: Date.now() });
+      await this.redis.set(this.PREFIX_MAX + linkCode, chatId, 'EX', LINK_TTL_SEC);
       await this.max.sendMessage(chatId, '✅ Отлично! Уведомления будут подключены после записи на занятие.');
     }
     this.logger.log(`Stored pending ${platform} link: ${linkCode} → chat ${chatId}`);

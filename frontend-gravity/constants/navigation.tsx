@@ -68,8 +68,4 @@ export const navigationMobile = [
         icon: "wallet",
         url: "/finance",
     },
-    {
-        icon: "dots",
-        onClick: () => console.log("Click on dots"),
-    },
 ];

@@ -22,7 +22,7 @@ import type { IconData } from "@gravity-ui/uikit";
 import { useStudents } from "@/hooks/useStudents";
 import { onNotificationsChanged, useUnreadCount } from "@/hooks/useNotifications";
 import { useAuth } from "@/contexts/AuthContext";
-import { getInitials } from "@/mocks/students";
+import { getInitials } from "@/lib/formatters";
 
 const GTooltip = Tooltip as any;
 const GIcon = Icon as any;

@@ -31,13 +31,18 @@ function readCookieValue(name: string): string | null {
 
 function writeCookieValue(name: string, value: string) {
     if (typeof document === "undefined") return;
-    document.cookie = `${name}=${value}; path=/; max-age=31536000; samesite=lax`;
+    document.cookie = `${name}=${value}; path=/; max-age=31536000; samesite=strict; secure`;
 }
 
 export function readPortalTokenMap(): PortalTokenMap {
     if (typeof window === "undefined") return {};
 
-    const fromStorage = safeParseMap(localStorage.getItem(STORAGE_KEY));
+    let fromStorage: PortalTokenMap = {};
+    try {
+        fromStorage = safeParseMap(localStorage.getItem(STORAGE_KEY));
+    } catch {
+        // Private browsing or storage disabled
+    }
     const fromCookie = safeParseMap(
         decodeURIComponent(readCookieValue(COOKIE_KEY) || "")
     );
@@ -51,7 +56,11 @@ export function readPortalTokenMap(): PortalTokenMap {
 export function writePortalTokenMap(map: PortalTokenMap) {
     if (typeof window === "undefined") return;
     const serialized = JSON.stringify(map);
-    localStorage.setItem(STORAGE_KEY, serialized);
+    try {
+        localStorage.setItem(STORAGE_KEY, serialized);
+    } catch {
+        // Private browsing or quota exceeded
+    }
     writeCookieValue(COOKIE_KEY, encodeURIComponent(serialized));
 }
 

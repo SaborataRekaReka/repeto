@@ -122,6 +122,19 @@ const SignUp = () => {
                     onUpdate={setPassword}
                     autoComplete="new-password"
                 />
+                {password.length > 0 && (
+                    <span style={{
+                        fontSize: 12,
+                        marginTop: 4,
+                        color: /^(?=.*[A-Za-zА-я])(?=.*\d).{8,}$/.test(password)
+                            ? 'var(--g-color-text-positive)'
+                            : 'var(--g-color-text-warning)',
+                    }}>
+                        {/^(?=.*[A-Za-zА-я])(?=.*\d).{8,}$/.test(password)
+                            ? '✓ Надёжный пароль'
+                            : 'Минимум 8 символов, буква и цифра'}
+                    </span>
+                )}
             </div>
 
             <div style={{ ...FIELD_STYLE, marginBottom: 20 }}>

@@ -1,26 +1,37 @@
 /** @type {import('next').NextConfig} */
+const apiBase = process.env.NEXT_PUBLIC_API_URL || '/api';
+const apiOrigin = apiBase.replace(/\/api$/, '');
+const hasAbsoluteApiOrigin = /^https?:\/\//.test(apiOrigin);
+
+let uploadRemotePattern;
+if (hasAbsoluteApiOrigin) {
+    const parsed = new URL(apiOrigin);
+    uploadRemotePattern = {
+        protocol: parsed.protocol.replace(':', ''),
+        hostname: parsed.hostname,
+        pathname: '/uploads/**',
+        ...(parsed.port ? { port: parsed.port } : {}),
+    };
+}
+
 const nextConfig = {
     reactStrictMode: true,
-    devIndicators: false,
     transpilePackages: [
         "@gravity-ui/uikit",
         "@gravity-ui/icons",
     ],
     images: {
-        remotePatterns: [
-            {
-                protocol: "http",
-                hostname: "localhost",
-                port: "3200",
-                pathname: "/uploads/**",
-            },
-        ],
+        remotePatterns: uploadRemotePattern ? [uploadRemotePattern] : [],
     },
     async rewrites() {
+        if (!hasAbsoluteApiOrigin) {
+            return [];
+        }
+
         return [
             {
                 source: "/uploads/:path*",
-                destination: "http://localhost:3200/uploads/:path*",
+                destination: `${apiOrigin}/uploads/:path*`,
             },
         ];
     },

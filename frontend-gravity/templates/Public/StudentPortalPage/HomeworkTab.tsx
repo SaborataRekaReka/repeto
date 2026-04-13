@@ -5,6 +5,8 @@ import type { IconData } from "@gravity-ui/uikit";
 import { api } from "@/lib/api";
 import type { PortalHomework, StudentUpload } from "@/types/student-portal";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
+
 type HomeworkTabProps = {
     homework: PortalHomework[];
     token?: string;
@@ -54,7 +56,7 @@ const HomeworkTab = ({ homework: initial, token }: HomeworkTabProps) => {
             const formData = new FormData();
             formData.append("file", file);
             const res = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3200"}/portal/${token}/homework/${hwId}/upload`,
+                `${API_BASE}/portal/${token}/homework/${hwId}/upload`,
                 { method: "POST", body: formData }
             );
             if (!res.ok) throw new Error("Upload failed");

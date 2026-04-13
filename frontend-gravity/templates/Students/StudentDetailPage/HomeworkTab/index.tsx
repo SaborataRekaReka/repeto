@@ -80,8 +80,8 @@ const HomeworkTab = ({ studentId, homeworks, onMutate }: HomeworkTabProps) => {
                 });
             }
             onMutate?.();
-        } catch (err) {
-            console.error("Failed to save homework:", err);
+        } catch {
+            // Ошибка сохранения ДЗ — silent
         }
         setModalVisible(false);
         setEditingHomework(null);
@@ -92,8 +92,8 @@ const HomeworkTab = ({ studentId, homeworks, onMutate }: HomeworkTabProps) => {
             try {
                 await deleteHomework(studentId, editingHomework.id);
                 onMutate?.();
-            } catch (err) {
-                console.error("Failed to delete homework:", err);
+            } catch {
+                // Ошибка удаления ДЗ — silent
             }
         }
         setModalVisible(false);

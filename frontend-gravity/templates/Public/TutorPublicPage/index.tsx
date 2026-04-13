@@ -7,7 +7,7 @@ import type { IconData } from "@gravity-ui/uikit";
 import { Pencil, Smartphone, Comment, GraduationCap } from "@gravity-ui/icons";
 import { brand } from "@/constants/brand";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3200/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 type TutorReview = {
     studentName: string;

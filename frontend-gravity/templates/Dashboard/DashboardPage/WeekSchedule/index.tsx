@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { Card, Text, Label, Loader, Avatar, User } from "@gravity-ui/uikit";
 import { useWeekLessons } from "@/hooks/useDashboard";
-import { shortName } from "@/mocks/schedule";
-import { getInitials } from "@/mocks/students";
+import { shortName } from "@/lib/formatters";
+import { getInitials } from "@/lib/formatters";
 import type { Lesson } from "@/types/schedule";
 
 const dayNames = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Layout from "@/components/Layout";
 import Icon from "@/components/Icon";
-import { getInitials } from "@/mocks/students";
+import { getInitials } from "@/lib/formatters";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDashboardStats } from "@/hooks/useDashboard";
 import {
@@ -86,8 +86,8 @@ const TutorProfilePage = () => {
                                         />
                                         <Tooltip
                                             formatter={(value: number) => [
-                                                `${value} занятий`,
-                                                "",
+                                                value,
+                                                "занятий",
                                             ]}
                                         />
                                         <Bar

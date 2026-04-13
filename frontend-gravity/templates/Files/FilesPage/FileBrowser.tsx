@@ -3,7 +3,7 @@ import { useMediaQuery } from "react-responsive";
 import { Card, Text, Button, Icon, Checkbox } from "@gravity-ui/uikit";
 import { FolderOpen, PersonPlus, Ellipsis, ArrowUpRightFromSquare, CircleCheck } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
-import { getInitials } from "@/mocks/students";
+import { getInitials } from "@/lib/formatters";
 import { useStudents } from "@/hooks/useStudents";
 import type { CloudConnection, FileItem } from "@/types/files";
 import ShareModal from "./ShareModal";
@@ -49,7 +49,11 @@ type FileBrowserProps = {
 const FileBrowser = ({ files, cloudConnections, onUpdated }: FileBrowserProps) => {
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(() => {
         if (typeof window === "undefined") return null;
-        return sessionStorage.getItem(FOLDER_STORAGE_KEY) || null;
+        try {
+            return sessionStorage.getItem(FOLDER_STORAGE_KEY) || null;
+        } catch {
+            return null;
+        }
     });
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
     const [shareTarget, setShareTarget] = useState<FileItem | null>(null);
@@ -66,8 +70,12 @@ const FileBrowser = ({ files, cloudConnections, onUpdated }: FileBrowserProps) =
     );
 
     useEffect(() => {
-        if (currentFolderId) sessionStorage.setItem(FOLDER_STORAGE_KEY, currentFolderId);
-        else sessionStorage.removeItem(FOLDER_STORAGE_KEY);
+        try {
+            if (currentFolderId) sessionStorage.setItem(FOLDER_STORAGE_KEY, currentFolderId);
+            else sessionStorage.removeItem(FOLDER_STORAGE_KEY);
+        } catch {
+            // Private browsing
+        }
     }, [currentFolderId]);
 
     useEffect(() => {

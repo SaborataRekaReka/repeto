@@ -8,6 +8,7 @@ import {
 } from 'react';
 import {
   api,
+  API_BASE,
   setAccessToken,
   getAccessToken,
   resolveApiAssetUrl,
@@ -46,7 +47,8 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const PUBLIC_ROUTES = ['/registration', '/t'];
+const PUBLIC_ROUTE_PREFIXES = ['/registration', '/t'];
+const PUBLIC_ROUTE_EXACT = ['/'];
 
 let refreshInFlight: Promise<void> | null = null;
 
@@ -55,7 +57,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  const isPublicRoute = PUBLIC_ROUTES.some((r) => router.pathname.startsWith(r));
+  const isPublicRoute =
+    PUBLIC_ROUTE_EXACT.includes(router.pathname) ||
+    PUBLIC_ROUTE_PREFIXES.some((r) => router.pathname.startsWith(r));
 
   const refreshUser = useCallback(async () => {
     // Deduplicate concurrent calls (React StrictMode double-invokes effects)
@@ -67,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         if (!getAccessToken()) {
           const refreshRes = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3200/api'}/auth/refresh`,
+            `${API_BASE}/auth/refresh`,
             { method: 'POST', credentials: 'include' }
           );
           if (refreshRes.ok) {

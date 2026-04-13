@@ -79,11 +79,6 @@ const Row = ({ item, onScheduleLesson, onMessage }: RowProps) => {
                             text: "Написать",
                             action: () => onMessage?.(),
                         },
-                        {
-                            text: "Архивировать",
-                            action: () => console.log("TODO: archive", item.id),
-                            theme: "danger" as const,
-                        },
                     ]}
                 />
             </td>

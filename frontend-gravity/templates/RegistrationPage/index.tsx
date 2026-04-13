@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Head from "next/head";
+import { useRouter } from "next/router";
 import Logo from "@/components/Logo";
 import SignIn from "./SignIn";
 import SignUp from "./SignUp";
@@ -9,9 +10,25 @@ import { useThemeMode } from "@/contexts/ThemeContext";
 type View = "signin" | "signup" | "forgot";
 
 const RegistrationPage = () => {
+    const router = useRouter();
     const [view, setView] = useState<View>("signin");
     const { theme } = useThemeMode();
     const isDark = theme === "dark";
+    const resetToken =
+        typeof router.query.token === "string" ? router.query.token.trim() : "";
+
+    useEffect(() => {
+        if (resetToken) {
+            setView("forgot");
+        }
+    }, [resetToken]);
+
+    const handleBackToSignIn = () => {
+        if (resetToken) {
+            router.replace("/registration", undefined, { shallow: true });
+        }
+        setView("signin");
+    };
 
     return (
         <>
@@ -48,7 +65,7 @@ const RegistrationPage = () => {
                         }}
                     >
                         {view === "forgot" ? (
-                            <ForgotPassword onBack={() => setView("signin")} />
+                            <ForgotPassword onBack={handleBackToSignIn} token={resetToken || undefined} />
                         ) : view === "signup" ? (
                             <SignUp />
                         ) : (

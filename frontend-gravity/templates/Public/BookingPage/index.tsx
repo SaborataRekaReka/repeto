@@ -24,7 +24,7 @@ import {
 } from "@/lib/portalTokenStore";
 import { codedErrorMessage } from "@/lib/errorCodes";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3200/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 type SlotData = { date: string; time: string; duration: number };
 type TutorProfile = {
@@ -188,7 +188,11 @@ function readPrefillStore(): BookingPrefillStore {
 
 function savePrefillStore(store: BookingPrefillStore) {
     if (typeof window === "undefined") return;
-    localStorage.setItem(BOOKING_PREFILL_STORAGE_KEY, JSON.stringify(store));
+    try {
+        localStorage.setItem(BOOKING_PREFILL_STORAGE_KEY, JSON.stringify(store));
+    } catch {
+        // Private browsing or quota exceeded
+    }
 }
 
 const BookingPage = ({ slug }: { slug: string }) => {
@@ -216,9 +220,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
                 if (botInfo?.max?.username) {
                     setMaxBotUsername(botInfo.max.username);
                 }
-            } catch (err) {
-                console.error("Failed to load booking data:", err);
-            } finally {
+            } catch {
                 setLoading(false);
             }
         })();

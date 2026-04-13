@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import { Card, Text, Icon, Button } from "@gravity-ui/uikit";
 import { FolderOpen, ChevronDown, ArrowUpRightFromSquare } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
-import { getInitials } from "@/mocks/students";
+import { getInitials } from "@/lib/formatters";
 import { useStudents } from "@/hooks/useStudents";
 import { updateFileShare } from "@/hooks/useFiles";
 import type { FileItem, StudentFileAccess } from "@/types/files";

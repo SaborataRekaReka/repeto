@@ -5,7 +5,7 @@ import Icon from "@/components/Icon";
 import Image from "@/components/Image";
 import Create from "./Create";
 import { useStudents } from "@/hooks/useStudents";
-import { getInitials, getSubjectBgColor } from "@/mocks/students";
+import { getInitials, getSubjectBgColor } from "@/lib/formatters";
 import { onNotificationsChanged, useUnreadCount } from "@/hooks/useNotifications";
 import { useAuth } from "@/contexts/AuthContext";
 

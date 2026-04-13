@@ -45,13 +45,6 @@ const Row = ({ item, onClick }: RowProps) => (
                         icon: "arrow-next",
                         onClick,
                     },
-                    {
-                        label: "Удалить",
-                        icon: "close",
-                        onClick: () =>
-                            console.log("TODO: delete payment", item.id),
-                        danger: true,
-                    },
                 ]}
             />
         </td>

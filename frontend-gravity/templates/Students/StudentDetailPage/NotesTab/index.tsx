@@ -34,8 +34,8 @@ const NotesTab = ({
             setNewNote("");
             setAdding(false);
             onMutate?.();
-        } catch (err) {
-            console.error("Failed to create note:", err);
+        } catch {
+            // Ошибка создания заметки — silent
         }
     };
 
@@ -43,8 +43,8 @@ const NotesTab = ({
         try {
             await deleteNote(studentId, noteId);
             onMutate?.();
-        } catch (err) {
-            console.error("Failed to delete note:", err);
+        } catch {
+            // Ошибка удаления заметки — silent
         }
     };
 

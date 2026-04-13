@@ -1,5 +1,5 @@
 import type { Lesson } from "@/types/schedule";
-import { shortName } from "@/mocks/schedule";
+import { shortName } from "@/lib/formatters";
 
 type LessonDotProps = {
     className?: string;

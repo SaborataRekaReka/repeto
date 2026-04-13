@@ -11,6 +11,7 @@ import {
   IsBoolean,
   IsArray,
   IsInt,
+  MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { LessonFormat } from '@prisma/client';
@@ -42,6 +43,7 @@ export class CreateLessonDto {
 
   @ApiProperty({ example: 'Математика' })
   @IsString()
+  @MaxLength(100)
   subject: string;
 
   @ApiProperty({ description: 'ISO datetime' })
@@ -61,6 +63,7 @@ export class CreateLessonDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @MaxLength(200)
   location?: string;
 
   @ApiProperty({ example: 2000, description: 'Lesson rate (rubles)' })
@@ -71,6 +74,7 @@ export class CreateLessonDto {
   @ApiPropertyOptional({ description: 'Tutor note for lesson' })
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   notes?: string;
 
   @ApiPropertyOptional({ type: RecurrenceDto })

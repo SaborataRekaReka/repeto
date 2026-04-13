@@ -4,6 +4,10 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Seed запрещён в production! Используйте миграции для начальных данных.');
+  }
+
   console.log('🌱 Seeding database...');
 
   // Clean existing data

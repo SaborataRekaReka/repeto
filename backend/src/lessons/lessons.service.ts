@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
@@ -10,60 +11,18 @@ import { GoogleCalendarService } from '../google-calendar/google-calendar.servic
 import { YandexCalendarService } from '../yandex-calendar/yandex-calendar.service';
 import { MessengerDeliveryService } from '../messenger/messenger-delivery.service';
 import { CreateLessonDto, UpdateLessonDto, UpdateLessonStatusDto } from './dto';
+import { mapCancelPolicy, calculatePenalty } from '../common/utils/cancel-policy';
 
 @Injectable()
 export class LessonsService {
+  private readonly logger = new Logger(LessonsService.name);
+
   constructor(
     private prisma: PrismaService,
     private googleCalendar: GoogleCalendarService,
     private yandexCalendar: YandexCalendarService,
     private messenger: MessengerDeliveryService,
   ) {}
-
-  private normalizePolicyAction(
-    action: unknown,
-    fallback: 'full' | 'half' | 'none' = 'full',
-  ): 'full' | 'half' | 'none' {
-    const normalized = String(action ?? '').trim().toLowerCase();
-
-    if (normalized === 'full' || normalized === 'full_charge' || normalized === 'charge') {
-      return 'full';
-    }
-    if (normalized === 'half' || normalized === 'half_charge') {
-      return 'half';
-    }
-    if (normalized === 'none' || normalized === 'no_charge') {
-      return 'none';
-    }
-
-    return fallback;
-  }
-
-  private mapCancelPolicy(raw: any) {
-    const freeHoursValue = Number(raw?.cancelTimeHours ?? raw?.freeHours ?? 24);
-    const freeHours = Number.isFinite(freeHoursValue) && freeHoursValue >= 0
-      ? freeHoursValue
-      : 24;
-
-    return {
-      freeHours,
-      lateCancelAction: this.normalizePolicyAction(
-        raw?.lateCancelAction ?? raw?.lateAction,
-        'full',
-      ),
-      noShowAction: this.normalizePolicyAction(raw?.noShowAction, 'full'),
-      lateCancelCost:
-        Number.isFinite(Number(raw?.lateCancelCost)) && Number(raw?.lateCancelCost) > 0
-          ? Number(raw?.lateCancelCost)
-          : undefined,
-    };
-  }
-
-  private calculatePenalty(rate: number, action: 'full' | 'half' | 'none') {
-    if (action === 'none') return null;
-    if (action === 'half') return Math.round(rate / 2);
-    return rate;
-  }
 
   private parseFromBoundary(value: string): Date {
     return value.includes('T')
@@ -159,7 +118,7 @@ export class LessonsService {
         tutorId: userId,
         studentId: lesson.studentId,
         message: msg,
-      }).catch(() => {});
+      }).catch((e) => this.logger.warn('Failed to send lesson_assigned notification', e?.message));
     });
   }
 
@@ -270,8 +229,8 @@ export class LessonsService {
 
       // Sync to Google Calendar (fire-and-forget)
       for (const lesson of created) {
-        this.googleCalendar.createEvent(userId, lesson).catch(() => {});
-        this.yandexCalendar.createEvent(userId, lesson).catch(() => {});
+        this.googleCalendar.createEvent(userId, lesson).catch((e) => this.logger.warn('GCal createEvent failed', e?.message));
+        this.yandexCalendar.createEvent(userId, lesson).catch((e) => this.logger.warn('YaCal createEvent failed', e?.message));
         this.notifyStudentLessonAssigned(userId, lesson);
       }
 
@@ -291,8 +250,8 @@ export class LessonsService {
     await this.upsertTutorLessonNote(single.id, single.studentId, notes);
 
     // Sync to Google Calendar (fire-and-forget)
-    this.googleCalendar.createEvent(userId, single).catch(() => {});
-    this.yandexCalendar.createEvent(userId, single).catch(() => {});
+    this.googleCalendar.createEvent(userId, single).catch((e) => this.logger.warn('GCal createEvent failed', e?.message));
+    this.yandexCalendar.createEvent(userId, single).catch((e) => this.logger.warn('YaCal createEvent failed', e?.message));
 
     // Notify student via messenger (fire-and-forget)
     this.notifyStudentLessonAssigned(userId, single);
@@ -318,8 +277,8 @@ export class LessonsService {
     await this.upsertTutorLessonNote(id, lesson.studentId, notes);
 
     // Sync to Google Calendar (fire-and-forget)
-    this.googleCalendar.updateEvent(userId, updated).catch(() => {});
-    this.yandexCalendar.updateEvent(userId, updated).catch(() => {});
+    this.googleCalendar.updateEvent(userId, updated).catch((e) => this.logger.warn('GCal updateEvent failed', e?.message));
+    this.yandexCalendar.updateEvent(userId, updated).catch((e) => this.logger.warn('YaCal updateEvent failed', e?.message));
 
     // If scheduledAt changed, notify student about reschedule
     if (lessonChanges.scheduledAt && lesson.scheduledAt.toISOString() !== new Date(lessonChanges.scheduledAt).toISOString()) {
@@ -337,7 +296,7 @@ export class LessonsService {
         tutorId: userId,
         studentId: lesson.studentId,
         message: msg,
-      }).catch(() => {});
+      }).catch((e) => this.logger.warn('Failed to send lesson_rescheduled notification', e?.message));
     }
 
     return updated;
@@ -364,30 +323,32 @@ export class LessonsService {
       data.cancelledAt = new Date();
     }
 
-    // If completed, try to increment package lessonsUsed
+    // If completed, try to increment package lessonsUsed (in transaction)
     if (dto.status === LessonStatus.COMPLETED) {
-      const activePackage = await this.prisma.package.findFirst({
-        where: {
-          studentId: lesson.studentId,
-          userId,
-          status: 'ACTIVE',
-          subject: lesson.subject,
-        },
-        orderBy: { createdAt: 'asc' },
-      });
-
-      if (activePackage) {
-        await this.prisma.package.update({
-          where: { id: activePackage.id },
-          data: {
-            lessonsUsed: { increment: 1 },
-            status:
-              activePackage.lessonsUsed + 1 >= activePackage.lessonsTotal
-                ? 'COMPLETED'
-                : 'ACTIVE',
+      await this.prisma.$transaction(async (tx) => {
+        const activePackage = await tx.package.findFirst({
+          where: {
+            studentId: lesson.studentId,
+            userId,
+            status: 'ACTIVE',
+            subject: lesson.subject,
           },
+          orderBy: { createdAt: 'asc' },
         });
-      }
+
+        if (activePackage) {
+          await tx.package.update({
+            where: { id: activePackage.id },
+            data: {
+              lessonsUsed: { increment: 1 },
+              status:
+                activePackage.lessonsUsed + 1 >= activePackage.lessonsTotal
+                  ? 'COMPLETED'
+                  : 'ACTIVE',
+            },
+          });
+        }
+      });
     }
 
     if (
@@ -401,20 +362,20 @@ export class LessonsService {
         select: { cancelPolicySettings: true },
       });
 
-      const cancelPolicy = this.mapCancelPolicy(tutor?.cancelPolicySettings as any);
+      const cancelPolicy = mapCancelPolicy(tutor?.cancelPolicySettings);
 
       if (dto.status === LessonStatus.CANCELLED_STUDENT) {
         if (hoursUntil < cancelPolicy.freeHours) {
           data.lateCancelCharge =
             cancelPolicy.lateCancelCost ??
-            this.calculatePenalty(lesson.rate, cancelPolicy.lateCancelAction);
+            calculatePenalty(lesson.rate, cancelPolicy.lateCancelAction);
         } else {
           data.lateCancelCharge = null;
         }
       }
 
       if (dto.status === LessonStatus.NO_SHOW) {
-        data.lateCancelCharge = this.calculatePenalty(
+        data.lateCancelCharge = calculatePenalty(
           lesson.rate,
           cancelPolicy.noShowAction,
         );
@@ -440,8 +401,8 @@ export class LessonsService {
       dto.status === LessonStatus.CANCELLED_TUTOR ||
       dto.status === LessonStatus.NO_SHOW
     ) {
-      this.googleCalendar.cancelEvent(userId, lesson.googleCalendarEventId).catch(() => {});
-      this.yandexCalendar.deleteEvent(userId, lesson.yandexCalendarEventUid).catch(() => {});
+      this.googleCalendar.cancelEvent(userId, lesson.googleCalendarEventId).catch((e) => this.logger.warn('GCal cancelEvent failed', e?.message));
+      this.yandexCalendar.deleteEvent(userId, lesson.yandexCalendarEventUid).catch((e) => this.logger.warn('YaCal deleteEvent failed', e?.message));
 
       // Notify student about cancellation via messenger
       const date = lesson.scheduledAt;
@@ -456,7 +417,7 @@ export class LessonsService {
         tutorId: userId,
         studentId: lesson.studentId,
         message: msg,
-      }).catch(() => {});
+      }).catch((e) => this.logger.warn('Failed to send lesson_cancelled notification', e?.message));
     }
 
     return updated;
@@ -479,7 +440,7 @@ export class LessonsService {
         select: { googleCalendarEventId: true },
       });
       for (const l of groupLessons) {
-        this.googleCalendar.deleteEvent(userId, l.googleCalendarEventId).catch(() => {});
+        this.googleCalendar.deleteEvent(userId, l.googleCalendarEventId).catch((e) => this.logger.warn('GCal deleteEvent failed', e?.message));
       }
 
       // Delete Yandex Calendar events for all lessons in the recurrence group
@@ -493,7 +454,7 @@ export class LessonsService {
         select: { yandexCalendarEventUid: true },
       });
       for (const l of groupLessonsYandex) {
-        this.yandexCalendar.deleteEvent(userId, l.yandexCalendarEventUid).catch(() => {});
+        this.yandexCalendar.deleteEvent(userId, l.yandexCalendarEventUid).catch((e) => this.logger.warn('YaCal deleteEvent failed', e?.message));
       }
 
       return this.prisma.lesson.deleteMany({
@@ -506,8 +467,8 @@ export class LessonsService {
     }
 
     // Delete GCal event (fire-and-forget)
-    this.googleCalendar.deleteEvent(userId, lesson.googleCalendarEventId).catch(() => {});
-    this.yandexCalendar.deleteEvent(userId, lesson.yandexCalendarEventUid).catch(() => {});
+    this.googleCalendar.deleteEvent(userId, lesson.googleCalendarEventId).catch((e) => this.logger.warn('GCal deleteEvent failed', e?.message));
+    this.yandexCalendar.deleteEvent(userId, lesson.yandexCalendarEventUid).catch((e) => this.logger.warn('YaCal deleteEvent failed', e?.message));
 
     return this.prisma.lesson.delete({ where: { id } });
   }

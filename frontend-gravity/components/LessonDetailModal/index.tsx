@@ -96,7 +96,6 @@ const LessonDetailModal = ({
             onUpdated?.();
             onClose();
         } catch (err) {
-            console.error("Failed to update lesson status:", err);
             setActionError("Не удалось обновить статус. Попробуйте еще раз.");
         } finally {
             setStatusUpdating(null);

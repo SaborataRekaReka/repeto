@@ -7,6 +7,7 @@ import {
   IsOptional,
   IsDateString,
   IsString,
+  MaxLength,
 } from 'class-validator';
 import { PaymentMethod } from '@prisma/client';
 
@@ -32,6 +33,7 @@ export class CreatePaymentDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @MaxLength(500)
   comment?: string;
 
   @ApiPropertyOptional()

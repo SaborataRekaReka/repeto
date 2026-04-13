@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AvailabilityService } from '../availability/availability.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { BotPollerService } from '../messenger/bot-poller.service';
+import { mapCancelPolicy } from '../common/utils/cancel-policy';
 
 type ReminderMethod = 'telegram' | 'max' | 'email' | 'push';
 
@@ -16,41 +17,6 @@ export class PublicService {
     private notifications: NotificationsService,
     private botPoller: BotPollerService,
   ) {}
-
-  private normalizePolicyAction(
-    action: unknown,
-    fallback: 'full' | 'half' | 'none' = 'full',
-  ): 'full' | 'half' | 'none' {
-    const normalized = String(action ?? '').trim().toLowerCase();
-
-    if (normalized === 'full' || normalized === 'full_charge' || normalized === 'charge') {
-      return 'full';
-    }
-    if (normalized === 'half' || normalized === 'half_charge') {
-      return 'half';
-    }
-    if (normalized === 'none' || normalized === 'no_charge') {
-      return 'none';
-    }
-
-    return fallback;
-  }
-
-  private mapCancelPolicy(raw: any) {
-    const freeHoursValue = Number(raw?.cancelTimeHours ?? raw?.freeHours ?? 24);
-    const freeHours = Number.isFinite(freeHoursValue) && freeHoursValue >= 0
-      ? freeHoursValue
-      : 24;
-
-    return {
-      freeHours,
-      lateCancelAction: this.normalizePolicyAction(
-        raw?.lateCancelAction ?? raw?.lateAction,
-        'full',
-      ),
-      noShowAction: this.normalizePolicyAction(raw?.noShowAction, 'full'),
-    };
-  }
 
   private normalizePhone(value?: string | null): string {
     return (value || '').replace(/\D/g, '');
@@ -217,7 +183,7 @@ export class PublicService {
         phone: user.phone,
         whatsapp: user.whatsapp,
       },
-      cancelPolicy: this.mapCancelPolicy(user.cancelPolicySettings as any),
+      cancelPolicy: mapCancelPolicy(user.cancelPolicySettings),
       memberSince: user.createdAt,
       hasWorkingDays: weeklySlotsCount > 0,
     };
@@ -280,10 +246,10 @@ export class PublicService {
 
     // Resolve messenger link codes → chat IDs
     const telegramChatId = data.telegramLinkCode
-      ? this.botPoller.resolveTelegramLink(data.telegramLinkCode)
+      ? await this.botPoller.resolveTelegramLink(data.telegramLinkCode)
       : null;
     const maxChatId = data.maxLinkCode
-      ? this.botPoller.resolveMaxLink(data.maxLinkCode)
+      ? await this.botPoller.resolveMaxLink(data.maxLinkCode)
       : null;
 
     const allowedChannels: ReminderMethod[] = ['telegram', 'max', 'email', 'push'];

@@ -64,8 +64,9 @@ export class PaymentsService {
       if (query.to) where.date.lte = new Date(query.to);
     }
 
+    const ALLOWED_SORT_FIELDS = ['date', 'amount', 'status', 'method', 'createdAt'];
     const orderBy: Record<string, string> = {};
-    if (query.sort) {
+    if (query.sort && ALLOWED_SORT_FIELDS.includes(query.sort)) {
       orderBy[query.sort] = query.order || 'desc';
     } else {
       orderBy.date = 'desc';

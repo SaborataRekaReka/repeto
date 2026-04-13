@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { CloudProvider, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
@@ -74,7 +75,13 @@ export class SettingsService {
   }
 
   private getYandexStateSecret() {
-    return process.env.YANDEX_DISK_STATE_SECRET || process.env.JWT_SECRET || 'repeto-yandex-state-secret';
+    const secret = process.env.YANDEX_DISK_STATE_SECRET || process.env.JWT_SECRET;
+    if (!secret) {
+      throw new InternalServerErrorException(
+        'YANDEX_DISK_STATE_SECRET or JWT_SECRET must be configured',
+      );
+    }
+    return secret;
   }
 
   private encodeYandexState(payload: {
@@ -381,14 +388,17 @@ export class SettingsService {
     });
   }
 
+  private static readonly ALLOWED_AVATAR_EXT = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+
   async uploadAvatar(userId: string, file: Express.Multer.File) {
     const uploadsDir = path.join(process.cwd(), 'uploads', 'avatars');
     if (!fs.existsSync(uploadsDir)) {
       fs.mkdirSync(uploadsDir, { recursive: true });
     }
 
-    const ext = path.extname(file.originalname) || '.jpg';
-    const filename = `${userId}${ext}`;
+    const rawExt = path.extname(file.originalname).toLowerCase();
+    const ext = SettingsService.ALLOWED_AVATAR_EXT.includes(rawExt) ? rawExt : '.jpg';
+    const filename = `${userId}_${Date.now()}${ext}`;
     const filepath = path.join(uploadsDir, filename);
     fs.writeFileSync(filepath, file.buffer);
 

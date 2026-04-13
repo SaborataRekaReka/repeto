@@ -145,43 +145,33 @@ export class FinanceService {
     const limit = query.limit || 20;
     const skip = (page - 1) * limit;
 
-    const students = await this.prisma.student.findMany({
-      where: { userId, status: 'ACTIVE' },
-      include: {
-        lessons: {
-          where: { status: 'COMPLETED' },
-          select: { rate: true },
-        },
-        payments: {
-          where: { status: 'PAID' },
-          select: { amount: true },
-        },
-      },
-      skip,
-      take: limit,
-    });
+    const orderClause = query.sort === 'balance' ? 'ORDER BY debt DESC' : 'ORDER BY s.name ASC';
+
+    const data = await this.prisma.$queryRaw<
+      { studentId: string; studentName: string; subject: string; lessonsCount: number; totalAmount: number; paidAmount: number; debt: number }[]
+    >`
+      SELECT s.id AS "studentId", s.name AS "studentName", s.subject,
+        COALESCE(l.cnt, 0)::int AS "lessonsCount",
+        COALESCE(l.total_rate, 0)::int AS "totalAmount",
+        COALESCE(p.total_paid, 0)::int AS "paidAmount",
+        (COALESCE(l.total_rate, 0) - COALESCE(p.total_paid, 0))::int AS debt
+      FROM "Student" s
+      LEFT JOIN (
+        SELECT "studentId", COUNT(*)::int AS cnt, SUM(rate)::int AS total_rate
+        FROM "Lesson" WHERE status = 'COMPLETED' GROUP BY "studentId"
+      ) l ON s.id = l."studentId"
+      LEFT JOIN (
+        SELECT "studentId", SUM(amount)::int AS total_paid
+        FROM "Payment" WHERE status = 'PAID' GROUP BY "studentId"
+      ) p ON s.id = p."studentId"
+      WHERE s."userId" = ${userId} AND s.status = 'ACTIVE'
+      ORDER BY CASE WHEN ${query.sort || ''} = 'balance' THEN (COALESCE(l.total_rate, 0) - COALESCE(p.total_paid, 0)) ELSE 0 END DESC, s.name ASC
+      LIMIT ${limit} OFFSET ${skip}
+    `;
 
     const total = await this.prisma.student.count({
       where: { userId, status: 'ACTIVE' },
     });
-
-    const data = students.map((s) => {
-      const totalAmount = s.lessons.reduce((sum, l) => sum + l.rate, 0);
-      const paidAmount = s.payments.reduce((sum, p) => sum + p.amount, 0);
-      return {
-        studentId: s.id,
-        studentName: s.name,
-        subject: s.subject,
-        lessonsCount: s.lessons.length,
-        totalAmount,
-        paidAmount,
-        debt: totalAmount - paidAmount,
-      };
-    });
-
-    if (query.sort === 'balance') {
-      data.sort((a, b) => b.debt - a.debt);
-    }
 
     return { data, total, page, pages: Math.ceil(total / limit) };
   }

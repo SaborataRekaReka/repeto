@@ -10,7 +10,7 @@ import Security from "./Security";
 import Notifications from "./Notifications";
 import Policies from "./Policies";
 import Integrations from "./Integrations";
-import { getInitials } from "@/mocks/students";
+import { getInitials } from "@/lib/formatters";
 import { useAuth } from "@/contexts/AuthContext";
 import { useThemeMode } from "@/contexts/ThemeContext";
 import type { ThemeMode } from "@/contexts/ThemeContext";

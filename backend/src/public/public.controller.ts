@@ -83,10 +83,10 @@ export class PublicController {
 
   @Public()
   @Get('link-status/:code')
-  getLinkStatus(@Param('code') code: string) {
+  async getLinkStatus(@Param('code') code: string) {
     return {
-      telegram: this.botPollerService.hasTelegramLink(code),
-      max: this.botPollerService.hasMaxLink(code),
+      telegram: await this.botPollerService.hasTelegramLink(code),
+      max: await this.botPollerService.hasMaxLink(code),
     };
   }
 }

@@ -159,11 +159,6 @@ const StudentsListPage = () => {
             text: "Написать",
             handler: () => handleMessage(item),
         },
-        {
-            text: "Архивировать",
-            handler: () => console.log("TODO: archive", item.id),
-            theme: "danger" as const,
-        },
     ];
 
     return (

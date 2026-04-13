@@ -41,8 +41,9 @@ export class StudentsService {
       ];
     }
 
+    const ALLOWED_SORT_FIELDS = ['name', 'subject', 'rate', 'createdAt', 'updatedAt'];
     const orderBy: Record<string, string> = {};
-    if (query.sort) {
+    if (query.sort && ALLOWED_SORT_FIELDS.includes(query.sort)) {
       orderBy[query.sort] = query.order || 'asc';
     } else {
       orderBy.createdAt = 'desc';

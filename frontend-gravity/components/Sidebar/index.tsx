@@ -6,7 +6,7 @@ import Image from "@/components/Image";
 import Icon from "@/components/Icon";
 import Menu from "./Menu";
 import { useAuth } from "@/contexts/AuthContext";
-import { getInitials } from "@/mocks/students";
+import { getInitials } from "@/lib/formatters";
 
 type SidebarProps = {};
 

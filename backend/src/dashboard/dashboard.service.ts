@@ -60,33 +60,31 @@ export class DashboardService {
   }
 
   async getDebts(userId: string, limit = 5) {
-    // Students with completed lessons minus payments = negative balance
-    const students = await this.prisma.student.findMany({
-      where: { userId, status: 'ACTIVE' },
-      include: {
-        lessons: {
-          where: { status: 'COMPLETED' },
-          select: { rate: true },
-        },
-        payments: {
-          where: { status: 'PAID' },
-          select: { amount: true },
-        },
-      },
-    });
+    // Use raw aggregation instead of loading all lessons/payments into memory
+    const debts = await this.prisma.$queryRaw<
+      { id: string; name: string; subject: string; balance: number }[]
+    >`
+      SELECT s.id, s.name, s.subject,
+        COALESCE(p.total_paid, 0) - COALESCE(l.total_rate, 0) AS balance
+      FROM "Student" s
+      LEFT JOIN (
+        SELECT "studentId", SUM(rate) AS total_rate
+        FROM "Lesson" WHERE status = 'COMPLETED' GROUP BY "studentId"
+      ) l ON s.id = l."studentId"
+      LEFT JOIN (
+        SELECT "studentId", SUM(amount) AS total_paid
+        FROM "Payment" WHERE status = 'PAID' GROUP BY "studentId"
+      ) p ON s.id = p."studentId"
+      WHERE s."userId" = ${userId} AND s.status = 'ACTIVE'
+        AND COALESCE(p.total_paid, 0) - COALESCE(l.total_rate, 0) < 0
+      ORDER BY balance ASC
+      LIMIT ${limit}
+    `;
 
-    const debts = students
-      .map((s) => {
-        const earned = s.lessons.reduce((sum, l) => sum + l.rate, 0);
-        const paid = s.payments.reduce((sum, p) => sum + p.amount, 0);
-        const balance = paid - earned;
-        return { id: s.id, name: s.name, subject: s.subject, balance };
-      })
-      .filter((s) => s.balance < 0)
-      .sort((a, b) => a.balance - b.balance)
-      .slice(0, limit);
-
-    return debts;
+    return debts.map((d) => ({
+      ...d,
+      balance: Number(d.balance),
+    }));
   }
 
   async getRecentPayments(userId: string, limit = 5) {

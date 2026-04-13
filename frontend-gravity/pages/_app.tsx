@@ -9,6 +9,7 @@ import { useRouter } from "next/router";
 import { ThemeProvider, configure } from "@gravity-ui/uikit";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeModeProvider, useThemeMode } from "@/contexts/ThemeContext";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 configure({ lang: "ru" });
 
@@ -65,7 +66,9 @@ function AppContent({ Component, pageProps }: { Component: AppProps["Component"]
 export default function App({ Component, pageProps }: AppProps) {
     return (
         <ThemeModeProvider>
-            <AppContent Component={Component} pageProps={pageProps} />
+            <ErrorBoundary>
+                <AppContent Component={Component} pageProps={pageProps} />
+            </ErrorBoundary>
         </ThemeModeProvider>
     );
 }

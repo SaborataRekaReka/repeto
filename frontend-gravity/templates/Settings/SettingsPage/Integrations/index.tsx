@@ -36,8 +36,11 @@ const Integrations = () => {
             const accessToken = hashParams.get("access_token");
             if (accessToken) {
                 handledOAuthRef.current = true;
-                const pending = sessionStorage.getItem("pending_yandex_integration") || "yandex-disk";
-                sessionStorage.removeItem("pending_yandex_integration");
+                let pending = "yandex-disk";
+                try {
+                    pending = sessionStorage.getItem("pending_yandex_integration") || "yandex-disk";
+                    sessionStorage.removeItem("pending_yandex_integration");
+                } catch {}
                 if (pending === "yandex-calendar") {
                     (async () => {
                         setSaving(true); setMsg(null);
@@ -106,7 +109,7 @@ const Integrations = () => {
             setSaving(true); setMsg(null);
             try {
                 const r = await startYandexCalendarConnect();
-                if (r.oauthConfigured && "authUrl" in r) { sessionStorage.setItem("pending_yandex_integration", "yandex-calendar"); window.location.href = r.authUrl; return; }
+                if (r.oauthConfigured && "authUrl" in r) { try { sessionStorage.setItem("pending_yandex_integration", "yandex-calendar"); } catch {} window.location.href = r.authUrl; return; }
                 setYandexCalOAuthAvailable(false);
                 setMsg(codedErrorMessage("SETT-INT-YCAL-OAUTH"));
             }

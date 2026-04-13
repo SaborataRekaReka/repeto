@@ -6,7 +6,7 @@ import type { IconData } from "@gravity-ui/uikit";
 import CreatePackageModal from "@/components/CreatePackageModal";
 import { usePackages } from "@/hooks/usePackages";
 import { getPackageStatusLabel } from "@/mocks/packages";
-import { getInitials } from "@/mocks/students";
+import { getInitials } from "@/lib/formatters";
 import type { LessonPackage } from "@/types/package";
 
 const tabOptions = [

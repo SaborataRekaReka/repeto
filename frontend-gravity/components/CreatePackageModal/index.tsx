@@ -145,7 +145,6 @@ const CreatePackageModal = ({
             await onCreated?.();
             onClose();
         } catch (err) {
-            console.error("Failed to save package:", err);
             setError("Не удалось сохранить пакет. Проверьте поля и попробуйте снова.");
         } finally {
             setSubmitting(false);
@@ -162,7 +161,6 @@ const CreatePackageModal = ({
             await onCreated?.();
             onClose();
         } catch (err) {
-            console.error("Failed to delete package:", err);
             setError("Не удалось удалить пакет. Попробуйте снова.");
         } finally {
             setSubmitting(false);

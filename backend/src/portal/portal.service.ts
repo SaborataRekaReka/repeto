@@ -12,6 +12,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { TelegramService } from '../messenger/telegram.service';
 import { MaxService } from '../messenger/max.service';
+import { mapCancelPolicy, calculatePenalty } from '../common/utils/cancel-policy';
 
 const PORTAL_REVIEW_PREFIX = 'PORTAL_REVIEW:';
 
@@ -23,56 +24,6 @@ export class PortalService {
     private telegramService: TelegramService,
     private maxService: MaxService,
   ) {}
-
-  private normalizePolicyAction(
-    action: unknown,
-    fallback: 'full' | 'half' | 'none' = 'full',
-  ): 'full' | 'half' | 'none' {
-    const normalized = String(action ?? '').trim().toLowerCase();
-
-    if (normalized === 'full' || normalized === 'full_charge' || normalized === 'charge') {
-      return 'full';
-    }
-    if (normalized === 'half' || normalized === 'half_charge') {
-      return 'half';
-    }
-    if (normalized === 'none' || normalized === 'no_charge') {
-      return 'none';
-    }
-
-    return fallback;
-  }
-
-  private mapCancelPolicy(raw: any) {
-    const freeHoursValue = Number(raw?.cancelTimeHours ?? raw?.freeHours ?? 24);
-    const freeHours = Number.isFinite(freeHoursValue) && freeHoursValue >= 0
-      ? freeHoursValue
-      : 24;
-
-    const lateCancelAction = this.normalizePolicyAction(
-      raw?.lateCancelAction ?? raw?.lateAction,
-      'full',
-    );
-    const noShowAction = this.normalizePolicyAction(raw?.noShowAction, 'full');
-
-    const lateCancelCostValue = Number(raw?.lateCancelCost);
-    const lateCancelCost = Number.isFinite(lateCancelCostValue) && lateCancelCostValue > 0
-      ? lateCancelCostValue
-      : undefined;
-
-    return {
-      freeHours,
-      lateCancelAction,
-      noShowAction,
-      lateCancelCost,
-    };
-  }
-
-  private calculatePenalty(rate: number, action: 'full' | 'half' | 'none') {
-    if (action === 'none') return null;
-    if (action === 'half') return Math.round(rate / 2);
-    return rate;
-  }
 
   private parsePortalReview(content?: string | null): {
     rating: number;
@@ -206,7 +157,7 @@ export class PortalService {
       return `${start} – ${endStr}`;
     };
 
-    const cancelPolicy = this.mapCancelPolicy(student.user.cancelPolicySettings as any);
+    const cancelPolicy = mapCancelPolicy(student.user.cancelPolicySettings);
     const freeHours = cancelPolicy.freeHours;
 
     const mapLesson = (l: typeof student.lessons[0]) => {
@@ -500,13 +451,13 @@ export class PortalService {
       where: { id: student.userId },
       select: { cancelPolicySettings: true },
     });
-    const cancelPolicy = this.mapCancelPolicy(tutor?.cancelPolicySettings as any);
+    const cancelPolicy = mapCancelPolicy(tutor?.cancelPolicySettings);
     const freeHours = cancelPolicy.freeHours;
 
     const lateCancelCharge =
       hoursUntil < freeHours
         ? cancelPolicy.lateCancelCost ??
-          this.calculatePenalty(lesson.rate, cancelPolicy.lateCancelAction)
+          calculatePenalty(lesson.rate, cancelPolicy.lateCancelAction)
         : null;
 
     const updated = await this.prisma.lesson.update({
@@ -752,7 +703,9 @@ export class PortalService {
       fs.mkdirSync(uploadsDir, { recursive: true });
     }
 
-    const ext = path.extname(file.originalname) || '';
+    const ALLOWED_HW_EXT = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png', '.txt', '.zip', '.xlsx', '.pptx'];
+    const rawExt = path.extname(file.originalname).toLowerCase();
+    const ext = ALLOWED_HW_EXT.includes(rawExt) ? rawExt : '';
     const safeName = crypto.randomUUID();
     const filename = `${safeName}${ext}`;
     const filepath = path.join(uploadsDir, filename);

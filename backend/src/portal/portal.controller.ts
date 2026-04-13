@@ -12,11 +12,13 @@ import {
   MaxFileSizeValidator,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Public } from '../common/decorators';
 import { PortalService } from './portal.service';
 
 @ApiTags('Portal')
+@Throttle({ portal: { ttl: 60000, limit: 15 } })
 @Controller('portal')
 export class PortalController {
   constructor(private readonly portalService: PortalService) {}

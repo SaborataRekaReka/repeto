@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Dialog, Text, TextInput, Button, Icon, Checkbox } from "@gravity-ui/uikit";
 import { Magnifier, FolderOpen, File as FileIcon } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
-import { getInitials } from "@/mocks/students";
+import { getInitials } from "@/lib/formatters";
 import { useStudents } from "@/hooks/useStudents";
 import { updateFileShare } from "@/hooks/useFiles";
 import type { FileItem } from "@/types/files";
