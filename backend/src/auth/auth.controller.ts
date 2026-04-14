@@ -12,7 +12,13 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
-import { RegisterDto, LoginDto, ForgotPasswordDto, ResetPasswordDto } from './dto';
+import {
+  RegisterDto,
+  VerifyRegisterCodeDto,
+  LoginDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+} from './dto';
 import { Public, CurrentUser } from '../common/decorators';
 
 @ApiTags('Auth')
@@ -23,11 +29,20 @@ export class AuthController {
   @Public()
   @Throttle({ auth: { ttl: 60000, limit: 5 } })
   @Post('register')
-  async register(
-    @Body() dto: RegisterDto,
+  @HttpCode(HttpStatus.OK)
+  async requestRegisterCode(@Body() dto: RegisterDto) {
+    return this.authService.requestRegisterCode(dto);
+  }
+
+  @Public()
+  @Throttle({ auth: { ttl: 60000, limit: 10 } })
+  @Post('register/verify-code')
+  @HttpCode(HttpStatus.OK)
+  async verifyRegisterCode(
+    @Body() dto: VerifyRegisterCodeDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result = await this.authService.register(dto);
+    const result = await this.authService.verifyRegisterCode(dto);
     this.setRefreshCookie(res, result.refreshToken);
     return { user: result.user, accessToken: result.accessToken };
   }

@@ -28,6 +28,19 @@ type User = {
   role: string;
 };
 
+type RegisterData = {
+  email: string;
+  password: string;
+  name: string;
+  phone?: string;
+};
+
+type RequestRegistrationCodeResult = {
+  message: string;
+  email: string;
+  expiresInMinutes: number;
+};
+
 function mapUser(raw: any): User {
   return {
     ...raw,
@@ -40,7 +53,8 @@ type AuthContextType = {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (data: { email: string; password: string; name: string; phone?: string }) => Promise<void>;
+  requestRegistrationCode: (data: RegisterData) => Promise<RequestRegistrationCodeResult>;
+  verifyRegistrationCode: (data: { email: string; code: string }) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 };
@@ -122,9 +136,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [router]
   );
 
-  const register = useCallback(
-    async (data: { email: string; password: string; name: string; phone?: string }) => {
-      const res = await api<{ user: any; accessToken: string }>('/auth/register', {
+  const requestRegistrationCode = useCallback(
+    async (data: RegisterData) => {
+      return api<RequestRegistrationCodeResult>('/auth/register', {
+        method: 'POST',
+        body: data,
+      });
+    },
+    []
+  );
+
+  const verifyRegistrationCode = useCallback(
+    async (data: { email: string; code: string }) => {
+      const res = await api<{ user: any; accessToken: string }>('/auth/register/verify-code', {
         method: 'POST',
         body: data,
       });
@@ -147,7 +171,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [router]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, refreshUser }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        requestRegistrationCode,
+        verifyRegistrationCode,
+        logout,
+        refreshUser,
+      }}
+    >
       {loading ? null : children}
     </AuthContext.Provider>
   );

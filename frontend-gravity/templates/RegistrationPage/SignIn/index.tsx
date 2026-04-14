@@ -22,7 +22,7 @@ const FIELD_STYLE: React.CSSProperties = {
 };
 
 const SignIn = ({ onRecover }: SignInProps) => {
-    const [login, setLogin] = useState("");
+    const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState("");
@@ -34,7 +34,7 @@ const SignIn = ({ onRecover }: SignInProps) => {
         setError("");
         setLoading(true);
         try {
-            await authLogin(login.trim(), password);
+            await authLogin(email.trim(), password);
         } catch (err: any) {
             setError(codedErrorMessage("AUTH-SIGNIN", err));
         } finally {
@@ -58,15 +58,15 @@ const SignIn = ({ onRecover }: SignInProps) => {
                 Введите данные вашего аккаунта
             </Text>
 
-            {/* Email / phone */}
+            {/* Email */}
             <div style={FIELD_STYLE}>
-                <span style={LABEL_STYLE}>Email или телефон</span>
+                <span style={LABEL_STYLE}>Email</span>
                 <TextInput
                     size="l"
-                    type="text"
+                    type="email"
                     placeholder="email@example.com"
-                    value={login}
-                    onUpdate={setLogin}
+                    value={email}
+                    onUpdate={setEmail}
                     autoComplete="email"
                 />
             </div>

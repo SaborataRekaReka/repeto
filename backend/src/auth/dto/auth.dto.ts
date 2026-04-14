@@ -1,4 +1,12 @@
-import { IsEmail, IsOptional, IsString, MinLength, MaxLength, Matches } from 'class-validator';
+import {
+  IsEmail,
+  IsOptional,
+  IsString,
+  MinLength,
+  MaxLength,
+  Matches,
+  Length,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 const PASSWORD_REGEX = /^(?=.*[A-Za-zА-я])(?=.*\d).{8,}$/;
@@ -29,9 +37,23 @@ export class RegisterDto {
   phone?: string;
 }
 
-export class LoginDto {
-  @ApiProperty({ example: 'ivan@example.com или +79001234567' })
+export class RequestRegisterCodeDto extends RegisterDto {}
+
+export class VerifyRegisterCodeDto {
+  @ApiProperty({ example: 'ivan@example.com' })
+  @IsEmail()
+  email: string;
+
+  @ApiProperty({ example: '123456' })
   @IsString()
+  @Length(6, 6)
+  @Matches(/^\d{6}$/, { message: 'Код должен состоять из 6 цифр' })
+  code: string;
+}
+
+export class LoginDto {
+  @ApiProperty({ example: 'ivan@example.com' })
+  @IsEmail()
   @MaxLength(255)
   email: string;
 

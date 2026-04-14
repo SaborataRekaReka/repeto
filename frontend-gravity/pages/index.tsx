@@ -9,6 +9,7 @@ const Home: NextPage = () => (
                 name="description"
                 content="Temporary placeholder page while a new Repeto homepage is being prepared."
             />
+            <meta name="mailru-domain" content="aMv8My8xlxQcqEPC" />
             <meta name="robots" content="noindex, nofollow" />
         </Head>
 
