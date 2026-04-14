@@ -164,6 +164,12 @@ jobs:
             fi
           done
 
+          found_compose="$(find /root /home /opt /srv -maxdepth 5 -type f -name docker-compose.prod.yml 2>/dev/null | head -n1 || true)"
+          if [ -n "$found_compose" ]; then
+            dirname "$found_compose"
+            exit 0
+          fi
+
           exit 1
           EOF
           )
@@ -182,6 +188,12 @@ jobs:
               exit 0
             fi
           done
+
+          found_compose="$(find /root /home /opt /srv -maxdepth 5 -type f -name docker-compose.prod.yml 2>/dev/null | head -n1 || true)"
+          if [ -n "$found_compose" ]; then
+            dirname "$found_compose"
+            exit 0
+          fi
 
           exit 1
           EOF
