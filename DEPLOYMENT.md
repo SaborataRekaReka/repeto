@@ -92,6 +92,32 @@ docker compose -f docker-compose.prod.yml exec backend npx prisma migrate deploy
 - API health: `https://repeto.ru/api/health`
 - Frontend: `https://repeto.ru/`
 
+## 6. Automatic deploy from GitHub Actions
+
+Production deploy is now automated by workflow `deploy-production.yml`.
+
+Trigger conditions:
+
+- every push to `main`
+- manual run from Actions (`workflow_dispatch`)
+
+Required repository secrets:
+
+- `PROD_SSH_HOST` - VPS host or IP
+- `PROD_SSH_PORT` - SSH port (optional, defaults to `22`)
+- `PROD_SSH_USER` - SSH user on VPS
+- `PROD_SSH_PRIVATE_KEY` - private key for this user
+- `PROD_APP_PATH` - absolute path to the `app` directory on VPS (where `docker-compose.prod.yml` exists)
+- `PROD_SSH_KNOWN_HOSTS` - optional pinned `known_hosts` entry (recommended)
+
+What the workflow does:
+
+1. Connects to VPS over SSH.
+2. Updates code to `origin/main`.
+3. Runs `docker compose -f docker-compose.prod.yml up -d --build --remove-orphans`.
+4. Checks API health.
+5. Verifies root no longer redirects to `/bazarly/index.html`.
+
 ## Notes
 
 - Public uploads are stored in backend volume `backend_uploads`.

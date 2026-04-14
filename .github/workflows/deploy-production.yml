@@ -1,0 +1,118 @@
+name: Deploy Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+
+    steps:
+      - name: Validate required secrets
+        shell: bash
+        env:
+          PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+          PROD_SSH_USER: ${{ secrets.PROD_SSH_USER }}
+          PROD_SSH_PRIVATE_KEY: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+          PROD_APP_PATH: ${{ secrets.PROD_APP_PATH }}
+        run: |
+          set -euo pipefail
+
+          missing=()
+          [ -z "${PROD_SSH_HOST:-}" ] && missing+=("PROD_SSH_HOST")
+          [ -z "${PROD_SSH_USER:-}" ] && missing+=("PROD_SSH_USER")
+          [ -z "${PROD_SSH_PRIVATE_KEY:-}" ] && missing+=("PROD_SSH_PRIVATE_KEY")
+          [ -z "${PROD_APP_PATH:-}" ] && missing+=("PROD_APP_PATH")
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error::Missing required secrets: ${missing[*]}"
+            exit 1
+          fi
+
+      - name: Configure SSH
+        shell: bash
+        env:
+          PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+          PROD_SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
+          PROD_SSH_PRIVATE_KEY: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+          PROD_SSH_KNOWN_HOSTS: ${{ secrets.PROD_SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$PROD_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          if [ -n "${PROD_SSH_KNOWN_HOSTS:-}" ]; then
+            printf '%s\n' "$PROD_SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          else
+            ssh-keyscan -H -p "${PROD_SSH_PORT:-22}" "$PROD_SSH_HOST" >> ~/.ssh/known_hosts
+          fi
+
+      - name: Deploy on VPS
+        shell: bash
+        env:
+          PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+          PROD_SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
+          PROD_SSH_USER: ${{ secrets.PROD_SSH_USER }}
+          PROD_APP_PATH: ${{ secrets.PROD_APP_PATH }}
+        run: |
+          set -euo pipefail
+
+          ssh -i ~/.ssh/id_ed25519 -p "${PROD_SSH_PORT:-22}" "$PROD_SSH_USER@$PROD_SSH_HOST" "PROD_APP_PATH='$PROD_APP_PATH' bash -se" <<'EOF'
+          set -euo pipefail
+
+          if [ ! -d "$PROD_APP_PATH" ]; then
+            echo "Deployment path does not exist: $PROD_APP_PATH"
+            exit 1
+          fi
+
+          cd "$PROD_APP_PATH"
+          git fetch origin main
+          git checkout main
+          git reset --hard origin/main
+
+          docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
+          docker compose -f docker-compose.prod.yml ps
+          docker compose -f docker-compose.prod.yml exec -T backend wget --spider -q http://localhost:3200/api/health
+          EOF
+
+      - name: Verify production endpoints
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          root_status="$(curl -s -o /dev/null -w "%{http_code}" https://repeto.ru/)"
+          api_status="$(curl -s -o /dev/null -w "%{http_code}" https://repeto.ru/api/health)"
+          redirect_location="$(curl -sSIL https://repeto.ru/ | awk 'BEGIN {IGNORECASE=1} /^location:/ {print $2}' | tail -n1 | tr -d '\r')"
+
+          echo "Root status: $root_status"
+          echo "API status: $api_status"
+          echo "Root redirect location: ${redirect_location:-<none>}"
+
+          if [ "$root_status" -ge 500 ]; then
+            echo "::error::Frontend root is not healthy"
+            exit 1
+          fi
+
+          if [ "$api_status" -ge 500 ]; then
+            echo "::error::API health endpoint is not healthy"
+            exit 1
+          fi
+
+          if [ "$redirect_location" = "/bazarly/index.html" ]; then
+            echo "::error::Root still redirects to /bazarly/index.html"
+            exit 1
+          fi
