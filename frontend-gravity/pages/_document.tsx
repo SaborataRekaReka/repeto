@@ -13,6 +13,7 @@ export default function Document() {
                     content="Repeto — CRM для репетиторов"
                     name="description"
                 />
+                <meta name="mailru-domain" content="aMv8My8xlxQcqEPC" />
                 <meta
                     content="Repeto — CRM для репетиторов"
                     property="og:title"
