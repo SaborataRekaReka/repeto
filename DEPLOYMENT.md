@@ -98,7 +98,12 @@ Production deploy is now automated by workflow `deploy-production.yml`.
 
 Trigger conditions:
 
-- every push to `main`
+- push to `main` only when deployment-related files change:
+   - `backend/**`
+   - `frontend-gravity/**`
+   - `deploy/**`
+   - `docker-compose.prod.yml`
+   - `docker-compose.yml`
 - manual run from Actions (`workflow_dispatch`)
 
 Required repository secrets:
