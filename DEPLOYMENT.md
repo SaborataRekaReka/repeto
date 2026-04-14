@@ -103,12 +103,15 @@ Trigger conditions:
 
 Required repository secrets:
 
-- `PROD_SSH_PRIVATE_KEY` - private key for deploy SSH access (required)
+- `PROD_SSH_PRIVATE_KEY` - private key for deploy SSH access (recommended)
+- `PROD_SSH_PASSWORD` - SSH password fallback when key auth is not configured
 - `PROD_SSH_HOST` - VPS host or IP (optional, default: `repeto.ru`)
 - `PROD_SSH_PORT` - SSH port (optional, default: `22`)
 - `PROD_SSH_USER` - SSH user on VPS (optional, auto-detect tries: `root`, `ubuntu`, `deploy`)
 - `PROD_APP_PATH` - absolute path to `app` directory on VPS (optional, auto-detect tries common paths)
 - `PROD_SSH_KNOWN_HOSTS` - optional pinned `known_hosts` entry
+
+At least one authentication secret must be set: `PROD_SSH_PRIVATE_KEY` or `PROD_SSH_PASSWORD`.
 
 What the workflow does:
 

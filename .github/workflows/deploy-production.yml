@@ -24,11 +24,14 @@ jobs:
         shell: bash
         env:
           PROD_SSH_PRIVATE_KEY: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+          PROD_SSH_PASSWORD: ${{ secrets.PROD_SSH_PASSWORD }}
         run: |
           set -euo pipefail
 
           missing=()
-          [ -z "${PROD_SSH_PRIVATE_KEY:-}" ] && missing+=("PROD_SSH_PRIVATE_KEY")
+          if [ -z "${PROD_SSH_PRIVATE_KEY:-}" ] && [ -z "${PROD_SSH_PASSWORD:-}" ]; then
+            missing+=("PROD_SSH_PRIVATE_KEY or PROD_SSH_PASSWORD")
+          fi
 
           if [ "${#missing[@]}" -gt 0 ]; then
             echo "::error::Missing required secrets: ${missing[*]}"
@@ -50,8 +53,10 @@ jobs:
           default_known_hosts="repeto.ru ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPg9IU90Ep/dwrVa6/rJk5Pzu9kMAF9C1sn4HWgu9Gbt"
 
           install -m 700 -d ~/.ssh
-          printf '%s\n' "$PROD_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
+          if [ -n "${PROD_SSH_PRIVATE_KEY:-}" ]; then
+            printf '%s\n' "$PROD_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+            chmod 600 ~/.ssh/id_ed25519
+          fi
 
           if [ -n "${PROD_SSH_KNOWN_HOSTS:-}" ]; then
             printf '%s\n' "$PROD_SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
@@ -68,11 +73,48 @@ jobs:
           PROD_SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
           PROD_SSH_USER: ${{ secrets.PROD_SSH_USER }}
           PROD_APP_PATH: ${{ secrets.PROD_APP_PATH }}
+          PROD_SSH_PRIVATE_KEY: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+          PROD_SSH_PASSWORD: ${{ secrets.PROD_SSH_PASSWORD }}
         run: |
           set -euo pipefail
 
           ssh_host="${PROD_SSH_HOST:-repeto.ru}"
           ssh_port="${PROD_SSH_PORT:-22}"
+
+          if [ -n "${PROD_SSH_PRIVATE_KEY:-}" ]; then
+            auth_mode="key"
+          elif [ -n "${PROD_SSH_PASSWORD:-}" ]; then
+            auth_mode="password"
+          else
+            echo "::error::No SSH auth configured. Set PROD_SSH_PRIVATE_KEY or PROD_SSH_PASSWORD"
+            exit 1
+          fi
+
+          if [ "$auth_mode" = "password" ]; then
+            sudo apt-get update
+            sudo apt-get install -y sshpass
+          fi
+
+          run_ssh() {
+            local target="$1"
+            local command="$2"
+
+            if [ "$auth_mode" = "key" ]; then
+              ssh -i ~/.ssh/id_ed25519 -p "$ssh_port" -o BatchMode=yes -o ConnectTimeout=10 "$target" "$command"
+            else
+              sshpass -p "$PROD_SSH_PASSWORD" ssh -p "$ssh_port" -o PreferredAuthentications=password -o PubkeyAuthentication=no -o NumberOfPasswordPrompts=1 -o BatchMode=no -o ConnectTimeout=10 "$target" "$command"
+            fi
+          }
+
+          run_ssh_script() {
+            local target="$1"
+
+            if [ "$auth_mode" = "key" ]; then
+              ssh -i ~/.ssh/id_ed25519 -p "$ssh_port" -o BatchMode=yes -o ConnectTimeout=10 "$target" "PROD_APP_PATH='$PROD_APP_PATH' bash -se"
+            else
+              sshpass -p "$PROD_SSH_PASSWORD" ssh -p "$ssh_port" -o PreferredAuthentications=password -o PubkeyAuthentication=no -o NumberOfPasswordPrompts=1 -o BatchMode=no -o ConnectTimeout=10 "$target" "PROD_APP_PATH='$PROD_APP_PATH' bash -se"
+            fi
+          }
 
           if [ -n "${PROD_SSH_USER:-}" ]; then
             user_candidates=("$PROD_SSH_USER")
@@ -82,7 +124,7 @@ jobs:
 
           selected_user=""
           for candidate in "${user_candidates[@]}"; do
-            if ssh -i ~/.ssh/id_ed25519 -p "$ssh_port" -o BatchMode=yes -o ConnectTimeout=10 "$candidate@$ssh_host" "echo ok" >/dev/null 2>&1; then
+            if run_ssh "$candidate@$ssh_host" "echo ok" >/dev/null 2>&1; then
               selected_user="$candidate"
               break
             fi
@@ -95,7 +137,7 @@ jobs:
 
           echo "Using SSH user: $selected_user"
 
-          ssh -i ~/.ssh/id_ed25519 -p "$ssh_port" "$selected_user@$ssh_host" "PROD_APP_PATH='$PROD_APP_PATH' bash -se" <<'EOF'
+          run_ssh_script "$selected_user@$ssh_host" <<'EOF'
           set -euo pipefail
 
           if [ -n "${PROD_APP_PATH:-}" ] && [ -f "$PROD_APP_PATH/docker-compose.prod.yml" ]; then
