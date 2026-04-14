@@ -213,6 +213,49 @@ jobs:
 
           echo "app_path=$app_path" >> "$GITHUB_OUTPUT"
 
+      - name: Sync backend .env from GitHub secret
+        shell: bash
+        env:
+          PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+          PROD_SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
+          PROD_SSH_PASSWORD: ${{ secrets.PROD_SSH_PASSWORD }}
+          PROD_BACKEND_ENV: ${{ secrets['PROD_BACKEND_ENV'] }}
+          SELECTED_USER: ${{ steps.resolve_ssh.outputs.selected_user }}
+          AUTH_MODE: ${{ steps.resolve_ssh.outputs.auth_mode }}
+          APP_PATH: ${{ steps.resolve_path.outputs.app_path }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${PROD_BACKEND_ENV:-}" ]; then
+            echo "PROD_BACKEND_ENV is not set. Keeping existing backend/.env on VPS."
+            exit 0
+          fi
+
+          ssh_host="${PROD_SSH_HOST:-repeto.ru}"
+          ssh_port="${PROD_SSH_PORT:-22}"
+          target="$SELECTED_USER@$ssh_host"
+          backend_env_b64="$(printf '%s' "$PROD_BACKEND_ENV" | base64 | tr -d '\n')"
+
+          if [ "$AUTH_MODE" = "key" ]; then
+            ssh -i ~/.ssh/id_ed25519 -p "$ssh_port" -o BatchMode=yes -o ConnectTimeout=10 "$target" "APP_PATH='$APP_PATH' BACKEND_ENV_B64='$backend_env_b64' bash -se" <<'EOF'
+          set -euo pipefail
+          cd "$APP_PATH"
+          umask 077
+          mkdir -p backend
+          printf '%s' "$BACKEND_ENV_B64" | base64 -d | tr -d '\r' > backend/.env
+          test -s backend/.env
+          EOF
+          else
+            sshpass -p "$PROD_SSH_PASSWORD" ssh -p "$ssh_port" -o PreferredAuthentications=password -o PubkeyAuthentication=no -o NumberOfPasswordPrompts=1 -o BatchMode=no -o ConnectTimeout=10 "$target" "APP_PATH='$APP_PATH' BACKEND_ENV_B64='$backend_env_b64' bash -se" <<'EOF'
+          set -euo pipefail
+          cd "$APP_PATH"
+          umask 077
+          mkdir -p backend
+          printf '%s' "$BACKEND_ENV_B64" | base64 -d | tr -d '\r' > backend/.env
+          test -s backend/.env
+          EOF
+          fi
+
       - name: Deploy on VPS
         timeout-minutes: 12
         shell: bash

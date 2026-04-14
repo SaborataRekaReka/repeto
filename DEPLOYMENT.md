@@ -115,6 +115,7 @@ Required repository secrets:
 - `PROD_SSH_USER` - SSH user on VPS (optional, auto-detect tries: `root`, `ubuntu`, `deploy`)
 - `PROD_APP_PATH` - absolute path to `app` directory on VPS (optional, auto-detect tries common paths)
 - `PROD_SSH_KNOWN_HOSTS` - optional pinned `known_hosts` entry
+- `PROD_BACKEND_ENV` - optional full content of `app/backend/.env`; if set, workflow rewrites `backend/.env` on VPS on every deploy
 
 At least one authentication secret must be set: `PROD_SSH_PRIVATE_KEY` or `PROD_SSH_PASSWORD`.
 
@@ -122,9 +123,21 @@ What the workflow does:
 
 1. Connects to VPS over SSH.
 2. Updates code to `origin/main`.
-3. Runs `docker compose -f docker-compose.prod.yml up -d --build --remove-orphans`.
-4. Checks API health.
-5. Verifies root no longer redirects to `/bazarly/index.html`.
+3. If `PROD_BACKEND_ENV` is set, updates `backend/.env` on VPS.
+4. Runs `docker compose -f docker-compose.prod.yml up -d --build --remove-orphans`.
+5. Checks API health.
+6. Verifies root no longer redirects to `/bazarly/index.html`.
+
+### Managing secrets without manual VPS edits
+
+To avoid editing env values on VPS by hand, store your production backend env as a multiline GitHub secret:
+
+1. Open repository settings -> Secrets and variables -> Actions.
+2. Create/update secret `PROD_BACKEND_ENV`.
+3. Paste full content of production `backend/.env`.
+4. Run deploy (push to `main` or manual workflow dispatch).
+
+The deploy job will safely overwrite `app/backend/.env` on VPS before container restart.
 
 ## Notes
 
