@@ -1,5 +1,4 @@
 import "@/styles/globals.css";
-import "@gravity-ui/uikit/styles/fonts.css";
 import "@gravity-ui/uikit/styles/styles.css";
 import "@/styles/gravity-overrides.css";
 import type { AppProps } from "next/app";
