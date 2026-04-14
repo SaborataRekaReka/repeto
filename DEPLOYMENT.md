@@ -104,7 +104,7 @@ Trigger conditions:
 Required repository secrets:
 
 - `PROD_SSH_PRIVATE_KEY` - private key for deploy SSH access (recommended)
-- `PROD_SSH_PASSWORD` - SSH password fallback when key auth is not configured
+- `PROD_SSH_PASSWORD` - SSH password fallback (workflow tries key first, then password when set)
 - `PROD_SSH_HOST` - VPS host or IP (optional, default: `repeto.ru`)
 - `PROD_SSH_PORT` - SSH port (optional, default: `22`)
 - `PROD_SSH_USER` - SSH user on VPS (optional, auto-detect tries: `root`, `ubuntu`, `deploy`)
