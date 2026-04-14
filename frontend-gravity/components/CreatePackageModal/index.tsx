@@ -35,7 +35,7 @@ const CreatePackageModal = ({
     onCreated,
     packageData,
 }: CreatePackageModalProps) => {
-    const { data: studentsData } = useStudents({ limit: 200 });
+    const { data: studentsData } = useStudents({ limit: 200 }, { skip: !visible });
     const studentOptions = (studentsData?.data || []).map((s) => ({
         value: s.id,
         content: s.name,

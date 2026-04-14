@@ -50,8 +50,9 @@ const Header = ({ back, title }: HeaderProps) => {
         if (searchOpen && inputRef.current) inputRef.current.focus();
     }, [searchOpen]);
 
-    const { data: studentsData } = useStudents({ search: searchQuery.trim() || undefined, limit: 5 });
-    const filteredStudents = searchQuery.trim()
+    const trimmedSearch = searchQuery.trim();
+    const { data: studentsData } = useStudents({ search: trimmedSearch || undefined, limit: 5 }, { skip: !trimmedSearch });
+    const filteredStudents = trimmedSearch
         ? (studentsData?.data || []).slice(0, 5)
         : [];
 

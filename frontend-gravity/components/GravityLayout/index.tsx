@@ -114,11 +114,14 @@ const GravityLayout = ({ title, back, children }: GravityLayoutProps) => {
         return () => document.removeEventListener("mousedown", handler);
     }, []);
 
+    const trimmedSearch = searchQuery.trim();
     const { data: studentsData } = useStudents({
-        search: searchQuery.trim() || undefined,
+        search: trimmedSearch || undefined,
         limit: 5,
+    }, {
+        skip: !trimmedSearch,
     });
-    const searchResults = searchQuery.trim()
+    const searchResults = trimmedSearch
         ? (studentsData?.data || []).slice(0, 5)
         : [];
 

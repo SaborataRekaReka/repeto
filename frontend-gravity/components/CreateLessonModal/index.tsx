@@ -83,7 +83,7 @@ const CreateLessonModal = ({
     defaultTime,
 }: CreateLessonModalProps) => {
     const isEdit = !!lesson;
-    const { data: studentsData } = useStudents({ limit: 200 });
+    const { data: studentsData } = useStudents({ limit: 200 }, { skip: !visible });
     const students = studentsData?.data || [];
 
     const studentItems = students.map((s) => ({

@@ -59,7 +59,10 @@ export function useApi<T>(
 
   useEffect(() => {
     if (!refreshInterval || skip || !endpoint) return;
-    const id = setInterval(fetchData, refreshInterval);
+    const id = setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      fetchData();
+    }, refreshInterval);
     return () => clearInterval(id);
   }, [refreshInterval, skip, endpoint, fetchData]);
 

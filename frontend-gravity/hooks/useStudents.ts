@@ -41,7 +41,7 @@ export function useStudents(params?: {
   order?: string;
   page?: number;
   limit?: number;
-}) {
+}, options?: { skip?: boolean }) {
   const result = useApi<StudentsResponse>('/students', {
     status: params?.status?.toUpperCase(),
     search: params?.search,
@@ -49,6 +49,8 @@ export function useStudents(params?: {
     order: params?.order,
     page: params?.page,
     limit: params?.limit,
+  }, {
+    skip: options?.skip,
   });
 
   return {
