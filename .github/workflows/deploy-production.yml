@@ -282,6 +282,8 @@ jobs:
           git checkout main
           git reset --hard origin/main
           docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
+          docker compose -f docker-compose.prod.yml exec -T nginx nginx -t
+          docker compose -f docker-compose.prod.yml exec -T nginx nginx -s reload
           docker compose -f docker-compose.prod.yml ps
           EOF
           else
@@ -293,6 +295,8 @@ jobs:
           git checkout main
           git reset --hard origin/main
           docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
+          docker compose -f docker-compose.prod.yml exec -T nginx nginx -t
+          docker compose -f docker-compose.prod.yml exec -T nginx nginx -s reload
           docker compose -f docker-compose.prod.yml ps
           EOF
           fi
