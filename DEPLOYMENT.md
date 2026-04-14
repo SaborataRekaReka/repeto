@@ -103,12 +103,12 @@ Trigger conditions:
 
 Required repository secrets:
 
-- `PROD_SSH_HOST` - VPS host or IP
-- `PROD_SSH_PORT` - SSH port (optional, defaults to `22`)
-- `PROD_SSH_USER` - SSH user on VPS
-- `PROD_SSH_PRIVATE_KEY` - private key for this user
-- `PROD_APP_PATH` - absolute path to the `app` directory on VPS (where `docker-compose.prod.yml` exists)
-- `PROD_SSH_KNOWN_HOSTS` - optional pinned `known_hosts` entry (recommended)
+- `PROD_SSH_PRIVATE_KEY` - private key for deploy SSH access (required)
+- `PROD_SSH_HOST` - VPS host or IP (optional, default: `repeto.ru`)
+- `PROD_SSH_PORT` - SSH port (optional, default: `22`)
+- `PROD_SSH_USER` - SSH user on VPS (optional, auto-detect tries: `root`, `ubuntu`, `deploy`)
+- `PROD_APP_PATH` - absolute path to `app` directory on VPS (optional, auto-detect tries common paths)
+- `PROD_SSH_KNOWN_HOSTS` - optional pinned `known_hosts` entry
 
 What the workflow does:
 

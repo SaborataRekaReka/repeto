@@ -23,18 +23,12 @@ jobs:
       - name: Validate required secrets
         shell: bash
         env:
-          PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
-          PROD_SSH_USER: ${{ secrets.PROD_SSH_USER }}
           PROD_SSH_PRIVATE_KEY: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
-          PROD_APP_PATH: ${{ secrets.PROD_APP_PATH }}
         run: |
           set -euo pipefail
 
           missing=()
-          [ -z "${PROD_SSH_HOST:-}" ] && missing+=("PROD_SSH_HOST")
-          [ -z "${PROD_SSH_USER:-}" ] && missing+=("PROD_SSH_USER")
           [ -z "${PROD_SSH_PRIVATE_KEY:-}" ] && missing+=("PROD_SSH_PRIVATE_KEY")
-          [ -z "${PROD_APP_PATH:-}" ] && missing+=("PROD_APP_PATH")
 
           if [ "${#missing[@]}" -gt 0 ]; then
             echo "::error::Missing required secrets: ${missing[*]}"
@@ -51,14 +45,20 @@ jobs:
         run: |
           set -euo pipefail
 
+          ssh_host="${PROD_SSH_HOST:-repeto.ru}"
+          ssh_port="${PROD_SSH_PORT:-22}"
+          default_known_hosts="repeto.ru ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPg9IU90Ep/dwrVa6/rJk5Pzu9kMAF9C1sn4HWgu9Gbt"
+
           install -m 700 -d ~/.ssh
           printf '%s\n' "$PROD_SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
 
           if [ -n "${PROD_SSH_KNOWN_HOSTS:-}" ]; then
             printf '%s\n' "$PROD_SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          elif [ "$ssh_host" = "repeto.ru" ] || [ "$ssh_host" = "72.56.240.222" ]; then
+            printf '%s\n' "$default_known_hosts" > ~/.ssh/known_hosts
           else
-            ssh-keyscan -H -p "${PROD_SSH_PORT:-22}" "$PROD_SSH_HOST" >> ~/.ssh/known_hosts
+            ssh-keyscan -H -p "$ssh_port" "$ssh_host" >> ~/.ssh/known_hosts
           fi
 
       - name: Deploy on VPS
@@ -71,15 +71,59 @@ jobs:
         run: |
           set -euo pipefail
 
-          ssh -i ~/.ssh/id_ed25519 -p "${PROD_SSH_PORT:-22}" "$PROD_SSH_USER@$PROD_SSH_HOST" "PROD_APP_PATH='$PROD_APP_PATH' bash -se" <<'EOF'
-          set -euo pipefail
+          ssh_host="${PROD_SSH_HOST:-repeto.ru}"
+          ssh_port="${PROD_SSH_PORT:-22}"
 
-          if [ ! -d "$PROD_APP_PATH" ]; then
-            echo "Deployment path does not exist: $PROD_APP_PATH"
+          if [ -n "${PROD_SSH_USER:-}" ]; then
+            user_candidates=("$PROD_SSH_USER")
+          else
+            user_candidates=(root ubuntu deploy)
+          fi
+
+          selected_user=""
+          for candidate in "${user_candidates[@]}"; do
+            if ssh -i ~/.ssh/id_ed25519 -p "$ssh_port" -o BatchMode=yes -o ConnectTimeout=10 "$candidate@$ssh_host" "echo ok" >/dev/null 2>&1; then
+              selected_user="$candidate"
+              break
+            fi
+          done
+
+          if [ -z "$selected_user" ]; then
+            echo "::error::Cannot connect via SSH. Set PROD_SSH_USER explicitly or verify key access."
             exit 1
           fi
 
-          cd "$PROD_APP_PATH"
+          echo "Using SSH user: $selected_user"
+
+          ssh -i ~/.ssh/id_ed25519 -p "$ssh_port" "$selected_user@$ssh_host" "PROD_APP_PATH='$PROD_APP_PATH' bash -se" <<'EOF'
+          set -euo pipefail
+
+          if [ -n "${PROD_APP_PATH:-}" ] && [ -f "$PROD_APP_PATH/docker-compose.prod.yml" ]; then
+            app_path="$PROD_APP_PATH"
+          else
+            app_path=""
+            candidate_paths=(
+              /root/repeto/app
+              /home/ubuntu/repeto/app
+              /home/deploy/repeto/app
+              /opt/repeto/app
+            )
+
+            for p in "${candidate_paths[@]}"; do
+              if [ -f "$p/docker-compose.prod.yml" ]; then
+                app_path="$p"
+                break
+              fi
+            done
+          fi
+
+          if [ -z "$app_path" ]; then
+            echo "::error::Cannot detect app path. Set PROD_APP_PATH secret to directory containing docker-compose.prod.yml"
+            exit 1
+          fi
+
+          echo "Using app path: $app_path"
+          cd "$app_path"
           git fetch origin main
           git checkout main
           git reset --hard origin/main
