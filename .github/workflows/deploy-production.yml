@@ -63,12 +63,16 @@ jobs:
           fi
 
       - name: Install sshpass when password is set
-        if: ${{ secrets.PROD_SSH_PASSWORD != '' }}
         shell: bash
+        env:
+          PROD_SSH_PASSWORD: ${{ secrets.PROD_SSH_PASSWORD }}
         run: |
           set -euo pipefail
-          sudo apt-get update
-          sudo apt-get install -y sshpass
+
+          if [ -n "${PROD_SSH_PASSWORD:-}" ]; then
+            sudo apt-get update
+            sudo apt-get install -y sshpass
+          fi
 
       - name: Resolve SSH access
         id: resolve_ssh
