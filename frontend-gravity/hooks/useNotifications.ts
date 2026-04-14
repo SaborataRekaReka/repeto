@@ -83,7 +83,7 @@ export function useNotifications(params?: {
 
 export function useUnreadCount() {
   return useApi<{ count: number }>('/notifications/unread-count', undefined, {
-    refreshInterval: 30000,
+    refreshInterval: 60000,
   });
 }
 

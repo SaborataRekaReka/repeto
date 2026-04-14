@@ -8,6 +8,7 @@ import {
   Body,
   ParseUUIDPipe,
 } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiTags, ApiQuery } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators';
 import { NotificationsService } from './notifications.service';
@@ -39,6 +40,7 @@ export class NotificationsController {
   }
 
   @Get('unread-count')
+  @SkipThrottle()
   async getUnreadCount(@CurrentUser('id') userId: string) {
     const count = await this.notificationsService.getUnreadCount(userId);
     return { count };
