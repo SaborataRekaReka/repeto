@@ -11,7 +11,7 @@ permissions:
 
 concurrency:
   group: production-deploy
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   deploy:
@@ -208,6 +208,7 @@ jobs:
           echo "app_path=$app_path" >> "$GITHUB_OUTPUT"
 
       - name: Deploy on VPS
+        timeout-minutes: 12
         shell: bash
         env:
           PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
@@ -227,7 +228,8 @@ jobs:
             ssh -i ~/.ssh/id_ed25519 -p "$ssh_port" -o BatchMode=yes -o ConnectTimeout=10 "$target" "APP_PATH='$APP_PATH' bash -se" <<'EOF'
           set -euo pipefail
           cd "$APP_PATH"
-          git fetch origin main
+          git remote set-url origin https://github.com/SaborataRekaReka/repeto.git || true
+          GIT_TERMINAL_PROMPT=0 git fetch --depth=1 origin main
           git checkout main
           git reset --hard origin/main
           docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
@@ -237,7 +239,8 @@ jobs:
             sshpass -p "$PROD_SSH_PASSWORD" ssh -p "$ssh_port" -o PreferredAuthentications=password -o PubkeyAuthentication=no -o NumberOfPasswordPrompts=1 -o BatchMode=no -o ConnectTimeout=10 "$target" "APP_PATH='$APP_PATH' bash -se" <<'EOF'
           set -euo pipefail
           cd "$APP_PATH"
-          git fetch origin main
+          git remote set-url origin https://github.com/SaborataRekaReka/repeto.git || true
+          GIT_TERMINAL_PROMPT=0 git fetch --depth=1 origin main
           git checkout main
           git reset --hard origin/main
           docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
