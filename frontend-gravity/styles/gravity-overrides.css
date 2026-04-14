@@ -45,6 +45,7 @@
     --g-color-text-link-hover: rgb(88 32 184);
     --g-color-text-link-visited: var(--g-color-private-purple-550-solid);
     --g-color-text-link-visited-hover: var(--g-color-private-purple-800-solid);
+    --g-color-text-brand-contrast: var(--g-color-text-light-primary);
     --g-color-base-background: rgb(242, 242, 242);
     --g-color-base-float: rgb(255, 255, 255);
     --g-color-base-brand: rgb(174 122 255);
@@ -90,7 +91,7 @@
 
     --g-color-text-brand: rgb(196 165 255);
     --g-color-text-brand-heavy: rgb(210 190 255);
-    --g-color-text-brand-contrast: var(--g-color-text-dark-primary);
+    --g-color-text-brand-contrast: var(--g-color-text-light-primary);
     --g-color-text-link: rgb(196 165 255);
     --g-color-text-link-hover: rgb(220 205 255);
     --g-color-text-link-visited: var(--g-color-private-purple-700-solid);
@@ -540,11 +541,15 @@ body {
 
 .repeto-student-sidebar {
     background: var(--g-color-base-float);
-    border: 1px solid var(--g-color-line-generic);
     border-radius: 12px;
     overflow: hidden;
     position: sticky;
     top: 80px;
+}
+
+.repeto-student-lesson-card {
+    border-radius: 12px !important;
+    overflow: hidden;
 }
 
 .repeto-student-nav-btn {
@@ -664,7 +669,7 @@ body {
 
 /* Students Gravity Table card */
 .repeto-students-table-card {
-    background: var(--g-color-base-float);
+    background: var(--g-color-base-float) !important;
     overflow: hidden;
 }
 
@@ -707,6 +712,20 @@ body {
 .repeto-students-page-table .g-table__scroll-container,
 .repeto-students-page-table .g-table__table {
     width: 100%;
+    background: var(--g-color-base-float);
+}
+
+.repeto-students-page-table .g-table .g-table__cell_sticky_end {
+    background: transparent;
+}
+
+.repeto-students-page-table .g-table__body .g-table__row:hover .g-table__cell_sticky_end {
+    background: transparent;
+}
+
+.repeto-students-page-table .g-table__actions-button {
+    --g-button-background-color: transparent;
+    --g-button-background-color-hover: var(--g-color-base-simple-hover);
 }
 
 .repeto-students-page-table .g-table__table {

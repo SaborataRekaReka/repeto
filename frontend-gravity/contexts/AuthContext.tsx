@@ -70,10 +70,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const doRefresh = async () => {
       try {
         if (!getAccessToken()) {
-          const refreshRes = await fetch(
-            `${API_BASE}/auth/refresh`,
-            { method: 'POST', credentials: 'include' }
-          );
+          const refreshRes = await fetch(`${API_BASE}/auth/refresh`, {
+            method: 'POST',
+            credentials: 'include',
+          });
           if (refreshRes.ok) {
             const data = await refreshRes.json();
             setAccessToken(data.accessToken);
@@ -84,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         const me = await api<any>('/auth/me');
         setUser(mapUser(me));
-      } catch {
+      } catch (err) {
         setUser(null);
         setAccessToken(null);
       } finally {

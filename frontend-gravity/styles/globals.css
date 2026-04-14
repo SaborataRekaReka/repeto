@@ -16,3 +16,19 @@
         @apply bg-purple-1 scale-100;
     }
 }
+
+@layer utilities {
+    .bg-purple-1,
+    .bg-purple-2,
+    .label-purple,
+    .btn-purple {
+        @apply text-white;
+    }
+
+    .bg-purple-1 svg,
+    .bg-purple-2 svg,
+    .label-purple svg,
+    .btn-purple svg {
+        @apply fill-white;
+    }
+}

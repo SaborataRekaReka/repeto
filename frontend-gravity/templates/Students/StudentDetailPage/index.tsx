@@ -6,14 +6,16 @@ import {
     Button,
     Icon,
     Label,
+    Avatar,
 } from "@gravity-ui/uikit";
-import { Envelope, Link, Calendar, Person, CreditCard, Pencil, CircleCheck, Comment } from "@gravity-ui/icons";
+import { Envelope, Link, Calendar, Person, CreditCard, Pencil, CircleCheck, Bell } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import GravityLayout from "@/components/GravityLayout";
 import LessonDetailModal from "@/components/LessonDetailModal";
 import CreateLessonModal from "@/components/CreateLessonModal";
 import CreatePaymentModal from "@/components/CreatePaymentModal";
 import PortalLinkModal from "./PortalLinkModal";
+import RemindModal from "@/components/RemindModal";
 import LessonHistory from "./LessonHistory";
 import PaymentHistory from "./PaymentHistory";
 import ProfileTab from "./ProfileTab";
@@ -29,7 +31,7 @@ import {
     useStudentNotes,
     useStudentHomework,
 } from "@/hooks/useStudents";
-import { sendDebtReminder } from "@/hooks/useNotifications";
+
 import {
     getInitials,
     formatBalance,
@@ -94,7 +96,7 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
     const [editLesson, setEditLesson] = useState<Lesson | null>(null);
     const [paymentModal, setPaymentModal] = useState(false);
     const [portalLinkModal, setPortalLinkModal] = useState(false);
-    const [debtSending, setDebtSending] = useState(false);
+    const [remindModal, setRemindModal] = useState(false);
     const [optimisticRemovedLessonIds, setOptimisticRemovedLessonIds] = useState<string[]>([]);
     const [lessonActionError, setLessonActionError] = useState<string | null>(null);
 
@@ -191,17 +193,7 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
     );
     const homeworks = hwData?.data || [];
 
-    const handleMessage = () => {
-        if (student.whatsapp) {
-            const num = student.whatsapp.replace(/[^+\d]/g, "");
-            window.open(`https://wa.me/${num}`, "_blank");
-        } else if (student.phone) {
-            window.open(
-                `tel:${student.phone.replace(/[^+\d]/g, "")}`,
-                "_self"
-            );
-        }
-    };
+
 
     const renderTabContent = () => (
         <>
@@ -295,12 +287,12 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
                             padding: "28px 20px 20px",
                         }}
                     >
-                        <div
-                            className="repeto-avatar repeto-avatar--lg"
-                            style={{ margin: "0 auto 14px" }}
-                        >
-                            {getInitials(local.name)}
-                        </div>
+                        <Avatar
+                            text={getInitials(local.name)}
+                            size="l"
+                            theme="brand"
+                            style={{ margin: "0 auto 14px", "--g-avatar-size": "72px" } as React.CSSProperties}
+                        />
                         <Text
                             variant="subheader-2"
                             as="div"
@@ -360,13 +352,13 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
                             <Button
                                 view="outlined"
                                 size="s"
-                                onClick={handleMessage}
+                                onClick={() => setRemindModal(true)}
                             >
                                 <Icon
-                                    data={Envelope as IconData}
+                                    data={Bell as IconData}
                                     size={14}
                                 />
-                                Написать
+                                Напомнить
                             </Button>
                             <Button
                                 view="outlined"
@@ -376,24 +368,6 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
                                 <Icon data={Link as IconData} size={14} />
                                 Портал
                             </Button>
-                            {local.balance < 0 && (
-                                <Button
-                                    view="outlined"
-                                    size="s"
-                                    loading={debtSending}
-                                    onClick={async () => {
-                                        setDebtSending(true);
-                                        try {
-                                            await sendDebtReminder(student.id);
-                                        } catch {
-                                            setDebtSending(false);
-                                        }
-                                    }}
-                                >
-                                    <Icon data={Comment as IconData} size={14} />
-                                    Напомнить
-                                </Button>
-                            )}
                         </div>
                     </div>
 
@@ -483,6 +457,15 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
                 studentId={student.id}
                 studentName={student.name}
                 tutorSlug={tutorSlug}
+            />
+            <RemindModal
+                visible={remindModal}
+                onClose={() => setRemindModal(false)}
+                onSent={onRefresh}
+                studentId={student.id}
+                studentName={student.name}
+                hasDebt={local.balance < 0}
+                hasParent={!!local.parentName || !!local.parentPhone}
             />
         </GravityLayout>
     );

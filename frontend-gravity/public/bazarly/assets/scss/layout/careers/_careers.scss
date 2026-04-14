@@ -1,0 +1,184 @@
+.ub-careers-hero {
+
+    &__subtitle-area {
+        @extend .hero__subtitle-area;
+    }
+
+    &__subtitle-group {
+        @extend .hero__subtitle-group;
+    }
+
+    &__subtitle {
+        @extend .hero__subtitle;
+    }
+
+    &__title {
+        @extend .section-title;
+        max-width: 740px;
+    }
+
+    &__desc {
+        @extend .section-desc;
+        max-width: 624px;
+    }
+
+    &__img-box {
+        margin-top: 5rem;
+
+        img {
+            width: 100%;
+        }
+    }
+
+    &__btn-wrapper {
+        @extend .button-group;
+        margin: 2rem 0;
+    }
+
+    &__btn--primary { 
+       @extend .btn-primary;
+    }
+
+    &__btn--secondary {
+        @extend .btn-secondary;
+    }
+}
+
+ 
+// careers details page 
+.ub-career-details{
+    &__wrapper{
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 3rem;
+    }
+
+    &__title,&__subtitle{
+        color: $dark-neutral;
+        font-size: 2.5rem;
+        line-height: 1.5;
+        font-weight: 500;
+        margin-bottom: 15px;
+        text-align: left;
+    }
+
+    &__title--spacing,
+    &__subtitle--spacing {
+        margin-top: 5rem;
+    }
+
+    &__text{
+        font-size: 1.125rem;
+        line-height: 1.5;
+        color: $dark-gray;
+    }
+
+    &__text--spacing{
+        margin-top: 1.5rem;  
+    }
+
+    &__list{
+        @extend .list-bulet;
+        color: $gray-medium;  
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 24px;   
+        line-height: 1.6;  
+        margin-top: 1rem;  
+    }
+
+    &__form-wrapper{
+        border: 1px solid $purple-haze;
+        border-radius: 20px;
+        padding: 1.3rem;
+    }
+
+    &__button{
+        @include btn();
+        margin-top: 20px;
+        display: block;
+        width: 100%;
+    }
+
+    &__form-group{
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 10px;
+    }
+
+    label {
+        font-weight: 500;
+        font-size: 20px;
+        line-height: 28px;
+        color: $dark-neutral;
+        margin-bottom: 8px;
+    }
+
+    input {
+        padding: 10px 14px;
+        border-radius: 5px;
+        border: 1px solid $light-lavender; 
+        &::placeholder{
+            font-size: 1rem;
+            font-weight: 400;
+            line-height: 1.5;
+            color:$gray-medium;
+        }
+
+        &:focus {
+            outline: 2px solid $primary-color;  
+        }
+    }
+
+    select{
+        padding: 10px 14px;
+        border-radius: 5px;
+        font-size: 1rem;
+        border: none;
+        color: $dark-gray;
+
+        &:focus {
+            outline:none;  
+        }
+    }
+
+    textarea {
+        padding: 10px;
+        border-radius: 5px;
+        border: 1px solid #F3F7FF;
+
+        &::placeholder{
+            font-size: 1rem;
+            font-weight: 400;
+            line-height: 1.5;
+            color:$gray-medium;
+        }
+
+        &:focus {
+            outline: 2px solid $primary-color;  
+        }
+    }
+
+    // responsive
+    @media (max-width: 1024px) { 
+        &__form-wrapper{
+            padding: 4rem 2rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        &__form-wrapper{
+            padding: 4rem 1rem;
+        } 
+    }
+
+    @media (min-width: 1300px) {
+        &__wrapper{
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 5rem;
+        }
+        &__content{
+            grid-column: span 2; 
+        }
+    }
+}  

@@ -1,0 +1,233 @@
+
+// feature page hero
+.ub-feature-hero {
+    &__container {
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+
+    &__content {
+        min-height: 500px;
+        margin: 0 auto;
+        padding: 4rem 2rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border-radius: 2.5rem;
+    }
+
+    &__subtitle-area{
+        @extend .hero__subtitle-area;
+    }
+
+    &__subtitle-group {
+        @extend .hero__subtitle-group;
+        background-color: $soft-lilac;
+    }
+
+    &__title {
+        @extend .section-title;
+    }
+
+    &__subtitle{
+        @extend .hero__subtitle;  
+    }
+
+    &__desc {
+        @extend .section-desc;
+        max-width: 651px;
+    }
+
+    &__button-group {
+        @extend .button-group;
+        margin-top: 2rem;
+    }
+
+    &__button--primary {
+       @extend .btn-primary;
+    }
+
+    &__button--secondary {
+        @extend .btn-secondary;
+    } 
+
+    @media (min-width: 768px) { 
+        &__content {
+            padding: 2rem 2rem;   
+        }
+    }
+}
+
+// feature section
+.ub-features {
+
+    &_container {
+        padding-top: 7rem;
+        padding-bottom: 7rem;
+    }
+
+    &__subtitle-area {
+        @extend .hero__subtitle-area;
+    }
+
+    &__subtitle-group {
+        @extend .hero__subtitle-group;
+    }
+    &__subtitle{
+        @extend .hero__subtitle;
+    }
+
+    &__title {
+        @extend .section-title;
+        font-size: 2.8rem;
+        max-width: 600px;
+    }
+
+    &__desc {
+        @extend .section-desc;
+        max-width: 520px;
+    } 
+
+    &__area {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        margin-top: 5rem;
+    }
+
+    &__item {
+        background: $soft-lilac;
+        padding: 1.5rem;
+        border-radius: 1.5rem;
+        background-color: $white;
+    }
+
+    &__item-title {
+        font-size: 2.5rem;
+        font-weight: 500;
+        margin-bottom: 1.5rem;
+        color: $dark-neutral;
+        line-height: 48px;
+    }
+
+    &__item-desc {
+        font-weight: normal;
+        font-size: 16px;
+        line-height: 24px;
+        color: $dark-gray;
+    }
+
+    &__item-thumbnail {
+        margin-top: 2rem;
+
+        img {
+            width: 100%;
+            border-radius: 1rem;
+        }
+    }
+
+    
+    @media (max-width: 768px) {
+        &__item-title {
+            font-size: 2.25rem !important;
+            line-height: 48px !important;
+        }
+
+        &_container {
+            padding-top: 4rem;
+            padding-bottom: 4rem;
+        }
+    }
+
+    @media (min-width: 768px) {
+        &__area{
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+}
+
+// feature details
+.ub-feature-details{
+    &__container {
+        padding-top: 7rem; 
+        padding-bottom: 7rem; 
+    }
+
+    &__title{
+        @extend .section-title;
+    }
+
+    &__subtitle-area{
+        @extend .hero__subtitle-area;
+    }
+
+    &__subtitle-group{
+        @extend .hero__subtitle-group;
+    }
+
+    &__subtitle{
+        @extend .hero__subtitle;
+    }
+
+    &__desc {
+       @extend .section-desc; 
+       max-width:540px;
+    }
+
+    &__thumbnail {
+        padding: 1.5rem 0; 
+        border-radius: 1.5rem; 
+        margin-top: 2.5rem;
+    }
+
+    &__image{
+        width:100%;
+    }
+      
+    &__content{
+        display: flex;
+        flex-direction: column;  
+        gap: 1.5rem; 
+    } 
+
+    &__content-wrapper {
+        display: flex;
+        flex-direction: column;  
+        gap: 1.5rem; 
+
+
+    }
+
+    &__content-title {
+        color:$text-primary;           
+        font-weight: 500;  
+        font-size: 1.875rem; 
+    }
+      
+    &__content-text,&__list--dash,&__list--bulet{
+        color: $dark-grayish-green;  
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 24px;   
+        line-height: 1.6;    
+    } 
+
+    &__list--dash {
+         @extend .list-dash;
+    }
+
+    &__list--bulet {
+         @extend .list-bulet;
+    } 
+
+    // responsive
+    @media (min-width: 768px) {   
+        &__container {
+            padding-left: 7rem;  
+            padding-right: 7rem;  
+        }
+    }
+}
+ 

@@ -11,7 +11,7 @@ const Pagination = ({}: PaginationProps) => {
             <button
                 className={twMerge(
                     `w-8 h-8 mr-1 border border-transparent text-xs font-bold transition-colors hover:text-purple-1 ${
-                        active ? "bg-purple-1 border-n-1 !text-n-1" : ""
+                        active ? "bg-purple-1 border-purple-1 !text-white" : ""
                     }`
                 )}
             >

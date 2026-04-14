@@ -1,0 +1,190 @@
+.footer {
+    &__content {
+        background-color: $light-lavender;
+        border-radius: 0.5rem;
+        padding: 2.5rem 2rem;
+    }
+
+    &__desc {
+        color: $dark-grayish-green;
+        margin-top: 1rem;
+        font-size: 1rem;
+        line-height: 1.5;
+    }
+
+    &__newsletter {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 35px;
+        border-bottom: 1px solid $light-gray-blue;
+    }
+
+    &__newsletter-heading {
+        text-align: center;
+    } 
+
+    &__newsletter-title { 
+        font-weight: 500;
+        font-size: 1.5rem;
+        line-height: 33px;
+        margin-bottom: 0.5rem;
+        color: $dark-slate-gray; 
+    }
+
+    &__newsletter-desc {
+        color: $dark-slate-gray;
+        font-size: 16px;
+        line-height: 24px;
+        font-weight: normal;
+        margin-top: 16px; 
+    }
+
+    &__input-wrapper {
+        display: flex;
+        justify-content: flex-end;
+        flex-direction: column;
+        gap: 1rem;
+
+        input {
+            border: 1px solid $soft-purple;
+            transition: border-color 0.3s ease;
+            border-radius: 100px;
+            background-color: transparent;
+            padding: 12px 1rem;
+
+            &:focus {
+                border: 1px solid $primary-color;
+                outline: none;
+            }
+        }
+
+        input[type="email"] {
+            width: auto;
+        }
+
+        .btn {
+            @include btn();
+            font-weight: 500;
+        }
+    }
+
+    &__content-wrapper {
+        display: grid;
+        justify-content: space-between;
+        grid-template-columns: 1fr;
+        flex-wrap: wrap;
+        margin-top: 3rem;
+        gap: 3rem;
+    }
+
+    &__navigation-wrapper {
+        margin-top: 12px;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 2rem;
+        justify-content: space-between;
+    }
+
+    &__links {
+        margin-top: 12px;
+    }
+
+    &__link-item > a {
+        color: $dark-slate-gray;
+        font-size: 16px;
+        font-weight: normal;
+        line-height: 24px;
+        margin-top: 8px;
+        display: block;
+    }
+
+    &__copyright { 
+        position: relative;
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+        padding-top: 2.5rem;
+        align-items: center;
+        margin-top: 2.5rem;
+
+        &::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg,
+            rgba(238, 238, 238, 0) 0%,
+            rgba(238, 238, 238, 0) 24.7%,
+            #7F56D9 49.61%,
+            rgba(136, 136, 136, 0) 87.59%,
+            rgba(136, 136, 136, 0) 100%);
+        }
+    }
+
+    &__copyright-text {
+        font-size: 14px;
+        font-weight: normal;
+        line-height: 21px;
+        color: $muted-sage;
+        text-align: center;
+    }
+
+    &__link {
+        color: $primary-color;
+    }
+
+    &__social-list {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    // responsive
+    @media (min-width: 640px) {
+        &__navigation-wrapper {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+        }
+
+        &__input-wrapper {
+            flex-direction: row;
+
+            input[type="email"] {
+                width: 100%;
+            }
+        }
+    }
+
+    @media (max-width: 1024px) {
+        &__copyright {
+            justify-content: center;
+            align-items: center;
+        }
+    }
+
+    @media (min-width: 1024px) {
+        &__content-wrapper {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        &__navigation-wrapper {
+            grid-template-columns: repeat(4, 1fr);
+            grid-column: span 2;
+        }
+
+        &__newsletter {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 3.5rem;
+        }
+
+        &__newsletter-heading {
+            text-align: left;
+        }
+    }
+}

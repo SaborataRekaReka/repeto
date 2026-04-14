@@ -1,0 +1,53 @@
+#ub-mission {
+  .container {
+      .mission-vision__content {
+          display: grid;
+          grid-template-columns: repeat(1, 1fr);
+          gap: 2rem;
+          margin-top: 3rem;
+
+          .mission-vision__card {
+              border-radius: 12px;
+              background-color: $deep-violet;
+              padding: 1.5rem;
+
+              .mission-vision__card-title {
+                //   color:$dark-neutral;
+                  color: $white;
+                  font-size: 2.5rem;
+                  text-align: left;
+                  font-weight: 500;
+                  margin-bottom: 1rem;
+                  line-height: 1.2;
+              }
+
+              .mission-vision__card-desc {
+                  color: $white;
+                //   color: $dark-gray;
+                  font-size: 1.125rem;
+                  text-align: left;
+                  line-height: 1.5;
+              }
+
+              @media (min-width: 1024px) {
+                  &--span-3 {
+                      grid-column: span 3;
+                  }
+
+                  &--span-2 {
+                      grid-column: span 2;
+                  }
+              }
+          }
+
+          @media (min-width: 768px) {
+              grid-template-columns: repeat(2, 1fr);
+          }
+
+          @media (min-width: 1024px) {
+              grid-template-columns: repeat(5, 1fr);
+              gap: 1.5rem;
+          }
+      }
+  }
+}  

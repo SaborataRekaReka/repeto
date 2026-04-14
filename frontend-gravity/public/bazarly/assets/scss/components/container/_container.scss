@@ -1,0 +1,26 @@
+.container {
+    max-width: 1440px !important;
+    margin: 0 auto; 
+    padding: 80px;
+
+    // For large desktops and tablets
+    @media (max-width: 1200px) {
+        max-width: 100%; 
+        padding: 60px;
+    }
+
+    // For medium screens (tablets)
+    @media (max-width: 992px) {
+        padding: 60px;
+    }
+
+    // For small screens (mobile)
+    @media (max-width: 768px) {
+        padding: 60px 20px;
+    }
+
+    // For extra small screens (smaller mobile devices)
+    @media (max-width: 480px) {
+        padding:60px 10px; 
+    }
+}

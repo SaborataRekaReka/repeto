@@ -866,4 +866,206 @@ export class NotificationsService {
       debtAmount,
     };
   }
+
+  async sendReminder(
+    userId: string,
+    studentId: string,
+    body: {
+      type: 'payment' | 'lesson' | 'homework';
+      lessonIds?: string[];
+      homeworkIds?: string[];
+      comment?: string;
+      notifyParent?: boolean;
+    },
+  ) {
+    const [tutor, student] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { name: true },
+      }),
+      this.prisma.student.findUnique({
+        where: { id: studentId },
+        select: {
+          id: true,
+          name: true,
+          userId: true,
+          parentName: true,
+          parentPhone: true,
+          parentWhatsapp: true,
+          parentEmail: true,
+          telegramChatId: true,
+          maxChatId: true,
+        },
+      }),
+    ]);
+
+    if (!student) throw new NotFoundException('Ученик не найден');
+    if (student.userId !== userId) throw new ForbiddenException();
+
+    const tutorName = tutor?.name || 'Репетитор';
+    const messages: string[] = [];
+    let notificationType: NotificationType;
+    let notificationTitle: string;
+    let notificationDescription: string;
+
+    if (body.type === 'payment') {
+      notificationType = NotificationType.PAYMENT_OVERDUE;
+
+      // Calculate total debt
+      const earned = await this.prisma.lesson.aggregate({
+        where: { userId, studentId, status: LessonStatus.COMPLETED },
+        _sum: { rate: true },
+      });
+      const paid = await this.prisma.payment.aggregate({
+        where: { userId, studentId, status: 'PAID' },
+        _sum: { amount: true },
+      });
+      const debtAmount = (earned._sum.rate || 0) - (paid._sum.amount || 0);
+
+      const msg = this.messenger.formatPaymentDebt(student.name, debtAmount, tutorName, body.comment);
+      messages.push(msg);
+      notificationTitle = 'Напоминание об оплате отправлено';
+      notificationDescription = `${student.name} · ${debtAmount.toLocaleString('ru-RU')} ₽`;
+
+    } else if (body.type === 'lesson') {
+      notificationType = NotificationType.LESSON_REMINDER;
+
+      const lessonIds = body.lessonIds || [];
+      if (lessonIds.length === 0) {
+        throw new BadRequestException('Выберите хотя бы одно занятие');
+      }
+
+      const lessons = await this.prisma.lesson.findMany({
+        where: {
+          id: { in: lessonIds },
+          userId,
+          studentId,
+        },
+        orderBy: { scheduledAt: 'asc' },
+      });
+
+      if (lessons.length === 0) {
+        throw new BadRequestException('Занятия не найдены');
+      }
+
+      for (const lesson of lessons) {
+        const dateStr = lesson.scheduledAt.toLocaleDateString('ru-RU', {
+          day: 'numeric',
+          month: 'long',
+        });
+        const timeStr = lesson.scheduledAt.toLocaleTimeString('ru-RU', {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+        const msg = this.messenger.formatLessonReminderForStudent(
+          lesson.subject,
+          dateStr,
+          timeStr,
+          tutorName,
+          body.comment,
+        );
+        messages.push(msg);
+      }
+
+      const firstLesson = lessons[0];
+      const firstDateStr = firstLesson.scheduledAt.toLocaleDateString('ru-RU', {
+        day: 'numeric',
+        month: 'long',
+      });
+      const firstTimeStr = firstLesson.scheduledAt.toLocaleTimeString('ru-RU', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+
+      notificationTitle = 'Напоминание о занятии отправлено';
+      notificationDescription = `${student.name} · ${firstLesson.subject} · ${firstDateStr} в ${firstTimeStr}` +
+        (lessons.length > 1 ? ` (+${lessons.length - 1})` : '');
+
+    } else if (body.type === 'homework') {
+      notificationType = NotificationType.SYSTEM;
+
+      const homeworkIds = body.homeworkIds || [];
+      if (homeworkIds.length === 0) {
+        throw new BadRequestException('Выберите хотя бы одно домашнее задание');
+      }
+
+      const homeworks = await this.prisma.homework.findMany({
+        where: {
+          id: { in: homeworkIds },
+          studentId,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (homeworks.length === 0) {
+        throw new BadRequestException('Домашние задания не найдены');
+      }
+
+      for (const hw of homeworks) {
+        const dueStr = hw.dueAt
+          ? hw.dueAt.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
+          : undefined;
+        const msg = this.messenger.formatHomeworkReminder(hw.task, dueStr, tutorName, body.comment);
+        messages.push(msg);
+      }
+
+      notificationTitle = 'Напоминание о домашке отправлено';
+      notificationDescription = `${student.name} · ${homeworks.length} задани${homeworks.length === 1 ? 'е' : homeworks.length < 5 ? 'я' : 'й'}`;
+
+    } else {
+      throw new BadRequestException('Неизвестный тип напоминания');
+    }
+
+    // Send all messages to all available channels
+    const results = { telegram: false, max: false };
+    for (const msg of messages) {
+      const result = await this.messenger.sendToStudent({
+        type: body.type === 'payment' ? 'payment_debt' : body.type === 'lesson' ? 'lesson_reminder' : 'homework_reminder',
+        tutorId: userId,
+        studentId,
+        message: msg,
+      });
+      if (result.telegram) results.telegram = true;
+      if (result.max) results.max = true;
+    }
+
+    // Notify parent (send same messages to parent's messenger channels if available)
+    let parentNotified = false;
+    if (body.notifyParent && (student.parentPhone || student.parentWhatsapp || student.parentEmail)) {
+      // Parent doesn't have separate chat IDs, so we send same message via student's channels
+      // with a parent prefix
+      for (const msg of messages) {
+        const parentMsg = `👨‍👩‍👧 Для родителя (${student.parentName || 'родитель'}):\n\n${msg}`;
+        const result = await this.messenger.sendToStudent({
+          type: body.type === 'payment' ? 'payment_debt' : body.type === 'lesson' ? 'lesson_reminder' : 'homework_reminder',
+          tutorId: userId,
+          studentId,
+          message: parentMsg,
+        });
+        if (result.telegram || result.max) parentNotified = true;
+      }
+    }
+
+    // Create in-app notification for the tutor (record)
+    const payload: NotificationCreatePayload = {
+      userId,
+      studentId,
+      type: notificationType,
+      title: notificationTitle,
+      description: notificationDescription,
+      actionUrl: `/students/${studentId}`,
+    };
+
+    await this.prisma.notification.create({
+      data: { ...payload, sentAt: new Date() },
+    });
+    await this.maybeSendPushNotification(payload);
+
+    return {
+      sent: results.telegram || results.max,
+      telegram: results.telegram,
+      max: results.max,
+      parentNotified,
+    };
+  }
 }

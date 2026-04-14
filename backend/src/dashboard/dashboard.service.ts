@@ -66,16 +66,16 @@ export class DashboardService {
     >`
       SELECT s.id, s.name, s.subject,
         COALESCE(p.total_paid, 0) - COALESCE(l.total_rate, 0) AS balance
-      FROM "Student" s
+      FROM "students" s
       LEFT JOIN (
-        SELECT "studentId", SUM(rate) AS total_rate
-        FROM "Lesson" WHERE status = 'COMPLETED' GROUP BY "studentId"
-      ) l ON s.id = l."studentId"
+        SELECT student_id, SUM(rate) AS total_rate
+        FROM "lessons" WHERE status = 'COMPLETED' GROUP BY student_id
+      ) l ON s.id = l.student_id
       LEFT JOIN (
-        SELECT "studentId", SUM(amount) AS total_paid
-        FROM "Payment" WHERE status = 'PAID' GROUP BY "studentId"
-      ) p ON s.id = p."studentId"
-      WHERE s."userId" = ${userId} AND s.status = 'ACTIVE'
+        SELECT student_id, SUM(amount) AS total_paid
+        FROM "payments" WHERE status = 'PAID' GROUP BY student_id
+      ) p ON s.id = p.student_id
+      WHERE s.user_id = ${userId} AND s.status = 'ACTIVE'
         AND COALESCE(p.total_paid, 0) - COALESCE(l.total_rate, 0) < 0
       ORDER BY balance ASC
       LIMIT ${limit}

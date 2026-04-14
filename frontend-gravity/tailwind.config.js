@@ -214,7 +214,7 @@ module.exports = {
                         {},
                 },
                 ".btn-purple": {
-                    "@apply btn bg-purple-1 text-n-1 fill-n-1 hover:bg-purple-1/90":
+                    "@apply btn bg-purple-1 border-purple-1 text-white fill-white hover:bg-purple-1/90":
                         {},
                 },
                 ".btn-dark": {
@@ -270,7 +270,7 @@ module.exports = {
                     "@apply label border-green-1 text-green-1": {},
                 },
                 ".label-purple": {
-                    "@apply label border-purple-1 bg-purple-1": {},
+                    "@apply label border-purple-1 bg-purple-1 text-white": {},
                 },
                 ".label-green": {
                     "@apply label border-green-1 bg-green-1": {},

@@ -155,16 +155,16 @@ export class FinanceService {
         COALESCE(l.total_rate, 0)::int AS "totalAmount",
         COALESCE(p.total_paid, 0)::int AS "paidAmount",
         (COALESCE(l.total_rate, 0) - COALESCE(p.total_paid, 0))::int AS debt
-      FROM "Student" s
+      FROM "students" s
       LEFT JOIN (
-        SELECT "studentId", COUNT(*)::int AS cnt, SUM(rate)::int AS total_rate
-        FROM "Lesson" WHERE status = 'COMPLETED' GROUP BY "studentId"
-      ) l ON s.id = l."studentId"
+        SELECT student_id, COUNT(*)::int AS cnt, SUM(rate)::int AS total_rate
+        FROM "lessons" WHERE status = 'COMPLETED' GROUP BY student_id
+      ) l ON s.id = l.student_id
       LEFT JOIN (
-        SELECT "studentId", SUM(amount)::int AS total_paid
-        FROM "Payment" WHERE status = 'PAID' GROUP BY "studentId"
-      ) p ON s.id = p."studentId"
-      WHERE s."userId" = ${userId} AND s.status = 'ACTIVE'
+        SELECT student_id, SUM(amount)::int AS total_paid
+        FROM "payments" WHERE status = 'PAID' GROUP BY student_id
+      ) p ON s.id = p.student_id
+      WHERE s.user_id = ${userId} AND s.status = 'ACTIVE'
       ORDER BY CASE WHEN ${query.sort || ''} = 'balance' THEN (COALESCE(l.total_rate, 0) - COALESCE(p.total_paid, 0)) ELSE 0 END DESC, s.name ASC
       LIMIT ${limit} OFFSET ${skip}
     `;

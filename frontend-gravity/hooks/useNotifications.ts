@@ -152,3 +152,23 @@ export async function sendDebtReminder(studentId: string, comment?: string) {
   emitNotificationsChanged();
   return result;
 }
+
+export async function sendReminder(studentId: string, body: {
+  type: 'payment' | 'lesson' | 'homework';
+  lessonIds?: string[];
+  homeworkIds?: string[];
+  comment?: string;
+  notifyParent?: boolean;
+}) {
+  const result = await api<{
+    sent: boolean;
+    telegram: boolean;
+    max: boolean;
+    parentNotified: boolean;
+  }>(`/notifications/send-reminder/${studentId}`, {
+    method: 'POST',
+    body,
+  });
+  emitNotificationsChanged();
+  return result;
+}

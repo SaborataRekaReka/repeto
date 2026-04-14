@@ -40,11 +40,11 @@ const Search = ({
             <button
                 className={`absolute text-0 ${
                     large
-                        ? "top-1/2 right-5 w-8 h-8 -translate-y-1/2 bg-purple-1 border border-n-1 transition-colors hover:bg-purple-1/90"
+                        ? "top-1/2 right-5 w-8 h-8 -translate-y-1/2 bg-purple-1 border border-purple-1 text-white transition-colors hover:bg-purple-1/90"
                         : "top-0 left-0 bottom-0 w-8"
                 }`}
             >
-                <Icon className="dark:fill-white" name="search" />
+                <Icon className="fill-white dark:fill-white" name="search" />
             </button>
         </form>
     );

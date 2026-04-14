@@ -1,0 +1,102 @@
+.ub-how-it-works {
+    &__content-area{
+        background-color: $light-lavender;
+        padding: 4rem 2rem;
+        border-radius: 2rem;
+    }
+
+    &__header {
+        margin-bottom: 30px;
+    }
+
+    &__subtitle-area{
+        @extend .hero__subtitle-area;
+    }
+
+    &__subtitle-group{
+        @extend .hero__subtitle-group;
+    }
+
+    &__subtitle{
+        @extend .hero__subtitle;
+    }
+
+    &__title{
+        @extend .section-title;
+    }
+
+    &__desc{
+        @extend .section-desc;
+        max-width: 555px; 
+    }
+
+    &__content {
+        display: grid;
+        grid-template-columns: 1fr;  
+        gap: 2rem;  
+        margin-top: 3rem;
+    }
+
+    &__step {
+        padding: 2.5rem 1rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background-color: $white;
+        border-radius: 16px;
+        box-shadow: 0px 1px 2px 0px rgba(10, 13, 18, 0.05);
+    }
+
+    &__step-icon{
+        background-color: $purple-haze;
+        padding:14px ;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+    }
+
+    &__step-title {
+        font-size: 20px;
+        font-weight: 500;
+        line-height:28px;
+        color: $text-primary;
+        text-align: center;
+        margin-top: 20px;
+    }
+
+    &__step-description {
+        font-size: 16px;
+        line-height: 24px;
+        font-weight: normal;
+        color: $dark-slate-gray;
+        margin-top: 16px;
+        text-align: center;
+    }
+
+    // responsive 
+    @media (min-width: 768px) {
+       &__content{
+            grid-template-columns: repeat(2, 1fr);
+            margin-top: 3rem;
+       }
+    }
+
+    @media (min-width: 1024px) {
+         &__content {
+             grid-template-columns: repeat(3, 1fr);
+             margin-top: 4rem;
+         }
+    }
+
+    @media (min-width: 1265px) {
+         &__content {
+            grid-template-columns: repeat(4, 1fr); 
+            margin-top: 5rem;
+         } 
+    }
+}

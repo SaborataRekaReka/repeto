@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bazarly</title>
+  
+    <!-- main css -->
+    <link rel="stylesheet" href="./css/main.css">
+    <link rel="icon" type="image/png" href="./assets/img/fav/fav.jpg">
+
+    <!-- font awesome css -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha512-Kc323vGBEqzTmouAECnVceyQqyqdsSiqLQISBL29aUW4U/M7pSPA/gEUZQqv1cwx4OnYxTxve5UMg5GT6L4JJg==" crossorigin="anonymous" referrerpolicy="no-referrer" >
+
+    <!-- AOS animation  css-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css">
+
+    <!-- swiper css -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" >
+    
+    <!-- SweetAlert2 css -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
+</head>
+<body>
+
+    <!-- Header start here -->
+    <header id="ub-header" class="ub-header">
+        <div class="ub-header__container container">
+          <nav class="ub-header__navigation">
+            <div class="ub-header__branding">
+             <a href="index.html" class="header__logo">
+                <img src="./assets/img/logo/logo.svg" alt="Website Logo">
+              </a>
+            </div>
+            <div class="ub-header__menu">
+              <ul class="menu">
+                <li class="menu__item"><a href="index.html" class="menu__link">Home</a></li>
+                <li class="menu__item"><a href="about.html" class="menu__link">About</a></li>
+                <li class="menu__item"><a href="feature.html" class="menu__link">Features</a></li>
+                <li class="menu__item menu__item--has-dropdown">
+                  <a href="#" class="menu__link" aria-haspopup="true" aria-expanded="false">All Pages</a>
+                  <ul class="menu__submenu">
+                    <li class="menu__item"><a href="blog.html" class="menu__link">Blog</a></li>
+                    <li class="menu__item"><a href="blog-single.html" class="menu__link">Blog Details</a></li>
+                    <li class="menu__item"><a href="careers.html" class="menu__link">Careers</a></li>
+                    <li class="menu__item"><a href="careers-details.html" class="menu__link">Careers Details</a></li>
+                    <li class="menu__item"><a href="feature-single.html" class="menu__link">Features Details</a></li>
+                    <li class="menu__item"><a href="integrations.html" class="menu__link">Integrations</a></li>
+                    <li class="menu__item"><a href="integrations-details.html" class="menu__link">Integrations Details</a></li>
+                    <li class="menu__item"><a href="pricing.html" class="menu__link">Pricing</a></li>
+                    <li class="menu__item"><a href="pricing-details.html" class="menu__link">Pricing Details</a></li>
+                    <li class="menu__item"><a href="team-details.html" class="menu__link">Team Details</a></li>
+                    <li class="menu__item"><a href="privacy-policy.html" class="menu__link">Privacy & Policy</a></li>
+                    <li class="menu__item"><a href="licenses.html" class="menu__link">Licenses</a></li>
+                    <li class="menu__item"><a href="404.html" class="menu__link">404</a></li>
+                    <li class="menu__item"><a href="terms-and-condition.html" class="menu__link">Terms & Condition</a></li>
+                  </ul>
+                </li>
+                <li class="menu__item"><a href="contact.html" class="menu__link">Contact</a></li> 
+              </ul>
+            </div>
+            <div class="ub-header__actions">
+              <a href="sign-in.html" class="header__button header__button--login">Login</a>
+              <a href="#" class="ub-header__button header__button--get-started">Get Started</a>
+              <button class="ub-header__menu-toggle" aria-label="Toggle Menu">☰</button>
+            </div>
+          </nav>
+        </div>
+    </header>
+    <!-- Header end here -->
+      
+    <!-- Mobile start navigation -->
+    <div id="ub-mobile-nav" class="ub-mobile-nav">
+        <div class="ub-mobile-nav__header">
+            <div class="ub-mobile-nav__branding">
+                <a href="index.html">
+                    <img src="./assets/img/logo/logo.svg" alt="Mobile Logo" class="ub-mobile-nav__logo">
+                </a>
+            </div>
+            <button class="ub-mobile-nav__close-btn" aria-label="Close Menu">×</button>
+        </div>
+        <ul class="ub-mobile-nav__menu">
+            <li class="ub-mobile-nav__item"><a href="index.html" class="ub-mobile-nav__link">Home</a></li>
+            <li class="ub-mobile-nav__item"><a href="./about.html" class="ub-mobile-nav__link">About</a></li>
+            <li class="ub-mobile-nav__item ub-mobile-nav__item--has-dropdown">
+                <a href="#" class="ub-mobile-nav__link" aria-haspopup="true" aria-expanded="false">All Pages</a>
+                <ul class="ub-mobile-nav__list">
+                    <li class="ub-mobile-nav__item"><a href="./blog.html" class="ub-mobile-nav__link">Blog</a></li>
+                    <li class="ub-mobile-nav__item"><a href="./blog-single.html" class="ub-mobile-nav__link">Blog Details</a></li>
+                    <li class="ub-mobile-nav__item"><a href="careers.html" class="ub-mobile-nav__link">Careers</a></li>
+                    <li class="ub-mobile-nav__item"><a href="careers-details.html" class="ub-mobile-nav__link">Careers Details</a></li>
+                    <li class="ub-mobile-nav__item"><a href="feature.html" class="ub-mobile-nav__link">Features</a></li>
+                    <li class="ub-mobile-nav__item"><a href="feature-single.html" class="ub-mobile-nav__link">Features Details</a></li>
+                    <li class="ub-mobile-nav__item"><a href="integrations.html" class="ub-mobile-nav__link">Integrations</a></li>
+                    <li class="ub-mobile-nav__item"><a href="integrations-details.html" class="ub-mobile-nav__link">Integrations Details</a></li>
+                    <li class="ub-mobile-nav__item"><a href="team-details.html" class="ub-mobile-nav__link">Team Details</a></li>
+                    <li class="ub-mobile-nav__item"><a href="pricing.html" class="ub-mobile-nav__link">Pricing</a></li>
+                    <li class="ub-mobile-nav__item"><a href="pricing-details.html" class="ub-mobile-nav__link">Pricing Details</a></li>
+                    <li class="ub-mobile-nav__item"><a href="privacy-policy.html" class="ub-mobile-nav__link">Privacy & Policy</a></li>
+                    <li class="ub-mobile-nav__item"><a href="licenses.html" class="ub-mobile-nav__link">Licenses</a></li>
+                    <li class="ub-mobile-nav__item"><a href="404.html" class="ub-mobile-nav__link">404</a></li>
+                    <li class="ub-mobile-nav__item"><a href="terms-and-condition.html" class="ub-mobile-nav__link">Terms & Condition</a></li>
+                </ul>
+            </li>
+            <li class="ub-mobile-nav__item"><a href="contact.html" class="ub-mobile-nav__link">Contact</a></li>
+        </ul>
+        <div class="ub-mobile-nav__actions">
+            <a href="sign-in.html" class="ub-mobile-nav__button ub-mobile-nav__button--login">Login</a>
+            <a href="#" class="ub-mobile-nav__button ub-mobile-nav__button--get-started">Get Started</a>
+        </div>
+    </div>
+    <!-- Mobile end navigation -->
+
+    <main>
+        <!-- Pricing details start here -->
+        <section id="ub-pricing-details" class="ub-pricing-details" data-aos="fade-up" data-aos-duration="800" data-aos-offset="50">
+            <div class="container">
+                <div class="ub-pricing-details__wrapper">
+                    <div class="ub-pricing-details__content">
+                        <h2 class="ub-pricing-details__title" data-aos="fade-up" data-aos-delay="50" data-aos-offset="50">Features</h2>
+                        <ul class="ub-pricing-details__list">
+                            <li class="ub-pricing-details__item" data-aos="fade-up" data-aos-delay="100" data-aos-offset="50">Lorem ipsum dolor sit amet consectetur adipiscing elit ut eu sem integer vitae justo egestas</li>
+                            <li class="ub-pricing-details__item" data-aos="fade-up" data-aos-delay="150" data-aos-offset="50">Et odio pellentesque diam volutpat commodo pellentesque eu tincidunt tortor aliquam.</li>
+                            <li class="ub-pricing-details__item" data-aos="fade-up" data-aos-delay="200" data-aos-offset="50">Aliquet enim tortor at auctor urna nunc id cursus elis</li>
+                            <li class="ub-pricing-details__item" data-aos="fade-up" data-aos-delay="250" data-aos-offset="50">Aliquet enim tortor at auctor urna nunc id cursu</li>
+                        </ul>
+                        <div class="ub-pricing-details__section" data-aos="fade-up" data-aos-delay="300" data-aos-offset="50">
+                            <h3 class="ub-pricing-details__subtitle">Why Choose it</h3>
+                            <p class="ub-pricing-details__desc">The standard plan of Spectra is tailored for individual developers and small teams working on SaaS projects...</p>
+                        </div>
+                        <div class="ub-pricing-details__section" data-aos="fade-up" data-aos-delay="350" data-aos-offset="50">
+                            <h3 class="ub-pricing-details__subtitle">Benefits brief</h3>
+                            <p class="ub-pricing-details__desc">The standard plan of Spectra is tailored for individual developers and small teams working on SaaS projects...</p>
+                        </div>
+                    </div>
+                    <div class="ub-pricing-details__options">
+                        <div data-target="monthly" class="ub-pricing-details__card" data-aos="fade-up" data-aos-delay="400" data-aos-offset="50">
+                            <p class="ub-pricing-details__card-price">$14.00 <span class="ub-pricing-details__card-currency">USD/per month</span></p>
+                            <p class="ub-pricing-details__card-desc">Comprehensive package tailored for growing businesses</p>
+                            <a class="ub-pricing-details__card-btn" data-aos="zoom-in" data-aos-delay="450" data-aos-offset="50">Get Started</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Pricing details end here -->
+
+        <!-- Faq start here -->
+        <section id="ub-faq" class="ub-faq" data-aos="fade-up" data-aos-delay="100">
+            <div class="ub-faq__container container">
+                <div class="ub-faq__grid" data-aos="fade-up" data-aos-delay="200">
+                    <!-- Section Heading -->
+                    <div class="ub-faq__heading" data-aos="fade-up" data-aos-delay="300">
+                        <div class="ub-faq__subtitle-area" data-aos="fade-up" data-aos-delay="400">
+                            <div class="ub-faq__subtitle-group">
+                                <img class="ub-faq__icon" src="./assets/icons/fav.svg" alt="Favorite Icon">
+                                <span class="ub-faq__subtitle">Faq</span>
+                            </div>
+                        </div>
+                        <h2 class="ub-faq__title" data-aos="fade-up" data-aos-delay="500">The answers to your questions.</h2>
+                    </div>
+                    <!-- FAQ Area -->
+                    <div class="ub-faq__list" data-aos="fade-up" data-aos-delay="600">
+                        <!-- FAQ Item -->
+                        <div class="ub-faq__item active" data-aos="fade-up" data-aos-delay="700">
+                            <button class="ub-faq__question active">
+                                <span class="ub-faq__question-text">What support options are available for Bazarly users? </span>
+                            </button>
+                            <div class="ub-faq__answer active">
+                                <p>Keeps customer info in sync with CRMs, tracks chats, and handles leads with live updates.</p>
+                            </div>
+                        </div>
+                        <div class="ub-faq__item" data-aos="fade-up" data-aos-delay="800">
+                            <button class="ub-faq__question">
+                                <span class="ub-faq__question-text">What features does Bazarly offer for managing customer data?</span>
+                            </button>
+                            <div class="ub-faq__answer">
+                                <p>Synchronizes customer data with CRM systems, monitors conversations, and manages leads with real-time updates.</p>
+                            </div>
+                        </div>
+                        <div class="ub-faq__item" data-aos="fade-up" data-aos-delay="900">
+                            <button class="ub-faq__question">
+                                <span class="ub-faq__question-text">What features does Bazarly provide for CRM users?</span>
+                            </button>
+                            <div class="ub-faq__answer">
+                                <p>Syncs customer data with CRMs, tracks interactions, and manages leads with real-time updates.</p>
+                            </div>
+                        </div>
+                        <div class="ub-faq__item" data-aos="fade-up" data-aos-delay="1000">
+                            <button class="ub-faq__question">
+                                <span class="ub-faq__question-text">How can Bazarly help improve customer relationships?</span>
+                            </button>
+                            <div class="ub-faq__answer">
+                                <p>Easily links client info with CRM systems, keeps tabs on interactions, and alerts you about potential customers right away.</p>
+                            </div>
+                        </div>
+                        <div class="ub-faq__item" data-aos="fade-up" data-aos-delay="1200">
+                            <button class="ub-faq__question">
+                                <span class="ub-faq__question-text">What integrations does Bazarly have with other tools?</span>
+                            </button>
+                            <div class="ub-faq__answer">
+                                <p>It effortlessly connects client info with your CRM, tracks your interactions, and gives you a heads-up about potential customers in no time!</p>
+                            </div>
+                        </div>
+                        <div class="ub-faq__item" data-aos="fade-up" data-aos-delay="1300">
+                            <button class="ub-faq__question">
+                                <span class="ub-faq__question-text">What security does Bazarly use for data protection?</span>
+                            </button>
+                            <div class="ub-faq__answer">
+                                <p>Seamlessly integrates client details with your CRM, monitors your communications, and alerts you about promising leads in an instant!</p>
+                            </div>
+                        </div>
+                    </div> 
+                </div>
+            </div>
+        </section>
+        <!-- Faq end here -->
+
+        <!-- Cta start here -->
+        <section id="ub-cta" class="ub-cta">
+            <div class="ub-cta__container container">
+                <div class="ub-cta__area" data-aos="fade-up" data-aos-delay="200">
+                    <h3 class="ub-cta__title" data-aos="fade-up" data-aos-delay="100">Get set to take your CRM game to the next level!</h3>
+                    <p class="ub-cta__desc" data-aos="fade-up" data-aos-delay="300">Don't miss out on the excitement! Stay tuned for all the thrilling events we have lined up just for you!</p>
+                    <div class="ub-cta__btn-group" data-aos="fade-up" data-aos-delay="400">
+                        <a class="ub-cta__btn" href="#">Start 14 days free</a>
+                    </div>
+                    <div class="ub-cta__background-up"></div>  
+                    <div class="ub-cta__background-up"></div>  
+                </div>
+            </div>
+        </section>
+        <!-- Cta end here -->
+         
+     </main>
+        <!-- footer start here -->
+        <footer id="footer" class="footer"> 
+            <div class="footer__container container">
+                <div class="footer__content">
+                    <!-- Newsletter Section -->
+                    <div class="footer__newsletter">
+                        <div class="footer__newsletter-heading">
+                            <h3 class="footer__newsletter-title">Join our newsletter</h3>
+                            <p class="footer__newsletter-desc">We're here to assist you! Have a question or need support?</p>
+                        </div>
+                        <div class="footer__form-wrapper">
+                            <form action="#" class="footer__newsletter-form">
+                                <div class="footer__input-wrapper">
+                                    <input type="email" class="footer__input" placeholder="Enter your email">
+                                    <input class="btn footer__submit-btn" type="submit" value="Subscribe">
+                                </div>
+                                <p id="footer__form-message" class="footer__form-message success-message"></p>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="footer__content-wrapper">
+                        <!-- Logo Section Wrapper -->
+                        <div class="footer__logo-wrapper">
+                            <div class="footer__logo-inner-wrapper">
+                                <a href="index.html" class="footer__logo-link">
+                                    <img src="./assets/img/logo/logo.svg" alt="Logo" class="footer__logo-img">
+                                </a>
+                                <p class="footer__desc">Bazarly enhances communication, tracks performance, and boosts customer loyalty.</p>
+                            </div>
+                        </div>
+
+                        <!-- Navigation Section Wrapper -->
+                        <div class="footer__navigation-wrapper">
+                            <div class="footer__navigation-column">
+                                <h3 class="footer__navigation-title">Index</h3>
+                                <ul class="footer__links">
+                                    <li class="footer__link-item"><a href="index.html" class="footer__link">Home</a></li>
+                                    <li class="footer__link-item"><a href="feature.html" class="footer__link">Features</a></li>
+                                    <li class="footer__link-item"><a href="feature-single.html" class="footer__link">Features Details</a></li>
+                                    <li class="footer__link-item"><a href="contact.html" class="footer__link">Contact</a></li>
+                                </ul>
+                            </div>
+                            <div class="footer__navigation-column">
+                                <h3 class="footer__navigation-title">Company</h3>
+                                <ul class="footer__links">
+                                    <li class="footer__link-item"><a href="blog.html" class="footer__link">Blog</a></li>
+                                    <li class="footer__link-item"><a href="blog-single.html" class="footer__link">Blog Details</a></li>
+                                    <li class="footer__link-item"><a href="team-details.html" class="footer__link">Team Details</a></li>
+                                     <li class="footer__link-item"><a href="pricing.html" class="footer__link">Pricing</a></li>
+                                    <li class="footer__link-item"><a href="pricing-details.html" class="footer__link">Pricing Details</a></li>
+                                </ul>
+                            </div>
+                            <div class="footer__navigation-column">
+                                <h3 class="footer__navigation-title">Single page</h3>
+                                <ul class="footer__links">
+                                    <li class="footer__link-item"><a href="careers.html" class="footer__link">Careers</a></li>
+                                    <li class="footer__link-item"><a href="#" class="footer__link">Careers Details</a></li>
+                                    <li class="footer__link-item"><a href="integrations.html" class="footer__link">Integrations</a></li>
+                                    <li class="footer__link-item"><a href="integrations-details.html" class="footer__link">Integrations Details</a></li>
+                                </ul>
+                            </div>
+                            <div class="footer__navigation-column">
+                                <h3 class="footer__navigation-title">Utility</h3>
+                                <ul class="footer__links">
+                                    <li class="footer__link-item"><a href="./licenses.html" class="footer__link">Licenses</a></li>
+                                    <li class="footer__link-item"><a href="privacy-policy.html" class="footer__link">Privacy policy</a></li>
+                                    <li class="footer__link-item"><a href="terms-and-condition.html" class="footer__link">Terms of services</a></li>
+                                    <li class="footer__link-item"><a href="404.html" class="footer__link">404</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                     <!-- Copyright Section -->
+                    <div class="footer__copyright">
+                        <div class="footer__copyright-text">
+                            <p>&copy;<span class="footer__company-name">Bazarly</span>. All rights reserved.  
+                            <span class="footer__divider">|</span> Designed by <a href="https://www.uibazar.com" class="footer__link">UiBazar</a>  
+                            <span class="footer__divider">|</span> Built with HTML, CSS & JavaScript</p>
+                        </div>
+                        
+                        <div class="footer__social-links">
+                            <ul class="footer__social-list">
+                                <li class="footer__social-item">
+                                    <a href="https://www.linkedin.com/" target="_blank" rel="noopener noreferrer" class="footer__social-link">
+                                        <img src="./assets/icons/LinkedIn.svg" alt="LinkedIn Icon" class="footer__social-icon">
+                                    </a>
+                                </li>
+                                <li class="footer__social-item">
+                                    <a href="https://twitter.com/" target="_blank" rel="noopener noreferrer" class="footer__social-link">
+                                        <img src="./assets/icons/X.svg" alt="Twitter Icon" class="footer__social-icon">
+                                    </a>
+                                </li>
+                                <li class="footer__social-item">
+                                    <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" class="footer__social-link">
+                                        <img src="./assets/icons/instagram.svg" alt="Instagram Icon" class="footer__social-icon">
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>                        
+                    </div>
+                </div>
+            </div>
+        </footer>
+        <!-- footer end here --> 
+
+ 
+    <!-- js  -->
+    <!--  AOS JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+    <!-- SweetAlert2 js  -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Swiper js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/11.0.5/swiper-bundle.min.js" integrity="sha512-Ysw1DcK1P+uYLqprEAzNQJP+J4hTx4t/3X2nbVwszao8wD+9afLjBQYjz7Uk4ADP+Er++mJoScI42ueGtQOzEA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- Main js -->
+    <script src="./assets/js/srcipts.js"></script>
+    <!-- Form js -->
+    <script src="./assets/js/form.js"></script>    
+</body>
+</html>

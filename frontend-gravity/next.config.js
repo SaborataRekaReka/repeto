@@ -25,7 +25,14 @@ const nextConfig = {
     },
     async rewrites() {
         if (!hasAbsoluteApiOrigin) {
-            return [];
+            // In dev mode with relative /api, uploads still need proxying to backend
+            const backendUrl = process.env.BACKEND_URL || 'http://localhost:3200';
+            return [
+                {
+                    source: "/uploads/:path*",
+                    destination: `${backendUrl}/uploads/:path*`,
+                },
+            ];
         }
 
         return [

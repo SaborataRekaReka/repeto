@@ -24,11 +24,19 @@ import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
-    ThrottlerModule.forRoot([
-      { name: 'global', ttl: 60000, limit: 100 },
-      { name: 'auth', ttl: 60000, limit: 10 },
-      { name: 'portal', ttl: 60000, limit: 15 },
-    ]),
+    ThrottlerModule.forRoot(
+      process.env.NODE_ENV === 'production'
+        ? [
+            { name: 'global', ttl: 60000, limit: 100 },
+            { name: 'auth', ttl: 60000, limit: 10 },
+            { name: 'portal', ttl: 60000, limit: 15 },
+          ]
+        : [
+            { name: 'global', ttl: 60000, limit: 1000 },
+            { name: 'auth', ttl: 60000, limit: 100 },
+            { name: 'portal', ttl: 60000, limit: 100 },
+          ],
+    ),
     ScheduleModule.forRoot(),
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'uploads'),

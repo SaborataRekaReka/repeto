@@ -1,0 +1,187 @@
+/* ========================
+   License Section Styles
+======================== */
+
+.ub-license {
+    
+    &__header { 
+        max-width: 1000px;
+        text-align: left;
+        margin: 0 auto;
+        border-bottom: 1px solid #6155C852;
+        padding-bottom:4rem;
+    }
+
+    &__title {
+        @extend .section-title;
+        color: $dark-neutral;
+        margin-bottom: 10px;
+        text-align: left;
+        margin-left: 0;
+    }
+
+    &__desc{
+        @extend .section-desc;
+        text-align: left;
+        margin-left: 0;
+    }
+
+    // Illustration Section
+    &__illustration {
+       padding: 4rem 0;
+
+    }
+
+    &__illustration-item{
+        display: flex;
+        justify-content: space-between;
+        gap:2rem;
+    
+        @media (max-width:946px) {
+            flex-direction: column;      
+        }
+    }
+
+    &__illustration-image{
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+    }
+
+    &__illustration-caption{
+        font-size: 1.5rem;
+        color: $dark-neutral;
+        font-weight: 500;
+
+    }
+    
+    &__illustration-credit {
+        font-size: 18px;
+        color: $dark-gray;
+        font-weight: normal;
+    }
+
+    // Typography Section
+    &__typography{
+        margin-bottom: 40px;
+    }
+
+    &__typography-title {
+        font-size: 1.5rem;
+        font-weight: 500;
+        color: $dark-neutral;
+        line-height:30px;
+        margin-bottom: 10px; 
+    }
+
+    &__typography-info{
+        font-size: 18px;
+        color: $dark-gray;
+        font-weight: normal;
+        line-height: 1.5;
+    }
+
+    &__typography-link{
+        color: $primary-color;
+        text-decoration: underline;
+
+        &:hover {
+            color: darken($primary-color, 10%);
+        }
+    }
+
+    &__typography-download {
+        color: $primary-color;
+        font-weight: 500;
+        margin-top: 10px;
+        display: inline-block;
+
+        &:hover {
+            text-decoration: underline; 
+        }
+    }
+
+    // Iconography Section
+    &__iconography{
+        margin-bottom: 40px;
+        display: flex;
+        justify-content:space-between;
+        gap:2rem;
+        border-bottom: 1px solid #6155C852;
+        padding:5rem 0;
+    }
+
+    &__iconography-title {
+        font-size: 1.5rem;
+        font-weight: 500;
+        color: $dark-neutral;
+        line-height:30px;
+        margin-bottom: 10px;
+    }
+
+    &__iconography-info {
+        font-size: 18px;
+        color: $dark-gray;
+        font-weight: normal;
+        line-height: 1.5;
+    }
+
+    &__iconography-image {
+        max-width: 100%;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    &__iconography-link{
+        color: $primary-color;
+        text-decoration: underline;
+
+        &:hover {
+            color: darken($primary-color, 10%);
+        }
+    }
+
+    // Photography Section
+    &__photography-title {
+        font-size: 1.5rem;
+        font-weight: 500;
+        color: $dark-neutral;
+        line-height:30px;
+        margin-bottom: 10px;
+    }
+
+    &__photography-list {
+        margin-bottom: 10px;
+        color:$dark-gray;
+        font-size: 18px;
+        font-weight: normal;
+    }
+
+    &__photography-link {
+        color: $primary-color;
+        text-decoration: underline;
+        margin-bottom: 10px;
+        line-height: 1.5;
+        display: inline-block;
+
+        &:hover {
+            color: darken($primary-color, 10%);
+        }
+    }
+
+    &__photography-note{
+        font-size: 18px;
+        color: $dark-gray;
+        font-weight: normal;
+        line-height: 1.5;
+        margin-top: 3rem;
+    }
+
+    // responsive
+    @media (max-width:946px) {
+        &__iconography{
+            flex-direction: column;   
+        }    
+    }
+}
+ 

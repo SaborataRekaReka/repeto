@@ -1,0 +1,65 @@
+
+.ub-about-hero {
+    &__container{
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+    &__wrapper{
+        padding: 7rem 1rem 15rem;
+
+        border-radius: 1.125rem;
+        // padding:7rem 15rem 1rem ;
+    }
+
+    &__subtitle-area{
+        @extend .hero__subtitle-area;
+    }
+    &__subtitle-group{
+        @extend .hero__subtitle-group;
+    }
+    &__subtitle{
+        @extend .hero__subtitle;
+    }
+
+    &__title {
+        @extend .section-title;
+        margin-top: 1.5rem; 
+        max-width: 600px;
+    }
+
+    &__desc {
+        @extend .section-desc;
+    }
+
+    &__image {
+        padding: 0 1rem;
+        margin-top: -11rem;
+
+        img {
+            width: 100%;
+            height: auto;
+            border-radius: 1.125rem;  
+            border-radius: 2.25rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        &__container {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        &__subtitle-group {
+            justify-content: center;
+        }
+
+        &__wrapper{
+            padding-bottom: 12rem;
+        }
+
+        &__image {
+            margin-top: -8rem; 
+        }
+
+    }
+}

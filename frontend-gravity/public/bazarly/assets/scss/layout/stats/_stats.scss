@@ -1,0 +1,116 @@
+.ub-stats {
+
+    &__container {
+        padding-top: 2.5rem;
+
+        &--padded {
+            padding-top: 2.5rem;   
+            padding-bottom: 2.5rem;  
+        }
+    }
+
+    &__subtitle-area{
+        @extend .hero__subtitle-area;
+    }
+
+    &__subtitle-group{
+        @extend .hero__subtitle-group;
+    }
+
+    &__subtitle{
+        @extend .hero__subtitle;
+    }
+
+    &__title{
+        @extend .section-title;
+        max-width: 658px;
+        margin-bottom: 5rem;
+    }
+
+    &__grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.25rem;
+
+        &--primary{
+            background-color: $primary-dark-purple;
+            border-radius: 2rem;
+            padding: 2.5rem;
+        }
+    }
+
+    &__card {
+        border-radius: 12px;
+        padding: 2rem 1rem;
+        text-align: left;
+        border-radius: 1rem;
+
+        &--bg-white {
+            background-color: $white;
+            border: 1px solid $purple-haze;
+        }
+    }
+
+    &__card-title {
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 1.5;
+        margin-bottom: 1rem;
+        color: $dark-gray; 
+    }
+
+    &__card-value {
+        font-size: 2.5rem;
+        font-weight: 500;
+        color:$dark-neutral;
+        line-height:1.2;
+        display: flex;
+        align-items: center;
+    }
+
+    &__animated-text {
+        display: inline-block;
+
+        &--white{
+            color:$white;
+        }
+    }
+
+    &__description{
+        color: $white;
+        font-size: 1rem;
+        line-height: 1.5;
+        font-weight: 500;
+        margin-top: 1rem;
+        max-width:188px;
+    }
+
+    &__plus-sign {
+        font-size: 1.5rem;
+        margin-left: 0.25rem;
+        display: flex;
+        align-items: center;
+        margin-left: 1rem;
+
+        &--white{
+            color:$white;
+        }
+    }
+
+    @media (max-width: 768px) {
+        &__card-title{
+            text-align: center;
+        }
+
+        &__card-value {
+            justify-content: center;
+        }
+
+        &__description{
+            text-align:center;
+            margin: 0 auto;
+            margin-top: 1rem;
+        }
+    }
+
+}

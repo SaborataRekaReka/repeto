@@ -1,5 +1,4 @@
-export const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || '/api';
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api';
 export const API_ORIGIN = API_BASE.replace(/\/api$/, '');
 
 export function resolveApiAssetUrl(value?: string | null) {

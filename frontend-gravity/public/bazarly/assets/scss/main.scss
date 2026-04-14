@@ -1,0 +1,52 @@
+/* 1. Reset Styles */
+@import "./reset";  /* General CSS resets */
+
+/* 2. Variables */
+@import "./variable";  /* Theme variables (e.g., colors, fonts, sizes) */
+
+/* 3. Fonts */
+@import "./fonts";  /* Custom font imports */
+
+/* 4. Mixins */
+@import "./mixin";  /* SCSS mixins for reusable styles */
+
+/* 5. Extends */
+@import "./extend";  /* SCSS extends for inheritance and reusability */
+
+/* 6. Global Styles */
+@import "./global";  /* General body, typography, and global styles */
+
+/* 7. Components */
+@import "./components/container/container";  /* Container styles */
+
+/* 8. Layout Styles */
+
+/* Layout Sections */
+@import "./layout/header/header";           /* Header layout */
+@import "./layout/hero/hero";               /* Hero section */
+@import "./layout/brands/brands";           /* Brand section */
+@import "./layout/feature/feature";         /* Feature section */
+@import "./layout/faq/faq";                 /* FAQ section */
+@import "./layout/cta/cta";                 /* Call-to-action section */
+@import "./layout/blogs/blogs";             /* Blog section */
+@import "./layout/latest-post/latest-post"; /* Latest post section */
+@import "./layout/how-it-works/how-it-works"; /* How it works section */
+@import "./layout/pricing/pricing";         /* Pricing section */
+@import "./layout/testimonials/testimonials"; /* Testimonials section */
+@import "./layout/integrations/integrations"; /* Integrations section */
+@import "./layout/team/team";               /* Team section */
+@import "./layout/misson/misson";         /* Mission section */
+@import "./layout/stats/stats";             /* Stats section */
+@import "./layout/about/about";             /* About section */
+@import "./layout/licenses/licenses";       /* Licenses section */
+@import "./layout/privacy-policy/privacy-policy"; /* Privacy policy */
+@import "./layout/terms-condition/terms-condition"; /* Terms and conditions */
+@import "./layout/contact/contact";         /* Contact section */
+@import "./layout/careers/careers";         /* Careers section */
+@import "./layout/open-positions/open-positions"; /* Open positions */
+@import "./layout/sign-in/sign-in";         /* Sign-in page */
+@import "./layout/error-page/error";        /* Error page */
+
+/* 9. Footer */
+@import "./layout/footer/footer";  /* Footer section */
+ 

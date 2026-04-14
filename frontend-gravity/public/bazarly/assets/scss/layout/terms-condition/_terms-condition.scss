@@ -1,0 +1,46 @@
+.ub-terms{
+    &__content-area{
+        max-width: 680px;
+        margin: 0 auto;
+    }
+
+    &__header{
+        margin-bottom: 2.5rem;
+    }
+
+    &__title{
+        @extend .hero__title;
+        margin-bottom: 1rem;
+        margin-left: 0;
+        text-align: left;
+    }
+
+    &__desc{
+        @extend .section-desc; 
+        margin-left: 0;
+        text-align: left;
+    }
+
+    &__list{
+        @extend .list-bulet;
+    }
+
+    &__item{
+        font-size: 1rem;
+        font-weight: normal;
+        color: $dark-gray;
+        line-height: 1.5;
+    }
+
+    &__footer{
+        margin-top: 3rem;
+        color: $gray-medium;
+    }
+
+    &__last-update{
+        font-size: 1rem;
+        font-weight: normal;
+        margin-bottom: 2.5rem;
+        line-height: 1.5;
+    }
+}

@@ -1,0 +1,76 @@
+.ub-hero-home {
+    
+    &__container {
+        padding-top: 0;  
+        padding-bottom: 0;  
+    }
+
+    &__content-area {
+        border-radius: 1.5rem;
+    }
+
+    &__content {
+        border-radius: 1.5rem;
+        max-height: 800px;
+        min-height: 600px;
+        padding: 7rem 1.5rem;
+    }
+
+    &__subtitle-area {
+        @extend .hero__subtitle-area;
+    }
+
+    &__subtitle-group {
+        @extend .hero__subtitle-group;
+        background-color: $soft-lilac;
+        margin-bottom: 1rem;
+    }
+
+    &__subtitle {
+        @extend .hero__subtitle;
+    }
+
+    &__title {
+        @extend .hero__title;
+    }
+
+    &__desc {
+        @extend .hero__desc;
+        margin-top: 1.5rem;
+    }
+
+    &__button-group {
+        @extend .button-group;
+    }
+
+    &__button--primary {
+        @extend .btn-primary;
+    }
+
+    &__button--secondary {
+        @extend .btn-secondary;
+    }
+
+    &__image-wrapper {
+        padding: 0 1rem;
+        margin-top: -10rem;
+    }
+
+    &__img {
+        width: 100%;
+        border-radius: 1rem;
+    }
+
+    // Media Queries
+    @media (min-width: 550px) {
+        &__image-wrapper {
+            margin-top: -16rem;
+        }
+    }
+
+    @media (min-width: 500px) and (max-width: 550px) {
+        &__image-wrapper {
+            margin-top: -14rem;
+        }
+    }
+}

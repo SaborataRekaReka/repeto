@@ -1,0 +1,80 @@
+// contact page
+.ub-contact {
+    &__content{
+        background-color: $light-lavender;
+        max-width: 600px;
+        padding: 3rem;
+        border-radius: 20px;
+        margin-left: auto;
+        margin-right: auto;
+        margin-top: 4rem; 
+    } 
+
+    &__title{
+        @extend .section-title; 
+        font-size: 3rem;
+        margin-bottom: 3.5rem;
+    }
+
+    &__input-group {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 1rem;
+    }
+
+    &__label {
+        font-weight: 500;
+        font-size: 20px;
+        line-height: 28px;
+        color: $dark-neutral; 
+        margin-bottom: 10px;
+    }
+
+    &__input {
+        padding: 12px 14px;
+        border-radius: 5px; 
+        border: none;
+        font-family: $font-family-body;
+
+        &::placeholder {
+            font-size: 16px;
+            font-weight: 400;
+            line-height: 1.5;
+            color: $gray-medium;
+            font-family: $font-family-body;
+        }
+
+        &:focus {
+            outline: 2px solid $primary-color;
+        }
+    }
+
+    &__textarea {
+        padding: 10px;
+        border-radius: 5px;
+        border: none;
+
+        &::placeholder {
+            font-size: 16px;
+            font-weight: 400;
+            line-height: 1.5;
+            color: $gray-medium;
+            font-family: $font-family-body;
+        }
+
+        &:focus {
+            outline: 2px solid $primary-color;
+        }
+    }
+
+    &__btn {
+        @include btn();
+        margin-top: 20px;
+    }
+
+    @media (max-width: 768px) { 
+        &__content{
+            padding:3rem 1rem ;
+        }
+    } 
+}

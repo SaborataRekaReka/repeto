@@ -1,0 +1,397 @@
+// pricing section 
+.ub-pricing {
+    &.ub-pricing--padded{
+      padding: 0 1rem;
+    }
+
+    &.hero__subtitle-group{
+      padding: 0 1rem;
+    }
+
+    &__header {
+      margin-bottom: 3rem;
+    }
+
+    &__subtitle-area {
+      @extend .hero__subtitle-area;
+    }
+
+    &__subtitle-group {
+      @extend .hero__subtitle-group;
+    }
+
+    &__subtitle {
+      @extend .hero__subtitle;
+    }
+
+    &__title {
+      @extend .section-title;
+      max-width: 560px; 
+    }
+
+    &__desc {
+      @extend .section-desc; 
+      max-width: 506px;
+    }
+  
+    &__cards {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+      margin-top: 4rem;
+    } 
+
+    &__card {
+      background-color: $light-lavender;
+      border: 1px solid rgba(64, 64, 64, 0.12);
+      padding: 2.5rem;
+      border-radius: 1rem;
+
+      &:hover {
+        background-color: $dark-purple;
+        transition: 0.5s ease;
+
+        .ub-pricing__price {
+          color: $light-gray !important;
+        }
+
+        .ub-pricing__plan-title,
+        .ub-pricing__plan-description,
+        .ub-pricing__features-list li,
+        .fa-check {
+          color: $white !important;
+        }
+
+        .ub-pricing__button {
+          background-color: $soft-lilac;
+        }
+      }
+    }
+
+    &__plan-title {
+      font-weight: 500;
+      font-size: 1rem;
+      line-height: 24px;
+      text-align: left;
+    }
+
+    &__plan-description {
+      font-size: 1rem;
+      text-align: left;
+      margin-top: 1rem;
+      color: $dark-slate-gray;
+      line-height: 24px;
+    }
+
+    &__price-wrapper {
+      margin-top: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    &__price {
+      color: $dark-neutral;
+      font-size: 2.25rem;
+      font-weight: 500;
+      text-align: left;
+      display: block;
+    }
+
+    &__features-list {
+      margin-top: 2.5rem;
+
+      li {
+        margin-bottom: 0.75rem;
+        text-align: left;
+        color: $dark-slate-gray;
+
+        i {
+          width: 21px;
+          height: 21px;
+          color: $soft-purple;
+          margin-right: 0.5rem;
+        }
+      }
+    }
+        
+    &__button {
+        margin-top: 4rem;
+        display: block;
+        text-decoration: none;
+        font-size: 1rem;
+        font-weight: 500;
+        line-height: 24px;
+        background-color: $light-purple;
+        color: $dark-gray;
+        padding: 8px 5px;
+        border-radius: 32px;
+        text-align: center;
+        width: 100%;
+    }
+  
+    &__cards--hidden {
+      display: none;
+    }
+
+    // responsive
+    @media (min-width: 768px) {
+      &__cards {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (min-width: 1024px) {
+      &__cards {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2rem;
+      }
+    }
+  }
+
+// Pricing Page
+.ub-hero-pricing {
+    &__container{
+        padding-top:0;
+        padding-bottom:0;
+    }
+
+    &__content{
+        min-height: 700px;  
+        padding-top: 7rem;   
+        padding-left: 1.5rem;  
+        padding-right: 1.5rem;  
+        border-radius: 1.5rem; 
+    }
+
+    &__subtitle-area{
+      @extend .hero__subtitle-area;
+    }
+
+    &__subtitle-group{
+      @extend .hero__subtitle-group;
+      background: $soft-lilac;
+    }
+
+    &__pricing-hero__subtitle{
+      @extend .hero__subtitle;
+    }
+
+    &__title{
+      @extend .section-title;
+      max-width: 400px;
+    }
+
+    &__desc{
+      @extend .section-desc;
+      max-width: 500px;
+    }
+
+    // responsive 
+    @media (max-width: 454px) {
+        margin-bottom: -24rem;
+    }
+    @media (min-width: 455px) {
+        margin-bottom: -30rem;
+    }
+}
+
+/* Pricing Table Styles */
+.ub-pricing-table {
+
+  overflow-x: auto;
+  scrollbar-color: $deep-violet; 
+  scrollbar-width: thin;
+
+  &::-webkit-scrollbar {
+      height: 8px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+      background-color: var(--light-purple, #d8c4fc);
+      border-radius: 10px;
+  }
+
+  &::-webkit-scrollbar-track {
+      background: transparent;
+  }
+
+  &__title {
+      font-size: 2rem;
+      line-height: 1.5;
+      color: var(--dark-neutral, #333);
+      font-weight: 500;
+      margin-bottom: 1.125rem;
+  }
+
+  &__content {
+      font-size: 0.875rem;
+      width: 100%;
+  }
+
+  &__feature {
+    padding: 0.75rem;
+    color: var(--dark-gray, #666);
+    font-weight: 400;
+    font-size: 1rem;
+    line-height: 1.5;
+
+    &:first-child {
+        width: 35%;
+    }
+
+    &:not(:first-child) {
+        text-align: center;
+        width: calc(65% / 3);
+    }
+  }
+
+  &__row {
+    font-weight: 400;
+    text-align: left;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    &:nth-child(odd) {
+        background-color: $soft-lilac;
+    }
+
+    &:nth-child(even) {
+        background-color: $white;
+    }
+
+    td:last-child {
+        margin-right: 5rem;
+    }
+  }
+
+  @media screen and (max-width: 767px) {
+      &__content {
+          min-width: 767px;
+      }
+  }
+}
+
+// pricing details page
+.ub-pricing-details{
+
+    &__wrapper{
+      display: grid;
+      grid-template-columns: repeat(1, 1fr);   
+      gap: 3rem;       
+    }
+
+    &__content{
+      max-width: 704px;
+    }
+          
+    &__title{
+      @extend .hero__title;
+        margin-top:0;
+        text-align:left;
+        margin-bottom: 1rem;
+    }
+
+    &__subtitle{
+      font-size: 1.25rem;
+      font-weight: 500;
+      color: $dark-gray;
+      line-height: 1.5;
+      margin-bottom: 1rem;
+    }
+
+    &__desc{
+      font-size: 1rem;
+      font-weight: normal;
+      line-height: 1.5;
+      color:$gray-medium;
+    }
+
+    &__list {
+        @extend .list-bulet;
+        color: $gray-medium;  
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 24px;   
+        line-height: 1.5;  
+
+        li{
+          margin-bottom: 1rem;
+        }
+    }
+
+    &__section{
+      border-top: 1px solid $purple-haze; 
+      margin-top: 1.5rem;
+      padding: 1rem 0;
+    }
+
+
+    // pricing card
+    &__card{
+        border: 1px solid $purple-haze;
+        border-radius: 10px;
+        padding: 4rem 2rem;
+        display: block;
+        margin-top: 2rem;
+        max-width: 496px; 
+        background-color:$purple-haze; 
+    }
+    
+    &__options {
+        display: flex;
+        flex-direction: column;
+        justify-content: start;
+        align-items: end;
+
+        @media (max-width: 1024px) {  
+          justify-content: start;
+          align-items: start;
+      }  
+    }
+
+    &__card-price{
+        font-size: 2.5rem; 
+        font-weight: 500;
+        line-height: 48px;
+        color: $dark-neutral;
+
+        span{
+            font-size: 20px;
+            line-height: 28px;
+        }
+    }
+
+    &__card-desc{
+        margin-top: 1.5rem;
+        color:$gray-medium;
+        font-weight: 400;
+        font-size: 1rem;
+        line-height: 1.5;
+
+    }
+
+    &__card-btn{
+        @include btn; 
+        display: block;
+        text-align: center; 
+        margin-top: 2rem;
+    }
+
+    // responsive
+    @media (min-width: 1024px) {  
+      &__wrapper{
+      grid-template-columns: repeat(2, 1fr);  
+      gap: 5rem;
+      }
+    } 
+
+    @media (max-width: 310px) {
+      &__switcher-btn{
+            padding: 4px 12px;
+      }
+    }
+}
+
+  
+  

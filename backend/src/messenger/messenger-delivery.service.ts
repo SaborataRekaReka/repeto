@@ -16,6 +16,7 @@ export type NotificationEvent = {
     | 'lesson_rescheduled'
     | 'payment_debt'
     | 'lesson_reminder'
+    | 'homework_reminder'
     | 'portal_access';
   tutorId: string;
   studentId: string;
@@ -210,5 +211,35 @@ export class MessengerDeliveryService {
       `Дата: ${date}\n` +
       `Время: ${time}\n` +
       `Репетитор: ${tutorName}`;
+  }
+
+  formatHomeworkReminder(
+    task: string,
+    dueDate?: string,
+    tutorName?: string,
+    comment?: string,
+  ): string {
+    let msg = `📝 Напоминание о домашнем задании\n\n` +
+      `Задание: ${task}`;
+    if (dueDate) msg += `\nСрок сдачи: ${dueDate}`;
+    if (tutorName) msg += `\nРепетитор: ${tutorName}`;
+    if (comment) msg += `\n\n${comment}`;
+    return msg;
+  }
+
+  formatLessonReminderForStudent(
+    subject: string,
+    date: string,
+    time: string,
+    tutorName: string,
+    comment?: string,
+  ): string {
+    let msg = `⏰ Напоминание о занятии\n\n` +
+      `Предмет: ${subject}\n` +
+      `Дата: ${date}\n` +
+      `Время: ${time}\n` +
+      `Репетитор: ${tutorName}`;
+    if (comment) msg += `\n\n${comment}`;
+    return msg;
   }
 }

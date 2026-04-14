@@ -1,0 +1,72 @@
+.ub-cta {
+    &__area {
+        margin: 0 auto;
+        padding: 6rem 1.5rem;
+        background-color: $dark-purple;
+        border-radius: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    &__title {
+        @extend .section-title;
+        color: $white;
+        z-index: 2;  
+        max-width: 640px;
+    }
+
+    &__desc {
+        color: $white;
+        z-index: 2;
+        max-width: 620px;
+        text-align: center;
+        margin-top: -4px;
+        line-height: 1.5;  
+        max-width: 470px;
+    }
+
+    &__btn-group {
+        margin: 2rem auto 0;
+        z-index: 2;
+    }
+
+    &__btn {
+        @include btn(
+            $bgColor: $light-color,
+            $hoverBgColor: $primary-color,
+            $color: $dark-neutral,
+            $hoverColor: $white,
+            $border: $primary-color
+        );
+        display: inline-block;
+    }
+
+    &__background-right,
+    &__background-left {
+        position: absolute;
+        bottom: 40px;
+        width: 307px;
+        height: 186px;
+        background-size: contain;
+        background-repeat: no-repeat;
+        z-index: 1;
+
+        @media screen and (max-width: 1024px) {
+            display: none;  
+        }
+    }
+
+    &__background-right {
+        right: 40px;
+        background-image: url('../../assets/img/shape/bg-shape-right.png');
+    }
+
+    &__background-left {
+        left: 40px;
+        background-image: url('../../assets/img/shape/bg-shape-left.png');
+    }
+}

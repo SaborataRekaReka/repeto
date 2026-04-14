@@ -131,4 +131,19 @@ export class NotificationsController {
   ) {
     return this.notificationsService.sendDebtReminder(userId, studentId, body?.comment);
   }
+
+  @Post('send-reminder/:studentId')
+  sendReminder(
+    @Param('studentId', ParseUUIDPipe) studentId: string,
+    @CurrentUser('id') userId: string,
+    @Body() body: {
+      type: 'payment' | 'lesson' | 'homework';
+      lessonIds?: string[];
+      homeworkIds?: string[];
+      comment?: string;
+      notifyParent?: boolean;
+    },
+  ) {
+    return this.notificationsService.sendReminder(userId, studentId, body);
+  }
 }

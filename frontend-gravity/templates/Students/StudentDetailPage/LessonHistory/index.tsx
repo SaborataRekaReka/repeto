@@ -75,8 +75,13 @@ const LessonHistory = ({
 
         {lessons.length === 0 ? (
             <Card
+                className="repeto-student-lesson-card"
                 view="outlined"
-                style={{ padding: "48px 24px", textAlign: "center" }}
+                style={{
+                    padding: "48px 24px",
+                    textAlign: "center",
+                    borderRadius: "12px",
+                }}
             >
                 <Text variant="body-1" color="secondary">
                     Занятий пока нет
@@ -87,9 +92,14 @@ const LessonHistory = ({
                 {lessons.map((lesson) => (
                     <Card
                         key={lesson.id}
+                        className="repeto-student-lesson-card"
                         type="action"
                         view="outlined"
-                        style={{ cursor: "pointer" }}
+                        style={{
+                            cursor: "pointer",
+                            borderRadius: "12px",
+                            overflow: "hidden",
+                        }}
                         onClick={() => onLessonClick?.(lesson)}
                     >
                         <div
