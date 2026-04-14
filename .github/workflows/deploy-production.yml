@@ -161,8 +161,8 @@ jobs:
           done
 
           exit 1
-EOF
-)
+          EOF
+          )
           else
             app_path=$(sshpass -p "$PROD_SSH_PASSWORD" ssh -p "$ssh_port" -o PreferredAuthentications=password -o PubkeyAuthentication=no -o NumberOfPasswordPrompts=1 -o BatchMode=no -o ConnectTimeout=10 "$target" "PROD_APP_PATH='$PROD_APP_PATH' bash -se" <<'EOF'
           set -euo pipefail
@@ -180,8 +180,8 @@ EOF
           done
 
           exit 1
-EOF
-)
+          EOF
+          )
           fi
 
           if [ -z "$app_path" ]; then
@@ -216,7 +216,7 @@ EOF
           git reset --hard origin/main
           docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
           docker compose -f docker-compose.prod.yml ps
-EOF
+          EOF
           else
             sshpass -p "$PROD_SSH_PASSWORD" ssh -p "$ssh_port" -o PreferredAuthentications=password -o PubkeyAuthentication=no -o NumberOfPasswordPrompts=1 -o BatchMode=no -o ConnectTimeout=10 "$target" "APP_PATH='$APP_PATH' bash -se" <<'EOF'
           set -euo pipefail
@@ -226,7 +226,7 @@ EOF
           git reset --hard origin/main
           docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
           docker compose -f docker-compose.prod.yml ps
-EOF
+          EOF
           fi
 
       - name: Check backend health on VPS
@@ -250,13 +250,13 @@ EOF
           set -euo pipefail
           cd "$APP_PATH"
           docker compose -f docker-compose.prod.yml exec -T backend wget --spider -q http://localhost:3200/api/health
-EOF
+          EOF
           else
             sshpass -p "$PROD_SSH_PASSWORD" ssh -p "$ssh_port" -o PreferredAuthentications=password -o PubkeyAuthentication=no -o NumberOfPasswordPrompts=1 -o BatchMode=no -o ConnectTimeout=10 "$target" "APP_PATH='$APP_PATH' bash -se" <<'EOF'
           set -euo pipefail
           cd "$APP_PATH"
           docker compose -f docker-compose.prod.yml exec -T backend wget --spider -q http://localhost:3200/api/health
-EOF
+          EOF
           fi
 
       - name: Verify production endpoints
