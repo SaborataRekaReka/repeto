@@ -38,6 +38,10 @@ async function bootstrap() {
     logger: ['error', 'warn', 'log'],
   });
 
+  if (isProduction) {
+    app.getHttpAdapter().getInstance().set('trust proxy', 1);
+  }
+
   // Graceful shutdown
   app.enableShutdownHooks();
 

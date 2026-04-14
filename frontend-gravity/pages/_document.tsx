@@ -31,7 +31,7 @@ export default function Document() {
                 <link rel="icon" href="/brand/icon.svg" type="image/svg+xml" />
                 <link rel="shortcut icon" href="/brand/icon.svg" />
                 <link rel="apple-touch-icon" href="/brand/icon.svg" />
-                <link rel="manifest" href="/manifest.json" />
+                <link rel="manifest" href="/site.webmanifest" />
             </GHead>
             <body>
                 <GMain />
