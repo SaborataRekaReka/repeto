@@ -16,6 +16,8 @@ const OTP_TTL_MINUTES = 15;
 const OTP_MAX_ATTEMPTS = 5;
 const OTP_SEND_COOLDOWN_SECONDS = 45;
 const REFRESH_TTL_DAYS = 30;
+const STUDENT_ACCOUNT_NOT_FOUND_MESSAGE =
+  'Аккаунт ученика не найден. Попросите репетитора отправить вам приглашение или запишитесь через страницу репетитора.';
 
 type OtpPurpose = 'LOGIN' | 'BOOKING';
 
@@ -56,6 +58,25 @@ export class StudentAuthService {
     const normalizedEmail = this.normalizeEmail(email);
     if (!normalizedEmail || !normalizedEmail.includes('@')) {
       throw new BadRequestException('Некорректный email');
+    }
+
+    // For login flow we only send OTP to known students (linked account or
+    // tutor-created student card). Unknown emails should fail fast.
+    if (purpose === 'LOGIN') {
+      const [account, student] = await Promise.all([
+        this.prisma.studentAccount.findUnique({
+          where: { email: normalizedEmail },
+          select: { id: true },
+        }),
+        this.prisma.student.findFirst({
+          where: { email: normalizedEmail },
+          select: { id: true },
+        }),
+      ]);
+
+      if (!account && !student) {
+        throw new BadRequestException(STUDENT_ACCOUNT_NOT_FOUND_MESSAGE);
+      }
     }
 
     // Cooldown: prevent spam — if last OTP for this (email, purpose) was issued <45s ago, reuse it silently.
@@ -356,9 +377,7 @@ export class StudentAuthService {
       });
 
       if (!studentsWithEmail.length) {
-        throw new BadRequestException(
-          'Аккаунт ученика не найден. Попросите репетитора отправить вам приглашение или запишитесь через страницу репетитора.',
-        );
+        throw new BadRequestException(STUDENT_ACCOUNT_NOT_FOUND_MESSAGE);
       }
 
       account = await this.prisma.studentAccount.create({
