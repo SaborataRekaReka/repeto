@@ -757,17 +757,11 @@ export class NotificationsService {
       });
       if (existingAccount) {
         studentAccount = { id: existingAccount.id, status: existingAccount.status };
-      } else {
-        const created = await this.prisma.studentAccount.create({
-          data: {
-            email: normalizedEmail,
-            name: booking.clientName,
-            status: 'INVITED',
-          },
-        });
-        studentAccount = { id: created.id, status: created.status };
-        accountIsNew = true;
       }
+      // If no account exists — do NOT create one eagerly. The student will
+      // create it themselves via OTP verification on the login page.
+      // We send an invite email below instead.
+      accountIsNew = !existingAccount;
     }
 
     if (!student) {

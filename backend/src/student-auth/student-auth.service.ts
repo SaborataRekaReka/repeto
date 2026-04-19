@@ -326,36 +326,67 @@ export class StudentAuthService {
     // Consume OTP
     await this.prisma.studentOtp.deleteMany({ where: { id: otp.id } });
 
-    // Find account — it may not exist yet (student never had a booking approved).
-    const account = await this.prisma.studentAccount.findUnique({
+    const now = new Date();
+
+    // Find account — it may not exist yet (student invited but hasn't logged in).
+    let account = await this.prisma.studentAccount.findUnique({
       where: { email: normalizedEmail },
     });
 
+    // If no account exists, check whether any Student records reference this
+    // email (tutor-created students with invite). If so, create the account
+    // now — the student has just proved ownership of the email via OTP.
+    let isFirstLogin = false;
     if (!account) {
-      throw new BadRequestException(
-        'Аккаунт ученика не найден. Он создаётся после того, как репетитор одобрит ваше первое занятие.',
-      );
+      const studentsWithEmail = await this.prisma.student.findMany({
+        where: { email: normalizedEmail },
+        select: { id: true, name: true, accountId: true },
+      });
+
+      if (!studentsWithEmail.length) {
+        throw new BadRequestException(
+          'Аккаунт ученика не найден. Попросите репетитора отправить вам приглашение или запишитесь через страницу репетитора.',
+        );
+      }
+
+      account = await this.prisma.studentAccount.create({
+        data: {
+          email: normalizedEmail,
+          name: studentsWithEmail[0].name,
+          emailVerifiedAt: now,
+          lastLoginAt: now,
+          status: 'ACTIVE',
+        },
+      });
+
+      // Link all unlinked Student records to the new account.
+      await this.prisma.student.updateMany({
+        where: { email: normalizedEmail, accountId: null },
+        data: { accountId: account.id },
+      });
+
+      isFirstLogin = true;
+    } else {
+      account = await this.prisma.studentAccount.update({
+        where: { id: account.id },
+        data: {
+          lastLoginAt: now,
+          emailVerifiedAt: account.emailVerifiedAt || now,
+          status: account.status === 'INVITED' ? 'ACTIVE' : account.status,
+        },
+      });
     }
 
-    const now = new Date();
-    const updated = await this.prisma.studentAccount.update({
-      where: { id: account.id },
-      data: {
-        lastLoginAt: now,
-        emailVerifiedAt: account.emailVerifiedAt || now,
-        status: account.status === 'INVITED' ? 'ACTIVE' : account.status,
-      },
-    });
-
-    const tokens = await this.generateTokens(updated.id);
+    const tokens = await this.generateTokens(account.id);
 
     return {
       account: {
-        id: updated.id,
-        email: updated.email,
-        name: updated.name,
-        status: updated.status,
+        id: account.id,
+        email: account.email,
+        name: account.name,
+        status: account.status,
       },
+      needsSetup: isFirstLogin,
       ...tokens,
     };
   }
@@ -439,10 +470,11 @@ export class StudentAuthService {
     const normalizedEmail = this.normalizeEmail(email);
     const loginUrl = this.buildStudentLoginUrl();
 
-    const subject = `${tutorName} подтвердил(а) вас как ученика · Repeto`;
+    const subject = `${tutorName} пригласил(а) вас в Repeto`;
     const html = [
       '<p>Здравствуйте!</p>',
-      `<p>${tutorName} создал(а) для вас личный кабинет ученика в Repeto.</p>`,
+      `<p>${tutorName} пригласил(а) вас в Repeto.</p>`,
+      '<p>Откройте ссылку ниже, подтвердите email одноразовым кодом, и кабинет ученика создастся автоматически.</p>',
       '<p>В нём вы сможете видеть расписание, домашние задания, материалы и оплаты.</p>',
       `<p><a href="${loginUrl}">Войти в кабинет ученика</a></p>`,
       '<p>Вход — по email и одноразовому коду. Пароль не нужен.</p>',
@@ -452,7 +484,8 @@ export class StudentAuthService {
     const text = [
       'Здравствуйте!',
       '',
-      `${tutorName} создал(а) для вас личный кабинет ученика в Repeto.`,
+      `${tutorName} пригласил(а) вас в Repeto.`,
+      'Подтвердите email одноразовым кодом — и кабинет ученика создастся автоматически.',
       'Войти можно по ссылке:',
       loginUrl,
       '',

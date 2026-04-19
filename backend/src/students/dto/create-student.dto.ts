@@ -7,6 +7,7 @@ import {
   Min,
   IsOptional,
   IsEmail,
+  IsBoolean,
 } from 'class-validator';
 
 export class CreateStudentDto {
@@ -83,4 +84,9 @@ export class CreateStudentDto {
   @IsString()
   @MaxLength(2000)
   notes?: string;
+
+  @ApiPropertyOptional({ description: 'Send invite email to student after creation' })
+  @IsOptional()
+  @IsBoolean()
+  invite?: boolean;
 }

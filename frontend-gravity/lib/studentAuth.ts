@@ -19,6 +19,7 @@ export type StudentAuthResponse = {
     accessToken: string;
     refreshToken?: string;
     account: StudentAccount;
+    needsSetup?: boolean;
 };
 
 type StudentRefreshResponse = {

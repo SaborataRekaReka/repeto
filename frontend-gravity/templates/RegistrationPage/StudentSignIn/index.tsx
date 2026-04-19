@@ -57,8 +57,12 @@ const StudentSignIn = ({ onBack }: StudentSignInProps) => {
         }
         setLoading(true);
         try {
-            await verifyStudentOtp(email, code);
-            router.replace("/student");
+            const result = await verifyStudentOtp(email, code);
+            if (result.needsSetup) {
+                router.replace("/student/setup");
+            } else {
+                router.replace("/student");
+            }
         } catch (err: any) {
             setError(codedErrorMessage("STUDENT-OTP-VERIFY", err));
         } finally {

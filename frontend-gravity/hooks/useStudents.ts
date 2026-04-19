@@ -107,6 +107,8 @@ function mapStudent(raw: any): Student {
     parentEmail: raw.parentEmail || undefined,
     telegramChatId: raw.telegramChatId || undefined,
     maxChatId: raw.maxChatId || undefined,
+    email: raw.email || undefined,
+    accountId: raw.accountId ?? null,
     notes: raw.notes || undefined,
   };
 }
@@ -156,7 +158,7 @@ export function useStudent(id: string | undefined) {
   };
 }
 
-export async function createStudent(data: Partial<Student>) {
+export async function createStudent(data: Partial<Student> & { invite?: boolean }) {
   const created = await api<any>('/students', {
     method: 'POST',
     body: {
@@ -183,7 +185,7 @@ export async function deleteStudent(id: string) {
 }
 
 export async function activateStudentAccount(id: string) {
-  return api<{ accountId: string; email: string; status: string; invited: boolean }>(
+  return api<{ accountId: string | null; email: string; status: string; invited: boolean }>(
     `/students/${id}/activate-account`,
     { method: 'POST' },
   );

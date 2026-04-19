@@ -454,6 +454,7 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
             <ActivateAccountModal
                 visible={activateAccountModal}
                 onClose={() => setActivateAccountModal(false)}
+                onSuccess={onRefresh}
                 studentId={student.id}
                 studentName={student.name}
                 studentEmail={local.email}

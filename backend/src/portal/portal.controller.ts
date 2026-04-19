@@ -183,6 +183,103 @@ export class PortalController {
     return this.portalService.removeHomeworkFile(studentId, homeworkId, fileUrl);
   }
 
+  /**
+   * Returns pre-filled profile data for the student setup page.
+   * Merges data from all Student rows linked to this account.
+   */
+  @Get('setup')
+  async getSetupData(@CurrentStudent('id') accountId: string) {
+    const account = await this.prisma.studentAccount.findUnique({
+      where: { id: accountId },
+      select: { id: true, email: true, name: true },
+    });
+    if (!account) throw new NotFoundException('Account not found');
+
+    const students = await this.prisma.student.findMany({
+      where: { accountId },
+      select: {
+        name: true,
+        phone: true,
+        email: true,
+        age: true,
+        grade: true,
+        parentName: true,
+        parentPhone: true,
+        parentEmail: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Pick the first non-empty value from linked Student rows.
+    const pick = (field: keyof typeof students[0]) =>
+      students.map((s) => s[field]).find((v) => v != null && v !== '') || null;
+
+    return {
+      name: account.name || pick('name') || '',
+      email: account.email,
+      phone: pick('phone') || '',
+      age: pick('age') || null,
+      grade: pick('grade') || '',
+      parentName: pick('parentName') || '',
+      parentPhone: pick('parentPhone') || '',
+      parentEmail: pick('parentEmail') || '',
+    };
+  }
+
+  /**
+   * Complete the student's profile setup. Updates the StudentAccount name
+   * and all linked Student rows with the provided contact info.
+   */
+  @Patch('profile')
+  async updateProfile(
+    @CurrentStudent('id') accountId: string,
+    @Body()
+    body: {
+      name?: string;
+      phone?: string;
+      age?: number;
+      grade?: string;
+      parentName?: string;
+      parentPhone?: string;
+      parentEmail?: string;
+    },
+  ) {
+    const account = await this.prisma.studentAccount.findUnique({
+      where: { id: accountId },
+    });
+    if (!account) throw new NotFoundException('Account not found');
+
+    // Update account name.
+    const trimmedName = (body.name || '').trim();
+    if (trimmedName) {
+      await this.prisma.studentAccount.update({
+        where: { id: accountId },
+        data: { name: trimmedName },
+      });
+    }
+
+    // Update all linked Student rows with contact info from the student.
+    const studentUpdate: Record<string, any> = {};
+    if (trimmedName) studentUpdate.name = trimmedName;
+    if (body.phone !== undefined) studentUpdate.phone = (body.phone || '').trim() || null;
+    if (body.age !== undefined) studentUpdate.age = body.age || null;
+    if (body.grade !== undefined) studentUpdate.grade = (body.grade || '').trim() || null;
+    if (body.parentName !== undefined) studentUpdate.parentName = (body.parentName || '').trim() || null;
+    if (body.parentPhone !== undefined) studentUpdate.parentPhone = (body.parentPhone || '').trim() || null;
+    if (body.parentEmail !== undefined) {
+      studentUpdate.parentEmail = (body.parentEmail || '').trim().toLowerCase() || null;
+    }
+
+    if (Object.keys(studentUpdate).length > 0) {
+      await this.prisma.student.updateMany({
+        where: { accountId },
+        data: studentUpdate,
+      });
+    }
+
+    return { ok: true };
+  }
+
   private async assertOwnership(accountId: string, studentId: string) {
     const student = await this.prisma.student.findUnique({
       where: { id: studentId },

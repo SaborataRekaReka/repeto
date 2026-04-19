@@ -44,6 +44,8 @@ export class StudentAuthController {
     return {
       account: result.account,
       accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+      needsSetup: result.needsSetup ?? false,
     };
   }
 

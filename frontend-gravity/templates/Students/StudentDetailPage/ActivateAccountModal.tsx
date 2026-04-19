@@ -7,6 +7,7 @@ import { codedErrorMessage } from "@/lib/errorCodes";
 type ActivateAccountModalProps = {
     visible: boolean;
     onClose: () => void;
+    onSuccess?: () => void;
     studentId: string;
     studentName: string;
     studentEmail?: string;
@@ -16,6 +17,7 @@ type ActivateAccountModalProps = {
 const ActivateAccountModal = ({
     visible,
     onClose,
+    onSuccess,
     studentId,
     studentName,
     studentEmail,
@@ -31,6 +33,7 @@ const ActivateAccountModal = ({
         try {
             const res = await activateStudentAccount(studentId);
             setResult({ email: res.email, invited: res.invited });
+            onSuccess?.();
         } catch (e: any) {
             setError(codedErrorMessage("ACTIVATE-ACCOUNT", e));
         } finally {
@@ -62,7 +65,7 @@ const ActivateAccountModal = ({
                     <Text variant="body-1" color="secondary">
                         {hasAccount
                             ? `У ${studentName} уже есть личный кабинет. Отправить новую ссылку на вход?`
-                            : `Создадим личный кабинет для ${studentName}. На почту придёт письмо со ссылкой на вход по одноразовому коду.`}
+                            : `Отправим ${studentName} приглашение в Repeto. На почту придёт письмо со ссылкой на вход по одноразовому коду.`}
                     </Text>
 
                     {!hasEmail && (
@@ -101,7 +104,7 @@ const ActivateAccountModal = ({
                             loading={loading}
                             disabled={!hasEmail || loading}
                         >
-                            {hasAccount ? "Отправить новое письмо" : "Создать и отправить"}
+                            {hasAccount ? "Отправить новое письмо" : "Отправить приглашение"}
                         </Button>
                     </div>
                 </>
@@ -111,12 +114,12 @@ const ActivateAccountModal = ({
                 <>
                     <Text variant="body-1">
                         {result.invited
-                            ? "Личный кабинет создан."
+                            ? "Приглашение отправлено."
                             : "Письмо со ссылкой на вход отправлено повторно."}
                     </Text>
                     <Text variant="body-2" color="secondary" style={{ marginTop: 8 }}>
-                        Ссылка на вход отправлена на <b>{result.email}</b>. Ученик
-                        сможет войти на странице входа → «У меня есть репетитор».
+                        Ссылка на вход отправлена на <b>{result.email}</b>. Кабинет
+                        будет создан автоматически, когда ученик откроет ссылку и подтвердит email.
                     </Text>
                 </>
             )}

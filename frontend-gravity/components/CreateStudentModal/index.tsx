@@ -7,6 +7,7 @@ import {
     Text,
     Button,
     Icon,
+    Checkbox,
 } from "@gravity-ui/uikit";
 import { ArrowLeft } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
@@ -99,6 +100,8 @@ const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalP
     const [age, setAge] = useState("");
     const [subject, setSubject] = useState<string[]>([]);
     const [phone, setPhone] = useState("");
+    const [email, setEmail] = useState("");
+    const [inviteToRepeto, setInviteToRepeto] = useState(false);
     const [parentName, setParentName] = useState("");
     const [parentPhone, setParentPhone] = useState("");
     const [parentEmail, setParentEmail] = useState("");
@@ -119,6 +122,7 @@ const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalP
     useEffect(() => {
         if (visible) {
             setName(""); setGrade(""); setAge(""); setSubject([]); setPhone("");
+            setEmail(""); setInviteToRepeto(false);
             setParentName(""); setParentPhone(""); setParentEmail("");
             setRate(""); setNotes("");
             setTouched({ name: false, subject: false, rate: false });
@@ -135,6 +139,7 @@ const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalP
             : undefined;
         const safeGrade = cleanOptionalString(grade);
         const safePhone = cleanOptionalString(phone);
+        const safeEmail = cleanOptionalString(email);
         const safeParentName = cleanOptionalString(parentName);
         const safeParentPhone = cleanOptionalString(parentPhone);
         const safeParentEmail = cleanOptionalString(parentEmail);
@@ -185,6 +190,16 @@ const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalP
             return;
         }
 
+        if (safeEmail && !isEmailLike(safeEmail)) {
+            setFormError("Укажите корректный email ученика.");
+            return;
+        }
+
+        if (inviteToRepeto && !safeEmail) {
+            setFormError("Укажите email ученика, чтобы отправить приглашение.");
+            return;
+        }
+
         if (safeNotes && safeNotes.length > NOTES_MAX_LENGTH) {
             setFormError("Заметка слишком длинная.");
             return;
@@ -200,11 +215,13 @@ const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalP
                 grade: safeGrade,
                 age: safeAge,
                 phone: safePhone,
+                email: safeEmail,
+                invite: inviteToRepeto || undefined,
                 parentName: safeParentName,
                 parentPhone: safeParentPhone,
                 parentEmail: safeParentEmail,
                 notes: safeNotes,
-            } as any);
+            });
             await onCreated?.(createdStudent);
             handleClose();
         } catch (err) {
@@ -296,6 +313,37 @@ const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalP
                             size="l"
                         />
                     </Lp2Field>
+
+                    <Lp2Field label="Email ученика">
+                        <TextInput
+                            value={email}
+                            onUpdate={setEmail}
+                            placeholder="student@email.com"
+                            size="l"
+                            type="email"
+                        />
+                    </Lp2Field>
+
+                    <div style={{ marginTop: 4, marginBottom: 8 }}>
+                        <Checkbox
+                            checked={inviteToRepeto}
+                            onUpdate={setInviteToRepeto}
+                            disabled={!email.trim() || !isEmailLike(email.trim())}
+                            size="l"
+                        >
+                            Выслать приглашение в Repeto
+                        </Checkbox>
+                        {inviteToRepeto && (
+                            <Text
+                                as="div"
+                                variant="caption-2"
+                                color="secondary"
+                                style={{ marginTop: 4, marginLeft: 28 }}
+                            >
+                                Ученику придёт письмо со ссылкой на вход в личный кабинет
+                            </Text>
+                        )}
+                    </div>
 
                     <div
                         style={{

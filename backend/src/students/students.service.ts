@@ -10,6 +10,21 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateStudentDto, UpdateStudentDto } from './dto';
 import { StudentAuthService } from '../student-auth/student-auth.service';
 
+const LOCKED_PERSONAL_FIELDS_FOR_LINKED_STUDENT = [
+  'name',
+  'grade',
+  'age',
+  'phone',
+  'whatsapp',
+  'telegram',
+  'email',
+  'parentName',
+  'parentPhone',
+  'parentWhatsapp',
+  'parentTelegram',
+  'parentEmail',
+] as const;
+
 @Injectable()
 export class StudentsService {
   constructor(
@@ -237,7 +252,7 @@ export class StudentsService {
     return { ...rest, balance: paid - earned };
   }
 
-  // ── Notes CRUD ──
+  // Notes CRUD
 
   async findNotes(
     studentId: string,
@@ -293,7 +308,7 @@ export class StudentsService {
     return this.prisma.lessonNote.delete({ where: { id: noteId } });
   }
 
-  // ── Homework CRUD ──
+  // Homework CRUD
 
   async findHomework(
     studentId: string,
@@ -420,7 +435,7 @@ export class StudentsService {
     return this.prisma.homework.delete({ where: { id: hwId } });
   }
 
-  // ── Helpers ──
+  // Helpers
 
   private async ensureOwner(studentId: string, userId: string) {
     const student = await this.prisma.student.findUnique({ where: { id: studentId } });
@@ -429,10 +444,57 @@ export class StudentsService {
     return student;
   }
 
+  private normalizeEmail(raw?: string | null) {
+    const normalized = (raw || '').trim().toLowerCase();
+    return normalized || null;
+  }
+
   async create(userId: string, dto: CreateStudentDto) {
-    return this.prisma.student.create({
-      data: { ...dto, userId },
-    });
+    const { invite, ...rawData } = dto;
+    const data: Prisma.StudentUncheckedCreateInput = {
+      ...rawData,
+      userId,
+    };
+
+    const rawEmail = this.normalizeEmail(rawData.email);
+    if (rawEmail) {
+      data.email = rawEmail;
+    } else {
+      delete data.email;
+    }
+
+    if (invite && !rawEmail) {
+      throw new BadRequestException(
+        'Укажите email ученика, чтобы отправить приглашение.',
+      );
+    }
+
+    const existingAccount = rawEmail
+      ? await this.prisma.studentAccount.findUnique({
+          where: { email: rawEmail },
+        })
+      : null;
+    if (existingAccount) {
+      data.accountId = existingAccount.id;
+    }
+
+    const student = await this.prisma.student.create({ data });
+
+    // Send invite email (fire-and-forget). No StudentAccount is created here
+    // when it does not exist yet - it will be created after OTP verification.
+    if (invite && rawEmail) {
+      const tutor = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { name: true },
+      });
+      this.studentAuth
+        .sendAccountInviteEmail(rawEmail, tutor?.name || 'Репетитор')
+        .catch(() => {
+          /* logged inside service */
+        });
+    }
+
+    return student;
   }
 
   async update(id: string, userId: string, dto: UpdateStudentDto) {
@@ -440,9 +502,41 @@ export class StudentsService {
     if (!student) throw new NotFoundException('Student not found');
     if (student.userId !== userId) throw new ForbiddenException();
 
+    const { invite: _invite, ...incoming } = dto as UpdateStudentDto & { invite?: boolean };
+
+    if (student.accountId) {
+      const touchedLockedFields = LOCKED_PERSONAL_FIELDS_FOR_LINKED_STUDENT.filter((field) =>
+        Object.prototype.hasOwnProperty.call(incoming, field),
+      );
+      if (touchedLockedFields.length > 0) {
+        throw new BadRequestException(
+          'У ученика есть аккаунт Repeto. Личные данные редактирует сам ученик в своем кабинете.',
+        );
+      }
+    }
+
+    const data = { ...incoming } as Prisma.StudentUncheckedUpdateInput;
+    if (Object.prototype.hasOwnProperty.call(data, 'email')) {
+      const normalizedEmail = this.normalizeEmail(data.email as string | null | undefined);
+      data.email = normalizedEmail;
+
+      if (!student.accountId && normalizedEmail) {
+        const existingAccount = await this.prisma.studentAccount.findUnique({
+          where: { email: normalizedEmail },
+        });
+        if (existingAccount) {
+          data.accountId = existingAccount.id;
+        }
+      }
+    }
+
+    if (Object.keys(data).length === 0) {
+      return student;
+    }
+
     return this.prisma.student.update({
       where: { id },
-      data: dto,
+      data,
     });
   }
 
@@ -475,22 +569,17 @@ export class StudentsService {
       where: { email: rawEmail },
     });
 
-    const account = existingAccount
-      ? existingAccount
-      : await this.prisma.studentAccount.create({
-          data: {
-            email: rawEmail,
-            name: student.name,
-            status: 'INVITED',
-          },
+    // If account already exists - link it to this student and resend invite.
+    if (existingAccount) {
+      if (student.accountId !== existingAccount.id) {
+        await this.prisma.student.update({
+          where: { id },
+          data: { accountId: existingAccount.id, email: rawEmail },
         });
-
-    if (student.accountId !== account.id) {
-      await this.prisma.student.update({
-        where: { id },
-        data: { accountId: account.id, email: rawEmail },
-      });
+      }
     }
+    // If no account - do NOT create it. The student will create it themselves
+    // by going through OTP verification on the login page.
 
     const tutor = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -505,9 +594,9 @@ export class StudentsService {
       });
 
     return {
-      accountId: account.id,
-      email: account.email,
-      status: account.status,
+      accountId: existingAccount?.id || null,
+      email: rawEmail,
+      status: existingAccount?.status || 'INVITED',
       invited: !existingAccount,
     };
   }
