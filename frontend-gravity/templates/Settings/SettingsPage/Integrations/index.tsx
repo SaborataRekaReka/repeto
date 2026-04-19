@@ -1,17 +1,25 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
-import { Card, Text, Button, Icon, Label, TextInput } from "@gravity-ui/uikit";
+import { Card, Text, Button, Icon, Label, Select, TextInput } from "@gravity-ui/uikit";
 import { Calendar, FolderOpen } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import {
     useSettings, disconnectIntegration,
+    updateAccount,
     startYandexDiskConnect, completeYandexDiskConnect, connectYandexDiskToken,
-    startGoogleCalendarConnect, completeGoogleCalendarConnect, syncGoogleCalendar, pullGoogleCalendar,
-    startYandexCalendarConnect, connectYandexCalendarToken, syncYandexCalendar, pullYandexCalendar,
+    startGoogleCalendarConnect, completeGoogleCalendarConnect,
+    startGoogleDriveConnect, completeGoogleDriveConnect,
+    startYandexCalendarConnect, connectYandexCalendarToken,
 } from "@/hooks/useSettings";
 import { codedErrorMessage } from "@/lib/errorCodes";
 
 type IntegrationDef = { id: string; name: string; description: string; icon: unknown; iconBg: string; };
+type HomeworkDefaultCloud = "YANDEX_DISK" | "GOOGLE_DRIVE";
+
+const homeworkDefaultCloudOptions = [
+    { value: "YANDEX_DISK", content: "Яндекс.Диск" },
+    { value: "GOOGLE_DRIVE", content: "Google Drive" },
+];
 
 const Integrations = () => {
     const router = useRouter();
@@ -21,12 +29,22 @@ const Integrations = () => {
     const [yandexCalToken, setYandexCalToken] = useState("");
     const [yandexCalOAuthAvailable, setYandexCalOAuthAvailable] = useState<boolean | null>(null);
     const [saving, setSaving] = useState(false);
+    const [savingDefaultCloud, setSavingDefaultCloud] = useState(false);
     const [msg, setMsg] = useState<string | null>(null);
+    const [homeworkDefaultCloud, setHomeworkDefaultCloud] = useState<HomeworkDefaultCloud>("YANDEX_DISK");
     const handledOAuthRef = useRef(false);
 
     const hasYandexDisk = !!settings?.hasYandexDisk;
+    const hasGoogleDrive = !!settings?.hasGoogleDrive;
     const hasGoogleCalendar = !!settings?.hasGoogleCalendar;
     const hasYandexCalendar = !!settings?.hasYandexCalendar;
+
+    useEffect(() => {
+        const value = settings?.homeworkDefaultCloud;
+        if (value === "GOOGLE_DRIVE" || value === "YANDEX_DISK") {
+            setHomeworkDefaultCloud(value);
+        }
+    }, [settings?.homeworkDefaultCloud]);
 
     // --- OAuth callback handling (identical logic) ---
     useEffect(() => {
@@ -70,6 +88,29 @@ const Integrations = () => {
             })();
             return;
         }
+        if (integration === "google-drive" && typeof code === "string") {
+            handledOAuthRef.current = true;
+            (async () => {
+                setSaving(true); setMsg(null);
+                try {
+                    const r = await completeGoogleDriveConnect({ code });
+                    await mutate();
+                    const syncedInfo = typeof r.syncedItems === "number"
+                        ? `. Синхронизировано: ${r.syncedItems}`
+                        : "";
+                    setMsg(`Google Drive подключен (${r.email || "аккаунт"})${syncedInfo}`);
+                }
+                catch (e: any) {
+                    const code = codedErrorMessage("SETT-INT-GDRV-CB", e);
+                    const details = typeof e?.message === "string" && e.message.trim()
+                        ? `${e.message}. ${code}`
+                        : code;
+                    setMsg(details);
+                }
+                finally { setSaving(false); router.replace({ pathname: "/settings", query: { tab: "integrations" } }, undefined, { shallow: true }); }
+            })();
+            return;
+        }
         if (integration !== "yandex-disk" || typeof code !== "string" || typeof state !== "string") return;
         handledOAuthRef.current = true;
         (async () => {
@@ -82,12 +123,14 @@ const Integrations = () => {
 
     const defs: IntegrationDef[] = [
         { id: "google-calendar", name: "Google Calendar", description: "Двусторонняя синхронизация расписания", icon: Calendar, iconBg: "rgba(66,133,244,0.1)" },
+        { id: "google-drive", name: "Google Drive", description: "Хранение и доступ к файлам учеников", icon: FolderOpen, iconBg: "rgba(66,133,244,0.1)" },
         { id: "yandex-calendar", name: "Яндекс.Календарь", description: "Двусторонняя синхронизация расписания", icon: Calendar, iconBg: "rgba(252,63,29,0.1)" },
         { id: "yandex-disk", name: "Яндекс.Диск", description: "Хранение и доступ к файлам учеников", icon: FolderOpen, iconBg: "rgba(252,63,29,0.1)" },
     ];
 
     const getStatus = (id: string) => {
         if (id === "google-calendar") return hasGoogleCalendar ? "connected" : "disconnected";
+        if (id === "google-drive") return hasGoogleDrive ? "connected" : "disconnected";
         if (id === "yandex-calendar") return hasYandexCalendar ? "connected" : "disconnected";
         if (id === "yandex-disk") return hasYandexDisk ? "connected" : "disconnected";
         return "disconnected";
@@ -102,6 +145,17 @@ const Integrations = () => {
                 setMsg(codedErrorMessage("SETT-INT-GCAL-OAUTH"));
             }
             catch (e: any) { setMsg(codedErrorMessage("SETT-INT-GCAL-CONN", e)); }
+            finally { setSaving(false); }
+            return;
+        }
+        if (id === "google-drive") {
+            setSaving(true); setMsg(null);
+            try {
+                const r = await startGoogleDriveConnect();
+                if (r.oauthConfigured && "authUrl" in r) { window.location.href = r.authUrl; return; }
+                setMsg(codedErrorMessage("SETT-INT-GDRV-OAUTH"));
+            }
+            catch (e: any) { setMsg(codedErrorMessage("SETT-INT-GDRV-CONN", e)); }
             finally { setSaving(false); }
             return;
         }
@@ -153,6 +207,20 @@ const Integrations = () => {
         finally { setSaving(false); }
     };
 
+    const handleSaveHomeworkDefaultCloud = async () => {
+        setSavingDefaultCloud(true);
+        setMsg(null);
+        try {
+            await updateAccount({ homeworkDefaultCloud });
+            await mutate();
+            setMsg("Диск по умолчанию для домашней работы сохранён");
+        } catch (e: any) {
+            setMsg(codedErrorMessage("SETT-INT-HW-CLOUD", e));
+        } finally {
+            setSavingDefaultCloud(false);
+        }
+    };
+
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             {msg && (
@@ -160,6 +228,45 @@ const Integrations = () => {
                     <Text variant="body-1" style={{ fontWeight: 600 }}>{msg}</Text>
                 </Card>
             )}
+
+            <Card view="outlined" style={{ background: "var(--g-color-base-float)" }}>
+                <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--g-color-line-generic)" }}>
+                    <Text variant="subheader-2">Домашняя работа</Text>
+                </div>
+                <div style={{ padding: 24, display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+                    <div style={{ flex: "1 1 320px", minWidth: 280 }}>
+                        <Text variant="caption-2" color="secondary" style={{ display: "block", marginBottom: 6 }}>
+                            Диск по умолчанию для материалов домашки
+                        </Text>
+                        <div style={{ maxWidth: 320 }}>
+                            <Select
+                                options={homeworkDefaultCloudOptions}
+                                value={[homeworkDefaultCloud]}
+                                onUpdate={(value) => {
+                                    const next = value[0] as HomeworkDefaultCloud | undefined;
+                                    if (next) {
+                                        setHomeworkDefaultCloud(next);
+                                    }
+                                }}
+                                size="l"
+                                width="max"
+                            />
+                        </div>
+                        <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 8 }}>
+                            Если выбранный диск не подключен, система автоматически использует доступный.
+                        </Text>
+                    </div>
+                    <Button
+                        view="action"
+                        size="l"
+                        disabled={savingDefaultCloud}
+                        onClick={handleSaveHomeworkDefaultCloud}
+                    >
+                        {savingDefaultCloud ? "Сохраняем..." : "Сохранить"}
+                    </Button>
+                </div>
+            </Card>
+
             {defs.map((def) => {
                 const status = getStatus(def.id);
                 const isConnected = status === "connected";
@@ -208,20 +315,6 @@ const Integrations = () => {
                             {def.id === "yandex-calendar" && hasYandexCalendar && (
                                 <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--g-color-line-generic)" }}>
                                     <Text variant="caption-2" color="secondary">Аккаунт: <span style={{ fontWeight: 600, color: "var(--g-color-text-primary)" }}>{settings?.yandexCalendarEmail || "—"}</span></Text>
-                                    <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
-                                        <Button view="outlined" size="s" disabled={saving} onClick={async () => {
-                                            setSaving(true); setMsg(null);
-                                            try { const r = await syncYandexCalendar(); setMsg(`Синхронизация: ${r.synced} уроков отправлено в Яндекс.Календарь${r.errors ? `, ${r.errors} ошибок` : ""}`); }
-                                            catch (e: any) { setMsg(codedErrorMessage("SETT-INT-YCAL-SYNC", e)); }
-                                            finally { setSaving(false); }
-                                        }}>Выгрузить</Button>
-                                        <Button view="outlined" size="s" disabled={saving} onClick={async () => {
-                                            setSaving(true); setMsg(null);
-                                            try { const r = await pullYandexCalendar(); const p: string[] = []; if (r.updated) p.push(`${r.updated} обновлено`); if (r.cancelled) p.push(`${r.cancelled} отменено`); setMsg(p.length ? `Загружено из Яндекс.Календаря: ${p.join(", ")}` : "Изменений не найдено"); }
-                                            catch (e: any) { setMsg(codedErrorMessage("SETT-INT-YCAL-PULL", e)); }
-                                            finally { setSaving(false); }
-                                        }}>Загрузить</Button>
-                                    </div>
                                 </div>
                             )}
 
@@ -253,20 +346,13 @@ const Integrations = () => {
                             {def.id === "google-calendar" && hasGoogleCalendar && (
                                 <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--g-color-line-generic)" }}>
                                     <Text variant="caption-2" color="secondary">Аккаунт: <span style={{ fontWeight: 600, color: "var(--g-color-text-primary)" }}>{settings?.googleCalendarEmail || "—"}</span></Text>
-                                    <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
-                                        <Button view="outlined" size="s" disabled={saving} onClick={async () => {
-                                            setSaving(true); setMsg(null);
-                                            try { const r = await syncGoogleCalendar(); setMsg(`Синхронизация: ${r.synced} уроков отправлено в Google Calendar${r.errors ? `, ${r.errors} ошибок` : ""}`); }
-                                            catch (e: any) { setMsg(codedErrorMessage("SETT-INT-GCAL-SYNC", e)); }
-                                            finally { setSaving(false); }
-                                        }}>Выгрузить в GCal</Button>
-                                        <Button view="outlined" size="s" disabled={saving} onClick={async () => {
-                                            setSaving(true); setMsg(null);
-                                            try { const r = await pullGoogleCalendar(); const p: string[] = []; if (r.updated) p.push(`${r.updated} обновлено`); if (r.cancelled) p.push(`${r.cancelled} отменено`); setMsg(p.length ? `Загружено из GCal: ${p.join(", ")}` : "Изменений в Google Calendar не найдено"); }
-                                            catch (e: any) { setMsg(codedErrorMessage("SETT-INT-GCAL-PULL", e)); }
-                                            finally { setSaving(false); }
-                                        }}>Загрузить из GCal</Button>
-                                    </div>
+                                </div>
+                            )}
+
+                            {/* Google Drive connected */}
+                            {def.id === "google-drive" && hasGoogleDrive && (
+                                <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--g-color-line-generic)" }}>
+                                    <Text variant="caption-2" color="secondary">Аккаунт: <span style={{ fontWeight: 600, color: "var(--g-color-text-primary)" }}>{settings?.googleDriveEmail || "—"}</span></Text>
                                 </div>
                             )}
                         </div>

@@ -28,7 +28,7 @@ const ConnectCloud = () => (
                     Подключить в Настройках
                 </Button>
             </Link>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, maxWidth: 380, margin: "40px auto 0" }}>
+            <div className="repeto-files-cloud-grid">
                 <Card view="outlined" style={{ padding: 20, textAlign: "left", background: "var(--g-color-base-float)" }}>
                     <div style={{ width: 40, height: 40, borderRadius: 8, background: "var(--g-color-base-generic)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
                         <Icon data={FolderOpen as IconData} size={18} />

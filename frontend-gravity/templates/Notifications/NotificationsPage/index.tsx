@@ -1,6 +1,6 @@
 import { useState } from "react";
 import GravityLayout from "@/components/GravityLayout";
-import { SegmentedRadioGroup, Card, Text, Button } from "@gravity-ui/uikit";
+import { Alert, SegmentedRadioGroup, Card, Text, Button } from "@gravity-ui/uikit";
 import NotificationItem from "./NotificationItem";
 
 import {
@@ -64,8 +64,10 @@ const NotificationsPage = () => {
 
     return (
         <GravityLayout title="Уведомления">
-            <div className="repeto-students-toolbar">
-                <SegmentedRadioGroup size="m" value={tab} onUpdate={setTab} options={tabOptions} />
+            <div className="repeto-notifications-toolbar">
+                <div className="repeto-notifications-toolbar__tabs">
+                    <SegmentedRadioGroup size="m" value={tab} onUpdate={setTab} options={tabOptions} />
+                </div>
                 {unreadCount > 0 && (
                     <Button view="outlined" size="s" onClick={handleMarkAllRead} disabled={actionBusy}>
                         Прочитать все ({unreadCount})
@@ -74,13 +76,14 @@ const NotificationsPage = () => {
             </div>
 
             {actionError && (
-                <div style={{
-                    marginBottom: 16, padding: "8px 12px", borderRadius: 8,
-                    background: "var(--g-color-base-danger-light)",
-                    border: "1px solid var(--g-color-line-danger)",
-                }}>
-                    <Text variant="body-1" color="danger">{actionError}</Text>
-                </div>
+                <Alert
+                    theme="danger"
+                    view="filled"
+                    corners="rounded"
+                    title="Не удалось выполнить действие"
+                    message={actionError}
+                    style={{ marginBottom: 16 }}
+                />
             )}
 
             {filtered.length === 0 ? (

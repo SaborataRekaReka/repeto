@@ -114,9 +114,7 @@ export class MessengerDeliveryService {
             channel === NotificationChannel.TELEGRAM || channel === NotificationChannel.MAX,
         );
 
-      if (mapped.length > 0) {
-        return Array.from(new Set(mapped));
-      }
+      return Array.from(new Set(mapped));
     }
 
     const channel = String(settings.channel || '').toLowerCase();
@@ -131,9 +129,7 @@ export class MessengerDeliveryService {
       case 'max':
         return [NotificationChannel.MAX];
       default:
-        // If channel is email/push/whatsapp/sms, return both messenger channels
-        // (messenger delivery is additional to the in-app channel)
-        return [NotificationChannel.TELEGRAM, NotificationChannel.MAX];
+        return [];
     }
   }
 

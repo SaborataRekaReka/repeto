@@ -3,6 +3,10 @@
  * Tests: list, tabs, create package, live update
  */
 import { test, expect, API_BASE } from './helpers/auth';
+import { getAuthToken } from './helpers/auth';
+
+const PACKAGE_ECONOMICS_MARKER = 'e2e-package-economics';
+const PUBLIC_PACKAGE_MARKER = 'e2e-public-package-without-student';
 
 test.describe('Пакеты — список', () => {
   test('страница пакетов загружается', async ({ authedPage: page }) => {
@@ -61,14 +65,32 @@ test.describe('Пакеты — создание (live update)', () => {
       await page.getByRole('option', { name: 'Математика' }).or(page.getByText('Математика')).first().click();
     }
 
-    // Количество занятий
-    const lessonsInput = page.locator('input[type="number"]').first();
-    if (await lessonsInput.isVisible()) {
-      await lessonsInput.fill('8');
-    }
+    // Предмет (если не подтянулся автоматически)
+    await page.getByPlaceholder('Математика').fill('Математика');
 
-    // Сумма пакета
-    await page.getByPlaceholder('16800').or(page.locator('input[type="number"]').nth(1)).fill('12000');
+    // Экономика пакета: авторасчет
+    const lessonsInput = page.getByPlaceholder('8', { exact: true });
+    const lessonPriceInput = page.getByPlaceholder('2100', { exact: true });
+    const discountInput = page.getByPlaceholder('0', { exact: true });
+    const totalInput = page.getByPlaceholder('16800', { exact: true });
+
+    await lessonsInput.fill('10');
+    await lessonPriceInput.fill('2000');
+    await discountInput.fill('500');
+
+    await expect(totalInput).toHaveValue('19500');
+
+    // Ручной override суммы
+    await totalInput.fill('18000');
+    await expect(page.getByRole('button', { name: /Вернуть авторасчет/i })).toBeVisible();
+
+    await lessonsInput.fill('12');
+    await expect(totalInput).toHaveValue('18000');
+
+    await page.getByRole('button', { name: /Вернуть авторасчет/i }).click();
+    await expect(totalInput).toHaveValue('23500');
+
+    await page.getByPlaceholder('Примечание к пакету…').fill(PACKAGE_ECONOMICS_MARKER);
 
     // Сохраняем
     const saveButton = page.getByRole('button', { name: /Сохранить/i });
@@ -77,8 +99,31 @@ test.describe('Пакеты — создание (live update)', () => {
       await page.waitForTimeout(2000);
 
       // Пакет виден без F5
-      await expect(page.getByText('12000').or(page.getByText('12 000')).first()).toBeVisible({ timeout: 10000 });
+      await expect(page.getByText(/23\s?500/).first()).toBeVisible({ timeout: 10000 });
     }
+  });
+
+  test('публичный пакет создается без выбора ученика', async ({ authedPage: page }) => {
+    const token = await getAuthToken(page);
+
+    const createResponse = await page.request.post(`${API_BASE}/packages`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      data: {
+        isPublic: true,
+        subject: 'Математика',
+        lessonsTotal: 6,
+        totalPrice: 10800,
+        comment: PUBLIC_PACKAGE_MARKER,
+      },
+    });
+
+    expect(createResponse.ok()).toBeTruthy();
+    const created = await createResponse.json();
+    expect(Boolean(created?.isPublic)).toBeTruthy();
+    expect(created?.studentId ?? null).toBeNull();
+    expect(created?.student ?? null).toBeNull();
   });
 
   test.afterAll(async ({ request }) => {
@@ -94,7 +139,11 @@ test.describe('Пакеты — создание (live update)', () => {
       const data = await resp.json();
       const packages = data.data || data;
       for (const p of packages) {
-        if (p.totalPrice === 12000) {
+        if (
+          p.comment === PACKAGE_ECONOMICS_MARKER ||
+          p.comment === PUBLIC_PACKAGE_MARKER ||
+          p.totalPrice === 23500
+        ) {
           await request.delete(`${API_BASE}/packages/${p.id}`, {
             headers: { Authorization: `Bearer ${accessToken}` },
           });

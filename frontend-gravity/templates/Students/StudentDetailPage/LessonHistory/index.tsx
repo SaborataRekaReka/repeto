@@ -1,8 +1,11 @@
-import { Card, Text, Button, Icon, Label } from "@gravity-ui/uikit";
+import { Text, Button, Icon, Label } from "@gravity-ui/uikit";
 import { CirclePlus, ChevronRight } from "@gravity-ui/icons";
 
 import type { IconData } from "@gravity-ui/uikit";
 import type { Lesson } from "@/types/schedule";
+
+const GText = Text as any;
+const GIcon = Icon as any;
 
 type LessonHistoryProps = {
     lessons: Lesson[];
@@ -55,137 +58,61 @@ const LessonHistory = ({
     onLessonClick,
     onAdd,
 }: LessonHistoryProps) => (
-    <div>
-        <div
-            style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: 16,
-            }}
-        >
-            <Text variant="subheader-2">Занятия</Text>
-            {onAdd && (
-                <Button view="action" size="s" onClick={onAdd}>
-                    <Icon data={CirclePlus as IconData} size={14} />
-                    Назначить
-                </Button>
-            )}
-        </div>
+    <div className="tab-section">
+        {onAdd && (
+            <div className="tab-section__actions">
+                <button type="button" className="tab-action-btn" onClick={onAdd}>
+                    <span className="tab-action-btn__icon">
+                        <Icon data={CirclePlus as IconData} size={20} />
+                    </span>
+                    Назначить занятие
+                </button>
+            </div>
+        )}
 
         {lessons.length === 0 ? (
-            <Card
-                className="repeto-student-lesson-card"
-                view="outlined"
-                style={{
-                    padding: "48px 24px",
-                    textAlign: "center",
-                    borderRadius: "12px",
-                }}
-            >
-                <Text variant="body-1" color="secondary">
-                    Занятий пока нет
-                </Text>
-            </Card>
+            <div className="lp2-empty">Занятий пока нет</div>
         ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div className="tab-list">
                 {lessons.map((lesson) => (
-                    <Card
+                    <div
                         key={lesson.id}
-                        className="repeto-student-lesson-card"
-                        type="action"
-                        view="outlined"
-                        style={{
-                            cursor: "pointer",
-                            borderRadius: "12px",
-                            overflow: "hidden",
-                        }}
+                        className="tab-list__item tab-list__item--clickable"
                         onClick={() => onLessonClick?.(lesson)}
                     >
-                        <div
-                            style={{
-                                display: "flex",
-                                alignItems: "center",
-                                padding: "12px 16px",
-                                gap: 20,
-                                flexWrap: "wrap",
-                            }}
-                        >
-                            <div style={{ minWidth: 80 }}>
-                                <Text
-                                    variant="caption-2"
-                                    color="secondary"
-                                    as="div"
-                                >
-                                    Дата
-                                </Text>
-                                <Text variant="body-2">
-                                    {formatDate(lesson.date)}
-                                </Text>
+                        <div className="tab-list__row">
+                            <div className="tab-list__field" style={{ minWidth: 80 }}>
+                                <span className="tab-list__label">Дата</span>
+                                <span className="tab-list__value">{formatDate(lesson.date)}</span>
                             </div>
-                            <div style={{ minWidth: 96 }}>
-                                <Text
-                                    variant="caption-2"
-                                    color="secondary"
-                                    as="div"
-                                >
-                                    Время
-                                </Text>
-                                <Text
-                                    variant="body-2"
-                                    style={{
-                                        color: "var(--g-color-text-brand)",
-                                    }}
-                                >
+                            <div className="tab-list__field" style={{ minWidth: 96 }}>
+                                <span className="tab-list__label">Время</span>
+                                <span className="tab-list__value tab-list__value--brand">
                                     {lesson.startTime} – {lesson.endTime}
-                                </Text>
+                                </span>
                             </div>
-                            <div style={{ minWidth: 90 }}>
-                                <Text
-                                    variant="caption-2"
-                                    color="secondary"
-                                    as="div"
-                                >
-                                    Предмет
-                                </Text>
-                                <Text variant="body-1">{lesson.subject}</Text>
+                            <div className="tab-list__field" style={{ minWidth: 90 }}>
+                                <span className="tab-list__label">Предмет</span>
+                                <span className="tab-list__value">{lesson.subject}</span>
                             </div>
-                            <div style={{ minWidth: 70 }}>
-                                <Text
-                                    variant="caption-2"
-                                    color="secondary"
-                                    as="div"
-                                >
-                                    Ставка
-                                </Text>
-                                <Text variant="body-2">
+                            <div className="tab-list__field" style={{ minWidth: 70 }}>
+                                <span className="tab-list__label">Ставка</span>
+                                <span className="tab-list__value">
                                     {lesson.rate.toLocaleString("ru-RU")} ₽
-                                </Text>
+                                </span>
                             </div>
-                            <div
-                                style={{
-                                    marginLeft: "auto",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 8,
-                                }}
-                            >
-                                <Label
-                                    theme={statusTheme(lesson.status)}
-                                    size="xs"
-                                >
+                            <div className="tab-list__trail">
+                                <Label theme={statusTheme(lesson.status)} size="xs">
                                     {statusLabel(lesson.status)}
                                 </Label>
-                                <Icon
+                                <GIcon
                                     data={ChevronRight as IconData}
                                     size={16}
-                                    style={{
-                                        color: "var(--g-color-text-secondary)",
-                                    }}
+                                    className="tab-list__chevron"
                                 />
                             </div>
                         </div>
-                    </Card>
+                    </div>
                 ))}
             </div>
         )}

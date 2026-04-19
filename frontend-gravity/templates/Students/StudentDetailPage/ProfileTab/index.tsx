@@ -1,6 +1,22 @@
 import { useCallback, useRef, useState } from "react";
-import { Card, Text, TextInput, Select } from "@gravity-ui/uikit";
+import { Text, TextInput, Select, Button, Icon, Label, DropdownMenu } from "@gravity-ui/uikit";
+import { Bell, Link, ChevronDown } from "@gravity-ui/icons";
+import type { IconData } from "@gravity-ui/uikit";
 import type { Student, StudentStatus } from "@/types/student";
+import StudentAvatar from "@/components/StudentAvatar";
+import Lp2Field, { Lp2Row } from "@/components/Lp2Field";
+import { formatBalance, getStatusLabel } from "@/mocks/students";
+
+const GDropdownMenu = DropdownMenu as any;
+
+const statusTheme = (status: Student["status"]): "success" | "normal" => {
+    switch (status) {
+        case "active":
+            return "success";
+        default:
+            return "normal";
+    }
+};
 
 const subjectOptions = [
     { value: "Математика", content: "Математика" },
@@ -22,20 +38,14 @@ const statusOptions = [
 type ProfileTabProps = {
     student: Student;
     onSave?: (data: Partial<Student>) => Promise<void>;
+    onRemind?: () => void;
+    onActivateAccount?: () => void;
+    onStatusSelect?: (status: Student["status"]) => void;
+    statusUpdating?: boolean;
+    studentActionError?: string | null;
 };
 
-const FieldLabel = ({ children }: { children: React.ReactNode }) => (
-    <Text
-        as="div"
-        variant="body-1"
-        color="secondary"
-        style={{ marginBottom: 4 }}
-    >
-        {children}
-    </Text>
-);
-
-const ProfileTab = ({ student, onSave }: ProfileTabProps) => {
+const ProfileTab = ({ student, onSave, onRemind, onActivateAccount, onStatusSelect, statusUpdating, studentActionError }: ProfileTabProps) => {
     const busyRef = useRef(false);
     const [localName, setLocalName] = useState(student.name);
     const [localGrade, setLocalGrade] = useState(student.grade || "");
@@ -44,6 +54,10 @@ const ProfileTab = ({ student, onSave }: ProfileTabProps) => {
     );
     const [localRate, setLocalRate] = useState(String(student.rate));
     const [localNotes, setLocalNotes] = useState(student.notes || "");
+    const [phone, setPhone] = useState(student.phone || "");
+    const [parentName, setParentName] = useState(student.parentName || "");
+    const [parentPhone, setParentPhone] = useState(student.parentPhone || "");
+    const [parentEmail, setParentEmail] = useState(student.parentEmail || "");
 
     const persist = useCallback(
         async (patch: Partial<Student>) => {
@@ -66,7 +80,7 @@ const ProfileTab = ({ student, onSave }: ProfileTabProps) => {
     ) => {
         const trimmed = value.trim();
         if (trimmed !== (prev || "")) {
-            persist({ [key]: trimmed || undefined } as any);
+            persist({ [key]: trimmed || null } as any);
         }
     };
 
@@ -82,125 +96,217 @@ const ProfileTab = ({ student, onSave }: ProfileTabProps) => {
     };
 
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <Card view="outlined" style={{ padding: 20 }}>
-                <Text
-                    variant="subheader-2"
-                    as="div"
-                    style={{ marginBottom: 16 }}
-                >
-                    Основное
-                </Text>
-                <div
-                    style={{
-                        display: "grid",
-                        gridTemplateColumns: "1fr 1fr",
-                        gap: 16,
-                    }}
-                >
-                    <div>
-                        <FieldLabel>ФИО</FieldLabel>
-                        <TextInput
-                            value={localName}
-                            onUpdate={setLocalName}
-                            onBlur={() =>
-                                handleBlurText("name", localName, student.name)
+        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+            {/* Profile Hero */}
+            <div className="profile-hero">
+                <StudentAvatar
+                    student={student}
+                    size="l"
+                    style={{ "--g-avatar-size": "72px", flexShrink: 0 } as React.CSSProperties}
+                />
+                <div className="profile-hero__info">
+                    <Text variant="header-1" as="div">
+                        {student.name}
+                    </Text>
+                    <Text variant="body-1" color="secondary" as="div">
+                        {student.subject}
+                        {student.grade
+                            ? ` · ${student.grade}${student.grade !== "Взрослый" ? " кл." : ""}`
+                            : ""}
+                        {student.age ? ` · ${student.age} лет` : ""}
+                    </Text>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+                        <GDropdownMenu
+                            switcher={
+                                <button
+                                    type="button"
+                                    disabled={statusUpdating}
+                                    style={{
+                                        border: "none",
+                                        background: "transparent",
+                                        padding: 0,
+                                        margin: 0,
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: 4,
+                                        cursor: statusUpdating ? "default" : "pointer",
+                                    }}
+                                >
+                                    <Label theme={statusTheme(student.status)} size="xs">
+                                        {getStatusLabel(student.status)}
+                                    </Label>
+                                    <Icon
+                                        data={ChevronDown as IconData}
+                                        size={12}
+                                        style={{ color: "var(--g-color-text-secondary)" }}
+                                    />
+                                </button>
                             }
-                            size="l"
+                            items={[
+                                {
+                                    text: student.status === "active"
+                                        ? "Активный (текущий)"
+                                        : student.status === "archived"
+                                        ? "Вытащить из архива"
+                                        : "Сделать активным",
+                                    action: () => onStatusSelect?.("active"),
+                                },
+                                {
+                                    text: student.status === "paused" ? "На паузе (текущий)" : "Поставить на паузу",
+                                    action: () => onStatusSelect?.("paused"),
+                                },
+                                {
+                                    text: student.status === "archived" ? "В архиве (текущий)" : "Перенести в архив",
+                                    action: () => onStatusSelect?.("archived"),
+                                },
+                            ]}
                         />
+                        <Text
+                            variant="body-2"
+                            style={{
+                                color: student.balance < 0 ? "#D16B8F" : student.balance > 0 ? "#22C55E" : undefined,
+                            }}
+                        >
+                            {formatBalance(student.balance)}
+                        </Text>
                     </div>
-                    <div>
-                        <FieldLabel>Класс</FieldLabel>
-                        <TextInput
-                            value={localGrade}
-                            onUpdate={setLocalGrade}
-                            onBlur={() =>
-                                handleBlurText(
-                                    "grade",
-                                    localGrade,
-                                    student.grade
-                                )
-                            }
-                            placeholder="11 или Взрослый"
-                            size="l"
-                        />
+                    <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                        <Button view="outlined" size="s" onClick={onRemind}>
+                            <Icon data={Bell as IconData} size={14} />
+                            Напомнить
+                        </Button>
+                        <Button view="outlined" size="s" onClick={onActivateAccount}>
+                            <Icon data={Link as IconData} size={14} />
+                            {student.accountId ? "Обновить кабинет" : "Создать личную страницу"}
+                        </Button>
                     </div>
-                    <div>
-                        <FieldLabel>Возраст</FieldLabel>
-                        <TextInput
-                            value={localAge}
-                            onUpdate={setLocalAge}
-                            onBlur={() =>
-                                handleBlurNumber(
-                                    "age" as any,
-                                    localAge,
-                                    student.age
-                                )
-                            }
-                            placeholder="—"
-                            size="l"
-                        />
-                    </div>
-                    <div>
-                        <FieldLabel>Предмет</FieldLabel>
-                        <Select
-                            options={subjectOptions}
-                            value={[student.subject]}
-                            onUpdate={([v]) =>
-                                persist({ subject: v } as any)
-                            }
-                            size="l"
-                            width="max"
-                        />
-                    </div>
-                    <div>
-                        <FieldLabel>Ставка (₽)</FieldLabel>
-                        <TextInput
-                            value={localRate}
-                            onUpdate={setLocalRate}
-                            onBlur={() =>
-                                handleBlurNumber("rate", localRate, student.rate)
-                            }
-                            size="l"
-                        />
-                    </div>
-                    <div>
-                        <FieldLabel>Статус</FieldLabel>
-                        <Select
-                            options={statusOptions}
-                            value={[student.status]}
-                            onUpdate={([v]) =>
-                                persist({ status: v as StudentStatus } as any)
-                            }
-                            size="l"
-                            width="max"
-                        />
-                    </div>
+                    {studentActionError && (
+                        <Text as="div" variant="caption-2" style={{ color: "var(--g-color-text-danger)", marginTop: 8 }}>
+                            {studentActionError}
+                        </Text>
+                    )}
                 </div>
-            </Card>
-            <Card view="outlined" style={{ padding: 20 }}>
-                <Text
-                    variant="subheader-2"
-                    as="div"
-                    style={{ marginBottom: 16 }}
-                >
-                    Дополнительно
-                </Text>
-                <FieldLabel>Заметки о профиле</FieldLabel>
+            </div>
+
+            {/* Основное */}
+            <div className="lp2-section-title" style={{ marginTop: 28 }}>Основное</div>
+
+            <Lp2Field label="ФИО">
+                <TextInput
+                    value={localName}
+                    onUpdate={setLocalName}
+                    onBlur={() => handleBlurText("name", localName, student.name)}
+                    size="l"
+                />
+            </Lp2Field>
+
+            <Lp2Row>
+                <Lp2Field label="Предмет" half>
+                    <Select
+                        options={subjectOptions}
+                        value={[student.subject]}
+                        onUpdate={([v]) => persist({ subject: v } as any)}
+                        size="l"
+                        width="max"
+                    />
+                </Lp2Field>
+                <Lp2Field label="Ставка (₽)" half>
+                    <TextInput
+                        value={localRate}
+                        onUpdate={setLocalRate}
+                        onBlur={() => handleBlurNumber("rate", localRate, student.rate)}
+                        size="l"
+                    />
+                </Lp2Field>
+            </Lp2Row>
+
+            <Lp2Row>
+                <Lp2Field label="Класс" half>
+                    <TextInput
+                        value={localGrade}
+                        onUpdate={setLocalGrade}
+                        onBlur={() => handleBlurText("grade", localGrade, student.grade)}
+                        placeholder="11 или Взрослый"
+                        size="l"
+                    />
+                </Lp2Field>
+                <Lp2Field label="Возраст" half>
+                    <TextInput
+                        value={localAge}
+                        onUpdate={setLocalAge}
+                        onBlur={() => handleBlurNumber("age" as any, localAge, student.age)}
+                        placeholder="—"
+                        size="l"
+                    />
+                </Lp2Field>
+            </Lp2Row>
+
+            <Lp2Field label="Статус">
+                <Select
+                    options={statusOptions}
+                    value={[student.status]}
+                    onUpdate={([v]) => persist({ status: v as StudentStatus } as any)}
+                    size="l"
+                    width="max"
+                />
+            </Lp2Field>
+
+            {/* Контакты */}
+            <div className="lp2-section-title" style={{ marginTop: 28 }}>Контакты</div>
+
+            <Lp2Field label="Телефон">
+                <TextInput
+                    value={phone}
+                    onUpdate={setPhone}
+                    onBlur={() => handleBlurText("phone" as any, phone, student.phone)}
+                    placeholder="+7 900 123-45-67"
+                    size="l"
+                />
+            </Lp2Field>
+
+            <Lp2Field label="ФИО родителя">
+                <TextInput
+                    value={parentName}
+                    onUpdate={setParentName}
+                    onBlur={() => handleBlurText("parentName" as any, parentName, student.parentName)}
+                    placeholder="Иванова Мария Петровна"
+                    size="l"
+                />
+            </Lp2Field>
+
+            <Lp2Row>
+                <Lp2Field label="Телефон родителя" half>
+                    <TextInput
+                        value={parentPhone}
+                        onUpdate={setParentPhone}
+                        onBlur={() => handleBlurText("parentPhone" as any, parentPhone, student.parentPhone)}
+                        placeholder="+7 900 765-43-21"
+                        size="l"
+                    />
+                </Lp2Field>
+                <Lp2Field label="Email родителя" half>
+                    <TextInput
+                        value={parentEmail}
+                        onUpdate={setParentEmail}
+                        onBlur={() => handleBlurText("parentEmail" as any, parentEmail, student.parentEmail)}
+                        placeholder="parent@email.com"
+                        size="l"
+                    />
+                </Lp2Field>
+            </Lp2Row>
+
+            {/* Заметки */}
+            <div className="lp2-section-title" style={{ marginTop: 28 }}>Заметки</div>
+
+            <Lp2Field label="Заметки о профиле">
                 <TextInput
                     value={localNotes}
                     onUpdate={setLocalNotes}
-                    onBlur={() =>
-                        handleBlurText(
-                            "notes",
-                            localNotes,
-                            student.notes || ""
-                        )
-                    }
+                    onBlur={() => handleBlurText("notes", localNotes, student.notes || "")}
                     placeholder="Особенности, пожелания..."
                     size="l"
                 />
-            </Card>
+            </Lp2Field>
         </div>
     );
 };

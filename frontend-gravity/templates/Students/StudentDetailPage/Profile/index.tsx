@@ -13,15 +13,13 @@ import {
 type ProfileProps = {
     student: Student;
     onMessage?: () => void;
-    onPortalLink?: () => void;
     onEdit?: () => void;
 };
 
-const Profile = ({ student, onMessage, onPortalLink, onEdit }: ProfileProps) => {
+const Profile = ({ student, onMessage, onEdit }: ProfileProps) => {
 
     const contactItems = [
         student.phone && { title: "Телефон", content: student.phone },
-        student.whatsapp && { title: "WhatsApp", content: student.whatsapp },
         student.telegram && { title: "Telegram (устар.)", content: student.telegram },
         student.parentName && {
             title: "Родитель",
@@ -30,10 +28,6 @@ const Profile = ({ student, onMessage, onPortalLink, onEdit }: ProfileProps) => 
         student.parentPhone && {
             title: "Тел. родителя",
             content: student.parentPhone,
-        },
-        student.parentWhatsapp && {
-            title: "WhatsApp родителя",
-            content: student.parentWhatsapp,
         },
         student.parentTelegram && {
             title: "Telegram родителя (устар.)",
@@ -57,8 +51,11 @@ const Profile = ({ student, onMessage, onPortalLink, onEdit }: ProfileProps) => 
                 </div>
                 <div className="text-h4">{student.name}</div>
                 <div className="text-sm">
-                    {student.subject} · {student.grade}
-                    {student.grade !== "Взрослый" ? " класс" : ""}
+                    {student.subject}
+                    {student.grade
+                        ? ` · ${student.grade}${student.grade !== "Взрослый" ? " класс" : ""}`
+                        : ""}
+                    {student.age ? ` · ${student.age} лет` : ""}
                 </div>
                 <div className="flex items-center mt-2 gap-2">
                     <div
@@ -108,13 +105,6 @@ const Profile = ({ student, onMessage, onPortalLink, onEdit }: ProfileProps) => 
                         onClick={onMessage}
                     >
                         <Icon name="email" />
-                    </button>
-                    <button
-                        className="btn-stroke btn-medium btn-square shrink-0 ml-1.5"
-                        onClick={onPortalLink}
-                        title="Ссылка для ученика"
-                    >
-                        <Icon name="external-link" />
                     </button>
                     <button
                         className="btn-stroke btn-medium btn-square shrink-0 ml-1.5"

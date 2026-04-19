@@ -12,22 +12,7 @@ const SignUpBanner = ({ notifications }: Props) => {
     const allConnected =
         (!telegram || telegram.connected) && (!max || max.connected);
 
-    if (allConnected) {
-        return (
-            <Card view="outlined" style={{ marginTop: 32, padding: 20 }}>
-                <Text variant="subheader-2" as="div" style={{ marginBottom: 4 }}>
-                    🔔 Уведомления подключены
-                </Text>
-                <Text variant="body-1" color="secondary">
-                    Вы будете получать напоминания о занятиях
-                    {telegram?.connected && " в Telegram"}
-                    {telegram?.connected && max?.connected && " и"}
-                    {max?.connected && " в Макс"}
-                    .
-                </Text>
-            </Card>
-        );
-    }
+    if (allConnected) return null;
 
     return (
         <Card view="outlined" style={{ marginTop: 32, padding: 20 }}>

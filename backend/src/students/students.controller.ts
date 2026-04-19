@@ -143,7 +143,7 @@ export class StudentsController {
   createHomework(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser('id') userId: string,
-    @Body() body: { task: string; dueAt?: string; lessonId?: string },
+    @Body() body: { task: string; dueAt?: string; lessonId?: string; fileIds?: string[] },
   ) {
     return this.studentsService.createHomework(id, userId, body);
   }
@@ -153,7 +153,14 @@ export class StudentsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Param('hwId', ParseUUIDPipe) hwId: string,
     @CurrentUser('id') userId: string,
-    @Body() body: { task?: string; dueAt?: string; status?: string },
+    @Body()
+    body: {
+      task?: string;
+      dueAt?: string;
+      status?: string;
+      lessonId?: string | null;
+      fileIds?: string[];
+    },
   ) {
     return this.studentsService.updateHomework(id, hwId, userId, body);
   }
@@ -168,21 +175,17 @@ export class StudentsController {
     return this.studentsService.deleteHomework(id, hwId, userId);
   }
 
-  // ── Portal link ──
+  // ── Portal account ──
 
-  @Post(':id/portal-link')
-  generatePortalLink(
+  /**
+   * Tutor-triggered: create or link a self-service StudentAccount for this
+   * student and send an invite email. Replaces legacy portal-link endpoints.
+   */
+  @Post(':id/activate-account')
+  activateAccount(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser('id') userId: string,
   ) {
-    return this.studentsService.generatePortalLink(id, userId);
-  }
-
-  @Delete(':id/portal-link')
-  revokePortalLink(
-    @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser('id') userId: string,
-  ) {
-    return this.studentsService.revokePortalLink(id, userId);
+    return this.studentsService.activateAccount(id, userId);
   }
 }

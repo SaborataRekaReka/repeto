@@ -79,8 +79,6 @@ async function main() {
       status: 'ACTIVE' as const, phone: '+7 900 123-45-67', whatsapp: '+7 900 123-45-67',
       email: 'ivanov.petr@mail.ru',
       parentName: 'Иванова Мария', parentPhone: '+7 900 765-43-21', parentEmail: 'ivanova.m@mail.ru',
-      portalToken: 'demo-portal-token-ivanov',
-      portalTokenCreatedAt: new Date(),
     },
     {
       name: 'Петрова Анна', subject: 'Английский', grade: '9', rate: 1800,

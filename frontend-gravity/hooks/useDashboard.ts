@@ -14,6 +14,7 @@ type DebtStudent = {
   name: string;
   subject: string;
   balance: number;
+  parentEmail?: string | null;
 };
 
 type RecentPayment = {

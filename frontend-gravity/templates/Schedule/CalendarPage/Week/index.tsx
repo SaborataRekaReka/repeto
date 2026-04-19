@@ -14,6 +14,8 @@ type WeekProps = {
 const DAY_NAMES_SHORT = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 const HOUR_HEIGHT = 60; // px per hour
 const TIME_COL = 56; // px, time label column width
+const DAY_COL_MIN = 110;
+const WEEK_MIN_WIDTH = TIME_COL + DAY_COL_MIN * 7;
 const HOURS_24 = Array.from({ length: 24 }, (_, i) => i);
 
 function pad(n: number) {
@@ -107,205 +109,212 @@ const Week = ({ currentDate, onLessonClick, onSlotClick, lessons = [] }: WeekPro
 
     return (
         <Card view="outlined" style={{ overflow: "hidden" }}>
-            <div
-                ref={scrollRef}
-                className="repeto-calendar-scroll"
-                style={{ overflowY: "auto", maxHeight: "calc(100vh - 180px)" }}
-            >
+            <div className="repeto-calendar-shell">
                 <div
-                    className="repeto-calendar-header"
-                    style={{
-                        display: "flex",
-                        position: "sticky",
-                        top: 0,
-                        zIndex: 10,
-                        borderBottom: "1px solid var(--g-color-line-generic)",
-                    }}
+                    ref={scrollRef}
+                    className="repeto-calendar-scroll repeto-calendar-shell__inner"
+                    style={{ overflowY: "auto", overflowX: "hidden", maxHeight: "calc(100vh - 180px)" }}
                 >
-                    <div style={{ width: TIME_COL, flexShrink: 0 }} />
-                    {weekDays.map((day) => (
-                        <div
-                            key={day.date}
-                            style={{
-                                flex: 1,
-                                minWidth: 0,
-                                display: "flex",
-                                flexDirection: "column",
-                                alignItems: "center",
-                                padding: "10px 4px 8px",
-                                borderLeft: "1px solid var(--g-color-line-generic)",
-                            }}
-                        >
-                            <Text
-                                variant="caption-2"
-                                color={day.isToday ? "brand" : "secondary"}
-                                style={{
-                                    textTransform: "uppercase",
-                                    fontWeight: 500,
-                                    letterSpacing: 0.5,
-                                }}
-                            >
-                                {day.dayOfWeek}
-                            </Text>
+                    <div
+                        className="repeto-calendar-header"
+                        style={{
+                            display: "flex",
+                            minWidth: WEEK_MIN_WIDTH,
+                            position: "sticky",
+                            top: 0,
+                            zIndex: 10,
+                            borderBottom: "1px solid var(--g-color-line-generic)",
+                        }}
+                    >
+                        <div style={{ width: TIME_COL, flexShrink: 0 }} />
+                        {weekDays.map((day) => (
                             <div
+                                key={day.date}
                                 style={{
-                                    width: 32,
-                                    height: 32,
+                                    flex: 1,
+                                    minWidth: DAY_COL_MIN,
                                     display: "flex",
+                                    flexDirection: "column",
                                     alignItems: "center",
-                                    justifyContent: "center",
-                                    borderRadius: "50%",
-                                    background: day.isToday
-                                        ? "var(--g-color-base-brand)"
-                                        : "transparent",
-                                    marginTop: 2,
+                                    padding: "10px 4px 8px",
+                                    borderLeft: "1px solid var(--g-color-line-generic)",
                                 }}
                             >
                                 <Text
-                                    variant="subheader-2"
+                                    variant="caption-2"
+                                    color={day.isToday ? "brand" : "secondary"}
                                     style={{
-                                        color: day.isToday
-                                            ? "var(--g-color-text-brand-contrast)"
-                                            : "var(--g-color-text-primary)",
+                                        textTransform: "uppercase",
+                                        fontWeight: 500,
+                                        letterSpacing: 0.5,
                                     }}
                                 >
-                                    {day.dayNum}
+                                    {day.dayOfWeek}
                                 </Text>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-                <div
-                    style={{
-                        display: "flex",
-                        height: gridHeight,
-                        position: "relative",
-                    }}
-                >
-                    <div
-                        style={{
-                            width: TIME_COL,
-                            flexShrink: 0,
-                            position: "relative",
-                        }}
-                    >
-                        {HOURS_24.map((h) =>
-                            h === 0 ? null : (
                                 <div
-                                    key={h}
                                     style={{
-                                        position: "absolute",
-                                        top: h * HOUR_HEIGHT - 8,
-                                        right: 8,
-                                        left: 0,
+                                        width: 32,
+                                        height: 32,
                                         display: "flex",
-                                        justifyContent: "flex-end",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        borderRadius: "50%",
+                                        background: day.isToday
+                                            ? "var(--g-color-base-brand)"
+                                            : "transparent",
+                                        marginTop: 2,
                                     }}
                                 >
                                     <Text
-                                        variant="caption-2"
-                                        color="secondary"
-                                        style={{ userSelect: "none", whiteSpace: "nowrap" }}
+                                        variant="subheader-2"
+                                        style={{
+                                            color: day.isToday
+                                                ? "var(--g-color-text-brand-contrast)"
+                                                : "var(--g-color-text-primary)",
+                                        }}
                                     >
-                                        {String(h).padStart(2, "0")}:00
+                                        {day.dayNum}
                                     </Text>
                                 </div>
-                            )
-                        )}
+                            </div>
+                        ))}
                     </div>
-                    {weekDays.map((day) => (
+                    <div
+                        style={{
+                            display: "flex",
+                            minWidth: WEEK_MIN_WIDTH,
+                            height: gridHeight,
+                            position: "relative",
+                        }}
+                    >
                         <div
-                            key={day.date}
-                            onClick={(event) => handleSlotClick(event, day.date)}
                             style={{
-                                flex: 1,
-                                minWidth: 0,
+                                width: TIME_COL,
+                                flexShrink: 0,
                                 position: "relative",
-                                borderLeft: "1px solid var(--g-color-line-generic)",
-                                cursor: "pointer",
                             }}
                         >
-                            {HOURS_24.map((h) => (
-                                <div
-                                    key={h}
-                                    style={{
-                                        position: "absolute",
-                                        top: h * HOUR_HEIGHT,
-                                        left: 0,
-                                        right: 0,
-                                        borderTop: h === 0 ? "none" : "1px solid var(--g-color-line-generic)",
-                                        pointerEvents: "none",
-                                    }}
-                                />
-                            ))}
-                            {HOURS_24.map((h) => (
-                                <div
-                                    key={"half-" + h}
-                                    style={{
-                                        position: "absolute",
-                                        top: h * HOUR_HEIGHT + HOUR_HEIGHT / 2,
-                                        left: 0,
-                                        right: 0,
-                                        borderTop: "1px dashed var(--g-color-line-generic)",
-                                        opacity: 0.5,
-                                        pointerEvents: "none",
-                                    }}
-                                />
-                            ))}
-                            {day.lessons.map((lesson) => {
-                                const startMin = parseTimeToMinutes(lesson.startTime);
-                                const endMin = parseTimeToMinutes(lesson.endTime);
-                                const top = (startMin / 60) * HOUR_HEIGHT;
-                                const height = ((endMin - startMin) / 60) * HOUR_HEIGHT;
-                                return (
+                            {HOURS_24.map((h) =>
+                                h === 0 ? null : (
                                     <div
-                                        key={lesson.id}
-                                        onClick={(event) => event.stopPropagation()}
+                                        key={h}
                                         style={{
                                             position: "absolute",
-                                            top,
-                                            left: 2,
-                                            right: 2,
-                                            height: Math.max(height - 2, 20),
-                                            zIndex: 2,
+                                            top: h * HOUR_HEIGHT - 8,
+                                            right: 8,
+                                            left: 0,
+                                            display: "flex",
+                                            justifyContent: "flex-end",
                                         }}
                                     >
-                                        <LessonBlock
-                                            lesson={lesson}
-                                            showTime
-                                            onClick={onLessonClick}
-                                        />
+                                        <Text
+                                            variant="caption-2"
+                                            color="secondary"
+                                            style={{ userSelect: "none", whiteSpace: "nowrap" }}
+                                        >
+                                            {String(h).padStart(2, "0")}:00
+                                        </Text>
                                     </div>
-                                );
-                            })}
-                            {day.date === todayIso && (
-                                <div
-                                    style={{
-                                        position: "absolute",
-                                        top: nowTop,
-                                        left: -1,
-                                        right: 0,
-                                        height: 2,
-                                        background: "var(--g-color-base-danger)",
-                                        zIndex: 3,
-                                        pointerEvents: "none",
-                                    }}
-                                >
+                                )
+                            )}
+                        </div>
+                        {weekDays.map((day) => (
+                            <div
+                                key={day.date}
+                                onClick={(event) => handleSlotClick(event, day.date)}
+                                style={{
+                                    flex: 1,
+                                    minWidth: DAY_COL_MIN,
+                                    position: "relative",
+                                    borderLeft: "1px solid var(--g-color-line-generic)",
+                                    cursor: "pointer",
+                                }}
+                            >
+                                {HOURS_24.map((h) => (
+                                    <div
+                                        key={h}
+                                        style={{
+                                            position: "absolute",
+                                            top: h * HOUR_HEIGHT,
+                                            left: 0,
+                                            right: 0,
+                                            borderTop: h === 0 ? "none" : "1px solid var(--g-color-line-generic)",
+                                            pointerEvents: "none",
+                                        }}
+                                    />
+                                ))}
+                                {HOURS_24.map((h) => (
+                                    <div
+                                        key={"half-" + h}
+                                        style={{
+                                            position: "absolute",
+                                            top: h * HOUR_HEIGHT + HOUR_HEIGHT / 2,
+                                            left: 0,
+                                            right: 0,
+                                            borderTop: "1px dashed var(--g-color-line-generic)",
+                                            opacity: 0.5,
+                                            pointerEvents: "none",
+                                        }}
+                                    />
+                                ))}
+                                {day.lessons.map((lesson) => {
+                                    const startMin = parseTimeToMinutes(lesson.startTime);
+                                    const endMin = parseTimeToMinutes(lesson.endTime);
+                                    const top = (startMin / 60) * HOUR_HEIGHT;
+                                    const height = ((endMin - startMin) / 60) * HOUR_HEIGHT;
+                                    const blockHeight = Math.max(height - 2, 20);
+                                    const useCompact = blockHeight < 52;
+                                    return (
+                                        <div
+                                            key={lesson.id}
+                                            onClick={(event) => event.stopPropagation()}
+                                            style={{
+                                                position: "absolute",
+                                                top,
+                                                left: 2,
+                                                right: 2,
+                                                height: blockHeight,
+                                                zIndex: 2,
+                                            }}
+                                        >
+                                            <LessonBlock
+                                                lesson={lesson}
+                                                compact={useCompact}
+                                                showTime={!useCompact}
+                                                onClick={onLessonClick}
+                                            />
+                                        </div>
+                                    );
+                                })}
+                                {day.date === todayIso && (
                                     <div
                                         style={{
                                             position: "absolute",
-                                            left: -4,
-                                            top: -3,
-                                            width: 8,
-                                            height: 8,
-                                            borderRadius: "50%",
+                                            top: nowTop,
+                                            left: -1,
+                                            right: 0,
+                                            height: 2,
                                             background: "var(--g-color-base-danger)",
+                                            zIndex: 3,
+                                            pointerEvents: "none",
                                         }}
-                                    />
-                                </div>
-                            )}
-                        </div>
-                    ))}
+                                    >
+                                        <div
+                                            style={{
+                                                position: "absolute",
+                                                left: -4,
+                                                top: -3,
+                                                width: 8,
+                                                height: 8,
+                                                borderRadius: "50%",
+                                                background: "var(--g-color-base-danger)",
+                                            }}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
         </Card>

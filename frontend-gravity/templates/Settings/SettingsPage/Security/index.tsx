@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
-import { Card, Text, Button, TextInput } from "@gravity-ui/uikit";
+import { Alert, Card, Text, Button, TextInput } from "@gravity-ui/uikit";
 import { changePassword, deleteAccount } from "@/hooks/useSettings";
 import { useAuth } from "@/contexts/AuthContext";
 import { codedErrorMessage } from "@/lib/errorCodes";
@@ -36,7 +36,7 @@ const Security = () => {
     const handleDeleteAccount = async () => {
         if (!deletePassword) { setDeleteMsg("Введите пароль для подтверждения"); return; }
         setDeleting(true); setDeleteMsg(null);
-        try { await deleteAccount(deletePassword); router.push("/registration"); }
+        try { await deleteAccount(deletePassword); router.push("/auth?view=signin"); }
         catch (e: any) { setDeleteMsg(codedErrorMessage("SETT-SEC-DEL", e)); }
         finally { setDeleting(false); }
     };
@@ -97,23 +97,45 @@ const Security = () => {
                     </div>
                     {deleteConfirm && (
                         <div style={{ marginTop: 20, maxWidth: 420 }}>
-                            <Text variant="caption-2" color="secondary" style={{ display: "block", marginBottom: 6 }}>
-                                Введите пароль для подтверждения
-                            </Text>
-                            <TextInput type="password" value={deletePassword} onUpdate={setDeletePassword} placeholder="Ваш пароль" size="l" />
+                            <Alert
+                                theme="danger"
+                                view="filled"
+                                corners="rounded"
+                                title="Подтвердите удаление аккаунта"
+                                message={
+                                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                        <div>После удаления восстановить данные будет невозможно.</div>
+                                        <Text variant="caption-2" color="secondary" style={{ display: "block" }}>
+                                            Введите пароль для подтверждения
+                                        </Text>
+                                        <TextInput
+                                            type="password"
+                                            value={deletePassword}
+                                            onUpdate={setDeletePassword}
+                                            placeholder="Ваш пароль"
+                                            size="l"
+                                        />
+                                        <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
+                                            <Button view="outlined" size="l" onClick={() => { setDeleteConfirm(false); setDeletePassword(""); setDeleteMsg(null); }}>
+                                                Отмена
+                                            </Button>
+                                            <Button view="outlined-danger" size="l" onClick={handleDeleteAccount} disabled={deleting}>
+                                                {deleting ? "Удаляем..." : "Подтвердить удаление"}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                }
+                            />
                             {deleteMsg && (
-                                <Text variant="body-1" style={{ display: "block", marginTop: 8, fontWeight: 600, color: "var(--g-color-text-danger)" }}>
-                                    {deleteMsg}
-                                </Text>
+                                <Alert
+                                    theme="danger"
+                                    view="filled"
+                                    corners="rounded"
+                                    title="Не удалось удалить аккаунт"
+                                    message={deleteMsg}
+                                    style={{ marginTop: 8 }}
+                                />
                             )}
-                            <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
-                                <Button view="outlined" size="l" onClick={() => { setDeleteConfirm(false); setDeletePassword(""); setDeleteMsg(null); }}>
-                                    Отмена
-                                </Button>
-                                <Button view="outlined-danger" size="l" onClick={handleDeleteAccount} disabled={deleting}>
-                                    {deleting ? "Удаляем..." : "Подтвердить удаление"}
-                                </Button>
-                            </div>
                         </div>
                     )}
                 </div>

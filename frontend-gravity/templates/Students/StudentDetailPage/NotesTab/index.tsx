@@ -1,8 +1,13 @@
 import { useState } from "react";
-import { Card, Text, Button, Icon, TextArea } from "@gravity-ui/uikit";
-import { CirclePlus, TrashBin } from "@gravity-ui/icons";
+import { Text, Button, Icon, TextArea } from "@gravity-ui/uikit";
+import { TrashBin, CirclePlus } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
-import { createNote, deleteNote } from "@/hooks/useStudents";
+import AppDialog from "@/components/AppDialog";
+import { Lp2Field } from "@/components/Lp2Field";
+import { createNote, deleteNote, updateNote } from "@/hooks/useStudents";
+
+const GIcon = Icon as any;
+const GButton = Button as any;
 
 type Note = {
     id: string;
@@ -18,140 +23,215 @@ type NotesTabProps = {
     onMutate?: () => void;
 };
 
+const parsePortalReview = (text: string) => {
+    if (!text.startsWith("PORTAL_REVIEW:")) {
+        return null;
+    }
+
+    const payload = text.slice("PORTAL_REVIEW:".length);
+    try {
+        const parsed = JSON.parse(payload);
+        if (!parsed || typeof parsed !== "object") {
+            return null;
+        }
+
+        const rating = Number((parsed as any).rating);
+        const feedback =
+            typeof (parsed as any).feedback === "string"
+                ? (parsed as any).feedback.trim()
+                : "";
+
+        return {
+            rating: Number.isFinite(rating) ? rating : null,
+            feedback,
+        };
+    } catch {
+        return null;
+    }
+};
+
 const NotesTab = ({
     studentId,
     studentName,
     notes,
     onMutate,
 }: NotesTabProps) => {
-    const [adding, setAdding] = useState(false);
-    const [newNote, setNewNote] = useState("");
+    const [formVisible, setFormVisible] = useState(false);
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [noteText, setNoteText] = useState("");
+    const [saving, setSaving] = useState(false);
+    const [busyId, setBusyId] = useState<string | null>(null);
 
-    const handleAdd = async () => {
-        if (!newNote.trim()) return;
+    const resetForm = () => {
+        setFormVisible(false);
+        setEditingId(null);
+        setNoteText("");
+    };
+
+    const handleOpenCreate = () => {
+        setEditingId(null);
+        setNoteText("");
+        setFormVisible(true);
+    };
+
+    const handleSubmit = async () => {
+        if (!noteText.trim()) return;
+        setSaving(true);
         try {
-            await createNote(studentId, newNote.trim());
-            setNewNote("");
-            setAdding(false);
+            if (editingId) {
+                await updateNote(studentId, editingId, noteText.trim());
+            } else {
+                await createNote(studentId, noteText.trim());
+            }
+            resetForm();
             onMutate?.();
         } catch {
-            // Ошибка создания заметки — silent
+            // silent
+        } finally {
+            setSaving(false);
         }
     };
 
+    const handleEdit = (note: Note) => {
+        setEditingId(note.id);
+        setNoteText(note.text);
+        setFormVisible(true);
+    };
+
     const handleDelete = async (noteId: string) => {
+        setBusyId(noteId);
         try {
             await deleteNote(studentId, noteId);
+            if (editingId === noteId) {
+                resetForm();
+            }
             onMutate?.();
         } catch {
-            // Ошибка удаления заметки — silent
+            // silent
+        } finally {
+            setBusyId(null);
         }
     };
 
     return (
-        <div>
-            <div
-                style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    marginBottom: 16,
-                }}
-            >
-                <Text variant="subheader-2">Заметки</Text>
-                <Button
-                    view="action"
-                    size="s"
-                    onClick={() => setAdding(true)}
-                >
-                    <Icon data={CirclePlus as IconData} size={14} />
-                    Добавить
-                </Button>
+        <div className="tab-section">
+            {/* ── Action button (Tochka style) ── */}
+            <div className="tab-section__actions">
+                <button type="button" className="tab-action-btn" onClick={handleOpenCreate}>
+                    <span className="tab-action-btn__icon">
+                        <GIcon data={CirclePlus as IconData} size={20} />
+                    </span>
+                    Добавить заметку
+                </button>
             </div>
 
-            {adding && (
-                <Card
-                    view="outlined"
-                    style={{ padding: 16, marginBottom: 12 }}
-                >
-                    <TextArea
-                        value={newNote}
-                        onUpdate={setNewNote}
-                        placeholder="Напишите заметку..."
-                        rows={4}
-                        size="l"
-                        autoFocus
-                    />
-                    <div
-                        style={{
-                            display: "flex",
-                            gap: 8,
-                            marginTop: 10,
-                        }}
-                    >
-                        <Button view="action" size="s" onClick={handleAdd}>
-                            Сохранить
-                        </Button>
-                        <Button
-                            view="outlined"
-                            size="s"
-                            onClick={() => {
-                                setAdding(false);
-                                setNewNote("");
-                            }}
-                        >
-                            Отмена
-                        </Button>
-                    </div>
-                </Card>
-            )}
+            {/* ── Notes list ── */}
+            {notes.length > 0 && (
+                <div className="lp2-hw-list">
+                    {notes.map((note) => {
+                        const portalReview = parsePortalReview(note.text);
 
-            {notes.length === 0 && !adding ? (
-                <Card
-                    view="outlined"
-                    style={{ padding: "48px 24px", textAlign: "center" }}
-                >
-                    <Text variant="body-1" color="secondary">
-                        Заметок пока нет
-                    </Text>
-                </Card>
-            ) : (
-                <div
-                    style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 8,
-                    }}
-                >
-                    {notes.map((note) => (
-                        <Card key={note.id} view="outlined" style={{ padding: 16 }}>
+                        return (
                             <div
-                                style={{
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                    alignItems: "flex-start",
-                                    marginBottom: 8,
-                                }}
+                                key={note.id}
+                                className="lp2-hw-item"
+                                style={{ cursor: portalReview ? "default" : "pointer" }}
+                                onClick={portalReview ? undefined : () => handleEdit(note)}
                             >
-                                <Text variant="caption-2" color="secondary">
+                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                    <span style={{ fontWeight: 500, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                        {portalReview ? `Отзыв из портала — ${portalReview.rating ?? "—"}/5` : note.text}
+                                    </span>
+                                    {!portalReview && (
+                                        <>
+                                            <GButton
+                                                view="flat"
+                                                size="s"
+                                                onClick={(e: React.MouseEvent) => {
+                                                    e.stopPropagation();
+                                                    handleEdit(note);
+                                                }}
+                                            >
+                                                Редактировать
+                                            </GButton>
+                                            <GButton
+                                                view="flat"
+                                                size="s"
+                                                loading={busyId === note.id}
+                                                disabled={!!busyId && busyId !== note.id}
+                                                onClick={(e: React.MouseEvent) => {
+                                                    e.stopPropagation();
+                                                    void handleDelete(note.id);
+                                                }}
+                                            >
+                                                Удалить
+                                            </GButton>
+                                        </>
+                                    )}
+                                </div>
+                                <span style={{ fontSize: 12, color: "var(--g-color-text-secondary)" }}>
                                     {note.date}, {note.time}
-                                </Text>
-                                <Button
-                                    view="flat"
-                                    size="xs"
-                                    onClick={() => handleDelete(note.id)}
-                                >
-                                    <Icon
-                                        data={TrashBin as IconData}
-                                        size={14}
-                                    />
-                                </Button>
+                                    {portalReview?.feedback ? ` — ${portalReview.feedback}` : ""}
+                                </span>
                             </div>
-                            <Text variant="body-1">{note.text}</Text>
-                        </Card>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
+
+            {notes.length === 0 && (
+                <div className="lp2-empty">Заметок пока нет</div>
+            )}
+
+            <AppDialog
+                open={formVisible}
+                onClose={resetForm}
+                size="m"
+                caption={editingId ? "Редактировать заметку" : "Добавить заметку"}
+                hasCloseButton
+            >
+                <div className="lp2-hw-form">
+                    <Lp2Field label={editingId ? "Заметка" : "Новая заметка"}>
+                        <TextArea
+                            value={noteText}
+                            onUpdate={setNoteText}
+                            placeholder="Напишите заметку..."
+                            rows={3}
+                            size="xl"
+                            autoFocus
+                        />
+                    </Lp2Field>
+                    <div className="tab-note-form__actions">
+                        <GButton
+                            view="outlined"
+                            size="l"
+                            onClick={resetForm}
+                        >
+                            Отмена
+                        </GButton>
+                        <GButton
+                            view="action"
+                            size="l"
+                            disabled={!noteText.trim()}
+                            loading={saving}
+                            onClick={() => void handleSubmit()}
+                        >
+                            {editingId ? "Сохранить изменения" : "Сохранить"}
+                        </GButton>
+                        {editingId && (
+                            <GButton
+                                view="flat"
+                                size="l"
+                                loading={busyId === editingId}
+                                onClick={() => void handleDelete(editingId)}
+                            >
+                                <GIcon data={TrashBin as IconData} size={14} />
+                                Удалить
+                            </GButton>
+                        )}
+                    </div>
+                </div>
+            </AppDialog>
         </div>
     );
 };

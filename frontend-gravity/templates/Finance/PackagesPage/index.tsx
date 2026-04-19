@@ -1,25 +1,41 @@
-import { useState } from "react";
-import GravityLayout from "@/components/GravityLayout";
-import { Text, Card, Button, Icon, Label, SegmentedRadioGroup } from "@gravity-ui/uikit";
-import { Plus } from "@gravity-ui/icons";
+import { useState, useMemo } from "react";
+import {
+    Text,
+    Button,
+    Icon,
+    TextInput,
+    Loader,
+} from "@gravity-ui/uikit";
+import {
+    Magnifier,
+    ObjectAlignJustifyVertical,
+    ArrowUpRightFromSquare,
+} from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
+import GravityLayout from "@/components/GravityLayout";
+import PageOverlay from "@/components/PageOverlay";
 import CreatePackageModal from "@/components/CreatePackageModal";
 import { usePackages } from "@/hooks/usePackages";
 import { getPackageStatusLabel } from "@/mocks/packages";
 import { getInitials } from "@/lib/formatters";
 import type { LessonPackage } from "@/types/package";
 
-const tabOptions = [
-    { value: "all", content: "Все" },
-    { value: "active", content: "Активные" },
-    { value: "completed", content: "Завершённые" },
+const filterTabs: { value: string; label: string }[] = [
+    { value: "all", label: "Все" },
+    { value: "active", label: "Активные" },
+    { value: "completed", label: "Завершённые" },
+    { value: "expired", label: "Истекли" },
 ];
 
-function statusTheme(status: string): "success" | "danger" | "normal" | "info" {
-    if (status === "active") return "success";
-    if (status === "expired" || status === "cancelled") return "danger";
-    if (status === "completed") return "normal";
-    return "info";
+const packageTypeTabs: Array<{ value: "private" | "public"; label: string }> = [
+    { value: "private", label: "Обычные пакеты" },
+    { value: "public", label: "Публичные пакеты" },
+];
+
+function statusChipClass(status: string): string {
+    if (status === "active") return "repeto-sl-cell-chip--active";
+    if (status === "expired") return "repeto-sl-cell-chip--paused";
+    return "repeto-sl-cell-chip--archived";
 }
 
 function progressColor(used: number, total: number): string {
@@ -30,135 +46,284 @@ function progressColor(used: number, total: number): string {
 }
 
 const PackagesPage = () => {
-    const [tab, setTab] = useState("all");
-    const [createModal, setCreateModal] = useState(false);
+    const [tab, setTab] = useState<string>("all");
+    const [packageType, setPackageType] = useState<"private" | "public">("private");
+    const [search, setSearch] = useState<string>("");
+    const [createModal, setCreateModal] = useState<boolean>(false);
     const [editingPackage, setEditingPackage] = useState<LessonPackage | null>(null);
+    const [createMode, setCreateMode] = useState<"private" | "public">("private");
 
     const { data: packagesData, loading, refetch } = usePackages({
         status: tab === "all" ? undefined : tab,
         limit: 50,
     });
-    const filtered = [...(packagesData?.data || [])].sort((a, b) => {
-        const aTime = a.createdAtValue ? new Date(a.createdAtValue).getTime() : 0;
-        const bTime = b.createdAtValue ? new Date(b.createdAtValue).getTime() : 0;
-        if (aTime !== bTime) return bTime - aTime;
-        return b.id.localeCompare(a.id);
-    });
+
+    const { data: allPackagesData } = usePackages({ limit: 1000 });
+    const { packageTypeCounts, statusStats } = useMemo(() => {
+        const all = allPackagesData?.data || [];
+        const privatePackages = all.filter((p) => !p.isPublic);
+        const publicPackages = all.filter((p) => !!p.isPublic);
+        const scopedPackages = packageType === "public" ? publicPackages : privatePackages;
+
+        return {
+            packageTypeCounts: {
+                private: privatePackages.length,
+                public: publicPackages.length,
+            },
+            statusStats: {
+                total: scopedPackages.length,
+                active: scopedPackages.filter((p) => p.status === "active").length,
+                completed: scopedPackages.filter((p) => p.status === "completed").length,
+                expired: scopedPackages.filter((p) => p.status === "expired").length,
+            },
+        };
+    }, [allPackagesData, packageType]);
+
+    const filtered = [...(packagesData?.data || [])]
+        .filter((p) => (packageType === "public" ? !!p.isPublic : !p.isPublic))
+        .filter((p) => {
+            if (!search) return true;
+            const q = search.toLowerCase();
+            return (
+                p.studentName.toLowerCase().includes(q) ||
+                (p.subject || "").toLowerCase().includes(q)
+            );
+        })
+        .sort((a, b) => {
+            const aTime = a.createdAtValue ? new Date(a.createdAtValue).getTime() : 0;
+            const bTime = b.createdAtValue ? new Date(b.createdAtValue).getTime() : 0;
+            if (aTime !== bTime) return bTime - aTime;
+            return b.id.localeCompare(a.id);
+        });
+
+    const hasSearch = search.trim().length > 0;
+
+    const openCreatePackage = () => {
+        setEditingPackage(null);
+        setCreateMode("private");
+        setCreateModal(true);
+    };
+
+    const openCreatePublicPackage = () => {
+        setEditingPackage(null);
+        setCreateMode("public");
+        setCreateModal(true);
+    };
 
     const handlePackageCreated = () => {
-        setTab("all");
         setEditingPackage(null);
+        setCreateModal(false);
+        setCreateMode("private");
         refetch();
     };
 
+    const overlayNav = [
+        {
+            key: "create",
+            label: "Новый пакет",
+            icon: ObjectAlignJustifyVertical as IconData,
+        },
+        {
+            key: "public",
+            label: "Публичный пакет",
+            icon: ArrowUpRightFromSquare as IconData,
+        },
+    ];
+
+    const handleOverlayNav = (key: string) => {
+        if (key === "create") {
+            openCreatePackage();
+            return;
+        }
+        if (key === "public") {
+            openCreatePublicPackage();
+        }
+    };
+
     return (
-        <GravityLayout title="Пакеты занятий">
-            <div className="repeto-students-toolbar">
-                <SegmentedRadioGroup
-                    size="m"
-                    value={tab}
-                    onUpdate={setTab}
-                    options={tabOptions}
-                />
-                <Button view="action" size="m" onClick={() => setCreateModal(true)}>
-                    <Icon data={Plus as IconData} size={16} />
-                    Новый пакет
-                </Button>
-            </div>
-            <Text variant="caption-2" color="secondary" style={{ display: "block", marginBottom: 10 }}>
-                Сортировка: сначала новые (по дате создания).
-            </Text>
-
-            {loading ? (
-                <Card view="outlined" style={{ padding: "40px 24px", textAlign: "center", background: "var(--g-color-base-float)" }}>
-                    <Text color="secondary">Загрузка...</Text>
-                </Card>
-            ) : filtered.length === 0 ? (
-                <Card view="outlined" style={{ padding: "48px 24px", textAlign: "center", background: "var(--g-color-base-float)" }}>
-                    <Text variant="subheader-2" style={{ display: "block", marginBottom: 8 }}>Пакетов пока нет</Text>
-                    <Text variant="body-1" color="secondary" style={{ display: "block", marginBottom: 16 }}>
-                        Создайте пакет занятий для ученика.
-                    </Text>
-                    <Button view="action" size="m" onClick={() => setCreateModal(true)}>
-                        Новый пакет
-                    </Button>
-                </Card>
-            ) : (
-                <Card view="outlined" style={{ background: "var(--g-color-base-float)", overflow: "hidden" }}>
-                    {filtered.map((pkg, i) => (
-                        <div
-                            key={pkg.id}
-                            onClick={() => setEditingPackage(pkg)}
-                            style={{
-                                display: "flex",
-                                alignItems: "center",
-                                padding: "14px 20px",
-                                borderTop: i > 0 ? "1px solid var(--g-color-line-generic)" : undefined,
-                                cursor: "pointer",
-                                transition: "background 0.15s",
-                            }}
-                            onMouseEnter={(e) => (e.currentTarget.style.background = "var(--g-color-base-simple-hover)")}
-                            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                        >
-                            <div
-                                style={{
-                                    width: 36,
-                                    height: 36,
-                                    borderRadius: "50%",
-                                    background: "rgba(174,122,255,0.1)",
-                                    color: "var(--g-color-text-brand)",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    fontWeight: 700,
-                                    fontSize: 13,
-                                    flexShrink: 0,
-                                    marginRight: 12,
-                                }}
+        <GravityLayout title="Пакеты" hideSidebar>
+            <PageOverlay
+                title="Пакеты"
+                breadcrumb="Дашборд"
+                backHref="/dashboard"
+                nav={overlayNav}
+                onNavChange={handleOverlayNav}
+            >
+                <div className="repeto-packages-type-tabs" role="tablist" aria-label="Тип пакетов">
+                    {packageTypeTabs.map((typeTab) => {
+                        const isActive = packageType === typeTab.value;
+                        return (
+                            <button
+                                key={typeTab.value}
+                                type="button"
+                                role="tab"
+                                aria-selected={isActive}
+                                className={`repeto-packages-type-tab${
+                                    isActive ? " repeto-packages-type-tab--active" : ""
+                                }`}
+                                onClick={() => setPackageType(typeTab.value)}
                             >
-                                {getInitials(pkg.studentName)}
-                            </div>
-                            <div style={{ flex: 1, minWidth: 0, marginRight: 16 }}>
-                                <Text variant="body-1" style={{ fontWeight: 600 }}>{pkg.studentName}</Text>
-                                <Text variant="caption-2" color="secondary" style={{ display: "block" }}>{pkg.subject}</Text>
-                            </div>
-                            <div style={{ flexShrink: 0, width: 80, marginRight: 16 }}>
-                                <div style={{ height: 4, background: "var(--g-color-base-generic)", borderRadius: 2, overflow: "hidden" }}>
-                                    <div
-                                        style={{
-                                            height: "100%",
-                                            borderRadius: 2,
-                                            background: progressColor(pkg.lessonsUsed, pkg.lessonsTotal),
-                                            width: `${(pkg.lessonsUsed / pkg.lessonsTotal) * 100}%`,
-                                        }}
-                                    />
-                                </div>
-                            </div>
-                            <Text variant="body-1" style={{ flexShrink: 0, width: 60, fontVariantNumeric: "tabular-nums" }}>
-                                {pkg.lessonsUsed}/{pkg.lessonsTotal}
-                            </Text>
-                            <Text variant="body-1" style={{ flexShrink: 0, width: 80, textAlign: "right", fontWeight: 600, fontVariantNumeric: "tabular-nums", marginRight: 16 }}>
-                                {pkg.totalPrice.toLocaleString("ru-RU")} ₽
-                            </Text>
-                            <Text variant="caption-2" color="secondary" style={{ flexShrink: 0, width: 80, textAlign: "center" }}>
-                                {pkg.validUntil || "—"}
-                            </Text>
-                            <div style={{ flexShrink: 0, width: 90, textAlign: "right", marginLeft: 16 }}>
-                                <Label theme={statusTheme(pkg.status)} size="s">
-                                    {getPackageStatusLabel(pkg.status)}
-                                </Label>
-                            </div>
-                        </div>
-                    ))}
-                </Card>
-            )}
+                                <span>{typeTab.label}</span>
+                                <span className="repeto-packages-type-tab__count">
+                                    {packageTypeCounts[typeTab.value]}
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
 
-            <CreatePackageModal
-                visible={createModal || !!editingPackage}
-                onClose={() => { setCreateModal(false); setEditingPackage(null); }}
-                onCreated={handlePackageCreated}
-                packageData={editingPackage}
-            />
+                <div className="repeto-sl-search-row">
+                    <TextInput
+                        size="l"
+                        placeholder="Ученик или предмет"
+                        value={search}
+                        onUpdate={setSearch}
+                        className="repeto-sl-search"
+                        startContent={
+                            <Icon
+                                data={Magnifier as IconData}
+                                size={16}
+                                style={{
+                                    color: "var(--g-color-text-hint)",
+                                    marginLeft: 6,
+                                    marginRight: 4,
+                                }}
+                            />
+                        }
+                    />
+                </div>
+
+                <div className="repeto-sl-tabs-row">
+                    <div className="repeto-sl-pills">
+                        {filterTabs.map((t) => {
+                            const count =
+                                t.value === "all"
+                                    ? statusStats.total
+                                    : t.value === "active"
+                                    ? statusStats.active
+                                    : t.value === "completed"
+                                    ? statusStats.completed
+                                    : statusStats.expired;
+                            return (
+                                <button
+                                    key={t.value}
+                                    className={`repeto-sl-pill${tab === t.value ? " repeto-sl-pill--active" : ""}`}
+                                    onClick={() => setTab(t.value)}
+                                >
+                                    {t.label}
+                                    {count > 0 && (
+                                        <span className="repeto-sl-pill__count">{count}</span>
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {loading ? (
+                    <div style={{ padding: "64px 0", textAlign: "center" }}>
+                        <Loader size="m" />
+                    </div>
+                ) : filtered.length === 0 ? (
+                    <div className="repeto-sl-empty">
+                        <Text variant="subheader-2" style={{ marginBottom: 8, display: "block" }}>
+                            {hasSearch ? "Ничего не найдено" : "Пакетов пока нет"}
+                        </Text>
+                        <Text variant="body-1" color="secondary" style={{ marginBottom: 24, display: "block" }}>
+                            {hasSearch
+                                ? "Попробуйте изменить запрос или очистить поиск."
+                                : "Создайте пакет занятий для ученика — это удобно для оптовых договорённостей."}
+                        </Text>
+                        {hasSearch && (
+                            <Button view="outlined" size="l" onClick={() => setSearch("")}>Очистить поиск</Button>
+                        )}
+                    </div>
+                ) : (
+                    <div className="repeto-sl-table">
+                        <div className="repeto-sl-list-header repeto-sl-list-header--packages">
+                            <span className="repeto-sl-lh__col">Ученик</span>
+                            <span className="repeto-sl-lh__col">Прогресс</span>
+                            <span className="repeto-sl-lh__col">Занятия</span>
+                            <span className="repeto-sl-lh__col repeto-sl-lh__col--rate">Сумма</span>
+                            <span className="repeto-sl-lh__col">Действует до</span>
+                            <span className="repeto-sl-lh__col">Статус</span>
+                            <span className="repeto-sl-lh__col">&nbsp;</span>
+                        </div>
+
+                        <div className="repeto-sl-list">
+                            {filtered.map((pkg) => {
+                                const pct = pkg.lessonsTotal > 0
+                                    ? Math.min(100, (pkg.lessonsUsed / pkg.lessonsTotal) * 100)
+                                    : 0;
+                                return (
+                                    <div
+                                        key={pkg.id}
+                                        className="repeto-sl-row repeto-sl-row--packages"
+                                        onClick={() => {
+                                            setCreateMode(pkg.isPublic ? "public" : "private");
+                                            setEditingPackage(pkg);
+                                        }}
+                                    >
+                                        <div className="repeto-sl-row__cell repeto-sl-row__cell--name">
+                                            <div className="repeto-sl-initials">{getInitials(pkg.studentName)}</div>
+                                            <div className="repeto-sl-row__name-text">
+                                                <span className="repeto-sl-row__primary">{pkg.studentName}</span>
+                                                <span className="repeto-sl-row__secondary">{pkg.subject}</span>
+                                            </div>
+                                        </div>
+                                        <div className="repeto-sl-row__cell">
+                                            <div className="repeto-sl-progress">
+                                                <div
+                                                    className="repeto-sl-progress__bar"
+                                                    style={{
+                                                        width: `${pct}%`,
+                                                        background: progressColor(pkg.lessonsUsed, pkg.lessonsTotal),
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="repeto-sl-row__cell">
+                                            <span className="repeto-sl-cell-money">
+                                                {pkg.lessonsUsed}/{pkg.lessonsTotal}
+                                            </span>
+                                        </div>
+                                        <div className="repeto-sl-row__cell repeto-sl-row__cell--rate">
+                                            <span className="repeto-sl-cell-money">
+                                                {pkg.totalPrice.toLocaleString("ru-RU")}&nbsp;₽
+                                            </span>
+                                        </div>
+                                        <div className="repeto-sl-row__cell">
+                                            <span className="repeto-sl-row__secondary">
+                                                {pkg.validUntil || "—"}
+                                            </span>
+                                        </div>
+                                        <div className="repeto-sl-row__cell">
+                                            <span className={`repeto-sl-cell-chip ${statusChipClass(pkg.status)}`}>
+                                                {getPackageStatusLabel(pkg.status)}
+                                            </span>
+                                        </div>
+                                        <div className="repeto-sl-row__cell repeto-sl-row__cell--actions">
+                                            &nbsp;
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                <CreatePackageModal
+                    visible={createModal || !!editingPackage}
+                    onClose={() => {
+                        setCreateModal(false);
+                        setEditingPackage(null);
+                        setCreateMode("private");
+                    }}
+                    onCreated={handlePackageCreated}
+                    packageData={editingPackage}
+                    defaultPublic={createMode === "public"}
+                />
+            </PageOverlay>
         </GravityLayout>
     );
 };

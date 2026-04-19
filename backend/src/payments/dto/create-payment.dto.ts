@@ -40,4 +40,9 @@ export class CreatePaymentDto {
   @IsOptional()
   @IsUUID()
   packageId?: string;
+
+  @ApiPropertyOptional({ description: 'Linked lesson ID' })
+  @IsOptional()
+  @IsUUID()
+  lessonId?: string;
 }

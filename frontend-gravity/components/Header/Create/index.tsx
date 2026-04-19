@@ -12,7 +12,16 @@ const Create = ({}: CreateProps) => {
             id: "0",
             title: "Новый ученик",
             icon: "add-member",
-            onClick: () => router.push("/students?create=1"),
+            onClick: () => {
+                const returnTo = router.asPath || "/dashboard";
+                router.push({
+                    pathname: "/students",
+                    query: {
+                        create: "1",
+                        returnTo,
+                    },
+                });
+            },
         },
         {
             id: "1",

@@ -7,7 +7,7 @@ import BalanceTable from "./BalanceTable";
 const FinanceOverviewPage = () => (
     <GravityLayout title="Финансы">
         <StatCards />
-        <div style={{ display: "flex", gap: 20, marginTop: 20, alignItems: "stretch" }}>
+        <div className="repeto-finance-overview-row">
             <div style={{ flex: 1, minWidth: 0 }}>
                 <IncomeByStudents />
             </div>

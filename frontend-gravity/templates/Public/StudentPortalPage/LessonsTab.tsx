@@ -1,31 +1,39 @@
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
+    Alert,
     Card,
     Text,
     Button,
     Label,
-    Dialog,
     TextInput,
     Icon,
 } from "@gravity-ui/uikit";
-import { Calendar as CalendarIcon } from "@gravity-ui/icons";
+import { Calendar as CalendarIcon, ArrowsRotateRight, Xmark } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
+import AppDialog from "@/components/AppDialog";
 import StyledDateInput from "@/components/StyledDateInput";
 import StyledTimeInput from "@/components/StyledTimeInput";
-import { api } from "@/lib/api";
-import type { StudentPortalData, RecentLesson } from "@/types/student-portal";
+import { studentApi } from "@/lib/studentAuth";
+import type {
+    StudentPortalData,
+    RecentLesson,
+    PendingBooking,
+} from "@/types/student-portal";
 import type { PortalLesson } from "@/types/student-portal";
 
 type LessonsTabProps = {
     data: StudentPortalData;
-    token?: string;
+    studentId: string;
 };
 
-const LessonsTab = ({ data, token }: LessonsTabProps) => {
+const LESSONS_BATCH_SIZE = 5;
+
+const LessonsTab = ({ data, studentId }: LessonsTabProps) => {
     const [lessons, setLessons] = useState(data.upcomingLessons);
     const [recentLessons, setRecentLessons] = useState<RecentLesson[]>(
         data.recentLessons
     );
+    const pendingBookings: PendingBooking[] = data.pendingBookings || [];
     const [cancelConfirm, setCancelConfirm] = useState<string | null>(null);
     const [rescheduleId, setRescheduleId] = useState<string | null>(null);
     const [rescheduleDate, setRescheduleDate] = useState("");
@@ -34,9 +42,40 @@ const LessonsTab = ({ data, token }: LessonsTabProps) => {
     const [feedbackRating, setFeedbackRating] = useState(0);
     const [feedbackText, setFeedbackText] = useState("");
     const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
-    const [recentShown, setRecentShown] = useState(3);
+    const [upcomingShown, setUpcomingShown] = useState(LESSONS_BATCH_SIZE);
+    const [recentShown, setRecentShown] = useState(LESSONS_BATCH_SIZE);
+    const [loadingMoreUpcoming, setLoadingMoreUpcoming] = useState(false);
+    const [loadingMoreRecent, setLoadingMoreRecent] = useState(false);
     const [cancelLoadingId, setCancelLoadingId] = useState<string | null>(null);
     const [rescheduleLoading, setRescheduleLoading] = useState(false);
+    const [actionError, setActionError] = useState<string | null>(null);
+    const encodedStudentId = encodeURIComponent(studentId);
+    const loadMoreUpcomingRef = useRef<HTMLDivElement | null>(null);
+    const loadMoreRecentRef = useRef<HTMLDivElement | null>(null);
+    const loadMoreUpcomingTimerRef = useRef<number | null>(null);
+    const loadMoreRecentTimerRef = useRef<number | null>(null);
+
+    useEffect(() => {
+        setLessons(data.upcomingLessons);
+        setRecentLessons(data.recentLessons);
+        setCancelConfirm(null);
+        setRescheduleId(null);
+        setRescheduleDate("");
+        setRescheduleTime("");
+        setFeedbackIdx(null);
+        setFeedbackRating(0);
+        setFeedbackText("");
+        setUpcomingShown(LESSONS_BATCH_SIZE);
+        setRecentShown(LESSONS_BATCH_SIZE);
+        setActionError(null);
+    }, [data.recentLessons, data.upcomingLessons, studentId]);
+
+    const cancelPolicy = data.cancelPolicy || {
+        freeHours: 24,
+        lateCancelAction: "full",
+        lateAction: "full",
+        noShowAction: "full",
+    };
 
     const formatHoursWord = (hours: number) => {
         const abs = Math.abs(hours) % 100;
@@ -66,9 +105,6 @@ const LessonsTab = ({ data, token }: LessonsTabProps) => {
         return status || "-";
     };
 
-    const getRecentStatusClass = (status?: string) =>
-        isRecentCompleted(status) ? "label-green" : "label-stroke-pink";
-
     const normalizePolicyAction = (action?: string) => {
         const normalized = (action || "").trim().toLowerCase();
 
@@ -93,56 +129,67 @@ const LessonsTab = ({ data, token }: LessonsTabProps) => {
     };
 
     const lateActionValue =
-        data.cancelPolicy.lateCancelAction || data.cancelPolicy.lateAction;
+        cancelPolicy.lateCancelAction || cancelPolicy.lateAction;
     const lateActionLabel = normalizePolicyAction(lateActionValue);
-    const noShowActionLabel = normalizePolicyAction(
-        data.cancelPolicy.noShowAction
-    );
-    const lateCancelWarning = data.cancelPolicy.lateCancelCost
-        ? `Поздняя отмена! Будет списано ${data.cancelPolicy.lateCancelCost.toLocaleString("ru-RU")} ₽.`
+    const lateCancelWarning = cancelPolicy.lateCancelCost
+        ? `Поздняя отмена! Будет списано ${cancelPolicy.lateCancelCost.toLocaleString("ru-RU")} ₽.`
         : lateActionLabel === "без списания"
           ? "Поздняя отмена! Штрафа не будет."
           : `Поздняя отмена! Будет списано ${lateActionLabel}.`;
 
-    const handleCancel = async (lesson: PortalLesson) => {
-        if (cancelConfirm === lesson.id) {
-            if (!token) return;
-            setCancelLoadingId(lesson.id);
-            try {
-                await api(`/portal/${token}/lessons/${lesson.id}/cancel`, {
+    const openCancelDialog = (lessonId: string) => {
+        setCancelConfirm(lessonId);
+    };
+
+    const handleCancelConfirm = async () => {
+        if (!cancelConfirm) return;
+
+        const lesson = lessons.find((l) => l.id === cancelConfirm);
+        if (!lesson) {
+            setCancelConfirm(null);
+            return;
+        }
+
+        setActionError(null);
+        setCancelLoadingId(lesson.id);
+        try {
+            await studentApi(
+                `/student-portal/students/${encodedStudentId}/lessons/${lesson.id}/cancel`,
+                {
                     method: "POST",
-                });
-                setLessons((prev) =>
-                    prev.map((l) =>
-                        l.id === lesson.id
-                            ? { ...l, status: "cancelled" as const }
-                            : l
-                    )
-                );
-                setCancelConfirm(null);
-            } catch {
-                if (typeof window !== "undefined") {
-                    window.alert("Не удалось отменить занятие. Попробуйте снова.");
                 }
-            } finally {
-                setCancelLoadingId(null);
-            }
-        } else {
-            setCancelConfirm(lesson.id);
+            );
+            setLessons((prev) =>
+                prev.map((l) =>
+                    l.id === lesson.id
+                        ? { ...l, status: "cancelled" as const }
+                        : l
+                )
+            );
+            setCancelConfirm(null);
+        } catch {
+            setActionError("Не удалось отменить занятие. Попробуйте снова.");
+        } finally {
+            setCancelLoadingId(null);
         }
     };
 
     const handleRescheduleSubmit = async () => {
-        if (!rescheduleDate || !rescheduleTime || !rescheduleId || !token) return;
-        const original = lessons.find((l) => l.id === rescheduleId);
-        if (!original) return;
+        if (!rescheduleDate || !rescheduleTime || !rescheduleId) return;
 
+        setActionError(null);
         setRescheduleLoading(true);
         try {
-            await api(`/portal/${token}/lessons/${rescheduleId}/reschedule`, {
-                method: "POST",
-                body: { newDate: rescheduleDate, newTime: rescheduleTime },
-            });
+            await studentApi(
+                `/student-portal/students/${encodedStudentId}/lessons/${rescheduleId}/reschedule`,
+                {
+                    method: "POST",
+                    body: JSON.stringify({
+                        newDate: rescheduleDate,
+                        newTime: rescheduleTime,
+                    }),
+                }
+            );
             setLessons((prev) =>
                 prev.map((l) =>
                     l.id === rescheduleId
@@ -159,9 +206,7 @@ const LessonsTab = ({ data, token }: LessonsTabProps) => {
             setRescheduleDate("");
             setRescheduleTime("");
         } catch {
-            if (typeof window !== "undefined") {
-                window.alert("Не удалось отправить запрос на перенос. Попробуйте снова.");
-            }
+            setActionError("Не удалось отправить запрос на перенос. Попробуйте снова.");
         } finally {
             setRescheduleLoading(false);
         }
@@ -171,22 +216,24 @@ const LessonsTab = ({ data, token }: LessonsTabProps) => {
         if (feedbackIdx === null || feedbackRating === 0) return;
 
         const lesson = recentLessons[feedbackIdx];
-        if (!lesson?.id || !token) {
-            if (typeof window !== "undefined") {
-                window.alert("Не удалось сохранить отзыв. Обновите страницу и попробуйте ещё раз.");
-            }
+        if (!lesson?.id) {
+            setActionError("Не удалось сохранить отзыв. Обновите страницу и попробуйте еще раз.");
             return;
         }
 
+        setActionError(null);
         setFeedbackSubmitting(true);
         try {
-            await api(`/portal/${token}/lessons/${lesson.id}/feedback`, {
-                method: "POST",
-                body: {
-                    rating: feedbackRating,
-                    feedback: feedbackText.trim() || undefined,
-                },
-            });
+            await studentApi(
+                `/student-portal/students/${encodedStudentId}/lessons/${lesson.id}/feedback`,
+                {
+                    method: "POST",
+                    body: JSON.stringify({
+                        rating: feedbackRating,
+                        feedback: feedbackText.trim() || undefined,
+                    }),
+                }
+            );
 
             setRecentLessons((prev) =>
                 prev.map((l, i) =>
@@ -203,16 +250,117 @@ const LessonsTab = ({ data, token }: LessonsTabProps) => {
             setFeedbackRating(0);
             setFeedbackText("");
         } catch {
-            if (typeof window !== "undefined") {
-                window.alert("Не удалось сохранить отзыв. Попробуйте ещё раз.");
-            }
+            setActionError("Не удалось сохранить отзыв. Попробуйте снова.");
         } finally {
             setFeedbackSubmitting(false);
         }
     };
 
-    const activeLessons = lessons.filter(
-        (l) => l.status !== "cancelled"
+    const activeLessons = lessons.filter((l) => l.status !== "cancelled");
+    const visibleUpcomingLessons = activeLessons.slice(0, upcomingShown);
+    const visibleRecentLessons = recentLessons.slice(0, recentShown);
+    const cancelLesson = cancelConfirm
+        ? lessons.find((l) => l.id === cancelConfirm) || null
+        : null;
+
+    const loadMoreUpcomingLessons = useCallback(() => {
+        if (loadingMoreUpcoming || upcomingShown >= activeLessons.length) {
+            return;
+        }
+
+        setLoadingMoreUpcoming(true);
+
+        if (loadMoreUpcomingTimerRef.current) {
+            window.clearTimeout(loadMoreUpcomingTimerRef.current);
+        }
+
+        loadMoreUpcomingTimerRef.current = window.setTimeout(() => {
+            setUpcomingShown((prev) =>
+                Math.min(prev + LESSONS_BATCH_SIZE, activeLessons.length)
+            );
+            setLoadingMoreUpcoming(false);
+            loadMoreUpcomingTimerRef.current = null;
+        }, 320);
+    }, [activeLessons.length, loadingMoreUpcoming, upcomingShown]);
+
+    const loadMoreRecentLessons = useCallback(() => {
+        if (loadingMoreRecent || recentShown >= recentLessons.length) {
+            return;
+        }
+
+        setLoadingMoreRecent(true);
+
+        if (loadMoreRecentTimerRef.current) {
+            window.clearTimeout(loadMoreRecentTimerRef.current);
+        }
+
+        loadMoreRecentTimerRef.current = window.setTimeout(() => {
+            setRecentShown((prev) =>
+                Math.min(prev + LESSONS_BATCH_SIZE, recentLessons.length)
+            );
+            setLoadingMoreRecent(false);
+            loadMoreRecentTimerRef.current = null;
+        }, 320);
+    }, [loadingMoreRecent, recentLessons.length, recentShown]);
+
+    useEffect(() => {
+        if (upcomingShown >= activeLessons.length) {
+            return;
+        }
+
+        const node = loadMoreUpcomingRef.current;
+        if (!node || typeof IntersectionObserver === "undefined") {
+            return;
+        }
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries.some((entry) => entry.isIntersecting)) {
+                    loadMoreUpcomingLessons();
+                }
+            },
+            { rootMargin: "160px 0px" }
+        );
+
+        observer.observe(node);
+
+        return () => observer.disconnect();
+    }, [activeLessons.length, loadMoreUpcomingLessons, upcomingShown]);
+
+    useEffect(() => {
+        if (recentShown >= recentLessons.length) {
+            return;
+        }
+
+        const node = loadMoreRecentRef.current;
+        if (!node || typeof IntersectionObserver === "undefined") {
+            return;
+        }
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries.some((entry) => entry.isIntersecting)) {
+                    loadMoreRecentLessons();
+                }
+            },
+            { rootMargin: "160px 0px" }
+        );
+
+        observer.observe(node);
+
+        return () => observer.disconnect();
+    }, [loadMoreRecentLessons, recentLessons.length, recentShown]);
+
+    useEffect(
+        () => () => {
+            if (loadMoreUpcomingTimerRef.current) {
+                window.clearTimeout(loadMoreUpcomingTimerRef.current);
+            }
+            if (loadMoreRecentTimerRef.current) {
+                window.clearTimeout(loadMoreRecentTimerRef.current);
+            }
+        },
+        []
     );
 
     const statusBadge = (lesson: PortalLesson) => {
@@ -230,241 +378,403 @@ const LessonsTab = ({ data, token }: LessonsTabProps) => {
 
     return (
         <>
-            {/* Upcoming / active lessons */}
-            <Card view="outlined" style={{ marginBottom: 24, overflow: "hidden" }}>
-                <div className="repeto-card-header">
-                    <Text variant="subheader-2">Ближайшие занятия</Text>
-                </div>
-                <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
-                    {activeLessons.length === 0 && (
-                        <Text variant="body-1" color="secondary">
-                            Нет запланированных занятий
-                        </Text>
-                    )}
-                    {activeLessons.map((lesson) => (
-                        <Card key={lesson.id} view="outlined" style={{ padding: 16 }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                                <div>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+            {actionError && (
+                <Alert
+                    theme="danger"
+                    view="filled"
+                    corners="rounded"
+                    title="Не удалось выполнить действие"
+                    message={actionError}
+                    onClose={() => setActionError(null)}
+                    style={{ marginBottom: 12 }}
+                />
+            )}
+
+            <div className="repeto-portal-section--spaced">
+                <Text variant="subheader-2" className="repeto-portal-plain-section-title">
+                    Ближайшие занятия
+                </Text>
+                <div className="repeto-portal-stack repeto-portal-stack--md">
+                    {pendingBookings.map((booking) => (
+                        <Card
+                            key={booking.id}
+                            view="outlined"
+                            className="repeto-portal-item-card repeto-portal-item-card--upcoming"
+                        >
+                            <div className="repeto-portal-item-row repeto-portal-item-row--upcoming">
+                                <div className="repeto-portal-item-main repeto-portal-item-main--centered">
+                                    <div className="repeto-portal-item-mainline repeto-portal-item-mainline--centered">
                                         <Icon data={CalendarIcon as IconData} size={16} />
                                         <Text variant="body-2" style={{ fontWeight: 600 }}>
-                                            {lesson.date} · {lesson.time}
+                                            {booking.date}
+                                        </Text>
+                                        <span className="repeto-portal-sep-dot" aria-hidden="true">
+                                            •
+                                        </span>
+                                        <Text variant="body-2" style={{ fontWeight: 600 }}>
+                                            {booking.startTime}
                                         </Text>
                                     </div>
-                                    <Text variant="body-1" color="secondary">
-                                        {lesson.subject} ·{" "}
-                                        {lesson.modality === "online" ? "Онлайн" : "Офлайн"}
-                                    </Text>
+                                    <div className="repeto-portal-item-mainline repeto-portal-item-mainline--centered">
+                                        <Text variant="body-1" color="secondary">
+                                            {booking.subject}
+                                        </Text>
+                                    </div>
                                 </div>
-                                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
-                                    <Text variant="body-2" style={{ fontWeight: 600 }}>
-                                        {lesson.price.toLocaleString("ru-RU")} ₽
-                                    </Text>
-                                    {statusBadge(lesson)}
+                                <div className="repeto-portal-item-side repeto-portal-item-side--upcoming">
+                                    <div className="repeto-portal-upcoming-meta">
+                                        <Label theme="info" size="xs">
+                                            Ожидает подтверждения
+                                        </Label>
+                                    </div>
                                 </div>
                             </div>
-
-                            {/* Reschedule info */}
-                            {lesson.status === "reschedule_pending" && lesson.rescheduleTo && (
-                                <Card view="filled" style={{ padding: 12, marginBottom: 12, background: "var(--g-color-base-info-light)" }}>
-                                    <Text variant="caption-1" style={{ fontWeight: 600, marginBottom: 2, display: "block" }}>
-                                        Запрос на перенос
-                                    </Text>
-                                    <Text variant="caption-1" color="secondary">
-                                        Новое время: {lesson.rescheduleTo}. Ожидаем подтверждение от репетитора.
-                                    </Text>
-                                </Card>
-                            )}
-
-                            {lesson.status === "rescheduled" && lesson.rescheduleFrom && lesson.rescheduleTo && (
-                                <Card view="filled" style={{ padding: 12, marginBottom: 12, background: "var(--g-color-base-info-light)" }}>
-                                    <Text variant="caption-1" style={{ fontWeight: 600 }}>
-                                        Перенесено с {lesson.rescheduleFrom} на {lesson.rescheduleTo}
-                                    </Text>
-                                </Card>
-                            )}
-
-                            {/* Cancel confirmation */}
-                            {cancelConfirm === lesson.id && (
-                                <Card view="filled" style={{ padding: 12, marginBottom: 12, background: "var(--g-color-base-danger-light)" }}>
-                                    <Text variant="caption-1" style={{ fontWeight: 600, color: "var(--g-color-text-danger)", marginBottom: 4, display: "block" }}>
-                                        {lesson.canCancelFree
-                                            ? `Отмена бесплатная (до занятия > ${data.cancelPolicy.freeHours} ${formatHoursWord(data.cancelPolicy.freeHours)}).`
-                                            : lateCancelWarning}
-                                    </Text>
-                                    <Text variant="caption-1" color="secondary">
-                                        Нажмите «Отменить» ещё раз для подтверждения.
-                                    </Text>
-                                </Card>
-                            )}
-
-                            {/* Action buttons */}
-                            {lesson.status === "upcoming" && (
-                                <div style={{ display: "flex", gap: 8 }}>
-                                    <Button
-                                        view={cancelConfirm === lesson.id ? "outlined-danger" : "outlined"}
-                                        size="s"
-                                        onClick={() => handleCancel(lesson)}
-                                        loading={cancelLoadingId === lesson.id}
-                                    >
-                                        Отменить
-                                    </Button>
-                                    <Button
-                                        view="outlined"
-                                        size="s"
-                                        onClick={() => {
-                                            setRescheduleId(lesson.id);
-                                            setCancelConfirm(null);
-                                        }}
-                                    >
-                                        Перенести
-                                    </Button>
-                                </div>
-                            )}
-
-                            {lesson.status === "reschedule_pending" && (
-                                <Text variant="caption-1" color="secondary">
-                                    Дождитесь ответа репетитора
-                                </Text>
-                            )}
                         </Card>
                     ))}
-                </div>
-            </Card>
 
-            {/* Recent lessons */}
-            <Card view="outlined" style={{ marginBottom: 24, overflow: "hidden" }}>
-                <div className="repeto-card-header">
-                    <Text variant="subheader-2">Прошедшие занятия</Text>
-                </div>
-                <div style={{ padding: 20 }}>
-                    {recentLessons.length === 0 && (
+                    {activeLessons.length === 0 && (
                         <Text variant="body-1" color="secondary">
-                            Пока занятий не было
+                            {pendingBookings.length > 0
+                                ? "Пока нет подтвержденных занятий"
+                                : "Нет запланированных занятий"}
                         </Text>
                     )}
-                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                        {recentLessons.slice(0, recentShown).map((l, i) => {
-                            const statusLabel = getRecentStatusLabel(l.status);
 
-                            return (
-                                <Card key={l.id || i} view="outlined" style={{ padding: 12 }}>
-                                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                                        <div style={{ display: "flex", gap: 12, minWidth: 0 }}>
-                                            <Text variant="body-1" color="secondary" style={{ whiteSpace: "nowrap", flexShrink: 0 }}>
-                                                {l.date}
+                    {visibleUpcomingLessons.map((lesson) => {
+                        const showHoverActions =
+                            lesson.status === "upcoming" && cancelConfirm !== lesson.id;
+                        const lessonBadge = statusBadge(lesson);
+                        const hasLessonDetails =
+                            lesson.status === "reschedule_pending" ||
+                            lesson.status === "rescheduled";
+
+                        return (
+                            <Card
+                                key={lesson.id}
+                                view="outlined"
+                                className={`repeto-portal-item-card repeto-portal-item-card--upcoming${
+                                    showHoverActions ? " repeto-portal-item-card--with-actions" : ""
+                                }`}
+                            >
+                                <div
+                                    className="repeto-portal-item-row repeto-portal-item-row--upcoming"
+                                    style={{ marginBottom: hasLessonDetails ? 8 : 0 }}
+                                >
+                                    <div className="repeto-portal-item-main repeto-portal-item-main--centered">
+                                        <div className="repeto-portal-item-mainline repeto-portal-item-mainline--centered">
+                                            <Icon data={CalendarIcon as IconData} size={16} />
+                                            <Text variant="body-2" style={{ fontWeight: 600 }}>
+                                                {lesson.date}
                                             </Text>
-                                            <Text variant="body-2" ellipsis>{l.subject}</Text>
+                                            <span className="repeto-portal-sep-dot" aria-hidden="true">
+                                                •
+                                            </span>
+                                            <Text variant="body-2" style={{ fontWeight: 600 }}>
+                                                {lesson.time}
+                                            </Text>
                                         </div>
-                                        <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
-                                            <Label
-                                                theme={isRecentCompleted(l.status) ? "success" : "danger"}
-                                                size="xs"
-                                            >
-                                                {statusLabel}
-                                            </Label>
-                                            {l.price > 0 && (
-                                                <Text variant="body-2" style={{ fontWeight: 600, width: 64, textAlign: "right" }}>
-                                                    {l.price.toLocaleString("ru-RU")} ₽
-                                                </Text>
-                                            )}
+                                        <div className="repeto-portal-item-mainline repeto-portal-item-mainline--centered">
+                                            <Text variant="body-1" color="secondary">
+                                                {lesson.subject}
+                                            </Text>
+                                            <span className="repeto-portal-sep-dot" aria-hidden="true">
+                                                •
+                                            </span>
+                                            <Text variant="body-1" color="secondary">
+                                                {lesson.modality === "online" ? "Онлайн" : "Офлайн"}
+                                            </Text>
                                         </div>
                                     </div>
-                                    {/* Feedback section */}
-                                    {isRecentCompleted(l.status) && (
-                                        <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px dashed var(--g-color-line-generic)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
-                                                <Text variant="caption-1" color="secondary">Оценка</Text>
-                                                <div style={{ display: "flex", gap: 4 }}>
-                                                    {[1, 2, 3, 4, 5].map((star) => (
-                                                        <button
-                                                            key={star}
-                                                            type="button"
-                                                            onClick={() => {
-                                                                if (!l.rating) {
-                                                                    setFeedbackIdx(i);
-                                                                    setFeedbackRating(star);
-                                                                    setFeedbackText(l.feedback || "");
-                                                                }
-                                                            }}
-                                                            style={{
-                                                                width: 20,
-                                                                height: 20,
-                                                                borderRadius: "50%",
-                                                                border: "none",
-                                                                cursor: l.rating ? "default" : "pointer",
-                                                                transition: "background 0.15s",
-                                                                background: star <= (l.rating || 0)
-                                                                    ? "var(--g-color-base-brand)"
-                                                                    : "var(--g-color-base-generic)",
-                                                            }}
-                                                        />
-                                                    ))}
-                                                </div>
+                                    <div className="repeto-portal-item-side repeto-portal-item-side--upcoming">
+                                        <div className="repeto-portal-upcoming-meta">{lessonBadge}</div>
+
+                                        {showHoverActions && (
+                                            <div className="repeto-portal-upcoming-actions">
+                                                <button
+                                                    type="button"
+                                                    className="repeto-portal-icon-action repeto-portal-icon-action--danger"
+                                                    onClick={() => openCancelDialog(lesson.id)}
+                                                    aria-label="Отменить занятие"
+                                                >
+                                                    <Icon data={Xmark as IconData} size={22} />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="repeto-portal-icon-action"
+                                                    onClick={() => {
+                                                        setRescheduleId(lesson.id);
+                                                        setCancelConfirm(null);
+                                                    }}
+                                                    aria-label="Перенести занятие"
+                                                >
+                                                    <Icon
+                                                        data={ArrowsRotateRight as IconData}
+                                                        size={22}
+                                                    />
+                                                </button>
                                             </div>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                                                {l.feedback ? (
-                                                    <Text variant="caption-1" color="secondary" ellipsis style={{ maxWidth: 160 }}>
-                                                        {l.feedback}
-                                                    </Text>
-                                                ) : (
-                                                    <Button
-                                                        view="flat"
-                                                        size="xs"
+                                        )}
+                                    </div>
+                                </div>
+
+                                {lesson.status === "reschedule_pending" && lesson.rescheduleTo && (
+                                    <Card
+                                        view="filled"
+                                        className="repeto-portal-note repeto-portal-note--info"
+                                        style={{ marginBottom: 12 }}
+                                    >
+                                        <Text
+                                            variant="caption-1"
+                                            style={{
+                                                fontWeight: 600,
+                                                marginBottom: 2,
+                                                display: "block",
+                                            }}
+                                        >
+                                            Запрос на перенос
+                                        </Text>
+                                        <Text variant="caption-1" color="secondary">
+                                            Новое время: {lesson.rescheduleTo}. Ожидаем подтверждение от
+                                            репетитора.
+                                        </Text>
+                                    </Card>
+                                )}
+
+                                {lesson.status === "rescheduled" &&
+                                    lesson.rescheduleFrom &&
+                                    lesson.rescheduleTo && (
+                                        <Card
+                                            view="filled"
+                                            className="repeto-portal-note repeto-portal-note--info"
+                                            style={{ marginBottom: 12 }}
+                                        >
+                                            <Text variant="caption-1" style={{ fontWeight: 600 }}>
+                                                Перенесено с {lesson.rescheduleFrom} на {lesson.rescheduleTo}
+                                            </Text>
+                                        </Card>
+                                    )}
+
+                                {lesson.status === "reschedule_pending" && (
+                                    <Text variant="caption-1" color="secondary">
+                                        Дождитесь ответа репетитора
+                                    </Text>
+                                )}
+                            </Card>
+                        );
+                    })}
+                </div>
+
+                {upcomingShown < activeLessons.length && (
+                    <div
+                        ref={loadMoreUpcomingRef}
+                        className="repeto-portal-infinite-loader"
+                        aria-live="polite"
+                        aria-label="Загружаем занятия"
+                    >
+                        <span className="repeto-portal-infinite-loader__spinner" aria-hidden="true" />
+                    </div>
+                )}
+            </div>
+
+            <div className="repeto-portal-section--spaced">
+                <Text variant="subheader-2" className="repeto-portal-plain-section-title">
+                    Прошедшие занятия
+                </Text>
+
+                {recentLessons.length === 0 && (
+                    <Text variant="body-1" color="secondary">
+                        Пока занятий не было
+                    </Text>
+                )}
+
+                <div className="repeto-portal-stack">
+                    {visibleRecentLessons.map((l, i) => {
+                        const statusLabel = getRecentStatusLabel(l.status);
+                        const modalityLabel = l.modality === "offline" ? "Офлайн" : "Онлайн";
+                        const lessonTime = l.time && l.time.trim() ? l.time : "—";
+
+                        return (
+                            <Card
+                                key={l.id || i}
+                                view="outlined"
+                                className="repeto-portal-item-card repeto-portal-item-card--tight repeto-portal-item-card--recent"
+                            >
+                                <div className="repeto-portal-item-row repeto-portal-item-row--recent">
+                                    <div className="repeto-portal-item-main repeto-portal-item-main--centered">
+                                        <div
+                                            className="repeto-portal-item-mainline repeto-portal-item-mainline--centered"
+                                            style={{ gap: 8 }}
+                                        >
+                                            <Icon data={CalendarIcon as IconData} size={16} />
+                                            <Text
+                                                variant="body-1"
+                                                style={{ whiteSpace: "nowrap", flexShrink: 0 }}
+                                            >
+                                                {l.date}
+                                            </Text>
+                                            <span className="repeto-portal-sep-dot" aria-hidden="true">
+                                                •
+                                            </span>
+                                            <Text variant="body-2" style={{ fontWeight: 600 }}>
+                                                {lessonTime}
+                                            </Text>
+                                        </div>
+                                        <div
+                                            className="repeto-portal-item-mainline repeto-portal-item-mainline--centered"
+                                            style={{ gap: 8 }}
+                                        >
+                                            <Text variant="body-1" color="secondary" ellipsis>
+                                                {l.subject}
+                                            </Text>
+                                            <span className="repeto-portal-sep-dot" aria-hidden="true">
+                                                •
+                                            </span>
+                                            <Text variant="body-1" color="secondary">
+                                                {modalityLabel}
+                                            </Text>
+                                        </div>
+                                    </div>
+                                    <div
+                                        className="repeto-portal-item-mainline repeto-portal-item-mainline--recent-side"
+                                        style={{ flexShrink: 0 }}
+                                    >
+                                        <Label
+                                            theme={isRecentCompleted(l.status) ? "success" : "danger"}
+                                            size="xs"
+                                        >
+                                            {statusLabel}
+                                        </Label>
+                                        {l.price > 0 && (
+                                            <Text
+                                                variant="body-2"
+                                                style={{
+                                                    fontWeight: 600,
+                                                    width: 64,
+                                                    textAlign: "right",
+                                                }}
+                                            >
+                                                {l.price.toLocaleString("ru-RU")} ₽
+                                            </Text>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {isRecentCompleted(l.status) && (
+                                    <div
+                                        className="repeto-portal-divider-top"
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "space-between",
+                                            gap: 12,
+                                        }}
+                                    >
+                                        <div className="repeto-portal-item-mainline" style={{ gap: 12, minWidth: 0 }}>
+                                            <Text variant="caption-1" color="secondary">
+                                                Оценка
+                                            </Text>
+                                            <div className="repeto-portal-rating-dots">
+                                                {[1, 2, 3, 4, 5].map((star) => (
+                                                    <button
+                                                        key={star}
+                                                        type="button"
                                                         onClick={() => {
-                                                            setFeedbackIdx(i);
-                                                            setFeedbackRating(l.rating || 0);
-                                                            setFeedbackText("");
+                                                            if (!l.rating) {
+                                                                setFeedbackIdx(i);
+                                                                setFeedbackRating(star);
+                                                                setFeedbackText(l.feedback || "");
+                                                            }
                                                         }}
-                                                    >
-                                                        Отзыв
-                                                    </Button>
-                                                )}
+                                                        className={`repeto-portal-rating-dot ${
+                                                            star <= (l.rating || 0)
+                                                                ? "repeto-portal-rating-dot--active"
+                                                                : "repeto-portal-rating-dot--inactive"
+                                                        }`}
+                                                        style={{ cursor: l.rating ? "default" : "pointer" }}
+                                                    />
+                                                ))}
                                             </div>
                                         </div>
-                                    )}
-                                </Card>
-                            );
-                        })}
+                                        <div className="repeto-portal-item-mainline" style={{ flexShrink: 0 }}>
+                                            <Button
+                                                view="flat"
+                                                size="xs"
+                                                onClick={() => {
+                                                    setFeedbackIdx(i);
+                                                    setFeedbackRating(l.rating || 0);
+                                                    setFeedbackText(l.feedback || "");
+                                                }}
+                                            >
+                                                {l.rating || l.feedback ? "Открыть отзыв" : "Оставить отзыв"}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+                            </Card>
+                        );
+                    })}
+                </div>
+
+                {recentShown < recentLessons.length && (
+                    <div
+                        ref={loadMoreRecentRef}
+                        className="repeto-portal-infinite-loader"
+                        aria-live="polite"
+                        aria-label="Загружаем историю занятий"
+                    >
+                        <span className="repeto-portal-infinite-loader__spinner" aria-hidden="true" />
                     </div>
-                    {recentShown < recentLessons.length && (
-                        <Button
-                            view="outlined"
-                            size="s"
-                            width="max"
-                            style={{ marginTop: 16 }}
-                            onClick={() =>
-                                setRecentShown((prev) =>
-                                    Math.min(prev + 5, recentLessons.length)
-                                )
-                            }
-                        >
-                            Показать ещё ({recentLessons.length - recentShown})
-                        </Button>
+                )}
+            </div>
+
+            <AppDialog
+                open={!!cancelLesson}
+                onClose={() => setCancelConfirm(null)}
+                size="s"
+                caption="Подтвердите отмену"
+                footer={{
+                    onClickButtonApply: handleCancelConfirm,
+                    onClickButtonCancel: () => setCancelConfirm(null),
+                    textButtonApply:
+                        cancelLoadingId === cancelLesson?.id ? "Отменяем..." : "Да, отменить",
+                    textButtonCancel: "Нет",
+                    propsButtonApply: {
+                        view: "outlined-danger",
+                        disabled: !cancelLesson || cancelLoadingId === cancelLesson?.id,
+                    },
+                    propsButtonCancel: {
+                        disabled: cancelLoadingId === cancelLesson?.id,
+                    },
+                }}
+            >
+                <div className="repeto-portal-stack">
+                    {cancelLesson && (
+                        <>
+                            <Text variant="body-1" style={{ fontWeight: 600 }}>
+                                {cancelLesson.date}
+                                <span
+                                    className="repeto-portal-sep-dot"
+                                    aria-hidden="true"
+                                    style={{ margin: "0 8px" }}
+                                >
+                                    •
+                                </span>
+                                {cancelLesson.time}
+                            </Text>
+                            <Text variant="body-2" color="secondary">
+                                {cancelLesson.subject}
+                            </Text>
+                            <Text variant="body-2" color="secondary">
+                                {cancelLesson.canCancelFree
+                                    ? `Отмена бесплатная (до занятия > ${cancelPolicy.freeHours} ${formatHoursWord(cancelPolicy.freeHours)}).`
+                                    : lateCancelWarning}
+                            </Text>
+                        </>
                     )}
                 </div>
-            </Card>
+            </AppDialog>
 
-            {/* Cancel policy */}
-            <Card view="outlined" style={{ overflow: "hidden" }}>
-                <div className="repeto-card-header">
-                    <Text variant="subheader-2">Политика отмен</Text>
-                </div>
-                <div style={{ padding: 20 }}>
-                    <Text variant="body-1" style={{ lineHeight: 1.6 }}>
-                        Бесплатная отмена за{" "}
-                        <span style={{ fontWeight: 600 }}>
-                            {data.cancelPolicy.freeHours} {formatHoursWord(data.cancelPolicy.freeHours)}
-                        </span>{" "}
-                        до занятия. При поздней отмене —{" "}
-                        <span style={{ fontWeight: 600 }}>{lateActionLabel}</span>.
-                        При неявке — <span style={{ fontWeight: 600 }}>{noShowActionLabel}</span>.
-                    </Text>
-                </div>
-            </Card>
-
-            {/* Reschedule Dialog */}
-            <Dialog
+            <AppDialog
                 open={!!rescheduleId}
                 onClose={() => {
                     setRescheduleId(null);
@@ -472,51 +782,57 @@ const LessonsTab = ({ data, token }: LessonsTabProps) => {
                     setRescheduleTime("");
                 }}
                 size="s"
-            >
-                <Dialog.Header caption="Перенести занятие" />
-                <Dialog.Body>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                        <Text variant="body-1" color="secondary">
-                            Выберите желаемую дату и время. Репетитор получит
-                            уведомление и подтвердит перенос.
-                        </Text>
-                        <div>
-                            <Text variant="caption-1" color="secondary" as="label" style={{ display: "block", marginBottom: 6, fontWeight: 600 }}>
-                                Новая дата
-                            </Text>
-                            <StyledDateInput
-                                value={rescheduleDate}
-                                onUpdate={setRescheduleDate}
-                            />
-                        </div>
-                        <div>
-                            <Text variant="caption-1" color="secondary" as="label" style={{ display: "block", marginBottom: 6, fontWeight: 600 }}>
-                                Новое время
-                            </Text>
-                            <StyledTimeInput
-                                value={rescheduleTime}
-                                onUpdate={setRescheduleTime}
-                                showClockIcon={false}
-                            />
-                        </div>
-                    </div>
-                </Dialog.Body>
-                <Dialog.Footer
-                    onClickButtonApply={handleRescheduleSubmit}
-                    onClickButtonCancel={() => {
+                caption="Перенести занятие"
+                footer={{
+                    onClickButtonApply: handleRescheduleSubmit,
+                    onClickButtonCancel: () => {
                         setRescheduleId(null);
                         setRescheduleDate("");
                         setRescheduleTime("");
-                    }}
-                    textButtonApply={rescheduleLoading ? "Отправляем..." : "Отправить запрос"}
-                    textButtonCancel="Отмена"
-                    propsButtonApply={{ disabled: rescheduleLoading || !rescheduleDate || !rescheduleTime }}
-                    propsButtonCancel={{ disabled: rescheduleLoading }}
-                />
-            </Dialog>
+                    },
+                    textButtonApply: rescheduleLoading ? "Отправляем..." : "Отправить запрос",
+                    textButtonCancel: "Отмена",
+                    propsButtonApply: {
+                        disabled: rescheduleLoading || !rescheduleDate || !rescheduleTime,
+                    },
+                    propsButtonCancel: { disabled: rescheduleLoading },
+                }}
+            >
+                <div className="repeto-portal-stack">
+                    <Text variant="body-1" color="secondary">
+                        Выберите желаемую дату и время. Репетитор получит уведомление и
+                        подтвердит перенос.
+                    </Text>
+                    <div>
+                        <Text
+                            variant="caption-1"
+                            color="secondary"
+                            as="label"
+                            style={{ display: "block", marginBottom: 6, fontWeight: 600 }}
+                        >
+                            Новая дата
+                        </Text>
+                        <StyledDateInput value={rescheduleDate} onUpdate={setRescheduleDate} />
+                    </div>
+                    <div>
+                        <Text
+                            variant="caption-1"
+                            color="secondary"
+                            as="label"
+                            style={{ display: "block", marginBottom: 6, fontWeight: 600 }}
+                        >
+                            Новое время
+                        </Text>
+                        <StyledTimeInput
+                            value={rescheduleTime}
+                            onUpdate={setRescheduleTime}
+                            showClockIcon={false}
+                        />
+                    </div>
+                </div>
+            </AppDialog>
 
-            {/* Feedback Dialog */}
-            <Dialog
+            <AppDialog
                 open={feedbackIdx !== null}
                 onClose={() => {
                     setFeedbackIdx(null);
@@ -524,69 +840,88 @@ const LessonsTab = ({ data, token }: LessonsTabProps) => {
                     setFeedbackText("");
                 }}
                 size="s"
-            >
-                <Dialog.Header caption="Как прошло занятие?" />
-                <Dialog.Body>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                        {feedbackIdx !== null && (
-                            <Text variant="body-1" color="secondary">
-                                {recentLessons[feedbackIdx]?.date} —{" "}
-                                {recentLessons[feedbackIdx]?.subject}
-                            </Text>
-                        )}
-                        <div>
-                            <Text variant="caption-1" color="secondary" as="label" style={{ display: "block", marginBottom: 8, fontWeight: 600 }}>
-                                Оценка
-                            </Text>
-                            <div style={{ display: "flex", gap: 8 }}>
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                    <button
-                                        key={star}
-                                        type="button"
-                                        style={{
-                                            width: 40,
-                                            height: 40,
-                                            borderRadius: "50%",
-                                            border: `2px solid ${star <= feedbackRating ? "var(--g-color-base-brand)" : "var(--g-color-line-generic)"}`,
-                                            background: star <= feedbackRating ? "var(--g-color-base-brand)" : "transparent",
-                                            color: star <= feedbackRating ? "var(--g-color-text-brand-contrast)" : "var(--g-color-text-primary)",
-                                            cursor: "pointer",
-                                            fontWeight: 600,
-                                            fontSize: 14,
-                                            transition: "all 0.15s",
-                                        }}
-                                        onClick={() => setFeedbackRating(star)}
-                                    >
-                                        {star}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                        <div>
-                            <Text variant="caption-1" color="secondary" as="label" style={{ display: "block", marginBottom: 6, fontWeight: 600 }}>
-                                Комментарий (необязательно)
-                            </Text>
-                            <TextInput
-                                size="l"
-                                placeholder="Что понравилось, что можно улучшить..."
-                                value={feedbackText}
-                                onUpdate={setFeedbackText}
-                            />
-                        </div>
-                    </div>
-                </Dialog.Body>
-                <Dialog.Footer
-                    onClickButtonApply={handleFeedbackSubmit}
-                    onClickButtonCancel={() => {
+                caption="Как прошло занятие?"
+                footer={{
+                    onClickButtonApply: handleFeedbackSubmit,
+                    onClickButtonCancel: () => {
                         setFeedbackIdx(null);
                         setFeedbackRating(0);
                         setFeedbackText("");
-                    }}
-                    textButtonApply={feedbackSubmitting ? "Сохранение..." : "Отправить"}
-                    textButtonCancel="Пропустить"
-                    propsButtonApply={{ disabled: feedbackRating === 0 || feedbackSubmitting }}
-                />
-            </Dialog>
+                    },
+                    textButtonApply: feedbackSubmitting ? "Сохранение..." : "Отправить",
+                    textButtonCancel: "Пропустить",
+                    propsButtonApply: {
+                        disabled: feedbackRating === 0 || feedbackSubmitting,
+                    },
+                }}
+            >
+                <div className="repeto-portal-stack">
+                    {feedbackIdx !== null && (
+                        <Text variant="body-1" color="secondary">
+                            {recentLessons[feedbackIdx]?.date} - {recentLessons[feedbackIdx]?.subject}
+                        </Text>
+                    )}
+                    <div>
+                        <Text
+                            variant="caption-1"
+                            color="secondary"
+                            as="label"
+                            style={{ display: "block", marginBottom: 8, fontWeight: 600 }}
+                        >
+                            Оценка
+                        </Text>
+                        <div style={{ display: "flex", gap: 8 }}>
+                            {[1, 2, 3, 4, 5].map((star) => (
+                                <button
+                                    key={star}
+                                    type="button"
+                                    style={{
+                                        width: 40,
+                                        height: 40,
+                                        borderRadius: "50%",
+                                        border: `2px solid ${
+                                            star <= feedbackRating
+                                                ? "var(--g-color-base-brand)"
+                                                : "var(--g-color-line-generic)"
+                                        }`,
+                                        background:
+                                            star <= feedbackRating
+                                                ? "var(--g-color-base-brand)"
+                                                : "transparent",
+                                        color:
+                                            star <= feedbackRating
+                                                ? "var(--g-color-text-brand-contrast)"
+                                                : "var(--g-color-text-primary)",
+                                        cursor: "pointer",
+                                        fontWeight: 600,
+                                        fontSize: 14,
+                                        transition: "all 0.15s",
+                                    }}
+                                    onClick={() => setFeedbackRating(star)}
+                                >
+                                    {star}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    <div>
+                        <Text
+                            variant="caption-1"
+                            color="secondary"
+                            as="label"
+                            style={{ display: "block", marginBottom: 6, fontWeight: 600 }}
+                        >
+                            Комментарий (необязательно)
+                        </Text>
+                        <TextInput
+                            size="l"
+                            placeholder="Что понравилось, что можно улучшить..."
+                            value={feedbackText}
+                            onUpdate={setFeedbackText}
+                        />
+                    </div>
+                </div>
+            </AppDialog>
         </>
     );
 };

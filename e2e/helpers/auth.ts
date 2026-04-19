@@ -3,6 +3,41 @@ import { test as base, expect, Page } from '@playwright/test';
 const API_BASE = 'http://127.0.0.1:3200/api';
 const DEMO_EMAIL = 'demo@repeto.ru';
 const DEMO_PASSWORD = 'demo1234';
+let cachedAuthCookies: any[] | null = null;
+
+async function hasActiveSession(page: Page): Promise<boolean> {
+  try {
+    const refreshResp = await page.request.post('/api/auth/refresh', {
+      timeout: 5000,
+    });
+    if (!refreshResp.ok()) return false;
+    const payload = await refreshResp.json().catch(() => null);
+    return Boolean(payload?.accessToken);
+  } catch {
+    return false;
+  }
+}
+
+async function hydrateCachedSession(page: Page): Promise<boolean> {
+  if (!cachedAuthCookies || cachedAuthCookies.length === 0) {
+    return false;
+  }
+
+  try {
+    await page.context().addCookies(cachedAuthCookies);
+    return hasActiveSession(page);
+  } catch {
+    return false;
+  }
+}
+
+async function rememberSession(page: Page) {
+  try {
+    cachedAuthCookies = await page.context().cookies();
+  } catch {
+    // ignore cookie read issues
+  }
+}
 
 /**
  * Rewrite localhost→127.0.0.1 for API calls in the browser context.
@@ -17,63 +52,71 @@ async function fixLocalhostRouting(page: Page) {
 }
 
 /** Login via API and inject refresh cookie into browser context */
-async function loginViaAPI(page: Page) {
-  await fixLocalhostRouting(page);
+async function loginViaAPI(page: Page): Promise<boolean> {
+  try {
+    const loginResp = await page.request.post('/api/auth/login', {
+      data: { email: DEMO_EMAIL, password: DEMO_PASSWORD },
+      timeout: 7000,
+    });
 
-  // First navigate to set up the page context
-  await page.goto('/registration');
-  await page.waitForLoadState('networkidle');
-
-  // Use in-page fetch to login (this sets the httpOnly refresh cookie on browser)
-  const success = await page.evaluate(async (creds) => {
-    try {
-      const resp = await fetch('http://localhost:3200/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email: creds.email, password: creds.password }),
-      });
-      if (!resp.ok) return false;
-      const data = await resp.json();
-      // Set token in the module's in-memory variable via global accessor
-      (window as any).__REPETO_ACCESS_TOKEN__ = data.accessToken;
+    if (loginResp.ok()) {
       return true;
-    } catch {
-      return false;
     }
-  }, { email: DEMO_EMAIL, password: DEMO_PASSWORD });
-
-  if (!success) {
-    // Fall back to UI login
-    await loginViaUI(page);
-    return;
+  } catch {
+    // Fallback in fixture.
   }
-
-  // Navigate to dashboard — AuthContext will use the refresh cookie
-  await page.goto('/dashboard');
-  await page.waitForLoadState('networkidle');
-  await page.waitForTimeout(1500);
-
-  // If still on registration, fall back to UI login
-  if (page.url().includes('registration')) {
-    await loginViaUI(page);
-  }
+  return false;
 }
 
 /** Login through the UI form */
 async function loginViaUI(page: Page) {
-  await page.goto('/registration');
-  await page.getByPlaceholder('email@example.com').fill(DEMO_EMAIL);
-  await page.getByPlaceholder('Введите пароль').fill(DEMO_PASSWORD);
-  await page.getByRole('button', { name: 'Войти' }).click();
-  await page.waitForURL('**/dashboard**', { timeout: 15000 });
+  await page.goto('/registration', {
+    waitUntil: 'domcontentloaded',
+    timeout: 15000,
+  });
+  const signInForm = page.locator('form').filter({
+    has: page.getByPlaceholder('Введите пароль'),
+  }).first();
+
+  await expect(signInForm).toBeVisible({ timeout: 10000 });
+  await signInForm.getByPlaceholder('email@example.com').fill(DEMO_EMAIL);
+  await signInForm.getByPlaceholder('Введите пароль').fill(DEMO_PASSWORD);
+  await signInForm.getByRole('button', { name: 'Войти' }).click();
+
+  await Promise.race([
+    page.waitForURL((url) => !url.pathname.includes('/registration'), {
+      timeout: 15000,
+    }),
+    page.getByRole('link', { name: 'Дашборд' }).first().waitFor({
+      state: 'visible',
+      timeout: 15000,
+    }),
+  ]);
 }
 
 /** Extended test fixture with auth */
 export const test = base.extend<{ authedPage: Page }>({
   authedPage: async ({ page }, use) => {
-    await loginViaUI(page);
+    let alreadyAuthed = await hydrateCachedSession(page);
+
+    if (!alreadyAuthed) {
+      alreadyAuthed = await hasActiveSession(page);
+    }
+
+    if (!alreadyAuthed) {
+      const loggedInViaApi = await loginViaAPI(page);
+      if (!loggedInViaApi) {
+        await loginViaUI(page);
+      }
+
+      await rememberSession(page);
+    }
+
     await use(page);
+
+    if (await hasActiveSession(page)) {
+      await rememberSession(page);
+    }
   },
 });
 
@@ -81,8 +124,14 @@ export { expect, loginViaAPI, loginViaUI, fixLocalhostRouting, API_BASE, DEMO_EM
 
 /** Get access token for API calls (uses refresh cookie) */
 export async function getAuthToken(page: Page): Promise<string> {
-  const resp = await page.request.post('http://localhost:3200/api/auth/refresh');
+  const resp = await page.request.post('/api/auth/refresh');
+  if (!resp.ok()) {
+    throw new Error(`Unable to refresh auth token: ${resp.status()} ${resp.statusText()}`);
+  }
   const data = await resp.json();
+  if (!data?.accessToken) {
+    throw new Error('Refresh response does not contain accessToken');
+  }
   return data.accessToken;
 }
 

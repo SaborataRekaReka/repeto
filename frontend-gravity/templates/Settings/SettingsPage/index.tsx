@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import GravityLayout from "@/components/GravityLayout";
 import { Card, Text, Button, Icon, Switch, TextInput } from "@gravity-ui/uikit";
-import { Person, Gear, Bell, FileText, ArrowUpRightFromSquare, Sun, Display, Moon, ArrowRightFromSquare } from "@gravity-ui/icons";
+import { Person, Gear, Bell, FileText, ArrowUpRightFromSquare, Sun, Display, Moon, ArrowRightFromSquare, CircleCheck, Xmark } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import Account from "./Account";
 import Security from "./Security";
@@ -14,25 +14,17 @@ import { getInitials } from "@/lib/formatters";
 import { useAuth } from "@/contexts/AuthContext";
 import { useThemeMode } from "@/contexts/ThemeContext";
 import type { ThemeMode } from "@/contexts/ThemeContext";
-import { useSettings, updateAccount, uploadAvatar } from "@/hooks/useSettings";
+import { useSettings, updateAccount, uploadAvatar, checkAccountSlug } from "@/hooks/useSettings";
 import { resolveApiAssetUrl } from "@/lib/api";
 
-function transliterate(text: string): string {
-    const map: Record<string, string> = {
-        "а": "a", "б": "b", "в": "v", "г": "g", "д": "d", "е": "e", "ё": "yo",
-        "ж": "zh", "з": "z", "и": "i", "й": "y", "к": "k", "л": "l", "м": "m",
-        "н": "n", "о": "o", "п": "p", "р": "r", "с": "s", "т": "t", "у": "u",
-        "ф": "f", "х": "kh", "ц": "ts", "ч": "ch", "ш": "sh", "щ": "shch",
-        "ъ": "", "ы": "y", "ь": "", "э": "e", "ю": "yu", "я": "ya", " ": "-",
-    };
-    return text.toLowerCase().split("").map((c) => map[c] ?? c).join("")
-        .replace(/[^a-z0-9-]/g, "").replace(/-+/g, "-").replace(/^-|-$/g, "");
-}
+type SlugStatus = "idle" | "checking" | "available" | "taken" | "error";
 
-function generateSlugFromName(name: string): string {
-    const parts = name.trim().split(/\s+/);
-    if (parts.length < 2) return transliterate(name);
-    return transliterate(`${parts[1]} ${parts[0]}`);
+function sanitizeSlug(value: string): string {
+    return value
+        .toLowerCase()
+        .replace(/[^a-z0-9-]/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "");
 }
 
 const navItems = [
@@ -55,11 +47,19 @@ const SettingsPage = () => {
     const { data: settings, mutate: mutateSettings } = useSettings();
     const [type, setType] = useState<string>("account");
     const [avatarSrc, setAvatarSrc] = useState<string | null>(user?.avatar || null);
-    const defaultSlug = generateSlugFromName(user?.name || "");
     const [slug, setSlug] = useState("");
     const [published, setPublished] = useState(false);
+    const [showPublicPackages, setShowPublicPackages] = useState(true);
+    const [slugStatus, setSlugStatus] = useState<SlugStatus>("idle");
+    const [slugHint, setSlugHint] = useState("");
+    const [slugSuggestion, setSlugSuggestion] = useState("");
+    const [slugFocused, setSlugFocused] = useState(false);
+    const [slugTyping, setSlugTyping] = useState(false);
+    const [publicPageError, setPublicPageError] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const slugRequestIdRef = useRef(0);
+    const publicSettingsHydratedRef = useRef(false);
     const { themeMode, setTheme } = useThemeMode();
 
     useEffect(() => {
@@ -68,10 +68,13 @@ const SettingsPage = () => {
 
     useEffect(() => {
         if (settings) {
-            setSlug(settings.slug || defaultSlug);
+            setSlug(settings.slug || "");
             setPublished(!!settings.published);
+            setShowPublicPackages(settings.showPublicPackages !== false);
+            setPublicPageError(null);
+            publicSettingsHydratedRef.current = true;
         }
-    }, [settings, defaultSlug]);
+    }, [settings?.slug, settings?.published, settings?.showPublicPackages]);
 
     useEffect(() => {
         if (!router.isReady) return;
@@ -79,19 +82,227 @@ const SettingsPage = () => {
         setType((prev) => (prev === tabFromQuery ? prev : tabFromQuery));
     }, [router.isReady, router.query.tab]);
 
-    const savePublicPage = useCallback(async (newSlug: string, newPublished: boolean) => {
-        if (!newSlug) return;
-        setSaving(true);
-        try {
-            await updateAccount({ slug: newSlug, published: newPublished });
-            mutateSettings();
-        } catch {
-            if (settings) { setSlug(settings.slug || defaultSlug); setPublished(!!settings.published); }
-        } finally { setSaving(false); }
-    }, [settings, defaultSlug, mutateSettings]);
+    const requestSlugStatus = useCallback(async (rawSlug: string, mode: "init" | "typing" | "blur") => {
+        const normalized = sanitizeSlug(rawSlug);
+        const requestId = slugRequestIdRef.current + 1;
+        slugRequestIdRef.current = requestId;
+        setSlugStatus("checking");
+        setSlugHint("Проверяем адрес...");
+        setSlugSuggestion("");
 
-    const handlePublishedToggle = (val: boolean) => { setPublished(val); savePublicPage(slug, val); };
-    const handleSlugBlur = () => { if (slug && slug !== (settings?.slug || defaultSlug)) savePublicPage(slug, published); };
+        try {
+            const result = await checkAccountSlug({
+                value: normalized,
+                name: settings?.name || user?.name || "",
+            });
+
+            if (requestId !== slugRequestIdRef.current) {
+                return null;
+            }
+
+            if (!normalized && result.suggested) {
+                setSlug(result.suggested);
+            }
+
+            if (result.isAvailable) {
+                setSlugStatus("available");
+                setSlugHint("Адрес свободен");
+                setSlugSuggestion("");
+                return result;
+            }
+
+            setSlugStatus("taken");
+            setSlugHint("Такой адрес уже занят.");
+            setSlugSuggestion(result.suggested || "");
+
+            if (mode === "blur" && result.suggested) {
+                setSlug(result.suggested);
+                setSlugStatus("available");
+                setSlugHint("Адрес свободен");
+                setSlugSuggestion("");
+            }
+
+            return result;
+        } catch {
+            if (requestId !== slugRequestIdRef.current) {
+                return null;
+            }
+            setSlugStatus("error");
+            setSlugHint("Не удалось проверить адрес");
+            setSlugSuggestion("");
+            return null;
+        }
+    }, [settings?.name, user?.name]);
+
+    useEffect(() => {
+        if (!publicSettingsHydratedRef.current) {
+            return;
+        }
+
+        const normalized = sanitizeSlug(slug);
+        if (normalized !== slug) {
+            setSlug(normalized);
+            return;
+        }
+
+        const timer = window.setTimeout(() => {
+            void requestSlugStatus(normalized, normalized ? "typing" : "init").finally(() => {
+                setSlugTyping(false);
+            });
+        }, normalized ? 250 : 0);
+
+        return () => {
+            window.clearTimeout(timer);
+        };
+    }, [slug, requestSlugStatus]);
+
+    const savePublicPage = useCallback(async (newSlug: string, newPublished: boolean) => {
+        const normalizedSlug = sanitizeSlug(newSlug);
+        setSaving(true);
+        setPublicPageError(null);
+        try {
+            await updateAccount({ slug: normalizedSlug, published: newPublished });
+            await mutateSettings();
+            return true;
+        } catch (error: any) {
+            const message =
+                typeof error?.message === "string" && error.message.trim().length > 0
+                    ? error.message
+                    : "Не удалось сохранить настройки публичной страницы";
+            setPublicPageError(message);
+            if (/занят/i.test(message)) {
+                setSlugStatus("taken");
+                setSlugHint("Такой адрес уже занят.");
+            }
+            return false;
+        } finally {
+            setSaving(false);
+        }
+    }, [mutateSettings]);
+
+    const savePublicPackagesVisibility = useCallback(async (value: boolean) => {
+        setSaving(true);
+        setPublicPageError(null);
+        try {
+            await updateAccount({ showPublicPackages: value });
+            await mutateSettings();
+            return true;
+        } catch (error: any) {
+            const message =
+                typeof error?.message === "string" && error.message.trim().length > 0
+                    ? error.message
+                    : "Не удалось сохранить настройки публичных пакетов";
+            setPublicPageError(message);
+            return false;
+        } finally {
+            setSaving(false);
+        }
+    }, [mutateSettings]);
+
+    const canEnablePublishing = slugStatus === "available" && !!slug;
+
+    const handlePublishedToggle = async (val: boolean) => {
+        if (saving) {
+            return;
+        }
+
+        if (!val) {
+            const prev = published;
+            setPublished(false);
+            const ok = await savePublicPage(slug, false);
+            if (!ok) {
+                setPublished(prev);
+            }
+            return;
+        }
+
+        const checked = await requestSlugStatus(slug, "blur");
+        if (!checked) {
+            return;
+        }
+
+        const nextSlug = sanitizeSlug(checked.suggested || checked.requested || slug);
+        if (!nextSlug) {
+            return;
+        }
+
+        if (nextSlug !== slug) {
+            setSlug(nextSlug);
+        }
+
+        const prev = published;
+        setPublished(true);
+        const ok = await savePublicPage(nextSlug, true);
+        if (!ok) {
+            setPublished(prev);
+        }
+    };
+
+    const handleSlugBlur = async () => {
+        if (!publicSettingsHydratedRef.current) {
+            return;
+        }
+
+        const checked = await requestSlugStatus(slug, "blur");
+        if (!checked) {
+            return;
+        }
+
+        const nextSlug = sanitizeSlug(checked.suggested || checked.requested || slug);
+        if (!nextSlug) {
+            return;
+        }
+
+        if (nextSlug !== slug) {
+            setSlug(nextSlug);
+        }
+
+        if (nextSlug !== (settings?.slug || "")) {
+            await savePublicPage(nextSlug, published);
+        }
+    };
+
+    const handleShowPublicPackagesToggle = async (value: boolean) => {
+        if (saving) {
+            return;
+        }
+
+        const prev = showPublicPackages;
+        setShowPublicPackages(value);
+
+        const ok = await savePublicPackagesVisibility(value);
+        if (!ok) {
+            setShowPublicPackages(prev);
+        }
+    };
+
+    const applySuggestedSlug = () => {
+        if (!slugSuggestion) {
+            return;
+        }
+        setSlug(slugSuggestion);
+    };
+
+    const publishToggleDisabled = saving || (!published && !canEnablePublishing);
+    const slugHintColor =
+        slugStatus === "available"
+            ? "var(--g-color-text-positive)"
+            : slugStatus === "taken" || slugStatus === "error"
+                ? "var(--g-color-text-danger)"
+                : "var(--g-color-text-secondary)";
+
+    const slugStatusIcon = !published && slug && !slugTyping && slugStatus !== "checking"
+        ? (slugStatus === "available"
+            ? CircleCheck
+            : slugStatus === "taken" || slugStatus === "error"
+                ? Xmark
+                : null)
+        : null;
+
+    const slugStatusIconColor =
+        slugStatus === "available"
+            ? "var(--g-color-text-positive)"
+            : "var(--g-color-text-danger)";
 
     const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -108,11 +319,11 @@ const SettingsPage = () => {
 
     return (
         <GravityLayout title="Настройки">
-            <div style={{ display: "flex", gap: 32 }}>
+            <div className="repeto-settings-layout">
                 {/* Sidebar */}
-                <div style={{ width: 280, flexShrink: 0 }}>
+                <div className="repeto-settings-sidebar">
                     {/* Profile card */}
-                    <Card view="outlined" style={{ padding: 24, background: "var(--g-color-base-float)", textAlign: "center" }}>
+                    <Card className="repeto-settings-profile" view="outlined" style={{ padding: 24, background: "var(--g-color-base-float)", textAlign: "center" }}>
                         <div
                             onClick={() => fileInputRef.current?.click()}
                             style={{
@@ -145,7 +356,7 @@ const SettingsPage = () => {
                     </Card>
 
                     {/* Navigation */}
-                    <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 2 }}>
+                    <div className="repeto-settings-sections" style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 2 }}>
                         {navItems.map((item) => (
                             <button
                                 key={item.id}
@@ -173,7 +384,7 @@ const SettingsPage = () => {
                     </div>
 
                     {/* Logout */}
-                    <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--g-color-line-generic)" }}>
+                    <div className="repeto-settings-logout" style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--g-color-line-generic)" }}>
                         <button
                             onClick={() => { logout(); }}
                             style={{
@@ -194,21 +405,108 @@ const SettingsPage = () => {
                     </div>
 
                     {/* Public page */}
-                    <Card view="outlined" style={{ padding: 16, marginTop: 20, background: "var(--g-color-base-float)" }}>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                            <Text variant="body-1" style={{ fontWeight: 600 }}>Публичная страница</Text>
-                            <Switch checked={published} onUpdate={handlePublishedToggle} size="m" />
-                        </div>
+                    <Card className="repeto-settings-public" view="outlined" style={{ padding: 16, marginTop: 20, background: "var(--g-color-base-float)" }}>
                         {!published && (
-                            <div style={{ marginTop: 12 }}>
-                                <TextInput
-                                    size="s"
-                                    value={slug}
-                                    onUpdate={(v) => setSlug(v.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
-                                    onBlur={handleSlugBlur}
-                                    placeholder="slug"
-                                />
-                            </div>
+                            <>
+                                <div style={{ marginTop: 12 }}>
+                                    <Text variant="caption-2" color="secondary" style={{ display: "block", marginBottom: 6 }}>
+                                        Персональная ссылка
+                                    </Text>
+                                    <TextInput
+                                        size="s"
+                                        value={slug}
+                                        onUpdate={(value) => {
+                                            setSlug(sanitizeSlug(value));
+                                            setSlugTyping(true);
+                                            setSlugStatus("checking");
+                                            setSlugHint("Проверяем адрес...");
+                                            setSlugSuggestion("");
+                                            setPublicPageError(null);
+                                        }}
+                                        onFocus={() => {
+                                            setSlugFocused(true);
+                                        }}
+                                        onBlur={() => {
+                                            setSlugFocused(false);
+                                            setSlugTyping(false);
+                                            void handleSlugBlur();
+                                        }}
+                                        placeholder="slug"
+                                        endContent={
+                                            slugStatusIcon ? (
+                                                <Icon
+                                                    data={slugStatusIcon as IconData}
+                                                    size={14}
+                                                    style={{
+                                                        color: slugStatusIconColor,
+                                                        marginRight: 4,
+                                                    }}
+                                                />
+                                            ) : null
+                                        }
+                                    />
+                                </div>
+
+                                {slugFocused && slugTyping && !!slugHint && (
+                                    <Text variant="caption-2" style={{ display: "block", marginTop: 8, color: slugHintColor }}>
+                                        {slugHint}
+                                    </Text>
+                                )}
+
+                                {slugFocused && slugStatus === "taken" && slugSuggestion && (
+                                    <button
+                                        onClick={applySuggestedSlug}
+                                        style={{
+                                            marginTop: 8,
+                                            padding: 0,
+                                            border: "none",
+                                            background: "transparent",
+                                            color: "var(--g-color-text-brand)",
+                                            fontSize: 12,
+                                            fontWeight: 600,
+                                            cursor: "pointer",
+                                        }}
+                                    >
+                                        Использовать: {slugSuggestion}
+                                    </button>
+                                )}
+                            </>
+                        )}
+
+                        <div style={{ marginTop: 14, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                            <Text variant="body-1" style={{ fontWeight: 600 }}>Опубликовать страницу</Text>
+                            <Switch
+                                checked={published}
+                                onUpdate={(value) => {
+                                    void handlePublishedToggle(value);
+                                }}
+                                size="m"
+                                disabled={publishToggleDisabled}
+                            />
+                        </div>
+                        <div style={{ marginTop: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                            <Text variant="body-1" style={{ fontWeight: 600 }}>Показывать публичные пакеты</Text>
+                            <Switch
+                                checked={showPublicPackages}
+                                onUpdate={(value) => {
+                                    void handleShowPublicPackagesToggle(value);
+                                }}
+                                size="m"
+                                disabled={saving}
+                            />
+                        </div>
+                        <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 8 }}>
+                            Если выключено, раздел с пакетами не отображается на публичной странице и в записи.
+                        </Text>
+                        {!published && !canEnablePublishing && (
+                            <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 8 }}>
+                                Публикация доступна только после выбора свободного адреса.
+                            </Text>
+                        )}
+                        {publicPageError && (
+                            <Text variant="caption-2" style={{ display: "block", marginTop: 8, color: "var(--g-color-text-danger)" }}>
+                                {publicPageError}
+                            </Text>
                         )}
                         {published && slug && (
                             <Link
@@ -227,7 +525,7 @@ const SettingsPage = () => {
                     </Card>
 
                     {/* Theme switcher */}
-                    <Card view="outlined" style={{ padding: 16, marginTop: 20, background: "var(--g-color-base-float)" }}>
+                    <Card className="repeto-settings-theme" view="outlined" style={{ padding: 16, marginTop: 20, background: "var(--g-color-base-float)" }}>
                         <Text variant="body-1" style={{ fontWeight: 600, display: "block", marginBottom: 12 }}>Тема интерфейса</Text>
                         <div style={{
                             display: "grid",
@@ -271,7 +569,7 @@ const SettingsPage = () => {
                 </div>
 
                 {/* Content */}
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="repeto-settings-content">
                     {type === "account" && <Account />}
                     {type === "security" && <Security />}
                     {type === "notifications" && <Notifications />}

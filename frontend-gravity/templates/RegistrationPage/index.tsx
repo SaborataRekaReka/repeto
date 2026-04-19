@@ -5,9 +5,16 @@ import Logo from "@/components/Logo";
 import SignIn from "./SignIn";
 import SignUp from "./SignUp";
 import ForgotPassword from "./ForgotPassword";
+import StudentSignIn from "./StudentSignIn";
 import { useThemeMode } from "@/contexts/ThemeContext";
 
-type View = "signin" | "signup" | "forgot";
+type View = "signin" | "signup" | "forgot" | "student";
+
+const isView = (value: string | undefined): value is View =>
+    value === "signin" ||
+    value === "signup" ||
+    value === "forgot" ||
+    value === "student";
 
 const RegistrationPage = () => {
     const router = useRouter();
@@ -16,17 +23,52 @@ const RegistrationPage = () => {
     const isDark = theme === "dark";
     const resetToken =
         typeof router.query.token === "string" ? router.query.token.trim() : "";
+    const queryView =
+        typeof router.query.view === "string" ? router.query.view.trim() : undefined;
+    const initialPlanId =
+        typeof router.query.plan === "string" ? router.query.plan.trim().toLowerCase() : undefined;
+    const initialBilling =
+        typeof router.query.billing === "string" ? router.query.billing.trim().toLowerCase() : undefined;
+    const initialStep =
+        typeof router.query.step === "string" ? router.query.step.trim().toLowerCase() : undefined;
+    const returnPaymentId =
+        typeof router.query.paymentId === "string"
+            ? router.query.paymentId.trim()
+            : typeof router.query.payment_id === "string"
+              ? router.query.payment_id.trim()
+              : undefined;
+
+    const applyView = (nextView: View) => {
+        setView(nextView);
+        const nextQuery = { ...router.query, view: nextView };
+        router.replace(
+            { pathname: "/auth", query: nextQuery },
+            undefined,
+            { shallow: true }
+        );
+    };
 
     useEffect(() => {
         if (resetToken) {
             setView("forgot");
+            return;
         }
-    }, [resetToken]);
+
+        if (isView(queryView)) {
+            setView(queryView);
+            return;
+        }
+
+        setView("signin");
+    }, [queryView, resetToken]);
 
     const handleBackToSignIn = () => {
-        if (resetToken) {
-            router.replace("/registration", undefined, { shallow: true });
-        }
+        const nextQuery = { ...router.query };
+        delete nextQuery.token;
+        nextQuery.view = "signin";
+        router.replace({ pathname: "/auth", query: nextQuery }, undefined, {
+            shallow: true,
+        });
         setView("signin");
     };
 
@@ -67,14 +109,41 @@ const RegistrationPage = () => {
                         {view === "forgot" ? (
                             <ForgotPassword onBack={handleBackToSignIn} token={resetToken || undefined} />
                         ) : view === "signup" ? (
-                            <SignUp />
+                            <SignUp
+                                initialPlanId={initialPlanId}
+                                initialBilling={initialBilling}
+                                initialStep={initialStep}
+                                returnPaymentId={returnPaymentId}
+                            />
+                        ) : view === "student" ? (
+                            <StudentSignIn onBack={() => applyView("signin")} />
                         ) : (
-                            <SignIn onRecover={() => setView("forgot")} />
+                            <SignIn onRecover={() => applyView("forgot")} />
                         )}
                     </div>
 
                     {/* Switch link */}
-                    {view !== "forgot" && (
+                    {view === "signin" && (
+                        <div style={{ marginTop: 16 }}>
+                            <button
+                                onClick={() => applyView("student")}
+                                style={{
+                                    width: "100%",
+                                    padding: "10px 14px",
+                                    background: "transparent",
+                                    border: "1px solid var(--g-color-line-generic)",
+                                    borderRadius: 12,
+                                    cursor: "pointer",
+                                    color: "var(--g-color-text-primary)",
+                                    fontSize: 14,
+                                    fontWeight: 500,
+                                }}
+                            >
+                                У меня есть репетитор
+                            </button>
+                        </div>
+                    )}
+                    {(view === "signin" || view === "signup") && (
                         <p
                             style={{
                                 textAlign: "center",
@@ -85,7 +154,7 @@ const RegistrationPage = () => {
                         >
                             {view === "signup" ? "Уже есть аккаунт? " : "Нет аккаунта? "}
                             <button
-                                onClick={() => setView(view === "signup" ? "signin" : "signup")}
+                                onClick={() => applyView(view === "signup" ? "signin" : "signup")}
                                 style={{
                                     color: "var(--g-color-text-brand)",
                                     fontWeight: 600,

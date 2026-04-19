@@ -1,10 +1,12 @@
-import { Controller, Get, Post, Param, Query, Body } from '@nestjs/common';
+import { Controller, Get, Post, Param, Query, Body, Res, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiQuery } from '@nestjs/swagger';
+import { Response } from 'express';
 import { Public } from '../common/decorators';
 import { PublicService } from './public.service';
 import { TelegramService } from '../messenger/telegram.service';
 import { MaxService } from '../messenger/max.service';
 import { BotPollerService } from '../messenger/bot-poller.service';
+import { StudentAuthService } from '../student-auth/student-auth.service';
 
 @ApiTags('Public')
 @Controller('public')
@@ -14,6 +16,7 @@ export class PublicController {
     private readonly telegramService: TelegramService,
     private readonly maxService: MaxService,
     private readonly botPollerService: BotPollerService,
+    private readonly studentAuthService: StudentAuthService,
   ) {}
 
   @Public()
@@ -53,6 +56,7 @@ export class PublicController {
     @Body()
     body: {
       subject: string;
+      packageId?: string;
       date: string;
       startTime: string;
       clientName: string;
@@ -66,6 +70,35 @@ export class PublicController {
     },
   ) {
     return this.publicService.createBooking(slug, body);
+  }
+
+  @Public()
+  @Post('tutors/:slug/verify-booking-email')
+  @HttpCode(HttpStatus.OK)
+  async verifyBookingEmail(
+    @Param('slug') slug: string,
+    @Body()
+    body: {
+      email: string;
+      code: string;
+      bookingRequestId?: string;
+    },
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.publicService.verifyBookingEmailForSlug(slug, body);
+    res.cookie('student_refresh_token', result.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+      path: '/',
+    });
+    return {
+      account: result.account,
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+      studentId: result.studentId,
+    };
   }
 
   @Public()

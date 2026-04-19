@@ -7,7 +7,7 @@ import { test, expect, loginViaUI } from './helpers/auth';
 test.describe('Авторизация', () => {
   test('редирект на /registration без авторизации', async ({ page }) => {
     await page.goto('/dashboard');
-    await expect(page).toHaveURL(/registration/);
+    await expect(page).toHaveURL(/(auth|registration)/);
   });
 
   test('логин через форму — переход на dashboard', async ({ page }) => {

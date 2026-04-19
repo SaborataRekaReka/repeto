@@ -3,16 +3,26 @@ import { api } from '@/lib/api';
 import { toDateInputValue } from '@/lib/dates';
 import type { LessonPackage } from '@/types/package';
 
+function normalizePackageComment(rawComment?: string | null): string | undefined {
+  const value = String(rawComment || '').trim();
+  return value || undefined;
+}
+
 function mapPackage(raw: any): LessonPackage {
+  const isPublic = !!raw.isPublic;
+  const studentName =
+    raw.student?.name || raw.studentName || (isPublic ? 'Публичный пакет' : 'Без ученика');
+
   return {
     id: raw.id,
     studentId: raw.studentId,
-    studentName: raw.student?.name || raw.studentName || '',
+    studentName,
     subject: raw.subject || raw.student?.subject || '',
     lessonsTotal: raw.lessonsTotal,
     lessonsUsed: raw.lessonsUsed,
     totalPrice: raw.totalPrice,
-    comment: raw.comment || undefined,
+    comment: normalizePackageComment(raw.comment),
+    isPublic,
     status: (raw.status || 'active').toLowerCase() as LessonPackage['status'],
     validUntil: raw.validUntil
       ? new Date(raw.validUntil).toLocaleDateString('ru-RU')
@@ -57,7 +67,8 @@ export function usePackages(params?: {
 }
 
 export async function createPackage(data: {
-  studentId: string;
+  studentId?: string;
+  isPublic?: boolean;
   subject: string;
   lessonsTotal: number;
   totalPrice: number;

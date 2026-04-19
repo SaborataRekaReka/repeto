@@ -1,5 +1,6 @@
 import {
   IsEmail,
+  IsEnum,
   IsOptional,
   IsString,
   MinLength,
@@ -11,6 +12,17 @@ import { ApiProperty } from '@nestjs/swagger';
 
 const PASSWORD_REGEX = /^(?=.*[A-Za-zА-я])(?=.*\d).{8,}$/;
 const PASSWORD_MSG = 'Пароль должен содержать минимум 8 символов, включая букву и цифру';
+
+export enum RegistrationPlanId {
+  START = 'start',
+  PROFI = 'profi',
+  CENTER = 'center',
+}
+
+export enum RegistrationBillingCycle {
+  MONTH = 'month',
+  YEAR = 'year',
+}
 
 export class RegisterDto {
   @ApiProperty({ example: 'Иван Петров' })
@@ -49,6 +61,49 @@ export class VerifyRegisterCodeDto {
   @Length(6, 6)
   @Matches(/^\d{6}$/, { message: 'Код должен состоять из 6 цифр' })
   code: string;
+}
+
+export class StartRegistrationPaymentDto {
+  @ApiProperty()
+  @IsString()
+  @MinLength(20)
+  @MaxLength(2000)
+  verificationToken: string;
+
+  @ApiProperty({ enum: RegistrationPlanId })
+  @IsEnum(RegistrationPlanId)
+  planId: RegistrationPlanId;
+
+  @ApiProperty({ enum: RegistrationBillingCycle })
+  @IsEnum(RegistrationBillingCycle)
+  billingCycle: RegistrationBillingCycle;
+}
+
+export class CompleteRegistrationDto extends StartRegistrationPaymentDto {
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  paymentId?: string;
+}
+
+export class StartPlatformAccessPaymentDto {
+  @ApiProperty({ enum: RegistrationPlanId, required: false })
+  @IsOptional()
+  @IsEnum(RegistrationPlanId)
+  planId?: RegistrationPlanId;
+
+  @ApiProperty({ enum: RegistrationBillingCycle, required: false })
+  @IsOptional()
+  @IsEnum(RegistrationBillingCycle)
+  billingCycle?: RegistrationBillingCycle;
+}
+
+export class CompletePlatformAccessPaymentDto {
+  @ApiProperty()
+  @IsString()
+  @MaxLength(200)
+  paymentId: string;
 }
 
 export class LoginDto {

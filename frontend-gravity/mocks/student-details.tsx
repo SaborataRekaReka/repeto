@@ -12,6 +12,12 @@ export type HomeworkFile = {
     id: string;
     name: string;
     url: string;
+    provider?: "yandex-disk" | "google-drive";
+    type?: "file" | "folder";
+    extension?: string;
+    size?: string;
+    parentId?: string | null;
+    childrenCount?: number;
 };
 
 export type StudentUploadFile = {

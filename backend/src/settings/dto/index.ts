@@ -7,4 +7,5 @@ export { StartYandexDiskDto } from './start-yandex-disk.dto';
 export { CompleteYandexDiskDto } from './complete-yandex-disk.dto';
 export { ConnectYandexDiskTokenDto } from './connect-yandex-disk-token.dto';
 export { CompleteGoogleCalendarDto } from './complete-google-calendar.dto';
+export { CompleteGoogleDriveDto } from './complete-google-drive.dto';
 export { ConnectYandexCalendarTokenDto } from './connect-yandex-calendar-token.dto';

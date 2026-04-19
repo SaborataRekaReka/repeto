@@ -143,15 +143,8 @@ export class LessonsService {
       include: {
         student: { select: { id: true, name: true, subject: true } },
         notes: {
-          where: {
-            NOT: {
-              content: {
-                startsWith: 'PORTAL_REVIEW:',
-              },
-            },
-          },
           orderBy: { updatedAt: 'desc' },
-          take: 1,
+          take: 10,
           select: { content: true, updatedAt: true },
         },
       },

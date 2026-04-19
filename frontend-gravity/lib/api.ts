@@ -37,7 +37,14 @@ function extractErrorMessage(
   data?: unknown
 ): string {
   if (data && typeof data === 'object') {
-    const payload = data as { message?: unknown; error?: unknown };
+    const payload = data as { message?: unknown; error?: unknown; details?: unknown };
+
+    if (Array.isArray(payload.details)) {
+      const detailParts = payload.details
+        .filter((m): m is string => typeof m === 'string')
+        .map(translateValidation);
+      if (detailParts.length > 0) return detailParts.join('; ');
+    }
 
     if (Array.isArray(payload.message)) {
       const parts = payload.message

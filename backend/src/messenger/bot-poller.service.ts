@@ -136,17 +136,17 @@ export class BotPollerService implements OnModuleInit {
   private async linkStudent(
     platform: 'telegram' | 'max',
     chatId: string,
-    portalToken: string,
+    studentId: string,
   ) {
-    if (!portalToken || portalToken.length < 10) return;
+    if (!studentId || studentId.length < 10) return;
 
     const student = await this.prisma.student.findUnique({
-      where: { portalToken },
+      where: { id: studentId },
       select: { id: true, name: true, telegramChatId: true, maxChatId: true },
     });
 
     if (!student) {
-      this.logger.warn(`Deep link: no student found for token ${portalToken.slice(0, 8)}...`);
+      this.logger.warn(`Deep link: no student found for id ${studentId.slice(0, 8)}...`);
       const message = 'Ссылка недействительна. Попросите репетитора отправить актуальную ссылку на портал.';
       if (platform === 'telegram') {
         await this.telegram.sendMessage(chatId, message);

@@ -19,6 +19,7 @@ model User {
   whatsapp     String?
   slug         String? @unique
   published    Boolean @default(false)
+  showPublicPackages Boolean @default(true) @map("show_public_packages")
   timezone     String  @default("Europe/Moscow")
   avatarUrl    String? @map("avatar_url")
 
@@ -53,6 +54,10 @@ model User {
   yandexDiskToken      Json?   @map("yandex_disk_token")
   yandexDiskRootPath  String? @map("yandex_disk_root_path")
   yandexDiskEmail     String? @map("yandex_disk_email")
+  googleDriveToken    Json?   @map("google_drive_token")
+  googleDriveRootPath String? @map("google_drive_root_path")
+  googleDriveEmail    String? @map("google_drive_email")
+  homeworkDefaultCloud CloudProvider @default(YANDEX_DISK) @map("homework_default_cloud")
 
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
@@ -155,16 +160,16 @@ model Student {
 
   notes String?
 
-  // Portal
-  portalToken          String?   @unique @map("portal_token")
-  portalTokenCreatedAt DateTime? @map("portal_token_created_at")
+  // Student self-service account (one-to-many: account → per-tutor Student rows)
+  accountId String? @map("account_id")
 
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relations
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account       StudentAccount? @relation(fields: [accountId], references: [id], onDelete: SetNull)
   lessons       Lesson[]
   payments      Payment[]
   packages      Package[]
@@ -175,6 +180,7 @@ model Student {
 
   @@index([userId, status])
   @@index([userId, name])
+  @@index([accountId])
   @@map("students")
 }
 
@@ -182,6 +188,64 @@ enum StudentStatus {
   ACTIVE
   PAUSED
   ARCHIVED
+}
+
+// ── Student Accounts (self-service portal) ──
+
+model StudentAccount {
+  id              String               @id @default(uuid())
+  email           String               @unique
+  name            String
+  avatarUrl       String?              @map("avatar_url")
+  status          StudentAccountStatus @default(INVITED)
+  emailVerifiedAt DateTime?            @map("email_verified_at")
+  lastLoginAt     DateTime?            @map("last_login_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  students      Student[]
+  refreshTokens StudentRefreshToken[]
+
+  @@map("student_accounts")
+}
+
+enum StudentAccountStatus {
+  INVITED
+  ACTIVE
+  PAUSED
+}
+
+model StudentOtp {
+  id        String           @id @default(uuid())
+  email     String
+  codeHash  String           @map("code_hash")
+  purpose   StudentOtpPurpose @default(LOGIN)
+  expiresAt DateTime         @map("expires_at")
+  attempts  Int              @default(0)
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  @@index([email, purpose])
+  @@index([expiresAt])
+  @@map("student_otps")
+}
+
+enum StudentOtpPurpose {
+  LOGIN
+  BOOKING
+}
+
+model StudentRefreshToken {
+  id        String   @id @default(uuid())
+  accountId String   @map("account_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  account StudentAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
+  @@map("student_refresh_tokens")
 }
 
 // ── Lessons ──
@@ -222,6 +286,7 @@ model Lesson {
   student       Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
   notes         LessonNote[]
   homework      Homework[]
+  payments      Payment[]
   notifications Notification[]
 
   @@index([userId, scheduledAt])
@@ -281,6 +346,7 @@ model Homework {
 
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
   lesson  Lesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  materials HomeworkMaterial[]
 
   @@index([studentId, dueAt])
   @@map("homework")
@@ -292,12 +358,28 @@ enum HomeworkStatus {
   OVERDUE
 }
 
+model HomeworkMaterial {
+  id         String @id @default(uuid())
+  homeworkId String @map("homework_id")
+  fileId     String @map("file_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  homework Homework  @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
+  file     FileRecord @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@unique([homeworkId, fileId])
+  @@index([fileId])
+  @@map("homework_materials")
+}
+
 // ── Payments ──
 
 model Payment {
   id        String        @id @default(uuid())
   userId    String        @map("user_id")
   studentId String        @map("student_id")
+  lessonId  String?       @map("lesson_id")
   amount    Int
   method    PaymentMethod
   status    PaymentStatus @default(PENDING)
@@ -319,10 +401,12 @@ model Payment {
 
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   student Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  lesson  Lesson?  @relation(fields: [lessonId], references: [id], onDelete: SetNull)
   package Package? @relation(fields: [packageId], references: [id], onDelete: SetNull)
 
   @@index([userId, date])
   @@index([studentId, status])
+  @@index([lessonId])
   @@index([userId, status])
   @@index([userId, status, date])
   @@map("payments")
@@ -353,7 +437,8 @@ enum ReceiptStatus {
 model Package {
   id           String        @id @default(uuid())
   userId       String        @map("user_id")
-  studentId    String        @map("student_id")
+  studentId    String?       @map("student_id")
+  isPublic     Boolean       @default(false) @map("is_public")
   subject      String
   lessonsTotal Int           @map("lessons_total")
   lessonsUsed  Int           @default(0) @map("lessons_used")
@@ -366,10 +451,12 @@ model Package {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  student  Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student  Student?  @relation(fields: [studentId], references: [id], onDelete: SetNull)
   payments Payment[]
+  bookingRequests BookingRequest[]
 
   @@index([userId, status])
+  @@index([userId, isPublic, status])
   @@index([studentId])
   @@map("packages")
 }
@@ -452,6 +539,7 @@ model FileRecord {
 
   user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   shares FileShare[]
+  homeworkMaterials HomeworkMaterial[]
 
   @@index([userId, parentId])
   @@map("files")
@@ -539,6 +627,7 @@ model AvailabilityOverride {
 model BookingRequest {
   id         String        @id @default(uuid())
   userId     String        @map("user_id") // tutor's userId
+  packageId  String?       @map("package_id")
   subject    String
   date       DateTime      @db.Date
   startTime  String        @map("start_time")
@@ -560,10 +649,12 @@ model BookingRequest {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  package Package? @relation(fields: [packageId], references: [id], onDelete: SetNull)
   notifications Notification[]
 
   @@index([userId, status])
   @@index([userId, date])
+  @@index([packageId])
   @@map("booking_requests")
 }
 

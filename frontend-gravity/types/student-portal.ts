@@ -73,7 +73,9 @@ export type PortalCancelPolicy = {
 export type RecentLesson = {
     id: string;
     date: string;
+    time?: string;
     subject: string;
+    modality?: "online" | "offline";
     status: string;
     price: number;
     rating?: number;
@@ -90,6 +92,14 @@ export type PortalNotifications = {
     max?: PortalNotificationChannel;
 };
 
+export type PendingBooking = {
+    id: string;
+    subject: string;
+    date: string;
+    startTime: string;
+    duration: number;
+};
+
 export type StudentPortalData = {
     studentName: string;
     studentPhone?: string;
@@ -103,13 +113,15 @@ export type StudentPortalData = {
     balance: number;
     ratePerLesson: number;
     package: PortalPackage | null;
-    cancelPolicy: PortalCancelPolicy;
+    cancelPolicy: PortalCancelPolicy | null;
+    preferredPaymentMethod?: string;
 
     upcomingLessons: PortalLesson[];
     recentLessons: RecentLesson[];
     recentPayments: PortalPayment[];
     homework: PortalHomework[];
     files: PortalFile[];
+    pendingBookings?: PendingBooking[];
 
     paymentUrl?: string;
     notifications?: PortalNotifications | null;

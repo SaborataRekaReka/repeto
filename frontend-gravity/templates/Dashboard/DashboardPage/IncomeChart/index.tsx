@@ -1,19 +1,19 @@
 import { useState, useMemo } from "react";
-import { Card, Text, Loader } from "@gravity-ui/uikit";
+import { Card, Text, Loader, SegmentedRadioGroup } from "@gravity-ui/uikit";
 import { useIncomeChart } from "@/hooks/useDashboard";
+import { accent, brand } from "@/constants/brand";
 
-const periodLabels = ["Месяц", "Квартал", "Год"] as const;
-const periodMap: Record<string, "month" | "quarter" | "year"> = {
-    Месяц: "month",
-    Квартал: "quarter",
-    Год: "year",
-};
+const periodOptions = [
+    { value: "month", content: "Месяц" },
+    { value: "quarter", content: "Квартал" },
+    { value: "year", content: "Год" },
+] as const;
+
+type PeriodValue = (typeof periodOptions)[number]["value"];
 
 const IncomeChart = () => {
-    const [selectedPeriod, setSelectedPeriod] = useState<string>("Месяц");
-    const { data: incomeChartData = [], loading } = useIncomeChart(
-        periodMap[selectedPeriod] || "month"
-    );
+    const [selectedPeriod, setSelectedPeriod] = useState<PeriodValue>("month");
+    const { data: incomeChartData = [], loading } = useIncomeChart(selectedPeriod);
 
     const received = useMemo(
         () => incomeChartData.reduce((s, w) => s + (w.received || 0), 0),
@@ -31,18 +31,12 @@ const IncomeChart = () => {
         <Card className="repeto-income-card" view="outlined" style={{ background: "var(--g-color-base-float)" }}>
             <div className="repeto-card-header repeto-income-card__header">
                 <Text variant="subheader-2">Доход</Text>
-                <div className="repeto-income-card__periods">
-                    {periodLabels.map((label) => (
-                        <button
-                            type="button"
-                            key={label}
-                            className={`repeto-income-card__period-tab ${selectedPeriod === label ? "repeto-income-card__period-tab--active" : ""}`}
-                            onClick={() => setSelectedPeriod(label)}
-                        >
-                            {label}
-                        </button>
-                    ))}
-                </div>
+                <SegmentedRadioGroup
+                    size="s"
+                    value={selectedPeriod}
+                    onUpdate={(value) => setSelectedPeriod(value as PeriodValue)}
+                    options={periodOptions as unknown as Array<{ value: string; content: string }>}
+                />
             </div>
             <div className="repeto-card-body">
                 {loading ? (
@@ -59,7 +53,7 @@ const IncomeChart = () => {
                                         width: 8,
                                         height: 8,
                                         borderRadius: "50%",
-                                        background: "#98E9AB",
+                                        background: accent[300],
                                     }}
                                 />
                                 <Text variant="body-1" color="secondary">Получено</Text>
@@ -70,7 +64,7 @@ const IncomeChart = () => {
                                         width: 8,
                                         height: 8,
                                         borderRadius: "50%",
-                                        background: "#AE7AFF",
+                                        background: brand[400],
                                     }}
                                 />
                                 <Text variant="body-1" color="secondary">Запланировано</Text>
@@ -102,13 +96,13 @@ const IncomeChart = () => {
                             {received > 0 && (
                                 <div className="repeto-income-card__amount-line">
                                     <span className="repeto-income-card__amount-label">Получено:</span>{" "}
-                                    <span className="repeto-income-card__amount-value">{received.toLocaleString("ru-RU")} ₽</span>
+                                    <span className="repeto-income-card__amount-value repeto-dashboard-inline-value">{received.toLocaleString("ru-RU")} ₽</span>
                                 </div>
                             )}
                             {expected > 0 && (
                                 <div className="repeto-income-card__amount-line">
                                     <span className="repeto-income-card__amount-label">Запланировано:</span>{" "}
-                                    <span className="repeto-income-card__amount-value">{expected.toLocaleString("ru-RU")} ₽</span>
+                                    <span className="repeto-income-card__amount-value repeto-dashboard-inline-value">{expected.toLocaleString("ru-RU")} ₽</span>
                                 </div>
                             )}
                         </div>
@@ -120,7 +114,7 @@ const IncomeChart = () => {
                             <Text variant="body-1" color="secondary">
                                 Итого за период
                             </Text>
-                            <div className="repeto-income-card__total-value">{total.toLocaleString("ru-RU")} ₽</div>
+                            <div className="repeto-income-card__total-value repeto-dashboard-primary-value repeto-dashboard-primary-value--section">{total.toLocaleString("ru-RU")} ₽</div>
                         </div>
                     </>
                 )}

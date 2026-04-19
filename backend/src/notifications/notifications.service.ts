@@ -1,10 +1,12 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import * as nodemailer from 'nodemailer';
 import {
   LessonStatus,
   NotificationChannel,
@@ -15,6 +17,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { MessengerDeliveryService } from '../messenger/messenger-delivery.service';
 import { PushNotificationsService } from './push-notifications.service';
+import { StudentAuthService } from '../student-auth/student-auth.service';
 
 type NotificationCreatePayload = {
   userId: string;
@@ -30,12 +33,14 @@ type NotificationCreatePayload = {
 
 @Injectable()
 export class NotificationsService {
+  private readonly logger = new Logger(NotificationsService.name);
   private readonly syncInFlight = new Map<string, Promise<void>>();
 
   constructor(
     private prisma: PrismaService,
     private messenger: MessengerDeliveryService,
     private pushNotifications: PushNotificationsService,
+    private studentAuth: StudentAuthService,
   ) {}
 
   private async getSettings(userId: string) {
@@ -62,13 +67,34 @@ export class NotificationsService {
         return NotificationChannel.EMAIL;
       case 'push':
         return NotificationChannel.PUSH;
-      case 'whatsapp':
-        return NotificationChannel.WHATSAPP;
-      case 'sms':
-        return NotificationChannel.SMS;
+      case 'telegram':
+        return NotificationChannel.TELEGRAM;
+      case 'max':
+        return NotificationChannel.MAX;
       default:
         return undefined;
     }
+  }
+
+  private resolveChannels(settings: Record<string, unknown>) {
+    const configured = settings.channels;
+
+    if (Array.isArray(configured)) {
+      const mapped = configured
+        .map((value) => this.mapChannel(value))
+        .filter((value): value is NotificationChannel => !!value);
+
+      if (mapped.length > 0) {
+        return Array.from(new Set(mapped));
+      }
+    }
+
+    const single = this.mapChannel(settings.channel);
+    return single ? [single] : [NotificationChannel.EMAIL];
+  }
+
+  private getPrimaryChannel(settings: Record<string, unknown>) {
+    return this.resolveChannels(settings)[0];
   }
 
   private getChannelLabel(channel?: NotificationChannel) {
@@ -77,27 +103,187 @@ export class NotificationsService {
         return 'Email';
       case NotificationChannel.PUSH:
         return 'Push';
-      case NotificationChannel.WHATSAPP:
-        return 'WhatsApp';
-      case NotificationChannel.SMS:
-        return 'SMS';
+      case NotificationChannel.TELEGRAM:
+        return 'Telegram';
+      case NotificationChannel.MAX:
+        return 'Макс';
       default:
         return null;
     }
+  }
+
+  private resolveSmtpSecure(port: number, rawValue?: string) {
+    const normalized = (rawValue || '').trim().toLowerCase();
+    if (!normalized) {
+      return port === 465;
+    }
+
+    return normalized === 'true' || normalized === '1' || normalized === 'yes';
+  }
+
+  private async trySendEmailViaSmtp(params: {
+    email: string;
+    subject: string;
+    html: string;
+    text: string;
+  }) {
+    const host = (process.env.SMTP_HOST || '').trim();
+    const user = (process.env.SMTP_USER || '').trim();
+    const pass = process.env.SMTP_PASS || '';
+    const hasSmtpHints = Boolean(
+      host ||
+        user ||
+        pass ||
+        process.env.SMTP_PORT ||
+        process.env.SMTP_SECURE ||
+        process.env.SMTP_FROM_EMAIL,
+    );
+
+    if (!hasSmtpHints) {
+      return false;
+    }
+
+    if (!host || !user || !pass) {
+      this.logger.warn('SMTP настроен частично. Нужны SMTP_HOST, SMTP_USER и SMTP_PASS.');
+      return false;
+    }
+
+    const parsedPort = Number.parseInt(process.env.SMTP_PORT || '465', 10);
+    const port = Number.isFinite(parsedPort) ? parsedPort : 465;
+    const secure = this.resolveSmtpSecure(port, process.env.SMTP_SECURE);
+    const from =
+      (process.env.SMTP_FROM_EMAIL || '').trim() ||
+      `Repeto <${user}>`;
+
+    const transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure,
+      auth: {
+        user,
+        pass,
+      },
+    });
+
+    await transporter.sendMail({
+      from,
+      to: [params.email],
+      subject: params.subject,
+      html: params.html,
+      text: params.text,
+    });
+
+    return true;
+  }
+
+  private async trySendEmailViaResend(params: {
+    email: string;
+    subject: string;
+    html: string;
+    text: string;
+  }) {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      return false;
+    }
+
+    const from = process.env.RESEND_FROM_EMAIL || 'Repeto <noreply@repeto.ru>';
+
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from,
+        to: [params.email],
+        subject: params.subject,
+        html: params.html,
+        text: params.text,
+      }),
+    });
+
+    if (!response.ok) {
+      const details = await response.text().catch(() => 'unknown error');
+      throw new Error(`Resend error ${response.status}: ${details}`);
+    }
+
+    return true;
+  }
+
+  private async sendParentReminderEmail(params: {
+    parentEmail: string;
+    parentName?: string | null;
+    studentName: string;
+    tutorName: string;
+    type: 'payment' | 'lesson' | 'homework';
+    messages: string[];
+  }) {
+    const parentDisplayName = params.parentName?.trim() || 'родитель';
+    const typeLabel =
+      params.type === 'payment'
+        ? 'об оплате'
+        : params.type === 'lesson'
+          ? 'о занятии'
+          : 'о домашнем задании';
+
+    const subject = `Напоминание ${typeLabel} для ${params.studentName}`;
+    const htmlMessages = params.messages
+      .map((message) => `<pre style="white-space:pre-wrap;font-family:inherit;line-height:1.45;margin:0">${message}</pre>`)
+      .join('<hr style="border:none;border-top:1px solid #e5e7eb;margin:12px 0"/>');
+
+    const html = [
+      `<p>Здравствуйте, ${parentDisplayName}.</p>`,
+      `<p>${params.tutorName} отправил(а) напоминание по ученику ${params.studentName}.</p>`,
+      htmlMessages,
+      '<p>Это письмо отправлено из Repeto.</p>',
+    ].join('');
+
+    const text = [
+      `Здравствуйте, ${parentDisplayName}.`,
+      '',
+      `${params.tutorName} отправил(а) напоминание по ученику ${params.studentName}.`,
+      '',
+      ...params.messages,
+      '',
+      'Это письмо отправлено из Repeto.',
+    ].join('\n');
+
+    const sentViaSmtp = await this.trySendEmailViaSmtp({
+      email: params.parentEmail,
+      subject,
+      html,
+      text,
+    });
+
+    if (sentViaSmtp) {
+      return true;
+    }
+
+    const sentViaResend = await this.trySendEmailViaResend({
+      email: params.parentEmail,
+      subject,
+      html,
+      text,
+    });
+
+    if (sentViaResend) {
+      return true;
+    }
+
+    this.logger.warn('Не найден настроенный email-провайдер для отправки напоминания родителю.');
+    return false;
   }
 
   private async maybeSendPushNotification(
     payload: NotificationCreatePayload,
     settings?: Record<string, unknown>,
   ) {
-    let channel = payload.channel;
+    const settingsToUse = settings || (await this.getSettings(payload.userId));
+    const channels = this.resolveChannels(settingsToUse);
 
-    if (!channel) {
-      const settingsToUse = settings || (await this.getSettings(payload.userId));
-      channel = this.mapChannel(settingsToUse.channel);
-    }
-
-    if (channel !== NotificationChannel.PUSH) {
+    if (!channels.includes(NotificationChannel.PUSH)) {
       return;
     }
 
@@ -390,12 +576,11 @@ export class NotificationsService {
 
     const syncPromise = (async () => {
       const settings = await this.getSettings(userId);
-      const channel = this.mapChannel(settings.channel);
+      const channel = this.getPrimaryChannel(settings);
 
       await this.syncSelfReminders(userId, settings, channel);
       await this.syncStudentReminderPrompts(userId, settings, channel);
       await this.syncPaymentReminders(userId, settings, channel);
-      await this.syncWeeklyReport(userId, settings, channel);
     })();
 
     this.syncInFlight.set(userId, syncPromise);
@@ -505,7 +690,7 @@ export class NotificationsService {
     const payload: NotificationCreatePayload = {
       ...data,
       type,
-      channel: this.mapChannel(settings.channel),
+      channel: this.getPrimaryChannel(settings),
     };
 
     const created = await this.prisma.notification.create({
@@ -547,15 +732,43 @@ export class NotificationsService {
     );
     const rate = Number(subjectInfo?.price) || 0;
 
-    // Find or create student
+    // Find or create student (by userId + phone OR email match)
+    const normalizedEmail = booking.clientEmail
+      ? booking.clientEmail.trim().toLowerCase()
+      : null;
+
     let student = await this.prisma.student.findFirst({
       where: {
         userId,
-        name: booking.clientName,
-        phone: booking.clientPhone,
+        OR: [
+          { phone: booking.clientPhone },
+          ...(normalizedEmail ? [{ email: normalizedEmail }] : []),
+        ],
       },
     });
-    let portalTokenIssued = false;
+
+    // Find-or-create StudentAccount if email provided. This is where the
+    // self-service profile becomes real for the student.
+    let studentAccount: { id: string; status: string } | null = null;
+    let accountIsNew = false;
+    if (normalizedEmail) {
+      const existingAccount = await this.prisma.studentAccount.findUnique({
+        where: { email: normalizedEmail },
+      });
+      if (existingAccount) {
+        studentAccount = { id: existingAccount.id, status: existingAccount.status };
+      } else {
+        const created = await this.prisma.studentAccount.create({
+          data: {
+            email: normalizedEmail,
+            name: booking.clientName,
+            status: 'INVITED',
+          },
+        });
+        studentAccount = { id: created.id, status: created.status };
+        accountIsNew = true;
+      }
+    }
 
     if (!student) {
       student = await this.prisma.student.create({
@@ -563,43 +776,29 @@ export class NotificationsService {
           userId,
           name: booking.clientName,
           phone: booking.clientPhone,
-          email: booking.clientEmail || undefined,
+          email: normalizedEmail || undefined,
           subject: booking.subject,
           rate,
           status: 'ACTIVE',
-          portalToken: randomUUID(),
-          portalTokenCreatedAt: new Date(),
+          accountId: studentAccount?.id,
           telegramChatId: booking.telegramChatId || undefined,
           maxChatId: booking.maxChatId || undefined,
         },
       });
-      portalTokenIssued = true;
-    } else if (!student.portalToken) {
-      // Generate portal link for existing student without one
-      const updateData: Record<string, any> = {
-        portalToken: randomUUID(),
-        portalTokenCreatedAt: new Date(),
-      };
-      // Also update chat IDs if booking has them and student doesn't
-      if (booking.telegramChatId && !student.telegramChatId) {
-        updateData.telegramChatId = booking.telegramChatId;
-      }
-      if (booking.maxChatId && !student.maxChatId) {
-        updateData.maxChatId = booking.maxChatId;
-      }
-      student = await this.prisma.student.update({
-        where: { id: student.id },
-        data: updateData,
-      });
-      portalTokenIssued = true;
     } else {
-      // Existing student with portal token — still update chat IDs if needed
-      const updateData: Record<string, string> = {};
+      // Existing student — make sure accountId is linked + update chat IDs if needed.
+      const updateData: Record<string, any> = {};
+      if (studentAccount && !student.accountId) {
+        updateData.accountId = studentAccount.id;
+      }
       if (booking.telegramChatId && !student.telegramChatId) {
         updateData.telegramChatId = booking.telegramChatId;
       }
       if (booking.maxChatId && !student.maxChatId) {
         updateData.maxChatId = booking.maxChatId;
+      }
+      if (normalizedEmail && !student.email) {
+        updateData.email = normalizedEmail;
       }
       if (Object.keys(updateData).length > 0) {
         student = await this.prisma.student.update({
@@ -685,17 +884,13 @@ export class NotificationsService {
       message: msg,
     }).catch((e) => { /* fire-and-forget */ });
 
-    if (portalTokenIssued && student.portalToken) {
-      const base = process.env.FRONTEND_URL || 'http://localhost:3300';
-      const portalUrl = `${base}/t/${tutorUser?.slug || 'tutor'}/s/${student.portalToken}`;
-      const portalMsg = this.messenger.formatPortalAccess(tutorName, portalUrl);
-
-      this.messenger.sendToStudent({
-        type: 'portal_access',
-        tutorId: userId,
-        studentId: student.id,
-        message: portalMsg,
-      }).catch((e) => { /* fire-and-forget */ });
+    if (normalizedEmail && accountIsNew) {
+      // First time this student has an account — email login instructions.
+      this.studentAuth
+        .sendAccountInviteEmail(normalizedEmail, tutorName)
+        .catch(() => {
+          /* logged inside service */
+        });
     }
 
     return { status: 'CONFIRMED', studentId: student.id, lessonId: lesson.id };
@@ -911,21 +1106,122 @@ export class NotificationsService {
     if (body.type === 'payment') {
       notificationType = NotificationType.PAYMENT_OVERDUE;
 
-      // Calculate total debt
-      const earned = await this.prisma.lesson.aggregate({
-        where: { userId, studentId, status: LessonStatus.COMPLETED },
-        _sum: { rate: true },
-      });
-      const paid = await this.prisma.payment.aggregate({
-        where: { userId, studentId, status: 'PAID' },
-        _sum: { amount: true },
-      });
-      const debtAmount = (earned._sum.rate || 0) - (paid._sum.amount || 0);
+      const requestedLessonIds = Array.from(
+        new Set(
+          (body.lessonIds || [])
+            .filter((id): id is string => typeof id === 'string')
+            .map((id) => id.trim())
+            .filter(Boolean),
+        ),
+      );
 
-      const msg = this.messenger.formatPaymentDebt(student.name, debtAmount, tutorName, body.comment);
-      messages.push(msg);
+      let debtAmount = 0;
+      let selectedLessonsCount = 0;
+
+      if (requestedLessonIds.length > 0) {
+        const lessons = await this.prisma.lesson.findMany({
+          where: {
+            id: { in: requestedLessonIds },
+            userId,
+            studentId,
+            status: LessonStatus.COMPLETED,
+          },
+          orderBy: { scheduledAt: 'asc' },
+          select: {
+            id: true,
+            subject: true,
+            scheduledAt: true,
+            rate: true,
+          },
+        });
+
+        if (lessons.length !== requestedLessonIds.length) {
+          throw new BadRequestException('Некоторые занятия недоступны для напоминания');
+        }
+
+        const linkedPayments = await this.prisma.payment.findMany({
+          where: {
+            userId,
+            studentId,
+            lessonId: { in: requestedLessonIds },
+          },
+          select: { lessonId: true },
+        });
+
+        const linkedLessonIds = new Set(
+          linkedPayments
+            .map((payment) => payment.lessonId)
+            .filter((id): id is string => typeof id === 'string' && id.length > 0),
+        );
+
+        const eligibleLessons = lessons.filter((lesson) => !linkedLessonIds.has(lesson.id));
+
+        if (eligibleLessons.length === 0) {
+          throw new BadRequestException('Выбранные занятия уже привязаны к оплатам');
+        }
+
+        if (eligibleLessons.length !== lessons.length) {
+          throw new BadRequestException('Часть выбранных занятий уже привязана к оплатам');
+        }
+
+        selectedLessonsCount = eligibleLessons.length;
+        debtAmount = eligibleLessons.reduce((sum, lesson) => sum + lesson.rate, 0);
+
+        const lessonsLines = eligibleLessons.map((lesson, index) => {
+          const dateStr = lesson.scheduledAt.toLocaleDateString('ru-RU', {
+            day: 'numeric',
+            month: 'long',
+          });
+          const timeStr = lesson.scheduledAt.toLocaleTimeString('ru-RU', {
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+
+          return `${index + 1}. ${dateStr} ${timeStr} · ${lesson.subject} · ${lesson.rate.toLocaleString('ru-RU')} ₽`;
+        });
+
+        const lessonsComment = [
+          'Проведенные занятия:',
+          ...lessonsLines,
+          '',
+          `Итого к оплате: ${debtAmount.toLocaleString('ru-RU')} ₽`,
+        ].join('\n');
+
+        const trimmedComment = body.comment?.trim();
+        const fullComment = trimmedComment
+          ? `${lessonsComment}\n\n${trimmedComment}`
+          : lessonsComment;
+
+        const msg = this.messenger.formatPaymentDebt(
+          student.name,
+          debtAmount,
+          tutorName,
+          fullComment,
+        );
+        messages.push(msg);
+      } else {
+        const earned = await this.prisma.lesson.aggregate({
+          where: { userId, studentId, status: LessonStatus.COMPLETED },
+          _sum: { rate: true },
+        });
+        const paid = await this.prisma.payment.aggregate({
+          where: { userId, studentId, status: 'PAID' },
+          _sum: { amount: true },
+        });
+        debtAmount = (earned._sum.rate || 0) - (paid._sum.amount || 0);
+
+        const msg = this.messenger.formatPaymentDebt(
+          student.name,
+          debtAmount,
+          tutorName,
+          body.comment,
+        );
+        messages.push(msg);
+      }
+
       notificationTitle = 'Напоминание об оплате отправлено';
-      notificationDescription = `${student.name} · ${debtAmount.toLocaleString('ru-RU')} ₽`;
+      notificationDescription = `${student.name} · ${debtAmount.toLocaleString('ru-RU')} ₽` +
+        (selectedLessonsCount > 0 ? ` · ${selectedLessonsCount} зан.` : '');
 
     } else if (body.type === 'lesson') {
       notificationType = NotificationType.LESSON_REMINDER;
@@ -1029,20 +1325,30 @@ export class NotificationsService {
       if (result.max) results.max = true;
     }
 
-    // Notify parent (send same messages to parent's messenger channels if available)
+    // Notify parent separately by email
     let parentNotified = false;
-    if (body.notifyParent && (student.parentPhone || student.parentWhatsapp || student.parentEmail)) {
-      // Parent doesn't have separate chat IDs, so we send same message via student's channels
-      // with a parent prefix
-      for (const msg of messages) {
-        const parentMsg = `👨‍👩‍👧 Для родителя (${student.parentName || 'родитель'}):\n\n${msg}`;
-        const result = await this.messenger.sendToStudent({
-          type: body.type === 'payment' ? 'payment_debt' : body.type === 'lesson' ? 'lesson_reminder' : 'homework_reminder',
-          tutorId: userId,
-          studentId,
-          message: parentMsg,
+    if (body.notifyParent) {
+      const parentEmail = student.parentEmail?.trim();
+      if (!parentEmail) {
+        throw new BadRequestException('Сначала добавьте почту родителя');
+      }
+
+      try {
+        parentNotified = await this.sendParentReminderEmail({
+          parentEmail,
+          parentName: student.parentName,
+          studentName: student.name,
+          tutorName,
+          type: body.type,
+          messages,
         });
-        if (result.telegram || result.max) parentNotified = true;
+      } catch (error) {
+        this.logger.warn(
+          `Не удалось отправить email-напоминание родителю для ученика ${student.id}: ${
+            error instanceof Error ? error.message : 'unknown error'
+          }`,
+        );
+        parentNotified = false;
       }
     }
 

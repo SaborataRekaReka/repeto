@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { Text, Label, Avatar } from "@gravity-ui/uikit";
+import { Text, Label } from "@gravity-ui/uikit";
+import StudentAvatar from "@/components/StudentAvatar";
 import type { Student } from "@/types/student";
 import {
     formatBalance,
     getStatusLabel,
-    getInitials,
 } from "@/mocks/students";
 
 type ItemProps = {
@@ -32,7 +32,7 @@ const Item = ({ item }: ItemProps) => (
             transition: "background 0.12s",
         }}
     >
-        <Avatar text={getInitials(item.name)} size="m" theme="brand" />
+        <StudentAvatar student={item} size="m" />
         <div style={{ flex: 1, minWidth: 0, padding: "0 12px" }}>
             <Text variant="body-2" ellipsis>
                 {item.name}

@@ -19,6 +19,8 @@ import {
 } from "@/hooks/useAvailability";
 import StyledDateInput from "@/components/StyledDateInput";
 import StyledTimeInput from "@/components/StyledTimeInput";
+import { accent } from "@/constants/brand";
+import { useThemeMode } from "@/contexts/ThemeContext";
 
 const DAY_NAMES = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -34,6 +36,21 @@ function endTime(start: string): string {
 type CellKey = `${number}-${number}`; // "dayOfWeek-hour"
 
 const AvailabilityEditor = () => {
+    const { theme } = useThemeMode();
+    const isDarkTheme = theme === "dark";
+    const workHoursActiveBg = isDarkTheme
+        ? "var(--g-color-base-positive-light)"
+        : accent[300];
+    const workHoursIdleBg = isDarkTheme
+        ? "var(--g-color-base-background)"
+        : accent[50];
+    const headerIconBg = isDarkTheme
+        ? "var(--g-color-base-brand-light)"
+        : accent[100];
+    const headerIconColor = isDarkTheme
+        ? "var(--g-color-text-brand)"
+        : accent[700];
+
     const { data: saved, mutate } = useAvailability();
     const [open, setOpen] = useState(false);
     const [cells, setCells] = useState<Set<CellKey>>(new Set());
@@ -267,18 +284,18 @@ const AvailabilityEditor = () => {
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            background: "var(--g-color-base-brand-light)",
+                            background: headerIconBg,
                         }}
                     >
                         <Icon
                             data={Clock as IconData}
                             size={18}
-                            style={{ color: "var(--g-color-text-brand)" }}
+                            style={{ color: headerIconColor }}
                         />
                     </div>
                     <Text variant="subheader-2">Рабочие часы</Text>
                     {totalHours > 0 && !open && (
-                        <Text variant="body-1" color="secondary">
+                        <Text variant="body-1" color="secondary" className="repeto-availability-hours-inline">
                             {totalHours} ч / неделю
                         </Text>
                     )}
@@ -298,6 +315,7 @@ const AvailabilityEditor = () => {
                 <>
                     {/* ── Availability grid ── */}
                     <div
+                        className="repeto-scroll-x"
                         style={{
                             borderTop: "1px solid var(--g-color-line-generic)",
                             overflowX: "auto",
@@ -369,8 +387,8 @@ const AvailabilityEditor = () => {
                                                     borderLeft: "1px solid var(--g-color-line-generic)",
                                                     cursor: "pointer",
                                                     background: active
-                                                        ? "var(--g-color-base-positive-light)"
-                                                        : "var(--g-color-base-background)",
+                                                        ? workHoursActiveBg
+                                                        : workHoursIdleBg,
                                                     transition: "background 0.1s",
                                                 }}
                                             />
@@ -494,7 +512,7 @@ const AvailabilityEditor = () => {
                                             { value: "blocked", content: "Выходной" },
                                             { value: "custom", content: "Свои часы" },
                                         ]}
-                                        size="s"
+                                        size="m"
                                     />
                                 </div>
                                 {exType === "custom" && (
@@ -561,7 +579,7 @@ const AvailabilityEditor = () => {
                                 <div style={{ display: "flex", gap: 6 }}>
                                     <Button
                                         view="action"
-                                        size="s"
+                                        size="m"
                                         onClick={handleAddException}
                                         disabled={!exDate || exSaving}
                                     >
@@ -569,7 +587,7 @@ const AvailabilityEditor = () => {
                                     </Button>
                                     <Button
                                         view="outlined"
-                                        size="s"
+                                        size="m"
                                         onClick={() => {
                                             setAddingException(false);
                                             setExDate("");
@@ -627,10 +645,12 @@ const AvailabilityEditor = () => {
                                             <Button
                                                 view="flat"
                                                 size="s"
+                                                className="repeto-icon-action-btn"
                                                 onClick={() =>
                                                     handleDeleteException(ov.date)
                                                 }
                                                 title="Удалить"
+                                                aria-label="Удалить"
                                             >
                                                 <Icon data={TrashBin as IconData} size={14} />
                                             </Button>

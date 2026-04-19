@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import Link from "next/link";
-import { Card, Text, Button, Icon, Modal } from "@gravity-ui/uikit";
+import { Card, Text, Button, Icon } from "@gravity-ui/uikit";
 import type { IconData } from "@gravity-ui/uikit";
 import { Pencil, Smartphone, Comment, GraduationCap } from "@gravity-ui/icons";
+import AppDialog from "@/components/AppDialog";
+import CancelPolicyBlock from "@/components/CancelPolicyBlock";
 import { brand } from "@/constants/brand";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
@@ -14,6 +16,16 @@ type TutorReview = {
     rating: number;
     feedback: string | null;
     date: string;
+};
+
+type PublicPackage = {
+    id: string;
+    subject: string;
+    lessonsTotal: number;
+    totalPrice: number;
+    pricePerLesson: number;
+    validUntil?: string | null;
+    comment?: string | null;
 };
 
 type TutorProfile = {
@@ -35,8 +47,11 @@ type TutorProfile = {
         lateAction?: string;
         noShowAction?: string;
     };
+    preferredPaymentMethod?: string;
     memberSince: string;
     hasWorkingDays?: boolean;
+    showPublicPackages?: boolean;
+    publicPackages?: PublicPackage[];
 };
 
 function getInitials(name: string): string {
@@ -61,35 +76,6 @@ function formatReviewDate(raw: string): string {
         "июля", "августа", "сентября", "октября", "ноября", "декабря",
     ];
     return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
-}
-
-function formatHoursWord(hours: number): string {
-    const abs = Math.abs(hours) % 100;
-    const last = abs % 10;
-    if (abs > 10 && abs < 20) return "часов";
-    if (last === 1) return "час";
-    if (last >= 2 && last <= 4) return "часа";
-    return "часов";
-}
-
-function formatPolicyActionLabel(action?: string): string {
-    const normalized = (action || "").trim().toLowerCase();
-
-    if (
-        normalized === "full" ||
-        normalized === "full_charge" ||
-        normalized === "charge"
-    ) {
-        return "100% стоимости занятия";
-    }
-    if (normalized === "half" || normalized === "half_charge") {
-        return "50% стоимости занятия";
-    }
-    if (normalized === "none" || normalized === "no_charge") {
-        return "без штрафа";
-    }
-
-    return action || "100% стоимости занятия";
 }
 
 function renderStars(rating: number) {
@@ -164,7 +150,7 @@ const TutorPublicPage = () => {
 
     if (loading) {
         return (
-            <div style={{ minHeight: "100vh", background: "var(--g-color-base-background)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div className="repeto-public-state">
                 <Text variant="body-2" color="secondary">Загрузка...</Text>
             </div>
         );
@@ -172,8 +158,8 @@ const TutorPublicPage = () => {
 
     if (notFound || !profile) {
         return (
-            <div style={{ minHeight: "100vh", background: "var(--g-color-base-background)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <div style={{ textAlign: "center" }}>
+            <div className="repeto-public-state">
+                <div className="repeto-public-state__inner">
                     <Text variant="header-2" style={{ display: "block", marginBottom: 8 }}>Репетитор не найден</Text>
                     <Text variant="body-2" color="secondary">Страница не существует или была удалена</Text>
                 </div>
@@ -182,15 +168,9 @@ const TutorPublicPage = () => {
     }
 
     const t = profile;
+    const publicPackages = t.publicPackages || [];
+    const showPublicPackages = t.showPublicPackages !== false;
     const canBook = t.hasWorkingDays !== false;
-    const freeHours = Number(t.cancelPolicy?.freeHours ?? 24);
-    const lateCancelActionLabel = formatPolicyActionLabel(
-        t.cancelPolicy?.lateCancelAction || t.cancelPolicy?.lateAction
-    );
-    const noShowActionLabel = formatPolicyActionLabel(
-        t.cancelPolicy?.noShowAction
-    );
-
     return (
         <>
             <Head>
@@ -201,73 +181,52 @@ const TutorPublicPage = () => {
                 <meta property="og:type" content="profile" />
             </Head>
 
-            <div style={{ minHeight: "100vh", background: "var(--g-color-base-background)" }}>
+            <div className="repeto-public-page">
                 {/* Top bar */}
-                <div style={{
-                    background: brand[400],
-                    color: "#fff",
-                    padding: "10px 20px",
-                    fontSize: 12,
-                    fontWeight: 600,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                }}>
+                <div className="repeto-public-powered-bar">
                     Работает на платформе&nbsp;
-                    <Link href="/" style={{ color: "#fff", textDecoration: "underline", fontWeight: 700 }}>
+                    <Link href="/">
                         Repeto
                     </Link>
                 </div>
 
-                <div style={{ maxWidth: 640, margin: "0 auto", padding: "32px 16px" }}>
+                <div className="repeto-public-shell">
 
                     {/* Hero card */}
-                    <Card view="outlined" style={{ marginBottom: 16, padding: 32, textAlign: "center", borderRadius: 16, background: "var(--g-color-base-float)" }}>
+                    <Card view="outlined" className="repeto-public-hero repeto-section-card">
                         {t.avatarUrl ? (
                             <img
                                 src={t.avatarUrl}
                                 alt={t.name}
-                                style={{
-                                    width: 112, height: 112, borderRadius: "50%",
-                                    objectFit: "cover", margin: "0 auto 20px",
-                                    display: "block",
-                                    boxShadow: "0 4px 20px rgba(174,122,255,0.25)",
-                                }}
+                                className="repeto-public-hero__avatar-image"
                             />
                         ) : (
-                            <div style={{
-                                width: 112, height: 112, borderRadius: "50%",
-                                background: `linear-gradient(135deg, ${brand[400]} 0%, ${brand[700]} 100%)`,
-                                display: "flex", alignItems: "center", justifyContent: "center",
-                                margin: "0 auto 20px",
-                                fontSize: 36, fontWeight: 800, color: "#fff",
-                                boxShadow: "0 4px 20px rgba(174,122,255,0.25)",
-                            }}>
+                            <div
+                                className="repeto-public-hero__avatar-fallback"
+                                style={{ background: `linear-gradient(135deg, ${brand[400]} 0%, ${brand[700]} 100%)` }}
+                            >
                                 {getInitials(t.name)}
                             </div>
                         )}
 
-                        <Text variant="header-2" style={{ display: "block", marginBottom: 4 }}>{t.name}</Text>
+                        <Text variant="header-2" className="repeto-public-hero__name">{t.name}</Text>
 
                         {t.subjects.length > 0 ? (
-                            <Text variant="body-2" color="secondary" style={{ display: "block", marginBottom: 12 }}>
+                            <Text variant="body-2" color="secondary" className="repeto-public-hero__subjects">
                                 {t.subjects.map(getSubjectName).join(", ")}
                             </Text>
                         ) : (
-                            <Text variant="body-2" color="hint" style={{ display: "block", marginBottom: 12, fontStyle: "italic" }}>
+                            <Text variant="body-2" color="hint" className="repeto-public-hero__subjects repeto-public-empty">
                                 Предметы пока не указаны
                             </Text>
                         )}
 
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
+                        <div className="repeto-public-hero__meta">
                             {t.rating ? (
                                 <button
                                     type="button"
                                     onClick={() => setReviewsOpen(true)}
-                                    style={{
-                                        display: "flex", alignItems: "center", gap: 6,
-                                        background: "none", border: "none", cursor: "pointer", padding: 0,
-                                    }}
+                                    className="repeto-public-hero__rating-btn"
                                 >
                                     {renderStars(Math.round(t.rating))}
                                     <Text variant="body-2" style={{ fontWeight: 700 }}>{Number(t.rating).toFixed(1)}</Text>
@@ -280,21 +239,21 @@ const TutorPublicPage = () => {
                                     {t.rating ? "· " : ""}{t.lessonsCount}+ занятий
                                 </Text>
                             ) : !t.rating ? (
-                                <Text variant="body-2" color="hint" style={{ fontStyle: "italic" }}>Отзывов пока нет</Text>
+                                <Text variant="body-2" color="hint" className="repeto-public-empty">Отзывов пока нет</Text>
                             ) : null}
                         </div>
                     </Card>
 
                     {/* About */}
-                    <Card view="outlined" style={{ marginBottom: 16, borderRadius: 16, overflow: "hidden", background: "var(--g-color-base-float)" }}>
-                        <div style={{ padding: "16px 24px", borderBottom: "1px solid var(--g-color-line-generic)" }}>
+                    <Card view="outlined" className="repeto-portal-section repeto-portal-section--spaced">
+                        <div className="repeto-card-header">
                             <Text variant="subheader-2">О репетиторе</Text>
                         </div>
-                        <div style={{ padding: "20px 24px" }}>
+                        <div className="repeto-portal-section__body">
                             {t.aboutText ? (
                                 <Text variant="body-2" style={{ lineHeight: 1.7 }}>{t.aboutText}</Text>
                             ) : (
-                                <Text variant="body-2" color="hint" style={{ fontStyle: "italic" }}>
+                                <Text variant="body-2" color="secondary">
                                     Репетитор пока не добавил описание
                                 </Text>
                             )}
@@ -302,89 +261,118 @@ const TutorPublicPage = () => {
                     </Card>
 
                     {/* Subjects */}
-                    <Card view="outlined" style={{ marginBottom: 16, borderRadius: 16, overflow: "hidden", background: "var(--g-color-base-float)" }}>
-                        <div style={{ padding: "16px 24px", borderBottom: "1px solid var(--g-color-line-generic)" }}>
+                    <Card view="outlined" className="repeto-portal-section repeto-portal-section--spaced">
+                        <div className="repeto-card-header">
                             <Text variant="subheader-2">Предметы</Text>
                         </div>
-                        <div style={{ padding: "16px 24px" }}>
+                        <div className="repeto-portal-section__body">
                             {t.subjects.length > 0 ? (
-                                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                                    {t.subjects.map((subject, i) => (
-                                        <div key={i} style={{
-                                            display: "flex", alignItems: "center", gap: 14,
-                                            padding: "12px 14px",
-                                            border: "1px solid var(--g-color-line-generic)",
-                                            borderRadius: 10,
-                                            background: "var(--g-color-base-float)",
-                                        }}>
-                                            <div style={{
-                                                width: 40, height: 40, borderRadius: 10, flexShrink: 0,
-                                                background: "rgba(174,122,255,0.1)",
-                                                display: "flex", alignItems: "center", justifyContent: "center",
-                                                color: brand[400],
-                                            }}>
-                                                <Icon data={GraduationCap as IconData} size={20} />
-                                            </div>
-                                            <div>
-                                                <Text variant="body-2" style={{ fontWeight: 600, display: "block" }}>
-                                                    {typeof subject === "string" ? subject : subject.name}
-                                                </Text>
-                                                {typeof subject !== "string" && (subject.duration || subject.price) && (
-                                                    <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 2 }}>
-                                                        {subject.duration ? `${subject.duration} мин` : ""}
-                                                        {subject.duration && subject.price ? " · " : ""}
-                                                        {subject.price ? `${subject.price.toLocaleString("ru-RU")} ₽` : ""}
-                                                    </Text>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
+                                <div className="repeto-portal-stack" style={{ gap: 8 }}>
+                                    {t.subjects.map((subject, i) => {
+                                        const name = typeof subject === "string" ? subject : subject.name;
+                                        const duration = typeof subject !== "string" ? subject.duration : undefined;
+                                        const price = typeof subject !== "string" ? subject.price : undefined;
+                                        return (
+                                            <Card key={i} view="outlined" className="repeto-portal-item-card repeto-portal-item-card--tight">
+                                                <div className="repeto-portal-item-row">
+                                                    <div className="repeto-portal-item-mainline" style={{ gap: 10 }}>
+                                                        <Icon data={GraduationCap as IconData} size={16} />
+                                                        <Text variant="body-2" style={{ fontWeight: 600 }}>{name}</Text>
+                                                        {duration ? (
+                                                            <Text variant="body-1" color="secondary">· {duration} мин</Text>
+                                                        ) : null}
+                                                    </div>
+                                                    {price ? (
+                                                        <Text variant="body-2" style={{ fontWeight: 600, whiteSpace: "nowrap" }}>
+                                                            {price.toLocaleString("ru-RU")} ₽
+                                                        </Text>
+                                                    ) : null}
+                                                </div>
+                                            </Card>
+                                        );
+                                    })}
                                 </div>
                             ) : (
-                                <Text variant="body-2" color="hint" style={{ fontStyle: "italic" }}>
+                                <Text variant="body-2" color="secondary">
                                     Репетитор пока не добавил ни одного предмета
                                 </Text>
                             )}
                         </div>
                     </Card>
 
+                    {showPublicPackages && (
+                        <Card view="outlined" className="repeto-portal-section repeto-portal-section--spaced">
+                            <div className="repeto-card-header">
+                                <Text variant="subheader-2">Пакеты занятий</Text>
+                            </div>
+                            <div className="repeto-portal-section__body">
+                                {publicPackages.length > 0 ? (
+                                    <div className="repeto-portal-stack" style={{ gap: 8 }}>
+                                        {publicPackages.map((pkg) => (
+                                            <Card key={pkg.id} view="outlined" className="repeto-portal-item-card">
+                                                <div className="repeto-portal-item-row">
+                                                    <div className="repeto-portal-item-main">
+                                                        <Text variant="body-2" style={{ fontWeight: 600 }}>
+                                                            {pkg.subject}
+                                                        </Text>
+                                                        <Text variant="body-1" color="secondary">
+                                                            {pkg.lessonsTotal} занятий · {pkg.pricePerLesson.toLocaleString("ru-RU")} ₽ / занятие
+                                                        </Text>
+                                                        {pkg.comment ? (
+                                                            <Text variant="caption-1" color="secondary">{pkg.comment}</Text>
+                                                        ) : null}
+                                                    </div>
+                                                    <div className="repeto-portal-item-side">
+                                                        <Text variant="body-2" style={{ fontWeight: 700, whiteSpace: "nowrap" }}>
+                                                            {pkg.totalPrice.toLocaleString("ru-RU")} ₽
+                                                        </Text>
+                                                    </div>
+                                                </div>
+                                            </Card>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <Text variant="body-2" color="secondary">
+                                        Публичные пакеты пока не добавлены
+                                    </Text>
+                                )}
+                            </div>
+                        </Card>
+                    )}
+
                     {/* Cancel policy */}
-                    <Card view="outlined" style={{ marginBottom: 16, borderRadius: 16, overflow: "hidden", background: "var(--g-color-base-float)" }}>
-                        <div style={{ padding: "16px 24px", borderBottom: "1px solid var(--g-color-line-generic)" }}>
+                    <Card view="outlined" className="repeto-portal-section repeto-portal-section--spaced">
+                        <div className="repeto-card-header">
                             <Text variant="subheader-2">Политика отмен</Text>
                         </div>
-                        <div style={{ padding: "20px 24px" }}>
-                            <Text variant="body-2" style={{ display: "block", lineHeight: 1.7 }}>
-                                Бесплатная отмена за <strong>{freeHours} {formatHoursWord(freeHours)}</strong> до занятия.
-                            </Text>
-                            <Text variant="body-2" style={{ display: "block", marginTop: 6, lineHeight: 1.7 }}>
-                                Поздняя отмена: <strong>{lateCancelActionLabel}</strong>. Неявка: <strong>{noShowActionLabel}</strong>.
-                            </Text>
+                        <div className="repeto-portal-section__body">
+                            <CancelPolicyBlock
+                                freeHours={t.cancelPolicy?.freeHours}
+                                lateCancelAction={t.cancelPolicy?.lateCancelAction}
+                                lateAction={t.cancelPolicy?.lateAction}
+                                noShowAction={t.cancelPolicy?.noShowAction}
+                                preferredPaymentMethod={t.preferredPaymentMethod}
+                            />
                         </div>
                     </Card>
 
                     {/* Contacts */}
-                    <Card view="outlined" style={{ marginBottom: 24, borderRadius: 16, overflow: "hidden", background: "var(--g-color-base-float)" }}>
-                        <div style={{ padding: "16px 24px", borderBottom: "1px solid var(--g-color-line-generic)" }}>
+                    <Card view="outlined" className="repeto-portal-section repeto-portal-section--spaced" style={{ marginBottom: 24 }}>
+                        <div className="repeto-card-header">
                             <Text variant="subheader-2">Контакты</Text>
                         </div>
-                        <div style={{ padding: "16px 24px" }}>
+                        <div className="repeto-portal-section__body">
                             {t.contacts.phone || t.contacts.whatsapp ? (
-                                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                                <div className="repeto-portal-stack" style={{ gap: 8 }}>
                                     {t.contacts.phone && (
                                         <a
                                             href={`tel:${t.contacts.phone.replace(/[^+\d]/g, "")}`}
-                                            style={{ display: "flex", alignItems: "center", gap: 14, textDecoration: "none", color: "inherit" }}
+                                            className="repeto-public-contact-row"
                                         >
-                                            <div style={{
-                                                width: 40, height: 40, borderRadius: 10, flexShrink: 0,
-                                                background: "rgba(174,122,255,0.1)",
-                                                display: "flex", alignItems: "center", justifyContent: "center",
-                                                color: brand[400],
-                                            }}>
-                                                <Icon data={Smartphone as IconData} size={18} />
+                                            <div className="repeto-portal-item-mainline" style={{ gap: 10 }}>
+                                                <Icon data={Smartphone as IconData} size={16} />
+                                                <Text variant="body-2">{t.contacts.phone}</Text>
                                             </div>
-                                            <Text variant="body-2">{t.contacts.phone}</Text>
                                         </a>
                                     )}
                                     {t.contacts.whatsapp && (
@@ -392,22 +380,17 @@ const TutorPublicPage = () => {
                                             href={`https://wa.me/${t.contacts.whatsapp.replace(/[^+\d]/g, "")}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            style={{ display: "flex", alignItems: "center", gap: 14, textDecoration: "none", color: "inherit" }}
+                                            className="repeto-public-contact-row"
                                         >
-                                            <div style={{
-                                                width: 40, height: 40, borderRadius: 10, flexShrink: 0,
-                                                background: "rgba(34,197,94,0.1)",
-                                                display: "flex", alignItems: "center", justifyContent: "center",
-                                                color: "#22C55E",
-                                            }}>
-                                                <Icon data={Comment as IconData} size={18} />
+                                            <div className="repeto-portal-item-mainline" style={{ gap: 10 }}>
+                                                <Icon data={Comment as IconData} size={16} />
+                                                <Text variant="body-2">WhatsApp</Text>
                                             </div>
-                                            <Text variant="body-2">WhatsApp</Text>
                                         </a>
                                     )}
                                 </div>
                             ) : (
-                                <Text variant="body-2" color="hint" style={{ fontStyle: "italic" }}>
+                                <Text variant="body-2" color="secondary">
                                     Контактные данные пока не указаны
                                 </Text>
                             )}
@@ -416,21 +399,11 @@ const TutorPublicPage = () => {
 
                     {/* CTA */}
                     {canBook ? (
-                        <Link href={`/t/${slug}/book`} style={{ display: "block", width: "100%", textDecoration: "none" }}>
+                        <Link href={`/t/${slug}/book`} className="repeto-public-cta-link">
                             <Button
                                 view="action"
                                 size="xl"
-                                style={{
-                                    width: "100%",
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    textAlign: "center",
-                                    lineHeight: "20px",
-                                    fontWeight: 600,
-                                    height: 52,
-                                    borderRadius: 12,
-                                }}
+                                className="repeto-public-cta-btn"
                             >
                                 Записаться на занятие
                             </Button>
@@ -439,17 +412,7 @@ const TutorPublicPage = () => {
                         <Button
                             view="action"
                             size="xl"
-                            style={{
-                                width: "100%",
-                                display: "inline-flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                textAlign: "center",
-                                lineHeight: "20px",
-                                fontWeight: 600,
-                                height: 52,
-                                borderRadius: 12,
-                            }}
+                            className="repeto-public-cta-btn"
                             disabled
                         >
                             Запись пока не ведётся
@@ -457,10 +420,10 @@ const TutorPublicPage = () => {
                     )}
 
                     {/* Footer */}
-                    <div style={{ marginTop: 32, textAlign: "center" }}>
+                    <div className="repeto-public-footer">
                         <Text variant="caption-2" color="secondary">
                             Работает на платформе{" "}
-                            <Link href="/" style={{ color: brand[400], fontWeight: 700, textDecoration: "none" }}>
+                            <Link href="/" style={{ fontWeight: 700, textDecoration: "none" }}>
                                 Repeto
                             </Link>
                         </Text>
@@ -470,12 +433,11 @@ const TutorPublicPage = () => {
 
             {/* Floating edit button for owner */}
             {isOwner && (
-                <div style={{ position: "fixed", right: 24, bottom: 24, zIndex: 50 }}>
+                <div className="repeto-public-owner-fab">
                     <Button
                         view="action"
                         size="l"
                         onClick={() => router.push("/settings")}
-                        style={{ borderRadius: 24, paddingLeft: 20, paddingRight: 20, fontWeight: 600, boxShadow: "0 4px 20px rgba(174,122,255,0.35)" }}
                     >
                         <Icon data={Pencil as IconData} size={16} />
                         Редактировать
@@ -484,43 +446,44 @@ const TutorPublicPage = () => {
             )}
 
             {/* Reviews modal */}
-            <Modal open={reviewsOpen} onClose={() => setReviewsOpen(false)}>
-                <div style={{ padding: "8px 24px 24px" }}>
-                    <Text variant="header-1" style={{ display: "block", marginBottom: 20 }}>Отзывы</Text>
-                    {t.reviews && t.reviews.length > 0 ? (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                            {t.reviews.map((r, i) => (
-                                <Card key={i} style={{ padding: "16px 20px", borderRadius: 12 }}>
-                                    <div style={{ display: "flex", gap: 12 }}>
-                                        <div style={{
-                                            width: 36, height: 36, borderRadius: "50%", flexShrink: 0,
-                                            background: `linear-gradient(135deg, ${brand[400]} 0%, ${brand[700]} 100%)`,
-                                            display: "flex", alignItems: "center", justifyContent: "center",
-                                            fontSize: 12, fontWeight: 700, color: "#fff",
-                                        }}>
-                                            {r.studentName.split(" ").map((w: string) => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase()}
-                                        </div>
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                            <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
-                                                <Text variant="body-2" style={{ fontWeight: 700 }}>{r.studentName}</Text>
-                                                <Text variant="caption-2" color="secondary">{formatReviewDate(r.date)}</Text>
-                                            </div>
-                                            <div style={{ margin: "4px 0" }}>{renderStars(r.rating)}</div>
-                                            {r.feedback && (
-                                                <Text variant="body-2" style={{ lineHeight: 1.6 }}>{r.feedback}</Text>
-                                            )}
-                                        </div>
+            <AppDialog
+                open={reviewsOpen}
+                onClose={() => setReviewsOpen(false)}
+                size="l"
+                caption="Отзывы"
+                footer={{
+                    textButtonCancel: "Закрыть",
+                    onClickButtonCancel: () => setReviewsOpen(false),
+                }}
+            >
+                {t.reviews && t.reviews.length > 0 ? (
+                    <div className="repeto-public-list" style={{ gap: 12 }}>
+                        {t.reviews.map((r, i) => (
+                            <Card key={i} className="repeto-public-review-card">
+                                <div className="repeto-public-review-row">
+                                    <div className="repeto-public-review-avatar">
+                                        {r.studentName.split(" ").map((w: string) => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase()}
                                     </div>
-                                </Card>
-                            ))}
-                        </div>
-                    ) : (
-                        <Text variant="body-2" color="hint" style={{ fontStyle: "italic", display: "block", textAlign: "center" }}>
-                            Отзывов пока нет
-                        </Text>
-                    )}
-                </div>
-            </Modal>
+                                    <div className="repeto-public-review-main">
+                                        <div className="repeto-public-review-head">
+                                            <Text variant="body-2" style={{ fontWeight: 700 }}>{r.studentName}</Text>
+                                            <Text variant="caption-2" color="secondary">{formatReviewDate(r.date)}</Text>
+                                        </div>
+                                        <div style={{ margin: "4px 0" }}>{renderStars(r.rating)}</div>
+                                        {r.feedback && (
+                                            <Text variant="body-2" style={{ lineHeight: 1.6 }}>{r.feedback}</Text>
+                                        )}
+                                    </div>
+                                </div>
+                            </Card>
+                        ))}
+                    </div>
+                ) : (
+                    <Text variant="body-2" color="hint" className="repeto-public-empty" style={{ display: "block", textAlign: "center" }}>
+                        Отзывов пока нет
+                    </Text>
+                )}
+            </AppDialog>
         </>
     );
 };

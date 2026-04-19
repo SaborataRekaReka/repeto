@@ -3,8 +3,61 @@ import { api } from '@/lib/api';
 import { toLocalDateKey } from '@/lib/dates';
 import type { Lesson } from '@/types/schedule';
 
+const PORTAL_REVIEW_PREFIX = 'PORTAL_REVIEW:';
+
+function parsePortalReview(content: unknown): { rating: number; feedback?: string } | null {
+  if (typeof content !== 'string' || !content.startsWith(PORTAL_REVIEW_PREFIX)) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(content.slice(PORTAL_REVIEW_PREFIX.length)) as {
+      rating?: unknown;
+      feedback?: unknown;
+    };
+    const rating = Number(parsed.rating);
+    if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
+      return null;
+    }
+
+    const feedback =
+      typeof parsed.feedback === 'string' && parsed.feedback.trim().length > 0
+        ? parsed.feedback.trim()
+        : undefined;
+
+    return { rating, feedback };
+  } catch {
+    return null;
+  }
+}
+
+function extractLessonReview(raw: any): { rating: number; feedback?: string } | null {
+  if (Array.isArray(raw?.notes)) {
+    const sorted = [...raw.notes].sort((a: any, b: any) => {
+      const aTime = new Date(a?.updatedAt || a?.createdAt || 0).getTime();
+      const bTime = new Date(b?.updatedAt || b?.createdAt || 0).getTime();
+      return bTime - aTime;
+    });
+
+    for (const note of sorted) {
+      const review = parsePortalReview(note?.content);
+      if (review) {
+        return review;
+      }
+    }
+
+    return null;
+  }
+
+  return parsePortalReview(raw?.notes);
+}
+
 function extractLessonNote(raw: any): string | undefined {
   if (typeof raw?.notes === 'string') {
+    if (raw.notes.startsWith(PORTAL_REVIEW_PREFIX)) {
+      return undefined;
+    }
+
     const normalized = raw.notes.trim();
     return normalized.length > 0 ? normalized : undefined;
   }
@@ -33,6 +86,7 @@ function mapLesson(raw: any): Lesson {
   const scheduledAt = new Date(raw.scheduledAt);
   const endAt = new Date(scheduledAt.getTime() + (raw.duration || 60) * 60000);
   const pad = (n: number) => String(n).padStart(2, '0');
+  const review = extractLessonReview(raw);
 
   const subject = raw.student?.subject || raw.subject || '';
   const studentName = raw.student?.name || raw.studentName || '';
@@ -50,6 +104,9 @@ function mapLesson(raw: any): Lesson {
     status: (raw.status || 'planned').toLowerCase().replace(/_/g, '_') as Lesson['status'],
     rate: raw.rate || 0,
     notes: extractLessonNote(raw),
+    reviewRating: review?.rating,
+    reviewFeedback: review?.feedback,
+    hasReview: Boolean(review),
   };
 }
 
@@ -87,7 +144,11 @@ export async function createLesson(data: {
   location?: string;
   rate?: number;
   notes?: string;
-  recurrence?: string;
+  recurrence?: {
+    enabled: boolean;
+    until: string;
+    weekdays: number[];
+  };
 }) {
   return api('/lessons', {
     method: 'POST',

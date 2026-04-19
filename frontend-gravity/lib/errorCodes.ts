@@ -53,6 +53,24 @@ export function buildErrorCode(context: string, error?: unknown): string {
     return `${ctx}-${kind}-${suffix}`;
 }
 
+function extractReadableMessage(error?: unknown): string | null {
+    if (error instanceof ApiError) {
+        const message = (error.message || "").trim();
+        if (message && message !== "Запрос не выполнен") return message;
+    }
+
+    if (error instanceof Error) {
+        const message = (error.message || "").trim();
+        if (message && message !== "Запрос не выполнен") return message;
+    }
+
+    return null;
+}
+
 export function codedErrorMessage(context: string, error?: unknown): string {
-    return `Код ошибки: ${buildErrorCode(context, error)}`;
+    const code = buildErrorCode(context, error);
+    const readableMessage = extractReadableMessage(error);
+    if (!readableMessage) return `Код ошибки: ${code}`;
+    const needsDot = /[.!?]$/.test(readableMessage) ? "" : ".";
+    return `${readableMessage}${needsDot} Код ошибки: ${code}`;
 }

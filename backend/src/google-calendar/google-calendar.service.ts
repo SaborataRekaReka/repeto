@@ -7,6 +7,7 @@ import { google, calendar_v3 } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { getPrimaryFrontendUrl } from '../common/utils/frontend-url';
 
 interface GoogleTokens {
   access_token: string;
@@ -24,19 +25,52 @@ export class GoogleCalendarService {
 
   // ── OAuth helpers ──
 
+  private isProductionEnv() {
+    return process.env.NODE_ENV === 'production';
+  }
+
+  private getEnvValue(prodKey: string, devKey?: string) {
+    if (!this.isProductionEnv() && devKey) {
+      const devValue = (process.env[devKey] || '').trim();
+      if (devValue) {
+        return devValue;
+      }
+    }
+
+    const prodValue = (process.env[prodKey] || '').trim();
+    return prodValue || null;
+  }
+
   private getClientId(): string | null {
-    return process.env.GOOGLE_CALENDAR_CLIENT_ID || null;
+    return this.getEnvValue('GOOGLE_CALENDAR_CLIENT_ID', 'GOOGLE_CALENDAR_CLIENT_ID_DEV')
+      || this.getEnvValue('GOOGLE_DRIVE_CLIENT_ID', 'GOOGLE_DRIVE_CLIENT_ID_DEV')
+      || null;
   }
 
   private getClientSecret(): string | null {
-    return process.env.GOOGLE_CALENDAR_CLIENT_SECRET || null;
+    return this.getEnvValue('GOOGLE_CALENDAR_CLIENT_SECRET', 'GOOGLE_CALENDAR_CLIENT_SECRET_DEV')
+      || this.getEnvValue('GOOGLE_DRIVE_CLIENT_SECRET', 'GOOGLE_DRIVE_CLIENT_SECRET_DEV')
+      || null;
   }
 
   private getRedirectUri(): string {
-    if (process.env.GOOGLE_CALENDAR_REDIRECT_URI) {
-      return process.env.GOOGLE_CALENDAR_REDIRECT_URI;
+    const calendarRedirect = this.getEnvValue(
+      'GOOGLE_CALENDAR_REDIRECT_URI',
+      'GOOGLE_CALENDAR_REDIRECT_URI_DEV',
+    );
+    if (calendarRedirect) {
+      return calendarRedirect;
     }
-    const frontend = process.env.FRONTEND_URL || 'http://localhost:3300';
+
+    const driveRedirect = this.getEnvValue(
+      'GOOGLE_DRIVE_REDIRECT_URI',
+      'GOOGLE_DRIVE_REDIRECT_URI_DEV',
+    );
+    if (driveRedirect) {
+      return driveRedirect;
+    }
+
+    const frontend = getPrimaryFrontendUrl();
     return `${frontend}/settings?tab=integrations&integration=google-calendar`;
   }
 

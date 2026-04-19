@@ -1,8 +1,10 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import Head from "next/head";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import {
     Card,
+    Alert,
     Button,
     Text,
     TextInput,
@@ -14,22 +16,31 @@ import {
     ArrowLeft,
     ArrowRight,
     GraduationCap,
-    CircleCheck,
 } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
-import {
-    clearPortalTokenForTutor,
-    getPortalTokenForTutor,
-    setPortalTokenForTutor,
-} from "@/lib/portalTokenStore";
 import { codedErrorMessage } from "@/lib/errorCodes";
+import { verifyBookingEmail } from "@/lib/studentAuth";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 type SlotData = { date: string; time: string; duration: number };
+type PublicPackage = {
+    id: string;
+    subject: string;
+    lessonsTotal: number;
+    totalPrice: number;
+    pricePerLesson: number;
+    originalTotalPrice?: number | null;
+    discountAmount?: number;
+    discountPercent?: number;
+    validUntil?: string | null;
+    comment?: string | null;
+};
 type TutorProfile = {
     name: string;
     subjects: { name: string; duration: number; price: number }[];
+    showPublicPackages?: boolean;
+    publicPackages?: PublicPackage[];
     slug?: string;
     tagline?: string;
 };
@@ -42,7 +53,8 @@ type BookingPrefill = {
 };
 
 type BookingCreateResponse = {
-    portalToken?: string | null;
+    id?: string;
+    otpSent?: boolean;
 };
 
 type BotInfoResponse = {
@@ -55,21 +67,10 @@ type ContactStatusResponse = {
     telegramConnected: boolean;
     maxConnected: boolean;
     emailKnown: boolean;
-    portalToken?: string | null;
+    hasAccount?: boolean;
 };
 
 type ReminderMethod = "telegram" | "max" | "email" | "push";
-
-type PortalPrefillResponse = {
-    studentName?: string;
-    studentPhone?: string;
-    studentEmail?: string;
-    tutorSlug?: string;
-    notifications?: {
-        telegram?: { connected: boolean };
-        max?: { connected: boolean };
-    };
-};
 
 type BookingPrefillStore = {
     byTutor: Record<string, BookingPrefill>;
@@ -199,17 +200,51 @@ const BookingPage = ({ slug }: { slug: string }) => {
     const [profile, setProfile] = useState<TutorProfile | null>(null);
     const [slots, setSlots] = useState<SlotData[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState<string | null>(null);
 
     useEffect(() => {
+        let cancelled = false;
+        const controller = new AbortController();
+        const timeoutId = window.setTimeout(() => controller.abort(), 12000);
+
+        const fetchJson = async (url: string) => {
+            const response = await fetch(url, { signal: controller.signal });
+            const payload = await response.json().catch(() => null);
+            return { response, payload };
+        };
+
+        setLoading(true);
+        setLoadError(null);
+        setProfile(null);
+        setSlots([]);
+
         (async () => {
             try {
-                const [profileRes, slotsRes, botInfoRes] = await Promise.all([
-                    fetch(`${API_BASE}/public/tutors/${encodeURIComponent(slug)}`).then((r) => r.json()),
-                    fetch(`${API_BASE}/public/tutors/${encodeURIComponent(slug)}/slots`).then((r) => r.json()),
-                    fetch(`${API_BASE}/public/bot-info`).then((r) => r.json()).catch(() => null),
+                const [profileResult, slotsResult, botInfoRes] = await Promise.all([
+                    fetchJson(`${API_BASE}/public/tutors/${encodeURIComponent(slug)}`),
+                    fetchJson(`${API_BASE}/public/tutors/${encodeURIComponent(slug)}/slots`),
+                    fetch(`${API_BASE}/public/bot-info`, { signal: controller.signal })
+                        .then((r) => (r.ok ? r.json() : null))
+                        .catch(() => null),
                 ]);
-                setProfile(profileRes);
-                setSlots(slotsRes);
+
+                if (cancelled) return;
+
+                if (profileResult.response.status === 404) {
+                    setProfile(null);
+                    return;
+                }
+
+                if (!profileResult.response.ok) {
+                    throw new Error("booking_profile_load_failed");
+                }
+
+                setProfile(profileResult.payload as TutorProfile);
+
+                if (slotsResult.response.ok && Array.isArray(slotsResult.payload)) {
+                    setSlots(slotsResult.payload as SlotData[]);
+                }
+
                 const botInfo = botInfoRes as BotInfoResponse | null;
                 if (botInfo?.telegram?.username) {
                     setBotUsername(botInfo.telegram.username);
@@ -220,18 +255,42 @@ const BookingPage = ({ slug }: { slug: string }) => {
                 if (botInfo?.max?.username) {
                     setMaxBotUsername(botInfo.max.username);
                 }
-            } catch {
-                setLoading(false);
+            } catch (error) {
+                if (cancelled) return;
+
+                const isAbort =
+                    typeof error === "object" &&
+                    error !== null &&
+                    "name" in error &&
+                    (error as { name?: string }).name === "AbortError";
+
+                setLoadError(
+                    isAbort
+                        ? "Время ожидания страницы истекло. Обновите страницу и попробуйте снова."
+                        : "Не удалось загрузить страницу записи. Попробуйте снова."
+                );
+            } finally {
+                if (!cancelled) {
+                    setLoading(false);
+                }
+                window.clearTimeout(timeoutId);
             }
         })();
+
+        return () => {
+            cancelled = true;
+            controller.abort();
+            window.clearTimeout(timeoutId);
+        };
     }, [slug]);
 
-    const t = profile || { name: "", subjects: [], tagline: "" };
+    const t = profile || { name: "", subjects: [], publicPackages: [], tagline: "" };
 
     const [step, setStep] = useState(0);
     const [selectedSubject, setSelectedSubject] = useState<
         (typeof t.subjects)[0] | null
     >(null);
+    const [selectedPackage, setSelectedPackage] = useState<PublicPackage | null>(null);
     const [viewMonth, setViewMonth] = useState(() => {
         const now = new Date();
         return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -242,8 +301,15 @@ const BookingPage = ({ slug }: { slug: string }) => {
     const [phone, setPhone] = useState("");
     const [email, setEmail] = useState("");
     const [comment, setComment] = useState("");
+    const [submitError, setSubmitError] = useState<string | null>(null);
     const [consent, setConsent] = useState(false);
     const [autofillHint, setAutofillHint] = useState<string | null>(null);
+    const [submitting, setSubmitting] = useState(false);
+    const [verifying, setVerifying] = useState(false);
+    const [bookingId, setBookingId] = useState<string | null>(null);
+    const [otpCode, setOtpCode] = useState("");
+    const [otpError, setOtpError] = useState<string | null>(null);
+    const router = useRouter();
 
     // Messenger deep-link state
     const [linkCode] = useState(() => `book_${crypto.randomUUID()}`);
@@ -313,10 +379,6 @@ const BookingPage = ({ slug }: { slug: string }) => {
                 setTelegramLinked(status.telegramConnected);
                 setMaxLinked(status.maxConnected);
 
-                if (status.portalToken) {
-                    setPortalTokenForTutor(slug, status.portalToken);
-                }
-
                 setSelectedReminderMethods((prev) => {
                     const next = new Set(prev);
                     if (status.telegramConnected) next.add("telegram");
@@ -330,83 +392,6 @@ const BookingPage = ({ slug }: { slug: string }) => {
 
         return () => clearTimeout(timeout);
     }, [phone, email, slug]);
-
-    useEffect(() => {
-        const token = getPortalTokenForTutor(slug);
-        if (!token) return;
-
-        let cancelled = false;
-
-        (async () => {
-            try {
-                const res = await fetch(
-                    `${API_BASE}/portal/${encodeURIComponent(token)}`
-                );
-
-                if (!res.ok) {
-                    if (res.status === 404 || res.status === 400) {
-                        clearPortalTokenForTutor(slug);
-                    }
-                    return;
-                }
-
-                const portalData =
-                    (await res.json()) as PortalPrefillResponse;
-
-                if (cancelled) return;
-                if (portalData.tutorSlug && portalData.tutorSlug !== slug) {
-                    return;
-                }
-
-                const nextName = portalData.studentName?.trim() || "";
-                const nextPhone = portalData.studentPhone?.trim() || "";
-                const nextEmail = portalData.studentEmail?.trim() || "";
-
-                if (nextName) setName((prev) => prev || nextName);
-                if (nextPhone) setPhone((prev) => prev || nextPhone);
-                if (nextEmail) setEmail((prev) => prev || nextEmail);
-
-                if (portalData.notifications?.telegram?.connected) {
-                    setTelegramLinked(true);
-                    setSelectedReminderMethods((prev) =>
-                        prev.includes("telegram") ? prev : [...prev, "telegram"]
-                    );
-                }
-                if (portalData.notifications?.max?.connected) {
-                    setMaxLinked(true);
-                    setSelectedReminderMethods((prev) =>
-                        prev.includes("max") ? prev : [...prev, "max"]
-                    );
-                }
-
-                if (nextName || nextPhone || nextEmail) {
-                    setAutofillHint("Подтянули ваши данные из профиля ученика");
-
-                    if (nextName) {
-                        const store = readPrefillStore();
-                        const payload: BookingPrefill = {
-                            name: nextName,
-                            phone: nextPhone,
-                            email: nextEmail || undefined,
-                            updatedAt: new Date().toISOString(),
-                        };
-                        store.byTutor[slug] = payload;
-                        const normalizedPhone = normalizePhone(nextPhone);
-                        if (normalizedPhone) {
-                            store.byPhone[normalizedPhone] = payload;
-                        }
-                        savePrefillStore(store);
-                    }
-                }
-            } catch {
-                // ignore background prefill errors
-            }
-        })();
-
-        return () => {
-            cancelled = true;
-        };
-    }, [slug]);
 
     useEffect(() => {
         const normalized = normalizePhone(phone);
@@ -488,7 +473,10 @@ const BookingPage = ({ slug }: { slug: string }) => {
     };
 
     const goBack = () => {
-        if (step === 2) {
+        setSubmitError(null);
+        if (step === 3) {
+            setStep(2);
+        } else if (step === 2) {
             setStep(1);
         } else if (step === 1) {
             setSelectedDate(null);
@@ -541,12 +529,21 @@ const BookingPage = ({ slug }: { slug: string }) => {
     };
 
     const handleSubmit = async () => {
-        if (!selectedDate || !selectedTime || !selectedSubject) return;
+        if (!selectedDate || !selectedTime || (!selectedSubject && !selectedPackage)) return;
+        setSubmitError(null);
 
         const trimmedName = name.trim();
         const trimmedPhone = phone.trim();
         const trimmedEmail = email.trim();
 
+        if (!trimmedEmail.includes("@")) {
+            setSubmitError("Укажите email — на него придёт код для подтверждения.");
+            return;
+        }
+
+        const bookingSubject = selectedPackage?.subject || selectedSubject?.name || "";
+
+        setSubmitting(true);
         try {
             const res = await fetch(
                 `${API_BASE}/public/tutors/${encodeURIComponent(slug)}/book`,
@@ -554,12 +551,13 @@ const BookingPage = ({ slug }: { slug: string }) => {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        subject: selectedSubject.name,
+                        subject: bookingSubject,
+                        packageId: selectedPackage?.id,
                         date: selectedDate,
                         startTime: selectedTime,
                         clientName: trimmedName,
                         clientPhone: trimmedPhone,
-                        clientEmail: trimmedEmail || undefined,
+                        clientEmail: trimmedEmail,
                         comment: comment.trim() || undefined,
                         telegramLinkCode:
                             selectedReminderMethods.includes("telegram") && telegramLinked
@@ -581,9 +579,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
 
             const bookingPayload =
                 (await res.json().catch(() => null)) as BookingCreateResponse | null;
-            if (bookingPayload?.portalToken) {
-                setPortalTokenForTutor(slug, bookingPayload.portalToken);
-            }
+            if (bookingPayload?.id) setBookingId(bookingPayload.id);
 
             const normalizedPhone = normalizePhone(trimmedPhone);
             if (trimmedName && normalizedPhone) {
@@ -599,9 +595,61 @@ const BookingPage = ({ slug }: { slug: string }) => {
                 savePrefillStore(store);
             }
 
+            setOtpCode("");
+            setOtpError(null);
             setStep(3);
         } catch (err: any) {
-            alert(codedErrorMessage("PUBLIC-BOOKING", err));
+            setSubmitError(codedErrorMessage("PUBLIC-BOOKING", err));
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleVerifyOtp = async () => {
+        const trimmedEmail = email.trim().toLowerCase();
+        const code = otpCode.trim();
+        if (code.length !== 6) {
+            setOtpError("Введите 6-значный код из письма");
+            return;
+        }
+        setOtpError(null);
+        setVerifying(true);
+        try {
+            await verifyBookingEmail(slug, trimmedEmail, code, bookingId || undefined);
+            router.push("/student");
+        } catch (err: any) {
+            setOtpError(codedErrorMessage("PUBLIC-BOOKING-OTP", err));
+        } finally {
+            setVerifying(false);
+        }
+    };
+
+    const handleResendOtp = async () => {
+        const trimmedEmail = email.trim().toLowerCase();
+        if (!trimmedEmail.includes("@")) return;
+        setOtpError(null);
+        try {
+            // Re-issue OTP by re-submitting the booking create endpoint, which
+            // silently reuses the cooldown window on the backend.
+            await fetch(
+                `${API_BASE}/public/tutors/${encodeURIComponent(slug)}/book`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        subject: selectedPackage?.subject || selectedSubject?.name || "",
+                        packageId: selectedPackage?.id,
+                        date: selectedDate,
+                        startTime: selectedTime,
+                        clientName: name.trim(),
+                        clientPhone: phone.trim(),
+                        clientEmail: trimmedEmail,
+                        comment: comment.trim() || undefined,
+                    }),
+                },
+            ).catch(() => null);
+        } catch {
+            /* noop */
         }
     };
 
@@ -630,7 +678,25 @@ const BookingPage = ({ slug }: { slug: string }) => {
                         <Text variant="body-2" color="secondary">Загрузка...</Text>
                     </div>
                 )}
-                {!loading && !profile && (
+                {!loading && loadError && (
+                    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+                        <div style={{ textAlign: "center", maxWidth: 420 }}>
+                            <Text variant="header-2" style={{ display: "block", marginBottom: 8 }}>Не удалось открыть запись</Text>
+                            <Text variant="body-2" color="secondary" style={{ display: "block", marginBottom: 16 }}>
+                                {loadError}
+                            </Text>
+                            <div style={{ display: "flex", justifyContent: "center", gap: 12, flexWrap: "wrap" }}>
+                                <Button size="l" onClick={() => window.location.reload()}>
+                                    Обновить страницу
+                                </Button>
+                                <Link href={`/t/${slug}`} style={{ textDecoration: "none" }}>
+                                    <Button view="flat" size="l">К странице преподавателя</Button>
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {!loading && !loadError && !profile && (
                     <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
                         <div style={{ textAlign: "center" }}>
                             <Text variant="header-2" style={{ display: "block", marginBottom: 8 }}>Репетитор не найден</Text>
@@ -638,7 +704,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
                         </div>
                     </div>
                 )}
-                {!loading && profile && (
+                {!loading && !loadError && profile && (
                 <>
                 {/* Header bar */}
                 <div
@@ -657,7 +723,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
                             gap: 12,
                         }}
                     >
-                        {step > 0 && step < 3 ? (
+                        {step > 0 && step <= 3 ? (
                             <Button
                                 view="flat"
                                 size="l"
@@ -723,7 +789,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
                             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                                 {t.subjects.map((s, i) => {
                                     const active =
-                                        selectedSubject?.name === s.name;
+                                        !selectedPackage && selectedSubject?.name === s.name;
                                     return (
                                         <button
                                             key={i}
@@ -741,7 +807,10 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                                 transition: "border-color 0.15s, background 0.15s",
                                             }}
                                             onClick={() =>
-                                                setSelectedSubject(s)
+                                                {
+                                                    setSelectedPackage(null);
+                                                    setSelectedSubject(s);
+                                                }
                                             }
                                         >
                                             <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
@@ -793,12 +862,139 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                         </button>
                                     );
                                 })}
+
+                                {(t.publicPackages || []).length > 0 && (
+                                    <>
+                                        <div
+                                            style={{
+                                                marginTop: 4,
+                                                marginBottom: 2,
+                                                fontSize: 12,
+                                                fontWeight: 700,
+                                                color: "var(--g-color-text-secondary)",
+                                                letterSpacing: 0.2,
+                                                textTransform: "uppercase",
+                                            }}
+                                        >
+                                            Пакеты занятий
+                                        </div>
+                                        {(t.publicPackages || []).map((pkg) => {
+                                            const active = selectedPackage?.id === pkg.id;
+                                            const hasDiscount = Number(pkg.discountAmount || 0) > 0;
+                                            return (
+                                                <button
+                                                    key={pkg.id}
+                                                    style={{
+                                                        width: "100%",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        justifyContent: "space-between",
+                                                        padding: "16px 18px",
+                                                        textAlign: "left",
+                                                        borderRadius: 12,
+                                                        border: `1px solid ${active ? "var(--g-color-text-brand)" : "var(--g-color-line-generic)"}`,
+                                                        background: "var(--g-color-base-float)",
+                                                        cursor: "pointer",
+                                                        transition: "border-color 0.15s, background 0.15s",
+                                                    }}
+                                                    onClick={() => {
+                                                        setSelectedPackage(pkg);
+
+                                                        const match = t.subjects.find(
+                                                            (subject) => subject.name === pkg.subject
+                                                        );
+                                                        if (match) {
+                                                            setSelectedSubject(match);
+                                                        }
+                                                    }}
+                                                >
+                                                    <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
+                                                        <div
+                                                            style={{
+                                                                width: 40,
+                                                                height: 40,
+                                                                borderRadius: 10,
+                                                                display: "flex",
+                                                                alignItems: "center",
+                                                                justifyContent: "center",
+                                                                background: "rgba(174,122,255,0.1)",
+                                                                flexShrink: 0,
+                                                            }}
+                                                        >
+                                                            <Icon
+                                                                data={GraduationCap as IconData}
+                                                                size={20}
+                                                                style={{ color: "var(--g-color-text-brand)" }}
+                                                            />
+                                                        </div>
+                                                        <div style={{ minWidth: 0 }}>
+                                                            <div style={{ fontSize: 14, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                                                {pkg.subject}
+                                                            </div>
+                                                            <div style={{ fontSize: 12, color: "var(--g-color-text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                                                {pkg.lessonsTotal} занятий · {pkg.totalPrice.toLocaleString("ru-RU")} ₽
+                                                            </div>
+                                                            {hasDiscount ? (
+                                                                <div
+                                                                    style={{
+                                                                        marginTop: 4,
+                                                                        fontSize: 12,
+                                                                        color: "var(--g-color-text-positive)",
+                                                                        overflow: "hidden",
+                                                                        textOverflow: "ellipsis",
+                                                                        whiteSpace: "nowrap",
+                                                                    }}
+                                                                >
+                                                                    Скидка {Number(pkg.discountAmount || 0).toLocaleString("ru-RU")} ₽
+                                                                    {Number(pkg.discountPercent || 0) > 0
+                                                                        ? ` (${pkg.discountPercent}%)`
+                                                                        : ""}
+                                                                </div>
+                                                            ) : null}
+                                                            {pkg.comment ? (
+                                                                <div
+                                                                    style={{
+                                                                        marginTop: 4,
+                                                                        fontSize: 12,
+                                                                        color: "var(--g-color-text-secondary)",
+                                                                        overflow: "hidden",
+                                                                        textOverflow: "ellipsis",
+                                                                        whiteSpace: "nowrap",
+                                                                    }}
+                                                                >
+                                                                    {pkg.comment}
+                                                                </div>
+                                                            ) : null}
+                                                        </div>
+                                                    </div>
+                                                    <div
+                                                        style={{
+                                                            width: 20,
+                                                            height: 20,
+                                                            borderRadius: "50%",
+                                                            border: `1px solid ${active ? "var(--g-color-base-brand)" : "var(--g-color-line-generic)"}`,
+                                                            background: active ? "var(--g-color-base-brand)" : "transparent",
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            justifyContent: "center",
+                                                            flexShrink: 0,
+                                                        }}
+                                                    >
+                                                        {active && (
+                                                            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--g-color-text-light-primary)" }} />
+                                                        )}
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
+                                    </>
+                                )}
                             </div>
                             <Button
                                 view="action"
                                 size="xl"
                                 style={{ ...ACTION_BUTTON_STYLE, marginTop: 24 }}
-                                disabled={!selectedSubject}
+                                disabled={!selectedSubject && !selectedPackage}
                                 onClick={() => setStep(1)}
                             >
                                 Продолжить
@@ -971,6 +1167,15 @@ const BookingPage = ({ slug }: { slug: string }) => {
                     {step === 2 && (
                         <Card view="outlined" style={PANEL_STYLE}>
                             <Text variant="header-2" style={{ display: "block", marginBottom: 20 }}>Ваши данные</Text>
+                            {submitError && (
+                                <div style={{ marginBottom: 16 }}>
+                                    <Alert
+                                        theme="danger"
+                                        title="Не удалось отправить заявку"
+                                        message={submitError}
+                                    />
+                                </div>
+                            )}
                             {autofillHint && (
                                 <div
                                     style={{
@@ -1006,7 +1211,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                 />
                             </label>
                             <label style={{ display: "block", marginBottom: 16 }}>
-                                <span style={FIELD_LABEL_STYLE}>E-mail</span>
+                                <span style={FIELD_LABEL_STYLE}>E-mail *</span>
                                 <TextInput
                                     size="l"
                                     type="email"
@@ -1127,20 +1332,49 @@ const BookingPage = ({ slug }: { slug: string }) => {
                             {/* Summary */}
                             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 0", borderTop: "1px solid var(--g-color-line-generic)", marginBottom: 20 }}>
                                 <span style={{ fontSize: 14, fontWeight: 700 }}>Итого</span>
-                                <span style={{ fontSize: 14, fontWeight: 700 }}>
-                                    {selectedSubject
-                                        ? `${selectedSubject.price.toLocaleString("ru-RU")} ₽`
-                                        : "—"}
-                                </span>
+                                {selectedPackage ? (
+                                    <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 700 }}>
+                                        {Number(selectedPackage.discountAmount || 0) > 0 && Number(selectedPackage.originalTotalPrice || 0) > selectedPackage.totalPrice ? (
+                                            <span
+                                                style={{
+                                                    fontSize: 12,
+                                                    fontWeight: 500,
+                                                    color: "var(--g-color-text-secondary)",
+                                                    textDecoration: "line-through",
+                                                }}
+                                            >
+                                                {Number(selectedPackage.originalTotalPrice || 0).toLocaleString("ru-RU")} ₽
+                                            </span>
+                                        ) : null}
+                                        <span>{selectedPackage.totalPrice.toLocaleString("ru-RU")} ₽</span>
+                                    </span>
+                                ) : (
+                                    <span style={{ fontSize: 14, fontWeight: 700 }}>
+                                        {selectedSubject
+                                            ? `${selectedSubject.price.toLocaleString("ru-RU")} ₽`
+                                            : "—"}
+                                    </span>
+                                )}
                             </div>
+
+                            {selectedPackage && Number(selectedPackage.discountAmount || 0) > 0 ? (
+                                <Text variant="body-1" color="positive" style={{ display: "block", marginBottom: 16, fontSize: 13 }}>
+                                    Вы экономите {Number(selectedPackage.discountAmount || 0).toLocaleString("ru-RU")} ₽
+                                    {Number(selectedPackage.discountPercent || 0) > 0
+                                        ? ` (${selectedPackage.discountPercent}%)`
+                                        : ""}
+                                </Text>
+                            ) : null}
 
                             <Button
                                 view="action"
                                 size="xl"
                                 style={ACTION_BUTTON_STYLE}
+                                loading={submitting}
                                 disabled={
                                     !name.trim() ||
                                     !phone.trim() ||
+                                    !email.trim() ||
                                     !consent ||
                                     needsTelegramConnect ||
                                     needsMaxConnect ||
@@ -1148,38 +1382,80 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                 }
                                 onClick={handleSubmit}
                             >
-                                Записаться
+                                Подтвердить почту
                             </Button>
                         </Card>
                     )}
 
-                    {/* ── Step 3: Confirmation ── */}
+                    {/* ── Step 3: OTP verification ── */}
                     {step === 3 && (
-                        <Card view="outlined" style={{ ...PANEL_STYLE, textAlign: "center", paddingTop: 40, paddingBottom: 40 }}>
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 64, height: 64, margin: "0 auto 20px", borderRadius: 12, background: "rgba(34,197,94,0.15)" }}>
-                                <Icon
-                                    data={CircleCheck as IconData}
-                                    size={24}
-                                    style={{ color: "#22C55E" }}
-                                />
-                            </div>
-                            <Text variant="header-1" style={{ display: "block", marginBottom: 8 }}>Заявка отправлена!</Text>
-                            {selectedDate && selectedTime && (
-                                <Text variant="body-2" color="secondary" style={{ display: "block", marginBottom: 4 }}>
-                                    {selectedSubject?.name} ·{" "}
-                                    {formatDateLong(selectedDate)} ·{" "}
-                                    {selectedTime}
-                                </Text>
-                            )}
-                            <Text variant="body-2" color="secondary" style={{ display: "block", marginBottom: 28 }}>
-                                Репетитор подтвердит запись и свяжется с
-                                вами.
+                        <Card view="outlined" style={PANEL_STYLE}>
+                            <Text variant="header-2" style={{ display: "block", marginBottom: 8 }}>
+                                Введите код из письма
                             </Text>
-                            <Link href={`/t/${slug}`} style={{ display: "inline-block", textDecoration: "none" }}>
-                                <Button view="outlined" size="l" style={{ borderRadius: 10 }}>
-                                    Вернуться к профилю
-                                </Button>
-                            </Link>
+                            <Text variant="body-1" color="secondary" style={{ display: "block", marginBottom: 20 }}>
+                                Мы отправили 6-значный код на {email.trim()}. Он войдёт в ваш кабинет и покажет эту заявку.
+                            </Text>
+
+                            <label style={{ display: "block", marginBottom: 16 }}>
+                                <span style={FIELD_LABEL_STYLE}>Код</span>
+                                <TextInput
+                                    size="l"
+                                    placeholder="000000"
+                                    value={otpCode}
+                                    onUpdate={(value) => setOtpCode(value.replace(/\D/g, "").slice(0, 6))}
+                                    autoComplete="one-time-code"
+                                    autoFocus
+                                />
+                            </label>
+
+                            {otpError && (
+                                <div style={{ marginBottom: 16 }}>
+                                    <Alert theme="danger" title="Не удалось подтвердить" message={otpError} />
+                                </div>
+                            )}
+
+                            <Button
+                                view="action"
+                                size="xl"
+                                style={ACTION_BUTTON_STYLE}
+                                loading={verifying}
+                                disabled={otpCode.length !== 6}
+                                onClick={handleVerifyOtp}
+                            >
+                                Войти в кабинет
+                            </Button>
+
+                            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 14 }}>
+                                <button
+                                    type="button"
+                                    onClick={() => setStep(2)}
+                                    style={{
+                                        background: "none",
+                                        border: "none",
+                                        color: "var(--g-color-text-brand)",
+                                        cursor: "pointer",
+                                        padding: 0,
+                                        fontSize: 13,
+                                    }}
+                                >
+                                    Изменить почту
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleResendOtp}
+                                    style={{
+                                        background: "none",
+                                        border: "none",
+                                        color: "var(--g-color-text-brand)",
+                                        cursor: "pointer",
+                                        padding: 0,
+                                        fontSize: 13,
+                                    }}
+                                >
+                                    Прислать ещё раз
+                                </button>
+                            </div>
                         </Card>
                     )}
                 </div>

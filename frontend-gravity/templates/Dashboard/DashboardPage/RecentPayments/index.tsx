@@ -13,93 +13,59 @@ const formatAmount = (amount: number) => `+${amount.toLocaleString("ru-RU")}\u00
 const RecentPayments = () => {
     const { data: recentPayments = [], loading } = useRecentPayments();
 
+    const renderStatus = (status: string) => (
+        <Label theme={getStatusTheme(status)} size="xs">
+            {getStatusLabel(status)}
+        </Label>
+    );
+
     return (
-        <Card view="outlined" style={{ overflow: "hidden" }}>
+        <Card className="repeto-recent-payments-card" view="outlined" style={{ overflow: "hidden" }}>
             <div className="repeto-card-header">
                 <Text variant="subheader-2">Последние оплаты</Text>
                 <Link
                     href="/payments"
-                    style={{
-                        fontSize: 13,
-                        fontWeight: 600,
-                        color: "var(--g-color-text-brand)",
-                        textDecoration: "none",
-                    }}
+                    className="repeto-card-link"
                 >
                     Все →
                 </Link>
             </div>
             {loading ? (
-                <div style={{ padding: "32px 0", textAlign: "center" }}>
+                <div className="repeto-card-body repeto-recent-payments__state">
                     <Loader size="s" />
                 </div>
             ) : recentPayments.length === 0 ? (
-                <div style={{ padding: "32px 20px", textAlign: "center" }}>
+                <div className="repeto-card-body repeto-recent-payments__state">
                     <Text variant="body-1" color="secondary">
                         Пока оплат не было
                     </Text>
                 </div>
             ) : (
-                <div style={{ overflowX: "auto" }}>
-                    <table
-                        className="repeto-table"
-                        style={{ width: "100%", minWidth: 620, borderCollapse: "collapse" }}
-                    >
-                        <thead>
-                            <tr>
-                                <th>Дата</th>
-                                <th>Ученик</th>
-                                <th style={{ textAlign: "right" }}>Сумма</th>
-                                <th>Способ</th>
-                                <th>Статус</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {recentPayments.map((p) => (
-                                <tr key={p.id}>
-                                    <td>
-                                        <Text variant="body-1" color="secondary">{p.date}</Text>
-                                    </td>
-                                    <td>
-                                        <Text variant="body-2">
-                                            {p.studentName}
-                                        </Text>
-                                    </td>
-                                    <td style={{ textAlign: "right" }}>
-                                        <span
-                                            style={{
-                                                display: "inline-flex",
-                                                alignItems: "center",
-                                                gap: 4,
-                                                fontWeight: 700,
-                                                fontSize: 14,
-                                                color: "#22C55E",
-                                                background: "rgba(34,197,94,0.08)",
-                                                padding: "2px 10px",
-                                                borderRadius: 99,
-                                                whiteSpace: "nowrap",
-                                            }}
-                                        >
-                                            {formatAmount(p.amount)}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <Text variant="body-1" color="secondary">
-                                            {p.method}
-                                        </Text>
-                                    </td>
-                                    <td>
-                                        <Label
-                                            theme={getStatusTheme(p.status)}
-                                            size="xs"
-                                        >
-                                            {getStatusLabel(p.status)}
-                                        </Label>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                <div className="repeto-card-body repeto-recent-payments__body">
+                    <div className="repeto-recent-payments-feed">
+                        {recentPayments.map((payment) => (
+                            <div key={payment.id} className="repeto-recent-payments-feed__item">
+                                <div className="repeto-recent-payments-feed__head">
+                                    <Text variant="body-2" className="repeto-dashboard-entity-name" ellipsis>
+                                        {payment.studentName}
+                                    </Text>
+                                    <span className="repeto-dashboard-amount-pill">
+                                        {formatAmount(payment.amount)}
+                                    </span>
+                                </div>
+                                <div className="repeto-recent-payments-feed__meta">
+                                    <Text variant="caption-1" color="secondary">
+                                        {payment.date}
+                                    </Text>
+                                    <span className="repeto-recent-payments-feed__separator" />
+                                    <Text variant="caption-1" color="secondary">
+                                        {payment.method}
+                                    </Text>
+                                    {renderStatus(payment.status)}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             )}
         </Card>

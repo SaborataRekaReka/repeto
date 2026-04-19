@@ -10,16 +10,21 @@ const periodOptions = [
     { value: "year", content: "Год" },
 ];
 
-const barColors = [
-    "var(--g-color-base-brand)",
-    "#2ca84a",
-    "#c9a225",
-    "#d14343",
-    "var(--g-color-base-generic-medium)",
-];
-
 const VISIBLE_STUDENTS_COUNT = 3;
 const STUDENT_ROW_HEIGHT = 64;
+
+function getBarColor(index: number): string {
+    if (index === 0) {
+        return "rgba(174, 122, 255, 1)";
+    }
+    if (index === 1) {
+        return "rgba(174, 122, 255, 0.76)";
+    }
+    if (index === 2) {
+        return "rgba(174, 122, 255, 0.58)";
+    }
+    return "rgba(174, 122, 255, 0.42)";
+}
 
 const IncomeByStudents = () => {
     const [period, setPeriod] = useState("month");
@@ -31,10 +36,12 @@ const IncomeByStudents = () => {
     const maxTotal = students.length > 0 ? students[0].total : 1;
     const grandTotal = students.reduce((s, st) => s + st.total, 0);
     const visibleRows = Math.min(students.length, VISIBLE_STUDENTS_COUNT);
+    const hasOverflow = students.length > VISIBLE_STUDENTS_COUNT;
 
     return (
-        <Card view="outlined" style={{ background: "var(--g-color-base-float)", display: "flex", flexDirection: "column", height: "100%" }}>
+        <Card className="repeto-income-students-card" view="outlined" style={{ background: "var(--g-color-base-float)", display: "flex", flexDirection: "column", height: "100%" }}>
             <div
+                className="repeto-income-students-card__header"
                 style={{
                     display: "flex",
                     alignItems: "center",
@@ -44,12 +51,14 @@ const IncomeByStudents = () => {
                 }}
             >
                 <Text variant="subheader-2">Доход по ученикам</Text>
-                <SegmentedRadioGroup
-                    size="s"
-                    value={period}
-                    onUpdate={setPeriod}
-                    options={periodOptions}
-                />
+                <div className="repeto-income-students-card__period">
+                    <SegmentedRadioGroup
+                        size="s"
+                        value={period}
+                        onUpdate={setPeriod}
+                        options={periodOptions}
+                    />
+                </div>
             </div>
             <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
                 {loading ? (
@@ -63,58 +72,60 @@ const IncomeByStudents = () => {
                 ) : (
                     <>
                         <div
-                            className="repeto-income-students-scroll"
+                            className="repeto-income-students-scroll repeto-income-students-card__scroll"
                             style={{
                                 height: visibleRows * STUDENT_ROW_HEIGHT,
-                                overflowY: students.length > VISIBLE_STUDENTS_COUNT ? "auto" : "hidden",
+                                overflowY: hasOverflow ? "auto" : "hidden",
                                 overflowX: "hidden",
                             }}
                         >
                             {students.map((s, i) => {
                                 const pct = grandTotal > 0 ? Math.round((s.total / grandTotal) * 100) : 0;
-                                const isLastVisible = i === visibleRows - 1;
+                                const isLastRow = i === students.length - 1;
                                 return (
                                     <div
                                         key={s.studentId}
+                                        className="repeto-income-students-card__item"
                                         onClick={() => router.push(`/students/${s.studentId}`)}
                                         style={{
                                             display: "flex",
                                             alignItems: "center",
                                             gap: 12,
-                                            padding: "10px 20px",
+                                            padding: "12px 18px 12px 16px",
                                             minHeight: STUDENT_ROW_HEIGHT,
-                                            borderBottom: isLastVisible ? "none" : "1px dashed var(--g-color-line-generic)",
+                                            borderBottom: isLastRow ? "none" : "1px solid rgba(133, 140, 148, 0.16)",
                                             cursor: "pointer",
                                             transition: "background 0.15s",
                                         }}
                                         onMouseEnter={(e) => (e.currentTarget.style.background = "var(--g-color-base-simple-hover)")}
                                         onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                                     >
-                                        <Text variant="caption-2" color="secondary" style={{ width: 20, flexShrink: 0, textAlign: "center", fontVariantNumeric: "tabular-nums" }}>
+                                        <div className="repeto-income-students-card__rank">
                                             {i + 1}
-                                        </Text>
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                            <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 4 }}>
-                                                <Text variant="body-1" ellipsis style={{ fontWeight: 600 }}>
+                                        </div>
+                                        <div className="repeto-income-students-card__content" style={{ flex: 1, minWidth: 0 }}>
+                                            <div className="repeto-income-students-card__row" style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 6 }}>
+                                                <Text variant="body-1" ellipsis className="repeto-income-students-card__name" style={{ fontWeight: 600 }}>
                                                     {s.studentName}
                                                 </Text>
-                                                <Text variant="body-1" style={{ flexShrink: 0, marginLeft: 12, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
+                                                <Text variant="body-1" className="repeto-income-students-card__amount" style={{ flexShrink: 0, marginLeft: 12, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
                                                     {s.total.toLocaleString("ru-RU")} ₽
                                                 </Text>
                                             </div>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                                <div style={{ flex: 1, height: 4, background: "var(--g-color-base-generic)", borderRadius: 2, overflow: "hidden" }}>
+                                            <div className="repeto-income-students-card__bar-row" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                                <div className="repeto-income-students-card__bar-track" style={{ flex: 1, height: 6, background: "rgba(133, 140, 148, 0.16)", borderRadius: 999, overflow: "hidden" }}>
                                                     <div
+                                                        className="repeto-income-students-card__bar-fill"
                                                         style={{
                                                             height: "100%",
-                                                            borderRadius: 2,
-                                                            background: barColors[i] || barColors[4],
+                                                            borderRadius: 999,
+                                                            background: getBarColor(i),
                                                             width: `${(s.total / maxTotal) * 100}%`,
                                                             transition: "width 0.3s",
                                                         }}
                                                     />
                                                 </div>
-                                                <Text variant="caption-2" color="secondary" style={{ flexShrink: 0, width: 32, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+                                                <Text variant="caption-2" color="secondary" className="repeto-income-students-card__share" style={{ flexShrink: 0, width: 36, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
                                                     {pct}%
                                                 </Text>
                                             </div>

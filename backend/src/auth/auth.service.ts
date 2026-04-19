@@ -11,11 +11,79 @@ import * as crypto from 'crypto';
 import * as nodemailer from 'nodemailer';
 import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '../prisma/prisma.service';
-import { RegisterDto, VerifyRegisterCodeDto, LoginDto } from './dto';
+import {
+  RegisterDto,
+  VerifyRegisterCodeDto,
+  StartRegistrationPaymentDto,
+  CompleteRegistrationDto,
+  StartPlatformAccessPaymentDto,
+  CompletePlatformAccessPaymentDto,
+  RegistrationPlanId,
+  RegistrationBillingCycle,
+  LoginDto,
+} from './dto';
+import {
+  calculatePlatformAccessExpiresAt,
+  getPlatformAccessState,
+  isPlatformBillingCycle,
+  isPlatformPlanId,
+  normalizePlatformAccess,
+} from '../common/utils/platform-access';
 
 const REGISTRATION_CODE_LENGTH = 6;
 const REGISTRATION_CODE_TTL_MINUTES = 15;
 const REGISTRATION_MAX_ATTEMPTS = 5;
+const REGISTRATION_PAYMENT_TOKEN_TTL_MINUTES = 60;
+
+type RegistrationPlanConfig = {
+  id: RegistrationPlanId;
+  name: string;
+  subtitle: string;
+  studentLimit: number | null;
+  monthlyPriceRub: number;
+  yearlyMonthlyPriceRub: number;
+};
+
+type YookassaPaymentStatus = {
+  id: string;
+  status: string;
+  paid?: boolean;
+  amount?: {
+    value?: string;
+    currency?: string;
+  };
+  metadata?: Record<string, unknown>;
+  confirmation?: {
+    confirmation_url?: string;
+  };
+};
+
+const REGISTRATION_PLANS: Record<RegistrationPlanId, RegistrationPlanConfig> = {
+  [RegistrationPlanId.START]: {
+    id: RegistrationPlanId.START,
+    name: 'Старт',
+    subtitle: 'Полный доступ для старта',
+    studentLimit: 1,
+    monthlyPriceRub: 0,
+    yearlyMonthlyPriceRub: 0,
+  },
+  [RegistrationPlanId.PROFI]: {
+    id: RegistrationPlanId.PROFI,
+    name: 'Практика',
+    subtitle: 'Оптимально для частного репетитора',
+    studentLimit: 15,
+    monthlyPriceRub: 300,
+    yearlyMonthlyPriceRub: 250,
+  },
+  [RegistrationPlanId.CENTER]: {
+    id: RegistrationPlanId.CENTER,
+    name: 'Репетиторский центр',
+    subtitle: 'Для команды и роста без ограничений',
+    studentLimit: null,
+    monthlyPriceRub: 1500,
+    yearlyMonthlyPriceRub: 1250,
+  },
+};
 
 @Injectable()
 export class AuthService {
@@ -83,24 +151,27 @@ export class AuthService {
     };
   }
 
+  getRegistrationPlans() {
+    return {
+      defaultPlanId: RegistrationPlanId.PROFI,
+      defaultBillingCycle: RegistrationBillingCycle.MONTH,
+      plans: Object.values(REGISTRATION_PLANS).map((plan) => ({
+        id: plan.id,
+        name: plan.name,
+        subtitle: plan.subtitle,
+        studentLimit: plan.studentLimit,
+        monthlyPriceRub: plan.monthlyPriceRub,
+        yearlyMonthlyPriceRub: plan.yearlyMonthlyPriceRub,
+        yearlyTotalRub: plan.yearlyMonthlyPriceRub * 12,
+      })),
+    };
+  }
+
   async verifyRegisterCode(dto: VerifyRegisterCodeDto) {
     const email = dto.email.trim().toLowerCase();
     const codeHash = this.hashRegistrationCode(dto.code.trim());
 
-    const verification = await this.prisma.registrationVerification.findUnique({
-      where: { email },
-    });
-
-    if (!verification) {
-      throw new BadRequestException('Сначала запросите код подтверждения');
-    }
-
-    if (verification.expiresAt < new Date()) {
-      await this.prisma.registrationVerification.deleteMany({
-        where: { id: verification.id },
-      });
-      throw new BadRequestException('Срок действия кода истек. Запросите новый код');
-    }
+    const verification = await this.getActiveRegistrationVerification(email);
 
     if (verification.attempts >= REGISTRATION_MAX_ATTEMPTS) {
       throw new BadRequestException('Превышено число попыток. Запросите новый код');
@@ -114,24 +185,119 @@ export class AuthService {
       throw new BadRequestException('Неверный код подтверждения');
     }
 
+    const verificationToken = this.jwtService.sign(
+      {
+        typ: 'registration_payment',
+        email: verification.email,
+        codeHash: verification.codeHash,
+      },
+      { expiresIn: `${REGISTRATION_PAYMENT_TOKEN_TTL_MINUTES}m` },
+    );
+
+    return {
+      verificationToken,
+      email: verification.email,
+      expiresInMinutes: REGISTRATION_PAYMENT_TOKEN_TTL_MINUTES,
+    };
+  }
+
+  async startRegistrationPayment(dto: StartRegistrationPaymentDto) {
+    const verification = await this.resolveRegistrationVerification(dto.verificationToken);
+    const amountRub = this.resolveRegistrationAmount(dto.planId, dto.billingCycle);
+
+    if (amountRub <= 0) {
+      return {
+        requiresPayment: false,
+        amountRub: 0,
+      };
+    }
+
+    const payment = await this.createYookassaPayment({
+      source: 'registration',
+      email: verification.email,
+      planId: dto.planId,
+      billingCycle: dto.billingCycle,
+      amountRub,
+      returnUrl: this.getAuthPageUrl(),
+    });
+
+    const confirmationUrl = payment.confirmation?.confirmation_url;
+    if (!confirmationUrl) {
+      throw new BadRequestException('Платежная страница не была создана. Повторите попытку.');
+    }
+
+    return {
+      requiresPayment: true,
+      amountRub,
+      paymentId: payment.id,
+      confirmationUrl,
+    };
+  }
+
+  async completeRegistration(dto: CompleteRegistrationDto) {
+    const verification = await this.resolveRegistrationVerification(dto.verificationToken);
+    const amountRub = this.resolveRegistrationAmount(dto.planId, dto.billingCycle);
+
+    if (amountRub > 0) {
+      if (!dto.paymentId) {
+        throw new BadRequestException('Не найден платёж для завершения регистрации');
+      }
+
+      const payment = await this.getRegistrationPayment(dto.paymentId);
+      if (payment.status !== 'succeeded' || !payment.paid) {
+        throw new BadRequestException('Оплата ещё не подтверждена. Завершите платеж в ЮKassa.');
+      }
+
+      const paidAmountRub = this.parseYookassaAmount(payment.amount?.value);
+      if (paidAmountRub !== amountRub) {
+        throw new BadRequestException('Сумма платежа не совпадает с выбранным тарифом.');
+      }
+
+      const metadata = payment.metadata || {};
+      const paymentSource = String(metadata.source || '').trim();
+      const paymentEmail = String(metadata.email || '').trim().toLowerCase();
+      const paymentPlanId = String(metadata.planId || '').trim();
+      const paymentBilling = String(metadata.billingCycle || '').trim();
+
+      if (
+        paymentSource !== 'registration' ||
+        paymentEmail !== verification.email ||
+        paymentPlanId !== dto.planId ||
+        paymentBilling !== dto.billingCycle
+      ) {
+        throw new BadRequestException('Платеж не соответствует текущей регистрации.');
+      }
+    }
+
+    const activatedAt = new Date();
+    const platformAccess = {
+      status: 'active',
+      planId: dto.planId,
+      billingCycle: dto.billingCycle,
+      activatedAt: activatedAt.toISOString(),
+      expiresAt: calculatePlatformAccessExpiresAt(activatedAt, dto.billingCycle).toISOString(),
+      amountRub,
+      paymentId: dto.paymentId || null,
+    };
+
     const user = await this.prisma.$transaction(async (tx) => {
       const existing = await tx.user.findUnique({
-        where: { email },
+        where: { email: verification.email },
       });
 
       if (existing) {
-        await tx.registrationVerification.deleteMany({
-          where: { id: verification.id },
-        });
         throw new ConflictException('Пользователь с таким email уже существует');
       }
 
       const createdUser = await tx.user.create({
         data: {
-          email,
+          email: verification.email,
           passwordHash: verification.passwordHash,
           name: verification.name,
           phone: verification.phone,
+          paymentSettings: {
+            platformAccess,
+          } as any,
         },
       });
 
@@ -146,6 +312,120 @@ export class AuthService {
     return {
       user: this.sanitizeUser(user),
       ...tokens,
+    };
+  }
+
+  async startPlatformAccessPayment(
+    userId: string,
+    dto: StartPlatformAccessPaymentDto,
+  ) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new UnauthorizedException();
+    }
+
+    const currentAccess = normalizePlatformAccess(user.paymentSettings);
+    const planId =
+      this.resolvePlanId(dto.planId) ||
+      this.resolvePlanId(currentAccess?.planId) ||
+      RegistrationPlanId.PROFI;
+    const billingCycle =
+      this.resolveBillingCycle(dto.billingCycle) ||
+      this.resolveBillingCycle(currentAccess?.billingCycle) ||
+      RegistrationBillingCycle.MONTH;
+    const amountRub = this.resolveRegistrationAmount(planId, billingCycle);
+
+    if (amountRub <= 0) {
+      const updatedUser = await this.activatePlatformAccessForUser(user.id, {
+        planId,
+        billingCycle,
+        amountRub,
+        paymentId: null,
+      });
+
+      return {
+        requiresPayment: false,
+        amountRub,
+        planId,
+        billingCycle,
+        user: this.sanitizeUser(updatedUser),
+      };
+    }
+
+    const payment = await this.createYookassaPayment({
+      source: 'platform_access_renewal',
+      email: user.email,
+      userId: user.id,
+      planId,
+      billingCycle,
+      amountRub,
+      returnUrl: this.getDashboardRenewUrl(),
+    });
+
+    const confirmationUrl = payment.confirmation?.confirmation_url;
+    if (!confirmationUrl) {
+      throw new BadRequestException('Платежная страница не была создана. Повторите попытку.');
+    }
+
+    return {
+      requiresPayment: true,
+      amountRub,
+      planId,
+      billingCycle,
+      paymentId: payment.id,
+      confirmationUrl,
+    };
+  }
+
+  async completePlatformAccessPayment(
+    userId: string,
+    dto: CompletePlatformAccessPaymentDto,
+  ) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new UnauthorizedException();
+    }
+
+    const payment = await this.getRegistrationPayment(dto.paymentId);
+    if (payment.status !== 'succeeded' || !payment.paid) {
+      throw new BadRequestException('Оплата ещё не подтверждена. Завершите платеж в ЮKassa.');
+    }
+
+    const metadata = payment.metadata || {};
+    const paymentSource = String(metadata.source || '').trim();
+    const paymentUserId = String(metadata.userId || '').trim();
+    const paymentEmail = String(metadata.email || '').trim().toLowerCase();
+    const planId = this.resolvePlanId(metadata.planId);
+    const billingCycle = this.resolveBillingCycle(metadata.billingCycle);
+
+    if (
+      paymentSource !== 'platform_access_renewal' ||
+      paymentUserId !== user.id ||
+      paymentEmail !== user.email.toLowerCase() ||
+      !planId ||
+      !billingCycle
+    ) {
+      throw new BadRequestException('Платеж не соответствует вашему аккаунту.');
+    }
+
+    const amountRub = this.resolveRegistrationAmount(planId, billingCycle);
+    const paidAmountRub = this.parseYookassaAmount(payment.amount?.value);
+    if (paidAmountRub !== amountRub) {
+      throw new BadRequestException('Сумма платежа не совпадает с выбранным тарифом.');
+    }
+
+    const updatedUser = await this.activatePlatformAccessForUser(user.id, {
+      planId,
+      billingCycle,
+      amountRub,
+      paymentId: payment.id,
+    });
+
+    return {
+      user: this.sanitizeUser(updatedUser),
+      amountRub,
+      planId,
+      billingCycle,
     };
   }
 
@@ -230,13 +510,15 @@ export class AuthService {
       },
     });
 
-    const frontendUrl = process.env.FRONTEND_URL ||
-      (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3300');
+    const frontendUrl =
+      process.env.NODE_ENV === 'production'
+        ? this.resolveFrontendUrl('')
+        : this.resolveFrontendUrl('http://localhost:3100');
     if (!frontendUrl) {
       this.logger.error('FRONTEND_URL is required in production for password reset links');
       return;
     }
-    const resetUrl = `${frontendUrl}/registration?token=${encodeURIComponent(rawResetToken)}`;
+    const resetUrl = `${frontendUrl}/auth?token=${encodeURIComponent(rawResetToken)}`;
 
     try {
       await this.sendPasswordResetEmail(user.email, user.name, resetUrl);
@@ -307,6 +589,260 @@ export class AuthService {
       process.env.JWT_SECRET ||
       'repeto-dev-registration-code';
     return crypto.createHmac('sha256', secret).update(code).digest('hex');
+  }
+
+  private async getActiveRegistrationVerification(email: string) {
+    const verification = await this.prisma.registrationVerification.findUnique({
+      where: { email },
+    });
+
+    if (!verification) {
+      throw new BadRequestException('Сначала запросите код подтверждения');
+    }
+
+    if (verification.expiresAt < new Date()) {
+      await this.prisma.registrationVerification.deleteMany({
+        where: { id: verification.id },
+      });
+      throw new BadRequestException('Срок действия кода истек. Запросите новый код');
+    }
+
+    return verification;
+  }
+
+  private decodeRegistrationPaymentToken(token: string) {
+    try {
+      const payload = this.jwtService.verify<{
+        typ?: string;
+        email?: string;
+        codeHash?: string;
+      }>(token);
+
+      const email = (payload.email || '').trim().toLowerCase();
+      const codeHash = (payload.codeHash || '').trim();
+
+      if (payload.typ !== 'registration_payment' || !email || !codeHash) {
+        throw new BadRequestException('Некорректная сессия регистрации');
+      }
+
+      return { email, codeHash };
+    } catch {
+      throw new BadRequestException('Сессия регистрации истекла. Запросите код заново.');
+    }
+  }
+
+  private async resolveRegistrationVerification(verificationToken: string) {
+    const tokenPayload = this.decodeRegistrationPaymentToken(verificationToken);
+    const verification = await this.getActiveRegistrationVerification(tokenPayload.email);
+
+    if (verification.codeHash !== tokenPayload.codeHash) {
+      throw new BadRequestException('Сессия регистрации устарела. Подтвердите код снова.');
+    }
+
+    return verification;
+  }
+
+  private resolveRegistrationAmount(
+    planId: RegistrationPlanId,
+    billingCycle: RegistrationBillingCycle,
+  ) {
+    const plan = REGISTRATION_PLANS[planId];
+    if (!plan) {
+      throw new BadRequestException('Неизвестный тариф');
+    }
+
+    if (billingCycle === RegistrationBillingCycle.YEAR) {
+      return plan.yearlyMonthlyPriceRub * 12;
+    }
+
+    return plan.monthlyPriceRub;
+  }
+
+  private resolvePlanId(rawValue: unknown): RegistrationPlanId | null {
+    const normalized = typeof rawValue === 'string' ? rawValue.trim().toLowerCase() : rawValue;
+    if (!isPlatformPlanId(normalized)) {
+      return null;
+    }
+
+    return normalized as RegistrationPlanId;
+  }
+
+  private resolveBillingCycle(rawValue: unknown): RegistrationBillingCycle | null {
+    const normalized = typeof rawValue === 'string' ? rawValue.trim().toLowerCase() : rawValue;
+    if (!isPlatformBillingCycle(normalized)) {
+      return null;
+    }
+
+    return normalized as RegistrationBillingCycle;
+  }
+
+  private async activatePlatformAccessForUser(
+    userId: string,
+    params: {
+      planId: RegistrationPlanId;
+      billingCycle: RegistrationBillingCycle;
+      amountRub: number;
+      paymentId: string | null;
+    },
+  ) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { paymentSettings: true },
+    });
+    if (!user) {
+      throw new UnauthorizedException();
+    }
+
+    const currentPaymentSettings =
+      user.paymentSettings && typeof user.paymentSettings === 'object' && !Array.isArray(user.paymentSettings)
+        ? (user.paymentSettings as Record<string, unknown>)
+        : {};
+
+    const activatedAt = new Date();
+    const platformAccess = {
+      status: 'active',
+      planId: params.planId,
+      billingCycle: params.billingCycle,
+      activatedAt: activatedAt.toISOString(),
+      expiresAt: calculatePlatformAccessExpiresAt(activatedAt, params.billingCycle).toISOString(),
+      amountRub: params.amountRub,
+      paymentId: params.paymentId,
+    };
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        paymentSettings: {
+          ...currentPaymentSettings,
+          platformAccess,
+        } as any,
+      },
+    });
+  }
+
+  private getYookassaCredentials() {
+    const shopId =
+      (process.env.YUKASSA_PLATFORM_SHOP_ID || process.env.YUKASSA_SHOP_ID || '').trim();
+    const secretKey =
+      (process.env.YUKASSA_PLATFORM_SECRET_KEY || process.env.YUKASSA_SECRET_KEY || '').trim();
+
+    if (!shopId || !secretKey) {
+      throw new BadRequestException(
+        'Платежи временно недоступны: не настроены ключи ЮKassa',
+      );
+    }
+
+    return { shopId, secretKey };
+  }
+
+  private getAuthPageUrl() {
+    const base = this.resolveFrontendUrl('http://localhost:3100');
+    return `${base}/auth?view=signup&step=payment`;
+  }
+
+  private getDashboardRenewUrl() {
+    const base = this.resolveFrontendUrl('http://localhost:3100');
+    return `${base}/dashboard?renew=1`;
+  }
+
+  private resolveFrontendUrl(fallback: string) {
+    const raw = process.env.FRONTEND_URL || '';
+    const primary =
+      raw
+        .split(',')
+        .map((value) => value.trim())
+        .find(Boolean) || fallback;
+
+    return primary.replace(/\/+$/, '');
+  }
+
+  private formatAmountForYookassa(amountRub: number) {
+    return amountRub.toFixed(2);
+  }
+
+  private parseYookassaAmount(rawValue?: string) {
+    if (!rawValue) return 0;
+    const normalized = Number.parseFloat(rawValue);
+    if (!Number.isFinite(normalized)) return 0;
+    return Math.round(normalized);
+  }
+
+  private async createYookassaPayment(params: {
+    source: 'registration' | 'platform_access_renewal';
+    email: string;
+    userId?: string;
+    planId: RegistrationPlanId;
+    billingCycle: RegistrationBillingCycle;
+    amountRub: number;
+    returnUrl: string;
+  }): Promise<YookassaPaymentStatus> {
+    const { shopId, secretKey } = this.getYookassaCredentials();
+    const authHeader = Buffer.from(`${shopId}:${secretKey}`).toString('base64');
+    const descriptionPlan = REGISTRATION_PLANS[params.planId]?.name || params.planId;
+
+    const response = await fetch('https://api.yookassa.ru/v3/payments', {
+      method: 'POST',
+      headers: {
+        Authorization: `Basic ${authHeader}`,
+        'Content-Type': 'application/json',
+        'Idempotence-Key': crypto.randomUUID(),
+      },
+      body: JSON.stringify({
+        amount: {
+          value: this.formatAmountForYookassa(params.amountRub),
+          currency: 'RUB',
+        },
+        capture: true,
+        confirmation: {
+          type: 'redirect',
+          return_url: params.returnUrl,
+        },
+        description: `Repeto: тариф ${descriptionPlan} (${params.billingCycle === RegistrationBillingCycle.YEAR ? 'год' : 'месяц'})`,
+        metadata: {
+          source: params.source,
+          email: params.email,
+          planId: params.planId,
+          billingCycle: params.billingCycle,
+          ...(params.userId ? { userId: params.userId } : {}),
+        },
+      }),
+    });
+
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      this.logger.warn(
+        `YooKassa create payment failed: ${response.status} ${JSON.stringify(payload)}`,
+      );
+      throw new BadRequestException('Не удалось создать платеж. Попробуйте еще раз.');
+    }
+
+    return payload as YookassaPaymentStatus;
+  }
+
+  private async getRegistrationPayment(paymentId: string): Promise<YookassaPaymentStatus> {
+    const { shopId, secretKey } = this.getYookassaCredentials();
+    const authHeader = Buffer.from(`${shopId}:${secretKey}`).toString('base64');
+
+    const response = await fetch(
+      `https://api.yookassa.ru/v3/payments/${encodeURIComponent(paymentId)}`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Basic ${authHeader}`,
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      this.logger.warn(
+        `YooKassa payment status failed: ${response.status} ${JSON.stringify(payload)}`,
+      );
+      throw new BadRequestException('Не удалось проверить статус платежа. Попробуйте снова.');
+    }
+
+    return payload as YookassaPaymentStatus;
   }
 
   private async sendRegistrationCodeEmail(
@@ -563,7 +1099,11 @@ export class AuthService {
     avatarUrl: string | null;
     subjects: string[];
     aboutText: string | null;
+    paymentSettings?: unknown;
   }) {
+    const platformAccess = normalizePlatformAccess(user.paymentSettings);
+    const platformAccessState = getPlatformAccessState(user.paymentSettings);
+
     return {
       id: user.id,
       email: user.email,
@@ -575,6 +1115,8 @@ export class AuthService {
       avatarUrl: user.avatarUrl,
       subjects: user.subjects,
       aboutText: user.aboutText,
+      platformAccess,
+      platformAccessState,
     };
   }
 }

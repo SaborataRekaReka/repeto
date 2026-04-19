@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import type { IncomingMessage } from 'http';
 import httpProxy from 'http-proxy';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3200';
+const BACKEND_URL = process.env.BACKEND_URL || 'http://127.0.0.1:3200';
 
 // Disable Next.js body parsing so the proxy can forward the raw body
 export const config = { api: { bodyParser: false } };
@@ -24,10 +24,12 @@ proxy.on('error', (err, _req, res) => {
 });
 
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  return new Promise<void>((resolve, reject) => {
+  return new Promise<void>((resolve) => {
     proxy.web(req as unknown as IncomingMessage, res as any, undefined, (err) => {
-      if (err) reject(err);
-      else resolve();
+      if (err && !res.headersSent && !(res as any).writableEnded) {
+        res.status(502).json({ error: 'Backend unavailable' });
+      }
+      resolve();
     });
   });
 }

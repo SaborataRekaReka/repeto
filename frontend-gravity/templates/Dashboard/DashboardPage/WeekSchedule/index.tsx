@@ -1,34 +1,42 @@
 import Link from "next/link";
-import { Card, Text, Label, Loader, Avatar, User } from "@gravity-ui/uikit";
+import { useEffect, useRef } from "react";
+import { Card, Text, Loader, Avatar } from "@gravity-ui/uikit";
 import { useWeekLessons } from "@/hooks/useDashboard";
 import { shortName } from "@/lib/formatters";
 import { getInitials } from "@/lib/formatters";
+import { accent, brand } from "@/constants/brand";
+import { useThemeMode } from "@/contexts/ThemeContext";
 import type { Lesson } from "@/types/schedule";
 
 const dayNames = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
 
 const avatarColor = (subject: string) => {
     const s = subject.toLowerCase();
-    if (s.includes("математ") || s.includes("русс")) return "#AE7AFF";
-    if (s.includes("физик") || s.includes("англ")) return "#34A853";
-    return "#AE7AFF";
-};
-
-const subjectTheme = (subject: string): "info" | "success" | "normal" => {
-    const s = subject.toLowerCase();
-    if (s.includes("математ")) return "info";
-    if (s.includes("физик")) return "success";
-    if (s.includes("русс")) return "info";
-    if (s.includes("англ")) return "success";
-    return "normal";
+    if (s.includes("математ") || s.includes("русс")) return brand[400];
+    if (s.includes("физик") || s.includes("англ")) return accent[600];
+    return brand[400];
 };
 
 type Props = {
     onLessonClick: (lesson: Lesson) => void;
+    refreshKey?: number;
 };
 
-const WeekSchedule = ({ onLessonClick }: Props) => {
-    const { data: lessons = [], loading } = useWeekLessons();
+const WeekSchedule = ({ onLessonClick, refreshKey }: Props) => {
+    const { theme } = useThemeMode();
+    const isDarkTheme = theme === "dark";
+    const didMountRef = useRef(false);
+
+    const { data: lessons = [], loading, refetch } = useWeekLessons();
+
+    useEffect(() => {
+        if (refreshKey === undefined) return;
+        if (!didMountRef.current) {
+            didMountRef.current = true;
+            return;
+        }
+        refetch();
+    }, [refreshKey, refetch]);
 
     const grouped = lessons.reduce<Record<string, Lesson[]>>((acc, l) => {
         (acc[l.date] ??= []).push(l);
@@ -43,11 +51,7 @@ const WeekSchedule = ({ onLessonClick }: Props) => {
                 <Text variant="subheader-2">Занятия на неделю</Text>
                 <Link
                     href="/schedule"
-                    style={{
-                        fontSize: 13,
-                        color: "var(--g-color-text-brand)",
-                        textDecoration: "none",
-                    }}
+                    className="repeto-card-link"
                 >
                     Расписание →
                 </Link>
@@ -77,19 +81,28 @@ const WeekSchedule = ({ onLessonClick }: Props) => {
                                 )}
                                 <div
                                     style={{
-                                        padding: "10px 16px 4px",
+                                        padding: isToday ? "0 16px" : "10px 16px 4px",
+                                        minHeight: isToday ? 40 : undefined,
+                                        display: isToday ? "flex" : undefined,
+                                        alignItems: isToday ? "center" : undefined,
                                         background: isToday
-                                            ? "var(--g-color-base-brand-hover)"
+                                            ? isDarkTheme
+                                                ? "var(--g-color-base-brand-hover)"
+                                                : accent[300]
                                             : undefined,
                                     }}
                                 >
                                     <Text
                                         variant="caption-2"
-                                        color={isToday ? "brand" : "secondary"}
                                         style={{
                                             textTransform: "uppercase",
                                             letterSpacing: "0.05em",
                                             fontWeight: 600,
+                                            color: isToday
+                                                ? isDarkTheme
+                                                    ? "var(--g-color-text-light-primary)"
+                                                    : "var(--g-color-text-primary)"
+                                                : "var(--g-color-text-secondary)",
                                         }}
                                     >
                                         {isToday ? "Сегодня" : dayLabel}
@@ -128,7 +141,7 @@ const WeekSchedule = ({ onLessonClick }: Props) => {
                                                     marginBottom: 2,
                                                 }}
                                             >
-                                                <Text variant="body-2" ellipsis>
+                                                <Text variant="body-2" ellipsis className="repeto-dashboard-entity-name">
                                                     {shortName(lesson.studentName)}
                                                 </Text>
                                                 <Text
@@ -143,12 +156,9 @@ const WeekSchedule = ({ onLessonClick }: Props) => {
                                                     {lesson.startTime} – {lesson.endTime}
                                                 </Text>
                                             </div>
-                                            <Label
-                                                theme={subjectTheme(lesson.subject)}
-                                                size="xs"
-                                            >
+                                            <Text as="div" variant="body-1" color="secondary">
                                                 {lesson.subject}
-                                            </Label>
+                                            </Text>
                                         </div>
                                     </button>
                                 ))}

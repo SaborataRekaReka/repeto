@@ -1,16 +1,15 @@
 import { useState } from "react";
-import { Clock } from "@gravity-ui/icons";
-import { Card, Text, Loader, DropdownMenu, Button, Icon } from "@gravity-ui/uikit";
-import type { IconData } from "@gravity-ui/uikit";
+import { Card, Text, Loader, SegmentedRadioGroup } from "@gravity-ui/uikit";
 import { useConversion } from "@/hooks/useDashboard";
+import { accent, brand, semantic } from "@/constants/brand";
 
 type ConversionPeriod = "month" | "quarter" | "year";
 
-const periodLabels: Record<ConversionPeriod, string> = {
-    month: "Месяц",
-    quarter: "Квартал",
-    year: "Год",
-};
+const periodOptions: Array<{ value: ConversionPeriod; content: string }> = [
+    { value: "month", content: "Месяц" },
+    { value: "quarter", content: "Квартал" },
+    { value: "year", content: "Год" },
+];
 
 const ConversionRate = () => {
     const [period, setPeriod] = useState<ConversionPeriod>("month");
@@ -23,24 +22,17 @@ const ConversionRate = () => {
     const lessons = data?.completedLessons ?? 0;
     const payments = data?.paymentsCount ?? 0;
 
-    const barColor = pct >= 80 ? "#22C55E" : pct >= 50 ? "#AE7AFF" : "#D16B8F";
+    const barColor = pct >= 80 ? accent[500] : pct >= 50 ? brand[400] : semantic.danger;
 
     return (
         <Card view="outlined" style={{ overflow: "hidden", background: "var(--g-color-base-float)" }}>
             <div className="repeto-card-header repeto-conversion-card__header">
                 <Text variant="subheader-2">Конверсия в оплату</Text>
-                <DropdownMenu
-                    switcher={
-                        <Button view="flat" size="s">
-                            <Icon data={Clock as IconData} size={14} />
-                            {periodLabels[period]}
-                        </Button>
-                    }
-                    items={[
-                        { text: `${period === "month" ? "✓ " : ""}Месяц`, action: () => setPeriod("month") },
-                        { text: `${period === "quarter" ? "✓ " : ""}Квартал`, action: () => setPeriod("quarter") },
-                        { text: `${period === "year" ? "✓ " : ""}Год`, action: () => setPeriod("year") },
-                    ]}
+                <SegmentedRadioGroup
+                    size="s"
+                    value={period}
+                    onUpdate={(value) => setPeriod(value as ConversionPeriod)}
+                    options={periodOptions}
                 />
             </div>
             <div className="repeto-card-body">
@@ -52,15 +44,15 @@ const ConversionRate = () => {
                     <div className="repeto-conversion-card__content">
                         {/* Hero percentage */}
                         <div className="repeto-conversion-card__hero">
-                            <span className="repeto-conversion-card__pct">
+                            <span className="repeto-conversion-card__pct repeto-dashboard-primary-value repeto-dashboard-primary-value--hero">
                                 {pct}%
                             </span>
                             {balance !== 0 && (
                                 <span
                                     className="repeto-conversion-card__delta"
                                     style={{
-                                        color: balance > 0 ? "#22C55E" : "#D16B8F",
-                                        background: balance > 0 ? "rgba(34,197,94,0.08)" : "rgba(209,107,143,0.12)",
+                                        color: balance > 0 ? accent[600] : semantic.danger,
+                                        background: balance > 0 ? accent[100] : "rgba(209,107,143,0.12)",
                                     }}
                                 >
                                     {balance > 0 ? "+" : "−"}{Math.abs(balance).toLocaleString("ru-RU")} ₽
@@ -98,10 +90,10 @@ const ConversionRate = () => {
                         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                             <div className="repeto-conversion-card__stat-row">
                                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#AE7AFF", flexShrink: 0 }} />
+                                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: brand[400], flexShrink: 0 }} />
                                     <Text variant="body-1" color="secondary">Проведено</Text>
                                 </div>
-                                <Text variant="body-1" style={{ fontWeight: 600 }} className="repeto-conversion-card__stat-value">
+                                <Text variant="body-1" className="repeto-conversion-card__stat-value repeto-dashboard-inline-value">
                                     {lessons} зан. · {earned.toLocaleString("ru-RU")} ₽
                                 </Text>
                             </div>
@@ -110,7 +102,7 @@ const ConversionRate = () => {
                                     <span style={{ width: 8, height: 8, borderRadius: "50%", background: barColor, flexShrink: 0 }} />
                                     <Text variant="body-1" color="secondary">Оплачено</Text>
                                 </div>
-                                <Text variant="body-1" style={{ fontWeight: 600 }} className="repeto-conversion-card__stat-value">
+                                <Text variant="body-1" className="repeto-conversion-card__stat-value repeto-dashboard-inline-value">
                                     {payments} плат. · {paid.toLocaleString("ru-RU")} ₽
                                 </Text>
                             </div>

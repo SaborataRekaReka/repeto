@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Dialog, Text, TextInput, Button, Icon, Checkbox } from "@gravity-ui/uikit";
+import { Alert, Text, TextInput, Button, Icon, Checkbox } from "@gravity-ui/uikit";
 import { Magnifier, FolderOpen, File as FileIcon } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
+import AppDialog from "@/components/AppDialog";
 import { getInitials } from "@/lib/formatters";
 import { useStudents } from "@/hooks/useStudents";
 import { updateFileShare } from "@/hooks/useFiles";
@@ -69,9 +70,21 @@ const ShareModal = ({ visible, item, onClose, onSaved }: ShareModalProps) => {
     const changesMade = JSON.stringify(Array.from(sharedIds).sort()) !== JSON.stringify([...item.sharedWith].sort());
 
     return (
-        <Dialog open={visible} onClose={onClose} size="l">
-            <Dialog.Header caption="" />
-            <Dialog.Body>
+        <AppDialog
+            open={visible}
+            onClose={onClose}
+            size="l"
+            caption=""
+            bodyStyle={{ gap: 0 }}
+            footer={{
+                textButtonApply: saved ? "Сохранено ✓" : saving ? "Сохраняем..." : "Сохранить",
+                textButtonCancel: "Отмена",
+                onClickButtonApply: handleSave,
+                onClickButtonCancel: onClose,
+                propsButtonApply: { disabled: saving || (!changesMade && !saved) },
+                propsButtonCancel: { disabled: saving },
+            }}
+        >
                 {/* Header */}
                 <div style={{ display: "flex", alignItems: "center", marginBottom: 20 }}>
                     <div style={{
@@ -170,20 +183,16 @@ const ShareModal = ({ visible, item, onClose, onSaved }: ShareModalProps) => {
                 )}
 
                 {error && (
-                    <div style={{ marginTop: 12, padding: "8px 12px", borderRadius: 8, background: "var(--g-color-base-danger-light)", border: "1px solid var(--g-color-line-danger)" }}>
-                        <Text variant="body-1" color="danger">{error}</Text>
-                    </div>
+                    <Alert
+                        theme="danger"
+                        view="filled"
+                        corners="rounded"
+                        title="Не удалось обновить доступ"
+                        message={error}
+                        style={{ marginTop: 12 }}
+                    />
                 )}
-            </Dialog.Body>
-            <Dialog.Footer
-                textButtonApply={saved ? "Сохранено ✓" : saving ? "Сохраняем..." : "Сохранить"}
-                textButtonCancel="Отмена"
-                onClickButtonApply={handleSave}
-                onClickButtonCancel={onClose}
-                propsButtonApply={{ disabled: saving || (!changesMade && !saved) }}
-                propsButtonCancel={{ disabled: saving }}
-            />
-        </Dialog>
+        </AppDialog>
     );
 };
 

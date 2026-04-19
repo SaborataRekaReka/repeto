@@ -30,9 +30,9 @@ const ArticlePage = () => {
                 <Text variant="caption-2" color="secondary">{article.title}</Text>
             </div>
 
-            <div style={{ display: "flex", gap: 40 }}>
+            <div className="repeto-support-article-layout">
                 {/* Main */}
-                <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="repeto-support-article-main">
                     <Text variant="display-1" style={{ display: "block", marginBottom: 28 }}>{article.title}</Text>
 
                     <Card view="outlined" style={{ padding: 24, background: "var(--g-color-base-float)", marginBottom: 32 }}>
@@ -63,7 +63,7 @@ const ArticlePage = () => {
                         {articleVisuals.length > 0 && (
                             <div style={{ marginTop: 24 }}>
                                 <Text variant="subheader-2" style={{ display: "block", marginBottom: 12 }}>Скриншоты интерфейса</Text>
-                                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                                <div className="repeto-support-article-visuals">
                                     {articleVisuals.map((visual: any) => (
                                         <div key={visual.src} style={{
                                             borderRadius: 10, border: "1px dashed var(--g-color-line-generic)",
@@ -110,7 +110,7 @@ const ArticlePage = () => {
                 </div>
 
                 {/* Sidebar */}
-                <div style={{ width: 240, flexShrink: 0 }}>
+                <div className="repeto-support-article-sidebar">
                     <Text variant="subheader-2" style={{ display: "block", marginBottom: 12, paddingTop: 8 }}>Категории</Text>
                     <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                         {menuArticles.map((btn: any) => (

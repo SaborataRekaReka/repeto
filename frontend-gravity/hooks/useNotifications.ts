@@ -81,8 +81,9 @@ export function useNotifications(params?: {
   };
 }
 
-export function useUnreadCount() {
+export function useUnreadCount(options?: { skip?: boolean }) {
   return useApi<{ count: number }>('/notifications/unread-count', undefined, {
+    skip: options?.skip,
     refreshInterval: 60000,
   });
 }

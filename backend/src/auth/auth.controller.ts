@@ -15,6 +15,10 @@ import { AuthService } from './auth.service';
 import {
   RegisterDto,
   VerifyRegisterCodeDto,
+  StartRegistrationPaymentDto,
+  CompleteRegistrationDto,
+  StartPlatformAccessPaymentDto,
+  CompletePlatformAccessPaymentDto,
   LoginDto,
   ForgotPasswordDto,
   ResetPasswordDto,
@@ -35,16 +39,58 @@ export class AuthController {
   }
 
   @Public()
+  @Get('register/plans')
+  getRegistrationPlans() {
+    return this.authService.getRegistrationPlans();
+  }
+
+  @Public()
   @Throttle({ auth: { ttl: 60000, limit: 10 } })
   @Post('register/verify-code')
   @HttpCode(HttpStatus.OK)
-  async verifyRegisterCode(
-    @Body() dto: VerifyRegisterCodeDto,
+  verifyRegisterCode(@Body() dto: VerifyRegisterCodeDto) {
+    return this.authService.verifyRegisterCode(dto);
+  }
+
+  @Public()
+  @Throttle({ auth: { ttl: 60000, limit: 20 } })
+  @Post('register/start-payment')
+  @HttpCode(HttpStatus.OK)
+  startRegistrationPayment(@Body() dto: StartRegistrationPaymentDto) {
+    return this.authService.startRegistrationPayment(dto);
+  }
+
+  @Public()
+  @Throttle({ auth: { ttl: 60000, limit: 20 } })
+  @Post('register/complete')
+  @HttpCode(HttpStatus.OK)
+  async completeRegistration(
+    @Body() dto: CompleteRegistrationDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result = await this.authService.verifyRegisterCode(dto);
+    const result = await this.authService.completeRegistration(dto);
     this.setRefreshCookie(res, result.refreshToken);
     return { user: result.user, accessToken: result.accessToken };
+  }
+
+  @Post('platform-access/start-payment')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  startPlatformAccessPayment(
+    @CurrentUser('id') userId: string,
+    @Body() dto: StartPlatformAccessPaymentDto,
+  ) {
+    return this.authService.startPlatformAccessPayment(userId, dto);
+  }
+
+  @Post('platform-access/complete')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth()
+  completePlatformAccessPayment(
+    @CurrentUser('id') userId: string,
+    @Body() dto: CompletePlatformAccessPaymentDto,
+  ) {
+    return this.authService.completePlatformAccessPayment(userId, dto);
   }
 
   @Public()

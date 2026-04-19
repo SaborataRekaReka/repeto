@@ -1,12 +1,15 @@
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 import { Card, Text, Label, Loader, Avatar } from "@gravity-ui/uikit";
 import { useTodayLessons } from "@/hooks/useDashboard";
 import { shortName } from "@/lib/formatters";
 import { getInitials } from "@/lib/formatters";
+import { accent, brand } from "@/constants/brand";
 import type { Lesson } from "@/types/schedule";
 
 type TodayScheduleProps = {
     onLessonClick: (lesson: Lesson) => void;
+    refreshKey?: number;
 };
 
 const statusTheme = (status: Lesson["status"]): "success" | "danger" | "normal" => {
@@ -39,18 +42,28 @@ const statusLabel = (status: Lesson["status"]) => {
 
 const avatarColor = (subject: string) => {
     const s = subject.toLowerCase();
-    if (s.includes("математ") || s.includes("русс")) return "#AE7AFF";
-    if (s.includes("физик") || s.includes("англ")) return "#34A853";
-    return "#AE7AFF";
+    if (s.includes("математ") || s.includes("русс")) return brand[400];
+    if (s.includes("физик") || s.includes("англ")) return accent[600];
+    return brand[400];
 };
 
-const TodaySchedule = ({ onLessonClick }: TodayScheduleProps) => {
-    const { data: todayLessons = [], loading } = useTodayLessons();
+const TodaySchedule = ({ onLessonClick, refreshKey }: TodayScheduleProps) => {
+    const { data: todayLessons = [], loading, refetch } = useTodayLessons();
+    const didMountRef = useRef(false);
     const today = new Date();
     const dayLabel = today.toLocaleDateString("ru-RU", {
         day: "numeric",
         month: "long",
     });
+
+    useEffect(() => {
+        if (refreshKey === undefined) return;
+        if (!didMountRef.current) {
+            didMountRef.current = true;
+            return;
+        }
+        refetch();
+    }, [refreshKey, refetch]);
 
     return (
         <Card view="outlined" style={{ overflow: "hidden", background: "var(--g-color-base-float)" }}>
@@ -58,13 +71,9 @@ const TodaySchedule = ({ onLessonClick }: TodayScheduleProps) => {
                 <Text variant="subheader-2">Сегодня, {dayLabel}</Text>
                 <Link
                     href="/schedule"
-                    style={{
-                        fontSize: 13,
-                        color: "var(--g-color-text-brand)",
-                        textDecoration: "none",
-                    }}
+                    className="repeto-card-link"
                 >
-                    Всё расписание →
+                    Расписание →
                 </Link>
             </div>
             {loading ? (
@@ -112,7 +121,7 @@ const TodaySchedule = ({ onLessonClick }: TodayScheduleProps) => {
                                         marginBottom: 2,
                                     }}
                                 >
-                                    <Text variant="body-2" ellipsis>
+                                    <Text variant="body-2" ellipsis className="repeto-dashboard-entity-name">
                                         {shortName(lesson.studentName)}
                                     </Text>
                                     <Text variant="body-1" color="secondary" style={{ flexShrink: 0, marginLeft: 8, fontVariantNumeric: "tabular-nums" }}>

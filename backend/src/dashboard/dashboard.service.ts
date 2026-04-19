@@ -62,9 +62,15 @@ export class DashboardService {
   async getDebts(userId: string, limit = 5) {
     // Use raw aggregation instead of loading all lessons/payments into memory
     const debts = await this.prisma.$queryRaw<
-      { id: string; name: string; subject: string; balance: number }[]
+      {
+        id: string;
+        name: string;
+        subject: string;
+        parentEmail: string | null;
+        balance: number;
+      }[]
     >`
-      SELECT s.id, s.name, s.subject,
+      SELECT s.id, s.name, s.subject, s.parent_email AS "parentEmail",
         COALESCE(p.total_paid, 0) - COALESCE(l.total_rate, 0) AS balance
       FROM "students" s
       LEFT JOIN (
@@ -157,6 +163,7 @@ export class DashboardService {
       where: {
         userId,
         scheduledAt: { gte: start, lt: end },
+        status: 'PLANNED',
       },
       include: {
         student: { select: { id: true, name: true, subject: true } },

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Card, Text, Icon, Button } from "@gravity-ui/uikit";
+import { Card, Text, Icon } from "@gravity-ui/uikit";
 import { File as FileIcon, Folder as FolderIcon, ArrowUpRightFromSquare, ChevronRight } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import type { PortalFile, PortalHomework } from "@/types/student-portal";

@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsArray, IsBoolean, MaxLength } from 'class-validator';
+import { IsOptional, IsString, IsArray, IsBoolean, MaxLength, IsEnum } from 'class-validator';
+import { CloudProvider } from '@prisma/client';
 
 export class UpdateAccountDto {
   @ApiPropertyOptional({ example: 'Анна Иванова' })
@@ -83,4 +84,14 @@ export class UpdateAccountDto {
   @IsOptional()
   @IsBoolean()
   published?: boolean;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  showPublicPackages?: boolean;
+
+  @ApiPropertyOptional({ enum: CloudProvider, example: CloudProvider.YANDEX_DISK })
+  @IsOptional()
+  @IsEnum(CloudProvider)
+  homeworkDefaultCloud?: CloudProvider;
 }

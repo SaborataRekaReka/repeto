@@ -20,6 +20,7 @@ import { HealthModule } from './health/health.module';
 import { AvailabilityModule } from './availability/availability.module';
 import { FilesModule } from './files/files.module';
 import { MessengerModule } from './messenger/messenger.module';
+import { StudentAuthModule } from './student-auth/student-auth.module';
 import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
@@ -45,6 +46,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     }),
     PrismaModule,
     AuthModule,
+    StudentAuthModule,
     StudentsModule,
     LessonsModule,
     PaymentsModule,

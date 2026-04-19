@@ -21,15 +21,30 @@ test.describe('Ученики — список', () => {
     await page.waitForLoadState('networkidle');
 
     // Кликаем "Активные"
-    await page.getByRole('radio', { name: 'Активные' }).or(page.getByText('Активные').first()).click();
+    const activeTab = page.getByRole('radio', { name: 'Активные' }).first();
+    if (await activeTab.isVisible().catch(() => false)) {
+      await activeTab.click();
+    } else {
+      await page.getByText('Активные').first().click();
+    }
     await page.waitForLoadState('networkidle');
 
     // Кликаем «На паузе»
-    await page.getByRole('radio', { name: 'На паузе' }).or(page.getByText('На паузе').first()).click();
+    const pausedTab = page.getByRole('radio', { name: 'На паузе' }).first();
+    if (await pausedTab.isVisible().catch(() => false)) {
+      await pausedTab.click();
+    } else {
+      await page.getByText('На паузе').first().click();
+    }
     await page.waitForLoadState('networkidle');
 
     // Обратно на «Все»
-    await page.getByRole('radio', { name: 'Все' }).or(page.getByText('Все').first()).click();
+    const allTab = page.getByRole('radio', { name: 'Все' }).first();
+    if (await allTab.isVisible().catch(() => false)) {
+      await allTab.click();
+    } else {
+      await page.getByText('Все').first().click();
+    }
     await page.waitForLoadState('networkidle');
   });
 
@@ -48,6 +63,22 @@ test.describe('Ученики — список', () => {
       await page.waitForTimeout(500);
     }
   });
+
+  test('форма создания: класс и возраст разделены', async ({ authedPage: page }) => {
+    await page.goto('/students');
+    await page.waitForLoadState('networkidle');
+
+    await page.getByRole('button', { name: /Новый ученик|Добавить ученика/i }).first().click();
+    const studentDialog = page.getByRole('dialog', { name: 'Новый ученик' }).first();
+    await expect(studentDialog).toBeVisible({ timeout: 10000 });
+
+    await expect(studentDialog.getByText('Класс').first()).toBeVisible();
+    await expect(studentDialog.getByText('Возраст').first()).toBeVisible();
+    await expect(studentDialog.getByText('Класс / возраст')).toHaveCount(0);
+
+    await studentDialog.getByRole('button', { name: 'Назад' }).click();
+    await expect(studentDialog).toBeHidden({ timeout: 10000 });
+  });
 });
 
 test.describe('Ученики — создание (live update)', () => {
@@ -62,22 +93,20 @@ test.describe('Ученики — создание (live update)', () => {
 
     // Нажимаем "Новый ученик"
     await page.getByRole('button', { name: /Новый ученик|Добавить ученика/i }).first().click();
-    await page.waitForTimeout(500);
-
-    // Ждём модал — ищем заголовок
-    await expect(page.getByText('Новый ученик').first()).toBeVisible({ timeout: 5000 });
+    const studentDialog = page.getByRole('dialog', { name: 'Новый ученик' }).first();
+    await expect(studentDialog).toBeVisible({ timeout: 10000 });
 
     // ФИО — через placeholder модала
-    const nameInput = page.getByPlaceholder('Иванов Пётр Сергеевич');
+    const nameInput = studentDialog.getByPlaceholder('Иванов Пётр Сергеевич');
     await nameInput.fill(testStudentName);
 
     // Предмет — Gravity UI Select
-    await page.getByText('Выберите предмет').click();
+    await studentDialog.getByText('Выберите предмет').click();
     await page.waitForTimeout(300);
     await page.getByRole('option', { name: 'Математика' }).click();
 
     // Ставка
-    const rateInput = page.getByPlaceholder('2100');
+    const rateInput = studentDialog.getByPlaceholder('2100');
     if (await rateInput.isVisible()) {
       await rateInput.clear();
       await rateInput.fill('1500');
@@ -85,7 +114,7 @@ test.describe('Ученики — создание (live update)', () => {
 
     // Сохраняем
     const savePromise = waitForAPI(page, '/students');
-    await page.getByRole('button', { name: 'Сохранить' }).click();
+    await studentDialog.getByRole('button', { name: 'Сохранить' }).click();
 
     try {
       await savePromise;
@@ -94,7 +123,7 @@ test.describe('Ученики — создание (live update)', () => {
     }
 
     // Ждём закрытия модала
-    await page.waitForTimeout(2000);
+    await expect(studentDialog).toBeHidden({ timeout: 10000 });
 
     // ГЛАВНОЕ: ученик виден в списке БЕЗ F5
     await expect(page.getByText(testStudentName).first()).toBeVisible({ timeout: 10000 });

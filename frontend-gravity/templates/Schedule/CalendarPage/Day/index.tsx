@@ -84,80 +84,81 @@ const Day = ({ currentDate, onLessonClick, onSlotClick, lessons = [] }: DayProps
 
     return (
         <Card view="outlined" style={{ overflow: "hidden" }}>
-            <div
-                className="repeto-calendar-header"
-                style={{
-                    display: "flex",
-                    borderBottom: "1px solid var(--g-color-line-generic)",
-                }}
-            >
-                <div style={{ width: TIME_COL, flexShrink: 0 }} />
-                <div
-                    style={{
-                        flex: 1,
-                        minWidth: 0,
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        padding: "10px 4px 8px",
-                        borderLeft: "1px solid var(--g-color-line-generic)",
-                    }}
-                >
-                    <Text
-                        variant="caption-2"
-                        color={isToday ? "brand" : "secondary"}
-                        style={{
-                            textTransform: "uppercase",
-                            fontWeight: 500,
-                            letterSpacing: 0.5,
-                        }}
-                    >
-                        {dayName}
-                    </Text>
+            <div className="repeto-calendar-shell">
+                <div style={{ minWidth: 360 }}>
                     <div
+                        className="repeto-calendar-header"
                         style={{
-                            width: 32,
-                            height: 32,
                             display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            borderRadius: "50%",
-                            background: isToday
-                                ? "var(--g-color-base-brand)"
-                                : "transparent",
-                            marginTop: 2,
+                            borderBottom: "1px solid var(--g-color-line-generic)",
                         }}
                     >
-                        <Text
-                            variant="subheader-2"
+                        <div style={{ width: TIME_COL, flexShrink: 0 }} />
+                        <div
                             style={{
-                                color: isToday
-                                    ? "var(--g-color-text-brand-contrast)"
-                                    : "var(--g-color-text-primary)",
+                                flex: 1,
+                                minWidth: 304,
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                padding: "10px 4px 8px",
+                                borderLeft: "1px solid var(--g-color-line-generic)",
                             }}
                         >
-                            {dayNum}
-                        </Text>
+                            <Text
+                                variant="caption-2"
+                                color={isToday ? "brand" : "secondary"}
+                                style={{
+                                    textTransform: "uppercase",
+                                    fontWeight: 500,
+                                    letterSpacing: 0.5,
+                                }}
+                            >
+                                {dayName}
+                            </Text>
+                            <div
+                                style={{
+                                    width: 32,
+                                    height: 32,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    borderRadius: "50%",
+                                    background: isToday
+                                        ? "var(--g-color-base-brand)"
+                                        : "transparent",
+                                    marginTop: 2,
+                                }}
+                            >
+                                <Text
+                                    variant="subheader-2"
+                                    style={{
+                                        color: isToday
+                                            ? "var(--g-color-text-brand-contrast)"
+                                            : "var(--g-color-text-primary)",
+                                    }}
+                                >
+                                    {dayNum}
+                                </Text>
+                            </div>
+                            <Text variant="caption-2" color="secondary">
+                                {monthName}
+                            </Text>
+                        </div>
                     </div>
-                    <Text variant="caption-2" color="secondary">
-                        {monthName}
-                    </Text>
-                </div>
-            </div>
 
-            {/* â”€â”€ Scrollable time grid â”€â”€ */}
-            <div
-                ref={scrollRef}
-                className="repeto-calendar-scroll"
-                style={{ overflowY: "auto", maxHeight: "calc(100vh - 260px)" }}
-            >
-                <div
-                    style={{
-                        display: "flex",
-                        height: gridHeight,
-                        position: "relative",
-                    }}
-                >
+                    <div
+                        ref={scrollRef}
+                        className="repeto-calendar-scroll"
+                        style={{ overflowY: "auto", overflowX: "hidden", maxHeight: "calc(100vh - 260px)" }}
+                    >
+                        <div
+                            style={{
+                                display: "flex",
+                                height: gridHeight,
+                                position: "relative",
+                            }}
+                        >
                     {/* â”€â”€ Time labels â”€â”€ */}
                     <div
                         style={{
@@ -196,7 +197,7 @@ const Day = ({ currentDate, onLessonClick, onSlotClick, lessons = [] }: DayProps
                         onClick={handleSlotClick}
                         style={{
                             flex: 1,
-                            minWidth: 0,
+                            minWidth: 304,
                             position: "relative",
                             borderLeft: "1px solid var(--g-color-line-generic)",
                             cursor: "pointer",
@@ -243,6 +244,8 @@ const Day = ({ currentDate, onLessonClick, onSlotClick, lessons = [] }: DayProps
                             const endMin = parseTimeToMinutes(lesson.endTime);
                             const top = (startMin / 60) * HOUR_HEIGHT;
                             const height = ((endMin - startMin) / 60) * HOUR_HEIGHT;
+                            const blockHeight = Math.max(height - 2, 20);
+                            const useCompact = blockHeight < 52;
 
                             return (
                                 <div
@@ -253,14 +256,15 @@ const Day = ({ currentDate, onLessonClick, onSlotClick, lessons = [] }: DayProps
                                         top,
                                         left: 4,
                                         right: 4,
-                                        height: Math.max(height - 2, 20),
+                                        height: blockHeight,
                                         maxWidth: 500,
                                         zIndex: 2,
                                     }}
                                 >
                                     <LessonBlock
                                         lesson={lesson}
-                                        showTime
+                                        compact={useCompact}
+                                        showTime={!useCompact}
                                         onClick={onLessonClick}
                                     />
                                 </div>
@@ -294,6 +298,8 @@ const Day = ({ currentDate, onLessonClick, onSlotClick, lessons = [] }: DayProps
                                 />
                             </div>
                         )}
+                    </div>
+                </div>
                     </div>
                 </div>
             </div>

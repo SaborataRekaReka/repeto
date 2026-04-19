@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
-import { Card, Text, Icon, Button } from "@gravity-ui/uikit";
-import { FolderOpen, ChevronDown, ArrowUpRightFromSquare } from "@gravity-ui/icons";
+import { Alert, Card, Text, Icon, Button } from "@gravity-ui/uikit";
+import { FolderOpen, ChevronDown, ArrowUpRightFromSquare, TrashBin } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import { getInitials } from "@/lib/formatters";
 import { useStudents } from "@/hooks/useStudents";
@@ -139,26 +139,37 @@ const StudentAccessTab = ({ files, studentAccess, onUpdated }: StudentAccessTabP
                                             {access.foldersCount > 0 && ` · ${access.foldersCount} папок`}
                                         </Text>
                                     </div>
-                                    <Button
-                                        view="outlined-danger"
-                                        size="s"
-                                        disabled={busyStudentId === access.studentId}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleRevokeStudentAccess(access.studentId);
-                                        }}
-                                    >
-                                        {busyStudentId === access.studentId ? "Убираем..." : "Убрать доступ"}
-                                    </Button>
-                                    <Icon
-                                        data={ChevronDown as IconData}
-                                        size={18}
-                                        style={{
-                                            transition: "transform 0.2s",
-                                            transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
-                                            color: "var(--g-color-text-secondary)",
-                                        }}
-                                    />
+                                    <div className="repeto-student-access-row-actions">
+                                        <Button
+                                            view="flat"
+                                            size="s"
+                                            className="repeto-student-access-icon-btn"
+                                            loading={busyStudentId === access.studentId}
+                                            disabled={busyStudentId !== null && busyStudentId !== access.studentId}
+                                            title="Убрать доступ"
+                                            aria-label="Убрать доступ"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                void handleRevokeStudentAccess(access.studentId);
+                                            }}
+                                        >
+                                            <Icon data={TrashBin as IconData} size={14} />
+                                        </Button>
+                                        <span
+                                            className="repeto-student-access-icon-btn repeto-student-access-chevron"
+                                            aria-hidden="true"
+                                        >
+                                            <Icon
+                                                data={ChevronDown as IconData}
+                                                size={16}
+                                                style={{
+                                                    transition: "transform 0.2s",
+                                                    transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
+                                                    color: "var(--g-color-text-secondary)",
+                                                }}
+                                            />
+                                        </span>
+                                    </div>
                                 </div>
 
                                 {isExpanded && (
@@ -193,43 +204,48 @@ const StudentAccessTab = ({ files, studentAccess, onUpdated }: StudentAccessTabP
                                                             {item.type === "folder" ? "Папка" : `${item.size || ""} · ${item.modifiedAt}`}
                                                         </Text>
                                                     </div>
-                                                    <Button
-                                                        view="outlined-danger"
-                                                        size="s"
-                                                        disabled={busyStudentId === access.studentId || busyItemKey === `${access.studentId}:${item.id}`}
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleRevokeItemAccess(access.studentId, item);
-                                                        }}
-                                                    >
-                                                        {busyItemKey === `${access.studentId}:${item.id}` ? "Убираем..." : "Убрать"}
-                                                    </Button>
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); window.open(item.cloudUrl, "_blank", "noopener,noreferrer"); }}
-                                                        title="Открыть в облаке"
-                                                        style={{
-                                                            background: "none", border: "none", cursor: "pointer",
-                                                            padding: 6, borderRadius: 6, display: "flex",
-                                                            color: "var(--g-color-text-secondary)",
-                                                        }}
-                                                    >
-                                                        <Icon data={ArrowUpRightFromSquare as IconData} size={14} />
-                                                    </button>
+                                                    <div className="repeto-student-access-item-actions">
+                                                        <Button
+                                                            view="flat"
+                                                            size="s"
+                                                            className="repeto-student-access-icon-btn"
+                                                            loading={busyItemKey === `${access.studentId}:${item.id}`}
+                                                            disabled={busyStudentId === access.studentId || busyItemKey === `${access.studentId}:${item.id}`}
+                                                            title="Убрать"
+                                                            aria-label="Убрать"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                void handleRevokeItemAccess(access.studentId, item);
+                                                            }}
+                                                        >
+                                                            <Icon data={TrashBin as IconData} size={14} />
+                                                        </Button>
+                                                        <Button
+                                                            view="flat"
+                                                            size="s"
+                                                            className="repeto-student-access-icon-btn"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                window.open(item.cloudUrl, "_blank", "noopener,noreferrer");
+                                                            }}
+                                                            title="Открыть в облаке"
+                                                            aria-label="Открыть в облаке"
+                                                        >
+                                                            <Icon data={ArrowUpRightFromSquare as IconData} size={14} />
+                                                        </Button>
+                                                    </div>
                                                 </div>
                                             ))
                                         )}
                                         {errorByStudent[access.studentId] && (
-                                            <div
-                                                style={{
-                                                    margin: "10px 20px 0",
-                                                    padding: "8px 12px",
-                                                    borderRadius: 8,
-                                                    background: "var(--g-color-base-danger-light)",
-                                                    border: "1px solid var(--g-color-line-danger)",
-                                                }}
-                                            >
-                                                <Text variant="body-1" color="danger">{errorByStudent[access.studentId]}</Text>
-                                            </div>
+                                            <Alert
+                                                theme="danger"
+                                                view="filled"
+                                                corners="rounded"
+                                                title="Не удалось обновить доступ"
+                                                message={errorByStudent[access.studentId]}
+                                                style={{ margin: "10px 20px 0" }}
+                                            />
                                         )}
                                         <div style={{ padding: "10px 20px", borderTop: "1px dashed var(--g-color-line-generic)" }}>
                                             <button

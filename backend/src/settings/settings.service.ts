@@ -5,12 +5,15 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { CloudProvider, Prisma } from '@prisma/client';
+import { google } from 'googleapis';
+import { OAuth2Client } from 'google-auth-library';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import { PrismaService } from '../prisma/prisma.service';
 import { FilesService } from '../files/files.service';
+import { getPrimaryFrontendUrl } from '../common/utils/frontend-url';
 import {
   UpdateAccountDto,
   ChangePasswordDto,
@@ -20,10 +23,120 @@ import {
 
 @Injectable()
 export class SettingsService {
+  private static readonly SLUG_FALLBACK = 'tutor';
+  private static readonly MAX_SLUG_LENGTH = 100;
+  private static readonly YANDEX_DEFAULT_ROOT_PATH = 'disk:/Материалы учеников Repeto';
+  private static readonly CYRILLIC_TO_LATIN: Record<string, string> = {
+    а: 'a',
+    б: 'b',
+    в: 'v',
+    г: 'g',
+    д: 'd',
+    е: 'e',
+    ё: 'yo',
+    ж: 'zh',
+    з: 'z',
+    и: 'i',
+    й: 'y',
+    к: 'k',
+    л: 'l',
+    м: 'm',
+    н: 'n',
+    о: 'o',
+    п: 'p',
+    р: 'r',
+    с: 's',
+    т: 't',
+    у: 'u',
+    ф: 'f',
+    х: 'kh',
+    ц: 'ts',
+    ч: 'ch',
+    ш: 'sh',
+    щ: 'shch',
+    ъ: '',
+    ы: 'y',
+    ь: '',
+    э: 'e',
+    ю: 'yu',
+    я: 'ya',
+  };
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly filesService: FilesService,
   ) {}
+
+  private normalizeSlug(raw?: string | null) {
+    const value = (raw || '').trim().toLowerCase();
+    if (!value) {
+      return '';
+    }
+
+    const transliterated = value
+      .split('')
+      .map((char) => SettingsService.CYRILLIC_TO_LATIN[char] ?? char)
+      .join('');
+
+    return transliterated
+      .replace(/[^a-z0-9-]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')
+      .slice(0, SettingsService.MAX_SLUG_LENGTH)
+      .replace(/-+$/g, '');
+  }
+
+  private withSlugSuffix(baseSlug: string, index: number) {
+    const suffix = `-${index}`;
+    const maxBaseLength = SettingsService.MAX_SLUG_LENGTH - suffix.length;
+    const cutBase = baseSlug.slice(0, Math.max(1, maxBaseLength)).replace(/-+$/g, '');
+    return `${cutBase || SettingsService.SLUG_FALLBACK}${suffix}`;
+  }
+
+  private async isSlugTaken(slug: string, userId: string) {
+    const existing = await this.prisma.user.findFirst({
+      where: {
+        slug,
+        id: { not: userId },
+      },
+      select: { id: true },
+    });
+
+    return !!existing;
+  }
+
+  private async suggestAvailableSlug(baseSlug: string, userId: string) {
+    const normalizedBase =
+      this.normalizeSlug(baseSlug) || SettingsService.SLUG_FALLBACK;
+
+    if (!(await this.isSlugTaken(normalizedBase, userId))) {
+      return normalizedBase;
+    }
+
+    for (let i = 2; i <= 9999; i += 1) {
+      const candidate = this.withSlugSuffix(normalizedBase, i);
+      if (!(await this.isSlugTaken(candidate, userId))) {
+        return candidate;
+      }
+    }
+
+    throw new InternalServerErrorException('Не удалось подобрать свободный адрес');
+  }
+
+  async checkSlugAvailability(userId: string, requestedValue?: string, fallbackName?: string) {
+    const normalizedRequested = this.normalizeSlug(requestedValue);
+    const normalizedFallback = this.normalizeSlug(fallbackName);
+    const baseSlug =
+      normalizedRequested || normalizedFallback || SettingsService.SLUG_FALLBACK;
+
+    const suggested = await this.suggestAvailableSlug(baseSlug, userId);
+
+    return {
+      requested: normalizedRequested,
+      isAvailable: normalizedRequested ? suggested === normalizedRequested : true,
+      suggested,
+    };
+  }
 
   private normalizeYandexRootPath(raw?: string | null) {
     const value = (raw || '').trim();
@@ -45,6 +158,13 @@ export class SettingsService {
     return value.endsWith('/') ? `disk:/${value.slice(0, -1)}` : `disk:/${value}`;
   }
 
+  private resolveYandexRootPath(raw?: string | null) {
+    const hasExplicitPath = typeof raw === 'string' && raw.trim().length > 0;
+    return this.normalizeYandexRootPath(
+      hasExplicitPath ? raw : SettingsService.YANDEX_DEFAULT_ROOT_PATH,
+    );
+  }
+
   private toDisplayYandexRootPath(normalized?: string | null) {
     if (!normalized || normalized === 'disk:/') {
       return '/';
@@ -57,20 +177,89 @@ export class SettingsService {
     return normalized;
   }
 
+  private async ensureYandexDiskFolderExists(accessToken: string, normalizedRootPath: string) {
+    if (!accessToken || normalizedRootPath === 'disk:/') {
+      return;
+    }
+
+    const getResourceUrl = new URL('https://cloud-api.yandex.net/v1/disk/resources');
+    getResourceUrl.searchParams.set('path', normalizedRootPath);
+    getResourceUrl.searchParams.set('fields', 'path,type');
+
+    const getResponse = await fetch(getResourceUrl.toString(), {
+      headers: { Authorization: `OAuth ${accessToken}` },
+    });
+
+    if (getResponse.ok) {
+      const payload = await getResponse.json().catch(() => ({} as any));
+      if (payload?.type && payload.type !== 'dir') {
+        throw new BadRequestException('Указанный путь на Яндекс.Диске не является папкой.');
+      }
+      return;
+    }
+
+    if (getResponse.status !== 404) {
+      if (getResponse.status === 401) {
+        throw new BadRequestException('Токен Яндекс.Диска недействителен. Переподключите интеграцию.');
+      }
+      throw new BadRequestException('Не удалось проверить папку на Яндекс.Диске. Повторите попытку.');
+    }
+
+    const createUrl = new URL('https://cloud-api.yandex.net/v1/disk/resources');
+    createUrl.searchParams.set('path', normalizedRootPath);
+
+    const createResponse = await fetch(createUrl.toString(), {
+      method: 'PUT',
+      headers: { Authorization: `OAuth ${accessToken}` },
+    });
+
+    if ([201, 202, 409].includes(createResponse.status)) {
+      return;
+    }
+
+    if (createResponse.status === 401) {
+      throw new BadRequestException('Токен Яндекс.Диска недействителен. Переподключите интеграцию.');
+    }
+
+    throw new BadRequestException(
+      `Не удалось создать папку ${this.toDisplayYandexRootPath(normalizedRootPath)} на Яндекс.Диске.`,
+    );
+  }
+
+  private isProductionEnv() {
+    return process.env.NODE_ENV === 'production';
+  }
+
+  private getEnvValue(prodKey: string, devKey?: string) {
+    if (!this.isProductionEnv() && devKey) {
+      const devValue = (process.env[devKey] || '').trim();
+      if (devValue) {
+        return devValue;
+      }
+    }
+
+    const prodValue = (process.env[prodKey] || '').trim();
+    return prodValue || null;
+  }
+
   private getYandexClientId(): string | null {
-    return process.env.YANDEX_DISK_CLIENT_ID || null;
+    return this.getEnvValue('YANDEX_DISK_CLIENT_ID', 'YANDEX_DISK_CLIENT_ID_DEV');
   }
 
   private getYandexClientSecret(): string | null {
-    return process.env.YANDEX_DISK_CLIENT_SECRET || null;
+    return this.getEnvValue('YANDEX_DISK_CLIENT_SECRET', 'YANDEX_DISK_CLIENT_SECRET_DEV');
   }
 
   private getYandexRedirectUri() {
-    if (process.env.YANDEX_DISK_REDIRECT_URI) {
-      return process.env.YANDEX_DISK_REDIRECT_URI;
+    const configured = this.getEnvValue(
+      'YANDEX_DISK_REDIRECT_URI',
+      'YANDEX_DISK_REDIRECT_URI_DEV',
+    );
+    if (configured) {
+      return configured;
     }
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3300';
+    const frontendUrl = getPrimaryFrontendUrl();
     return `${frontendUrl}/settings?tab=integrations&integration=yandex-disk`;
   }
 
@@ -82,6 +271,35 @@ export class SettingsService {
       );
     }
     return secret;
+  }
+
+  private getGoogleDriveClientId(): string | null {
+    return this.getEnvValue('GOOGLE_DRIVE_CLIENT_ID', 'GOOGLE_DRIVE_CLIENT_ID_DEV');
+  }
+
+  private getGoogleDriveClientSecret(): string | null {
+    return this.getEnvValue('GOOGLE_DRIVE_CLIENT_SECRET', 'GOOGLE_DRIVE_CLIENT_SECRET_DEV');
+  }
+
+  private getGoogleDriveRedirectUri() {
+    const configured = this.getEnvValue(
+      'GOOGLE_DRIVE_REDIRECT_URI',
+      'GOOGLE_DRIVE_REDIRECT_URI_DEV',
+    );
+    if (configured) {
+      return configured;
+    }
+
+    const frontendUrl = getPrimaryFrontendUrl();
+    return `${frontendUrl}/settings?tab=integrations&integration=google-drive`;
+  }
+
+  private createGoogleDriveOAuth2Client(): OAuth2Client {
+    return new google.auth.OAuth2(
+      this.getGoogleDriveClientId() || undefined,
+      this.getGoogleDriveClientSecret() || undefined,
+      this.getGoogleDriveRedirectUri(),
+    );
   }
 
   private encodeYandexState(payload: {
@@ -149,6 +367,7 @@ export class SettingsService {
         whatsapp: true,
         slug: true,
         published: true,
+        showPublicPackages: true,
         timezone: true,
         subjects: true,
         subjectDetails: true,
@@ -167,6 +386,10 @@ export class SettingsService {
         yandexDiskToken: true,
         yandexDiskRootPath: true,
         yandexDiskEmail: true,
+        googleDriveToken: true,
+        googleDriveRootPath: true,
+        googleDriveEmail: true,
+        homeworkDefaultCloud: true,
         googleCalendarToken: true,
         googleCalendarEmail: true,
         yandexCalendarToken: true,
@@ -183,17 +406,105 @@ export class SettingsService {
       ...user,
       hasYukassa: !!user.yukassaShopId,
       hasYandexDisk: !!user.yandexDiskToken,
+      hasGoogleDrive: !!user.googleDriveToken,
       hasGoogleCalendar: !!user.googleCalendarToken,
       hasYandexCalendar: !!user.yandexCalendarToken,
+      googleDriveEmail: user.googleDriveEmail || '',
+      googleDriveRootPath: user.googleDriveRootPath || '/',
+      homeworkDefaultCloud: user.homeworkDefaultCloud,
       googleCalendarEmail: user.googleCalendarEmail || '',
       yandexCalendarEmail: user.yandexCalendarEmail || '',
       yandexDiskRootPath: this.toDisplayYandexRootPath(user.yandexDiskRootPath),
       yandexDiskEmail: user.yandexDiskEmail || '',
       yukassaShopId: undefined,
       yandexDiskToken: undefined,
+      googleDriveToken: undefined,
       googleCalendarToken: undefined,
       yandexCalendarToken: undefined,
     };
+  }
+
+  async startGoogleDriveConnect(userId: string) {
+    const clientId = this.getGoogleDriveClientId();
+    const clientSecret = this.getGoogleDriveClientSecret();
+
+    if (!clientId || !clientSecret) {
+      return { oauthConfigured: false as const };
+    }
+
+    const oauth2 = this.createGoogleDriveOAuth2Client();
+
+    const authUrl = oauth2.generateAuthUrl({
+      access_type: 'offline',
+      prompt: 'consent',
+      scope: [
+        'https://www.googleapis.com/auth/drive.readonly',
+        'https://www.googleapis.com/auth/userinfo.email',
+      ],
+      state: userId,
+    });
+
+    return {
+      oauthConfigured: true as const,
+      authUrl,
+    };
+  }
+
+  async completeGoogleDriveConnect(userId: string, code: string) {
+    const oauth2 = this.createGoogleDriveOAuth2Client();
+
+    const { tokens } = await oauth2.getToken(code);
+    if (!tokens.access_token || !tokens.refresh_token) {
+      throw new BadRequestException('Не удалось получить токены от Google');
+    }
+
+    oauth2.setCredentials(tokens);
+
+    const oauth2Api = google.oauth2({ version: 'v2', auth: oauth2 });
+    const { data: userInfo } = await oauth2Api.userinfo.get();
+    const email = userInfo.email || '';
+
+    const previousGoogleState = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        googleDriveToken: true,
+        googleDriveEmail: true,
+        googleDriveRootPath: true,
+      },
+    });
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        googleDriveToken: tokens as unknown as Prisma.InputJsonValue,
+        googleDriveEmail: email,
+        googleDriveRootPath: '/',
+      },
+    });
+
+    try {
+      const syncResult = await this.filesService.syncFromGoogleDrive(userId);
+
+      return {
+        connected: true,
+        email,
+        rootPath: '/',
+        syncedItems: syncResult.syncedItems,
+      };
+    } catch (error) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          googleDriveToken: previousGoogleState?.googleDriveToken
+            ? (previousGoogleState.googleDriveToken as unknown as Prisma.InputJsonValue)
+            : Prisma.DbNull,
+          googleDriveEmail: previousGoogleState?.googleDriveEmail || null,
+          googleDriveRootPath: previousGoogleState?.googleDriveRootPath || null,
+        },
+      });
+
+      throw error;
+    }
   }
 
   async startYandexDiskConnect(userId: string, rootPath?: string) {
@@ -204,7 +515,7 @@ export class SettingsService {
     }
 
     const redirectUri = this.getYandexRedirectUri();
-    const normalizedRootPath = this.normalizeYandexRootPath(rootPath);
+    const normalizedRootPath = this.resolveYandexRootPath(rootPath);
 
     const state = this.encodeYandexState({
       userId,
@@ -228,7 +539,7 @@ export class SettingsService {
   }
 
   async connectYandexDiskToken(userId: string, token: string, rootPath?: string) {
-    const normalizedRootPath = this.normalizeYandexRootPath(rootPath);
+    const normalizedRootPath = this.resolveYandexRootPath(rootPath);
 
     // Verify token is valid via Yandex user info (doesn't require Disk scope)
     const profileResponse = await fetch('https://login.yandex.ru/info?format=json', {
@@ -254,6 +565,8 @@ export class SettingsService {
       access_token: token,
       obtainedAt: new Date().toISOString(),
     };
+
+    await this.ensureYandexDiskFolderExists(token, normalizedRootPath);
 
     await this.prisma.user.update({
       where: { id: userId },
@@ -314,6 +627,8 @@ export class SettingsService {
       obtainedAt: new Date().toISOString(),
     };
 
+    await this.ensureYandexDiskFolderExists(tokenPayload.access_token, parsedState.rootPath);
+
     let yandexEmail: string | null = null;
     const profileResponse = await fetch('https://login.yandex.ru/info?format=json', {
       headers: {
@@ -355,18 +670,49 @@ export class SettingsService {
   }
 
   async updateAccount(userId: string, dto: UpdateAccountDto) {
-    if (dto.slug) {
-      const existing = await this.prisma.user.findFirst({
-        where: { slug: dto.slug, id: { not: userId } },
-      });
-      if (existing) {
-        throw new BadRequestException('Slug already taken');
-      }
+    const currentUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        slug: true,
+        published: true,
+        showPublicPackages: true,
+      },
+    });
+
+    if (!currentUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    const hasSlugInPayload = dto.slug !== undefined;
+    const hasPublishedInPayload = dto.published !== undefined;
+
+    const nextSlug = hasSlugInPayload
+      ? this.normalizeSlug(dto.slug) || null
+      : currentUser.slug;
+    const nextPublished = hasPublishedInPayload ? !!dto.published : currentUser.published;
+
+    if (nextPublished && !nextSlug) {
+      throw new BadRequestException('Нельзя публиковать страницу без персональной ссылки');
+    }
+
+    if (nextSlug && (await this.isSlugTaken(nextSlug, userId))) {
+      throw new BadRequestException('Такой адрес уже занят.');
+    }
+
+    const data: any = { ...dto };
+
+    if (hasSlugInPayload) {
+      data.slug = nextSlug;
+    }
+
+    if (hasPublishedInPayload) {
+      data.published = nextPublished;
     }
 
     return this.prisma.user.update({
       where: { id: userId },
-      data: dto,
+      data,
       select: {
         id: true,
         name: true,
@@ -375,6 +721,7 @@ export class SettingsService {
         whatsapp: true,
         slug: true,
         published: true,
+        showPublicPackages: true,
         timezone: true,
         subjects: true,
         subjectDetails: true,
@@ -384,6 +731,7 @@ export class SettingsService {
         website: true,
         format: true,
         offlineAddress: true,
+        homeworkDefaultCloud: true,
       },
     });
   }
@@ -439,6 +787,33 @@ export class SettingsService {
     return { message: 'Password changed successfully' };
   }
 
+  private normalizeNotificationChannels(
+    channelsValue: unknown,
+    fallbackChannel?: unknown,
+  ) {
+    const allowedChannels = new Set(['EMAIL', 'PUSH', 'TELEGRAM', 'MAX']);
+
+    if (Array.isArray(channelsValue)) {
+      const normalized = channelsValue
+        .map((value) => String(value || '').trim().toUpperCase())
+        .filter((value) => allowedChannels.has(value));
+
+      if (normalized.length > 0) {
+        return Array.from(new Set(normalized));
+      }
+    }
+
+    const normalizedSingle = String(fallbackChannel || '')
+      .trim()
+      .toUpperCase();
+
+    if (allowedChannels.has(normalizedSingle)) {
+      return [normalizedSingle];
+    }
+
+    return ['EMAIL'];
+  }
+
   async updateNotifications(userId: string, dto: UpdateNotificationsDto) {
     const current = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -450,10 +825,20 @@ export class SettingsService {
         ? (current.notificationSettings as Record<string, unknown>)
         : {};
 
+    const normalizedChannels = this.normalizeNotificationChannels(
+      dto.channels ?? currentSettings.channels,
+      dto.channel ?? currentSettings.channel,
+    );
+
     const nextSettings = {
       ...currentSettings,
       ...dto,
+      channels: normalizedChannels,
+      channel: normalizedChannels[0].toLowerCase(),
     };
+
+    delete (nextSettings as Record<string, unknown>).weeklyReport;
+    delete (nextSettings as Record<string, unknown>).reportDay;
 
     return this.prisma.user.update({
       where: { id: userId },
@@ -523,6 +908,24 @@ export class SettingsService {
               yandexDiskToken: Prisma.DbNull,
               yandexDiskRootPath: null,
               yandexDiskEmail: null,
+            },
+          });
+        });
+      case 'google-drive':
+        return this.prisma.$transaction(async (tx) => {
+          await tx.fileRecord.deleteMany({
+            where: {
+              userId,
+              cloudProvider: CloudProvider.GOOGLE_DRIVE,
+            },
+          });
+
+          return tx.user.update({
+            where: { id: userId },
+            data: {
+              googleDriveToken: Prisma.DbNull,
+              googleDriveRootPath: null,
+              googleDriveEmail: null,
             },
           });
         });

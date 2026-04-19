@@ -60,6 +60,12 @@ test.describe('Карточка ученика — табы', () => {
     // Должны быть поля: Предмет, Ставка и т.д.
     const hasProfileData = await page.getByText(/Предмет|Ставка|Ученик/i).first().isVisible().catch(() => false);
     expect(hasProfileData).toBeTruthy();
+
+    const hasClassField = await page.getByText('Класс').first().isVisible().catch(() => false);
+    const hasAgeField = await page.getByText('Возраст').first().isVisible().catch(() => false);
+    expect(hasClassField).toBeTruthy();
+    expect(hasAgeField).toBeTruthy();
+    expect(await page.getByText('Класс / возраст').count()).toBe(0);
   });
 
   test('таб "Контакты" показывает контакт-данные', async ({ authedPage: page }) => {

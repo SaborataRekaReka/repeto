@@ -4,10 +4,12 @@ import {
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
-import { FileType, Prisma } from '@prisma/client';
+import { CloudProvider, FileType, Prisma } from '@prisma/client';
+import { drive_v3, google } from 'googleapis';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as crypto from 'crypto';
+import { Readable } from 'stream';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { TelegramService } from '../messenger/telegram.service';
@@ -50,9 +52,404 @@ export class PortalService {
     }
   }
 
-  async getPortalData(token: string) {
+  private isProductionEnv() {
+    return process.env.NODE_ENV === 'production';
+  }
+
+  private getEnvValue(prodKey: string, devKey?: string) {
+    if (!this.isProductionEnv() && devKey) {
+      const devValue = (process.env[devKey] || '').trim();
+      if (devValue) {
+        return devValue;
+      }
+    }
+
+    const prodValue = (process.env[prodKey] || '').trim();
+    return prodValue || null;
+  }
+
+  private getGoogleDriveClientId() {
+    return this.getEnvValue('GOOGLE_DRIVE_CLIENT_ID', 'GOOGLE_DRIVE_CLIENT_ID_DEV');
+  }
+
+  private getGoogleDriveClientSecret() {
+    return this.getEnvValue('GOOGLE_DRIVE_CLIENT_SECRET', 'GOOGLE_DRIVE_CLIENT_SECRET_DEV');
+  }
+
+  private getGoogleDriveRedirectUri() {
+    return (
+      this.getEnvValue('GOOGLE_DRIVE_REDIRECT_URI', 'GOOGLE_DRIVE_REDIRECT_URI_DEV') ||
+      this.getEnvValue('GOOGLE_CALENDAR_REDIRECT_URI', 'GOOGLE_CALENDAR_REDIRECT_URI_DEV') ||
+      'http://localhost:3300/settings?tab=integrations&integration=google-drive'
+    );
+  }
+
+  private createGoogleDriveOAuth2Client() {
+    return new google.auth.OAuth2(
+      this.getGoogleDriveClientId() || undefined,
+      this.getGoogleDriveClientSecret() || undefined,
+      this.getGoogleDriveRedirectUri(),
+    );
+  }
+
+  private normalizeYandexPath(raw?: string | null) {
+    const value = (raw || '').trim();
+
+    if (!value || value === '/' || value === 'disk:/' || value === 'disk:') {
+      return 'disk:/';
+    }
+
+    if (value.startsWith('disk:/')) {
+      return value.length > 6 && value.endsWith('/') ? value.slice(0, -1) : value;
+    }
+
+    if (value.startsWith('/')) {
+      return value.length > 1 && value.endsWith('/')
+        ? `disk:${value.slice(0, -1)}`
+        : `disk:${value}`;
+    }
+
+    return value.endsWith('/') ? `disk:/${value.slice(0, -1)}` : `disk:/${value}`;
+  }
+
+  private yandexDisplayPath(providerPath: string) {
+    if (providerPath === 'disk:/') {
+      return '/';
+    }
+
+    return providerPath.startsWith('disk:/') ? providerPath.slice('disk:'.length) : providerPath;
+  }
+
+  private yandexCloudUrl(providerPath: string) {
+    const displayPath = this.yandexDisplayPath(providerPath);
+    if (displayPath === '/') {
+      return 'https://disk.yandex.ru/client/disk';
+    }
+
+    return `https://disk.yandex.ru/client/disk${encodeURI(displayPath)}`;
+  }
+
+  private normalizeGoogleDriveRootId(raw?: string | null) {
+    const value = (raw || '').trim();
+    if (!value || value === '/' || value === 'root') {
+      return 'root';
+    }
+
+    return value;
+  }
+
+  private googleDriveFileUrl(fileId: string) {
+    return `https://drive.google.com/file/d/${encodeURIComponent(fileId)}/view`;
+  }
+
+  private sanitizeCloudSegment(value: string, fallback: string) {
+    const normalized = (value || '')
+      .replace(/[\\/:*?"<>|]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    return normalized || fallback;
+  }
+
+  private sanitizeCloudFileName(fileName: string) {
+    const base = path.basename(fileName || '').trim();
+    const sanitized = base.replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim();
+
+    return sanitized || `homework-${Date.now()}`;
+  }
+
+  private extractYandexAccessToken(token: Prisma.JsonValue | null) {
+    if (!token || typeof token !== 'object' || Array.isArray(token)) {
+      throw new BadRequestException('Интеграция с Яндекс.Диском не подключена.');
+    }
+
+    const accessToken = (token as Record<string, unknown>).access_token;
+    if (typeof accessToken !== 'string' || !accessToken.trim()) {
+      throw new BadRequestException('Токен Яндекс.Диска недействителен. Переподключите интеграцию.');
+    }
+
+    return accessToken;
+  }
+
+  private extractGoogleDriveTokens(token: Prisma.JsonValue | null) {
+    if (!token || typeof token !== 'object' || Array.isArray(token)) {
+      throw new BadRequestException('Интеграция с Google Drive не подключена.');
+    }
+
+    const tokens = token as Record<string, unknown>;
+    const accessToken = typeof tokens.access_token === 'string' ? tokens.access_token.trim() : '';
+    const refreshToken =
+      typeof tokens.refresh_token === 'string' ? tokens.refresh_token.trim() : '';
+
+    if (!accessToken && !refreshToken) {
+      throw new BadRequestException('Токен Google Drive недействителен. Переподключите интеграцию.');
+    }
+
+    return tokens;
+  }
+
+  private async createYandexFolder(accessToken: string, providerPath: string) {
+    const normalizedPath = this.normalizeYandexPath(providerPath);
+    if (normalizedPath === 'disk:/') {
+      return;
+    }
+
+    const url = new URL('https://cloud-api.yandex.net/v1/disk/resources');
+    url.searchParams.set('path', normalizedPath);
+
+    const response = await fetch(url.toString(), {
+      method: 'PUT',
+      headers: {
+        Authorization: `OAuth ${accessToken}`,
+      },
+    });
+
+    if ([201, 202, 409].includes(response.status)) {
+      return;
+    }
+
+    if (response.status === 401) {
+      throw new BadRequestException('Токен Яндекс.Диска недействителен. Переподключите интеграцию.');
+    }
+
+    throw new BadRequestException(
+      `Не удалось создать папку ${this.yandexDisplayPath(normalizedPath)} на Яндекс.Диске.`,
+    );
+  }
+
+  private async ensureYandexFolderTree(
+    accessToken: string,
+    rootPath: string,
+    segments: string[],
+  ) {
+    let currentPath = this.normalizeYandexPath(rootPath);
+
+    for (const rawSegment of segments) {
+      const segment = this.sanitizeCloudSegment(rawSegment, 'Папка');
+      currentPath =
+        currentPath === 'disk:/' ? `disk:/${segment}` : `${currentPath}/${segment}`;
+      await this.createYandexFolder(accessToken, currentPath);
+    }
+
+    return currentPath;
+  }
+
+  private async uploadFileToYandexDisk(
+    accessToken: string,
+    providerPath: string,
+    file: Express.Multer.File,
+  ) {
+    const normalizedPath = this.normalizeYandexPath(providerPath);
+
+    const uploadUrl = new URL('https://cloud-api.yandex.net/v1/disk/resources/upload');
+    uploadUrl.searchParams.set('path', normalizedPath);
+    uploadUrl.searchParams.set('overwrite', 'true');
+
+    const initUploadResponse = await fetch(uploadUrl.toString(), {
+      headers: {
+        Authorization: `OAuth ${accessToken}`,
+      },
+    });
+
+    if (!initUploadResponse.ok) {
+      if (initUploadResponse.status === 401) {
+        throw new BadRequestException('Токен Яндекс.Диска недействителен. Переподключите интеграцию.');
+      }
+
+      throw new BadRequestException('Не удалось подготовить загрузку файла в Яндекс.Диск.');
+    }
+
+    const payload = (await initUploadResponse.json().catch(() => null)) as
+      | { href?: string }
+      | null;
+
+    if (!payload?.href) {
+      throw new BadRequestException('Яндекс.Диск не вернул ссылку для загрузки файла.');
+    }
+
+    const uploadResponse = await fetch(payload.href, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': file.mimetype || 'application/octet-stream',
+      },
+      body: new Uint8Array(file.buffer),
+    });
+
+    if (!uploadResponse.ok) {
+      throw new BadRequestException('Не удалось загрузить файл в Яндекс.Диск.');
+    }
+
+    return this.yandexCloudUrl(normalizedPath);
+  }
+
+  private getGoogleApiStatus(error: unknown) {
+    if (!error || typeof error !== 'object') {
+      return null;
+    }
+
+    const candidate = error as {
+      status?: unknown;
+      code?: unknown;
+      response?: { status?: unknown };
+    };
+
+    if (typeof candidate.status === 'number') {
+      return candidate.status;
+    }
+
+    if (typeof candidate.code === 'number') {
+      return candidate.code;
+    }
+
+    if (candidate.response && typeof candidate.response.status === 'number') {
+      return candidate.response.status;
+    }
+
+    return null;
+  }
+
+  private toGoogleDriveBadRequest(error: unknown, fallbackMessage: string) {
+    const status = this.getGoogleApiStatus(error);
+
+    if (status === 401) {
+      return new BadRequestException('Токен Google Drive недействителен. Переподключите интеграцию.');
+    }
+
+    if (status === 403) {
+      return new BadRequestException('Нет доступа к Google Drive. Проверьте права приложения.');
+    }
+
+    if (status === 404) {
+      return new BadRequestException('Указанная папка не найдена в Google Drive.');
+    }
+
+    return new BadRequestException(fallbackMessage);
+  }
+
+  private escapeGoogleDriveQueryValue(value: string) {
+    return value.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  }
+
+  private async getAuthenticatedGoogleDriveClient(userId: string, token: Prisma.JsonValue | null) {
+    const clientId = this.getGoogleDriveClientId();
+    const clientSecret = this.getGoogleDriveClientSecret();
+    if (!clientId || !clientSecret) {
+      throw new BadRequestException('OAuth Google Drive не настроен на сервере.');
+    }
+
+    const storedTokens = this.extractGoogleDriveTokens(token);
+    const oauth2 = this.createGoogleDriveOAuth2Client();
+    oauth2.setCredentials(storedTokens as any);
+
+    oauth2.on('tokens', async (newTokens) => {
+      const merged = {
+        ...(storedTokens as Record<string, unknown>),
+        ...newTokens,
+      };
+
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          googleDriveToken: merged as Prisma.InputJsonValue,
+        },
+      });
+    });
+
+    return google.drive({ version: 'v3', auth: oauth2 });
+  }
+
+  private async ensureGoogleDriveFolder(
+    drive: drive_v3.Drive,
+    parentId: string,
+    folderName: string,
+  ) {
+    const escapedFolderName = this.escapeGoogleDriveQueryValue(folderName);
+    const query =
+      `'${parentId}' in parents and trashed = false ` +
+      `and mimeType = 'application/vnd.google-apps.folder' and name = '${escapedFolderName}'`;
+
+    try {
+      const existing = await drive.files.list({
+        q: query,
+        pageSize: 1,
+        fields: 'files(id,name)',
+        includeItemsFromAllDrives: true,
+        supportsAllDrives: true,
+      });
+
+      const foundId = existing.data.files?.[0]?.id;
+      if (foundId) {
+        return foundId;
+      }
+
+      const created = await drive.files.create({
+        requestBody: {
+          name: folderName,
+          mimeType: 'application/vnd.google-apps.folder',
+          parents: [parentId],
+        },
+        fields: 'id',
+        supportsAllDrives: true,
+      });
+
+      if (!created.data.id) {
+        throw new BadRequestException('Google Drive не вернул идентификатор созданной папки.');
+      }
+
+      return created.data.id;
+    } catch (error) {
+      throw this.toGoogleDriveBadRequest(error, 'Не удалось подготовить папку в Google Drive.');
+    }
+  }
+
+  private async ensureGoogleDriveFolderTree(
+    drive: drive_v3.Drive,
+    rootFolderId: string,
+    segments: string[],
+  ) {
+    let currentFolderId = this.normalizeGoogleDriveRootId(rootFolderId);
+
+    for (const rawSegment of segments) {
+      const segment = this.sanitizeCloudSegment(rawSegment, 'Папка');
+      currentFolderId = await this.ensureGoogleDriveFolder(drive, currentFolderId, segment);
+    }
+
+    return currentFolderId;
+  }
+
+  private async uploadFileToGoogleDrive(
+    drive: drive_v3.Drive,
+    parentFolderId: string,
+    file: Express.Multer.File,
+    fileName: string,
+  ) {
+    try {
+      const created = await drive.files.create({
+        requestBody: {
+          name: fileName,
+          parents: [parentFolderId],
+        },
+        media: {
+          mimeType: file.mimetype || 'application/octet-stream',
+          body: Readable.from(file.buffer),
+        },
+        fields: 'id,webViewLink',
+        supportsAllDrives: true,
+      });
+
+      if (!created.data.id) {
+        throw new BadRequestException('Google Drive не вернул идентификатор загруженного файла.');
+      }
+
+      return created.data.webViewLink || this.googleDriveFileUrl(created.data.id);
+    } catch (error) {
+      throw this.toGoogleDriveBadRequest(error, 'Не удалось загрузить файл в Google Drive.');
+    }
+  }
+
+  async getPortalData(studentId: string) {
     const student = await this.prisma.student.findUnique({
-      where: { portalToken: token },
+      where: { id: studentId },
       include: {
         user: {
           select: {
@@ -111,13 +508,29 @@ export class PortalService {
           },
         },
         homework: {
-          orderBy: { dueAt: 'asc' },
-          take: 10,
+          orderBy: { createdAt: 'desc' },
+          take: 50,
           select: {
             id: true,
             task: true,
             dueAt: true,
             status: true,
+            attachments: true,
+            materials: {
+              select: {
+                file: {
+                  select: {
+                    id: true,
+                    name: true,
+                    type: true,
+                    extension: true,
+                    size: true,
+                    cloudUrl: true,
+                    parentId: true,
+                  },
+                },
+              },
+            },
           },
         },
         fileShares: {
@@ -140,6 +553,36 @@ export class PortalService {
     if (!student) throw new NotFoundException('Invalid portal link');
 
     const now = new Date();
+
+    // Pending BookingRequests for this student's account email / phone for the
+    // same tutor — surfaced as "unconfirmed lessons" in the portal.
+    const account = student.accountId
+      ? await this.prisma.studentAccount.findUnique({
+          where: { id: student.accountId },
+          select: { email: true },
+        })
+      : null;
+
+    const pendingBookings = await this.prisma.bookingRequest.findMany({
+      where: {
+        userId: student.userId,
+        status: 'PENDING',
+        OR: [
+          ...(account?.email ? [{ clientEmail: account.email }] : []),
+          ...(student.phone ? [{ clientPhone: student.phone }] : []),
+          ...(student.email ? [{ clientEmail: student.email }] : []),
+        ],
+      },
+      orderBy: [{ date: 'asc' }, { startTime: 'asc' }],
+      select: {
+        id: true,
+        subject: true,
+        date: true,
+        startTime: true,
+        duration: true,
+        createdAt: true,
+      },
+    });
 
     const formatDate = (d: Date) => {
       const days = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
@@ -205,12 +648,15 @@ export class PortalService {
       .filter((l) => l.status === 'COMPLETED')
       .slice(0, 5)
       .map((l) => {
+        const dt = new Date(l.scheduledAt);
         const review = this.parsePortalReview(l.notes[0]?.content);
 
         return {
           id: l.id,
-          date: formatDate(new Date(l.scheduledAt)),
+          date: formatDate(dt),
+          time: formatTime(dt, l.duration),
           subject: l.subject,
+          modality: l.format.toLowerCase(),
           status: 'completed',
           price: l.rate,
           rating: review?.rating,
@@ -237,12 +683,95 @@ export class PortalService {
       status: p.status.toLowerCase() as 'paid' | 'pending',
     }));
 
-    const homework = student.homework.map((h) => ({
-      id: h.id,
-      task: h.task,
-      due: h.dueAt ? formatDate(new Date(h.dueAt)) : '',
-      done: h.status === 'COMPLETED',
-    }));
+    const formatPortalUploadSize = (bytes?: number) => {
+      if (!Number.isFinite(bytes) || !bytes || bytes <= 0) {
+        return '—';
+      }
+
+      if (bytes >= 1024 * 1024) {
+        return `${(bytes / (1024 * 1024)).toFixed(1)} МБ`;
+      }
+
+      return `${Math.max(1, Math.round(bytes / 1024))} КБ`;
+    };
+
+    const toPortalUpload = (fileUrl: string, index: number) => {
+      const normalizedUrl = typeof fileUrl === 'string' ? fileUrl : '';
+      const fallbackName = `Файл ${index + 1}`;
+
+      let name = fallbackName;
+      let size = '—';
+      let uploadedAt = '';
+      let expiresAt = '';
+
+      if (normalizedUrl) {
+        try {
+          const basename = path.basename(normalizedUrl);
+          name = decodeURIComponent(basename || fallbackName);
+        } catch {
+          name = path.basename(normalizedUrl) || fallbackName;
+        }
+
+        const relativePath = normalizedUrl.startsWith('/')
+          ? normalizedUrl.slice(1)
+          : normalizedUrl;
+        const absolutePath = path.join(process.cwd(), relativePath);
+
+        if (fs.existsSync(absolutePath)) {
+          try {
+            const stats = fs.statSync(absolutePath);
+            size = formatPortalUploadSize(stats.size);
+
+            const uploadedDate = stats.mtime;
+            uploadedAt = uploadedDate.toISOString();
+
+            const expiresDate = new Date(uploadedDate.getTime() + 3 * 24 * 60 * 60 * 1000);
+            expiresAt = expiresDate.toISOString();
+          } catch {
+            // Ignore stat errors and keep fallback values.
+          }
+        }
+      }
+
+      return {
+        id: normalizedUrl || `upload-${index + 1}`,
+        name,
+        size,
+        uploadedAt,
+        expiresAt,
+        url: normalizedUrl,
+      };
+    };
+
+    const homework = student.homework.map((h) => {
+      const linkedFiles = h.materials
+        .map((material) => material.file)
+        .map((file) => ({
+          id: file.id,
+          name: file.name,
+          type: file.type === FileType.FOLDER ? 'folder' : 'file',
+          extension: file.extension || undefined,
+          size: file.size || undefined,
+          cloudUrl: file.cloudUrl || '#',
+          parentId: file.parentId,
+          subject: student.subject || undefined,
+          homeworkId: h.id,
+        }));
+
+      const studentUploads = (h.attachments || [])
+        .map((fileUrl, index) => toPortalUpload(fileUrl, index))
+        .filter((upload) => !!upload.url);
+
+      return {
+        id: h.id,
+        task: h.task,
+        due: h.dueAt ? formatDate(new Date(h.dueAt)) : '',
+        done: h.status === 'COMPLETED',
+        attachments: h.attachments,
+        studentUploads,
+        linkedFiles,
+      };
+    });
 
     const portalFiles: Array<{
       id: string;
@@ -333,20 +862,32 @@ export class PortalService {
       recentPayments,
       homework,
       files: portalFiles,
+      pendingBookings: pendingBookings.map((b) => {
+        const d = new Date(b.date);
+        return {
+          id: b.id,
+          subject: b.subject,
+          date: formatDate(d),
+          startTime: b.startTime,
+          duration: b.duration,
+        };
+      }),
       notifications: await this.buildNotificationInfo(student),
     };
   }
 
   private async buildNotificationInfo(student: {
+    id: string;
     telegramChatId: string | null;
     maxChatId: string | null;
-    portalToken: string | null;
     user: { notificationSettings: any };
   }) {
     const settings = (student.user.notificationSettings as Record<string, unknown>) || {};
     const channels = (settings.channels as string[]) || [];
-    const hasTelegram = channels.includes('TELEGRAM');
-    const hasMax = channels.includes('MAX');
+    const legacyChannel = String(settings.channel || '').toLowerCase();
+    const hasTelegram =
+      channels.includes('TELEGRAM') || legacyChannel === 'telegram';
+    const hasMax = channels.includes('MAX') || legacyChannel === 'max';
 
     if (!hasTelegram && !hasMax) return null;
 
@@ -361,9 +902,10 @@ export class PortalService {
         result.telegram = { connected: true };
       } else {
         const username = await this.telegramService.botUsername;
+        // Deep-link code uses student id as the nonce; bot-poller resolves it back via existing link flow.
         result.telegram = {
           connected: false,
-          deepLink: username ? `https://t.me/${username}?start=${student.portalToken}` : undefined,
+          deepLink: username ? `https://t.me/${username}?start=${student.id}` : undefined,
         };
       }
     }
@@ -429,11 +971,11 @@ export class PortalService {
     return result;
   }
 
-  async cancelLesson(token: string, lessonId: string) {
+  async cancelLesson(studentId: string, lessonId: string) {
     const student = await this.prisma.student.findUnique({
-      where: { portalToken: token },
+      where: { id: studentId },
     });
-    if (!student) throw new NotFoundException('Invalid portal link');
+    if (!student) throw new NotFoundException('Student not found');
 
     const lesson = await this.prisma.lesson.findUnique({
       where: { id: lessonId },
@@ -492,15 +1034,15 @@ export class PortalService {
   }
 
   async requestReschedule(
-    token: string,
+    studentId: string,
     lessonId: string,
     newDate: string,
     newTime: string,
   ) {
     const student = await this.prisma.student.findUnique({
-      where: { portalToken: token },
+      where: { id: studentId },
     });
-    if (!student) throw new NotFoundException('Invalid portal link');
+    if (!student) throw new NotFoundException('Student not found');
 
     const lesson = await this.prisma.lesson.findUnique({
       where: { id: lessonId },
@@ -562,11 +1104,11 @@ export class PortalService {
     return updated;
   }
 
-  async toggleHomework(token: string, homeworkId: string, done: boolean) {
+  async toggleHomework(studentId: string, homeworkId: string, done: boolean) {
     const student = await this.prisma.student.findUnique({
-      where: { portalToken: token },
+      where: { id: studentId },
     });
-    if (!student) throw new NotFoundException('Invalid portal link');
+    if (!student) throw new NotFoundException('Student not found');
 
     const homework = await this.prisma.homework.findUnique({
       where: { id: homeworkId },
@@ -593,7 +1135,7 @@ export class PortalService {
   }
 
   async submitLessonFeedback(
-    token: string,
+    studentId: string,
     lessonId: string,
     rating: number,
     feedback?: string,
@@ -604,14 +1146,21 @@ export class PortalService {
     }
 
     const student = await this.prisma.student.findUnique({
-      where: { portalToken: token },
-      select: { id: true },
+      where: { id: studentId },
+      select: { id: true, name: true },
     });
-    if (!student) throw new NotFoundException('Invalid portal link');
+    if (!student) throw new NotFoundException('Student not found');
 
     const lesson = await this.prisma.lesson.findUnique({
       where: { id: lessonId },
-      select: { id: true, studentId: true, userId: true, status: true },
+      select: {
+        id: true,
+        studentId: true,
+        userId: true,
+        status: true,
+        subject: true,
+        scheduledAt: true,
+      },
     });
     if (!lesson) throw new NotFoundException('Lesson not found');
     if (lesson.studentId !== student.id) throw new ForbiddenException();
@@ -648,6 +1197,21 @@ export class PortalService {
           content: serializedReview,
         },
       });
+
+      const lessonDate = lesson.scheduledAt.toLocaleDateString('ru-RU', {
+        day: 'numeric',
+        month: 'long',
+      });
+
+      await this.notificationsService.create({
+        userId: lesson.userId,
+        studentId: student.id,
+        lessonId: lesson.id,
+        type: 'SYSTEM',
+        title: 'Оставлен отзыв на занятие',
+        description: `${student.name} · ${lesson.subject} · ${lessonDate}`,
+        actionUrl: `/students/${student.id}?tab=lessons&lessonId=${lesson.id}`,
+      });
     }
 
     const reviewNotes = await this.prisma.lessonNote.findMany({
@@ -683,36 +1247,85 @@ export class PortalService {
   }
 
   async uploadHomeworkFile(
-    token: string,
+    studentId: string,
     homeworkId: string,
     file: Express.Multer.File,
   ) {
     const student = await this.prisma.student.findUnique({
-      where: { portalToken: token },
+      where: { id: studentId },
+      select: {
+        id: true,
+        name: true,
+        userId: true,
+        user: {
+          select: {
+            homeworkDefaultCloud: true,
+            yandexDiskToken: true,
+            yandexDiskRootPath: true,
+            googleDriveToken: true,
+            googleDriveRootPath: true,
+          },
+        },
+      },
     });
-    if (!student) throw new NotFoundException('Invalid portal link');
+    if (!student) throw new NotFoundException('Student not found');
 
     const homework = await this.prisma.homework.findUnique({
       where: { id: homeworkId },
+      select: {
+        id: true,
+        studentId: true,
+        attachments: true,
+      },
     });
     if (!homework) throw new NotFoundException('Homework not found');
     if (homework.studentId !== student.id) throw new ForbiddenException();
 
-    const uploadsDir = path.join(process.cwd(), 'uploads', 'homework');
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
+    const preferredCloud = student.user.homeworkDefaultCloud || CloudProvider.YANDEX_DISK;
+    const studentFolderName = this.sanitizeCloudSegment(student.name, 'Ученик');
+    const fileName = this.sanitizeCloudFileName(file.originalname);
+
+    let fileUrl = '';
+
+    if (preferredCloud === CloudProvider.GOOGLE_DRIVE) {
+      if (!student.user.googleDriveToken) {
+        throw new BadRequestException(
+          'Google Drive не подключен как диск по умолчанию. Подключите интеграцию в настройках.',
+        );
+      }
+
+      const drive = await this.getAuthenticatedGoogleDriveClient(
+        student.userId,
+        student.user.googleDriveToken,
+      );
+
+      const studentFolderId = await this.ensureGoogleDriveFolderTree(
+        drive,
+        student.user.googleDriveRootPath || 'root',
+        ['Repeto', 'Домашние работы', studentFolderName],
+      );
+
+      fileUrl = await this.uploadFileToGoogleDrive(drive, studentFolderId, file, fileName);
+    } else {
+      if (!student.user.yandexDiskToken) {
+        throw new BadRequestException(
+          'Яндекс.Диск не подключен как диск по умолчанию. Подключите интеграцию в настройках.',
+        );
+      }
+
+      const accessToken = this.extractYandexAccessToken(student.user.yandexDiskToken);
+      const studentFolderPath = await this.ensureYandexFolderTree(
+        accessToken,
+        student.user.yandexDiskRootPath || 'disk:/',
+        ['Repeto', 'Домашние работы', studentFolderName],
+      );
+
+      const filePath =
+        studentFolderPath === 'disk:/' ? `disk:/${fileName}` : `${studentFolderPath}/${fileName}`;
+      fileUrl = await this.uploadFileToYandexDisk(accessToken, filePath, file);
     }
 
-    const ALLOWED_HW_EXT = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png', '.txt', '.zip', '.xlsx', '.pptx'];
-    const rawExt = path.extname(file.originalname).toLowerCase();
-    const ext = ALLOWED_HW_EXT.includes(rawExt) ? rawExt : '';
-    const safeName = crypto.randomUUID();
-    const filename = `${safeName}${ext}`;
-    const filepath = path.join(uploadsDir, filename);
-    fs.writeFileSync(filepath, file.buffer);
-
-    const fileUrl = `/uploads/homework/${filename}`;
-    const updatedAttachments = [...homework.attachments, fileUrl];
+    const updatedAttachments = Array.from(new Set([...(homework.attachments || []), fileUrl]));
 
     await this.prisma.homework.update({
       where: { id: homeworkId },
@@ -720,7 +1333,7 @@ export class PortalService {
     });
 
     return {
-      id: safeName,
+      id: crypto.randomUUID(),
       name: file.originalname,
       size: file.size,
       url: fileUrl,
@@ -728,14 +1341,14 @@ export class PortalService {
   }
 
   async removeHomeworkFile(
-    token: string,
+    studentId: string,
     homeworkId: string,
     fileUrl: string,
   ) {
     const student = await this.prisma.student.findUnique({
-      where: { portalToken: token },
+      where: { id: studentId },
     });
-    if (!student) throw new NotFoundException('Invalid portal link');
+    if (!student) throw new NotFoundException('Student not found');
 
     const homework = await this.prisma.homework.findUnique({
       where: { id: homeworkId },

@@ -4,6 +4,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { CloudProvider, FileType, Prisma } from '@prisma/client';
+import { OAuth2Client } from 'google-auth-library';
+import { drive_v3, google } from 'googleapis';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateFileShareDto } from './dto';
 
@@ -21,15 +23,22 @@ type YandexResource = {
   };
 };
 
-type SyncedResource = {
-  providerPath: string;
-  parentProviderPath: string | null;
-  relativePath: string;
+type GoogleDriveResource = {
+  id: string;
   name: string;
-  type: FileType;
-  extension?: string | null;
+  mimeType: string;
   size?: string | null;
-  cloudUrl: string;
+  modifiedTime?: string | null;
+  webViewLink?: string | null;
+};
+
+type GoogleDriveTokens = {
+  access_token?: string;
+  refresh_token?: string;
+  token_type?: string;
+  scope?: string;
+  expiry_date?: number;
+  [key: string]: unknown;
 };
 
 @Injectable()
@@ -71,6 +80,96 @@ export class FilesService {
     }
 
     return `https://disk.yandex.ru/client/disk${encodeURI(displayPath)}`;
+  }
+
+  private isProductionEnv() {
+    return process.env.NODE_ENV === 'production';
+  }
+
+  private getEnvValue(prodKey: string, devKey?: string) {
+    if (!this.isProductionEnv() && devKey) {
+      const devValue = (process.env[devKey] || '').trim();
+      if (devValue) {
+        return devValue;
+      }
+    }
+
+    const prodValue = (process.env[prodKey] || '').trim();
+    return prodValue || null;
+  }
+
+  private getGoogleDriveClientId() {
+    return this.getEnvValue('GOOGLE_DRIVE_CLIENT_ID', 'GOOGLE_DRIVE_CLIENT_ID_DEV');
+  }
+
+  private getGoogleDriveClientSecret() {
+    return this.getEnvValue('GOOGLE_DRIVE_CLIENT_SECRET', 'GOOGLE_DRIVE_CLIENT_SECRET_DEV');
+  }
+
+  private getGoogleDriveRedirectUri() {
+    return (
+      this.getEnvValue('GOOGLE_DRIVE_REDIRECT_URI', 'GOOGLE_DRIVE_REDIRECT_URI_DEV') ||
+      this.getEnvValue('GOOGLE_CALENDAR_REDIRECT_URI', 'GOOGLE_CALENDAR_REDIRECT_URI_DEV') ||
+      'http://localhost:3300/settings?tab=integrations&integration=google-drive'
+    );
+  }
+
+  private createGoogleDriveOAuth2Client() {
+    return new google.auth.OAuth2(
+      this.getGoogleDriveClientId() || undefined,
+      this.getGoogleDriveClientSecret() || undefined,
+      this.getGoogleDriveRedirectUri(),
+    );
+  }
+
+  private normalizeGoogleDriveRootId(raw?: string | null) {
+    const value = (raw || '').trim();
+    if (!value || value === '/' || value === 'root') {
+      return 'root';
+    }
+
+    return value;
+  }
+
+  private toDisplayGoogleDriveRootPath(raw?: string | null) {
+    const value = (raw || '').trim();
+    if (!value || value === 'root') {
+      return '/';
+    }
+
+    return value;
+  }
+
+  private googleDriveFolderUrl(folderId: string) {
+    return `https://drive.google.com/drive/folders/${encodeURIComponent(folderId)}`;
+  }
+
+  private googleDriveFileUrl(fileId: string) {
+    return `https://drive.google.com/file/d/${encodeURIComponent(fileId)}/view`;
+  }
+
+  private extractGoogleDriveItemId(cloudUrl?: string | null) {
+    if (!cloudUrl) return null;
+
+    const parseFromPath = (path: string) => {
+      const folderMatch = path.match(/\/drive\/folders\/([^/?#]+)/);
+      if (folderMatch?.[1]) {
+        return decodeURIComponent(folderMatch[1]);
+      }
+
+      const fileMatch = path.match(/\/file\/d\/([^/?#]+)/);
+      if (fileMatch?.[1]) {
+        return decodeURIComponent(fileMatch[1]);
+      }
+
+      return null;
+    };
+
+    try {
+      return parseFromPath(new URL(cloudUrl).pathname);
+    } catch {
+      return parseFromPath(cloudUrl);
+    }
   }
 
   private toRelativePath(providerPath: string, rootPath: string) {
@@ -130,6 +229,35 @@ export class FilesService {
     return value;
   }
 
+  private extractBadRequestMessage(error: unknown) {
+    if (!(error instanceof BadRequestException)) {
+      return '';
+    }
+
+    const payload = error.getResponse();
+    if (typeof payload === 'string') {
+      return payload;
+    }
+
+    if (payload && typeof payload === 'object' && 'message' in payload) {
+      const candidate = (payload as { message?: unknown }).message;
+      if (Array.isArray(candidate)) {
+        return candidate.join('; ');
+      }
+      if (typeof candidate === 'string') {
+        return candidate;
+      }
+    }
+
+    return '';
+  }
+
+  private isYandexPathNotFoundError(error: unknown) {
+    return this.extractBadRequestMessage(error).includes(
+      'Указанная папка не найдена на Яндекс.Диске',
+    );
+  }
+
   private formatDate(date: Date) {
     return date.toLocaleDateString('ru-RU', {
       day: '2-digit',
@@ -149,6 +277,246 @@ export class FilesService {
     }
 
     return accessToken;
+  }
+
+  private extractGoogleDriveTokens(token: Prisma.JsonValue | null) {
+    if (!token || typeof token !== 'object' || Array.isArray(token)) {
+      throw new BadRequestException(
+        'Токен Google Drive не найден. Подключите интеграцию заново.',
+      );
+    }
+
+    const tokens = token as GoogleDriveTokens;
+    if (
+      (!tokens.access_token || !String(tokens.access_token).trim()) &&
+      (!tokens.refresh_token || !String(tokens.refresh_token).trim())
+    ) {
+      throw new BadRequestException(
+        'Токен Google Drive поврежден. Подключите интеграцию заново.',
+      );
+    }
+
+    return tokens;
+  }
+
+  private getGoogleApiStatus(error: unknown) {
+    if (!error || typeof error !== 'object') {
+      return null;
+    }
+
+    const candidate = error as {
+      status?: unknown;
+      code?: unknown;
+      response?: { status?: unknown };
+    };
+
+    if (typeof candidate.status === 'number') {
+      return candidate.status;
+    }
+
+    if (typeof candidate.code === 'number') {
+      return candidate.code;
+    }
+
+    if (candidate.response && typeof candidate.response.status === 'number') {
+      return candidate.response.status;
+    }
+
+    return null;
+  }
+
+  private getGoogleApiReasonAndMessage(error: unknown) {
+    if (!error || typeof error !== 'object') {
+      return { reason: null as string | null, message: '' };
+    }
+
+    const response = (error as {
+      response?: {
+        data?: {
+          error?: {
+            message?: unknown;
+            status?: unknown;
+            errors?: Array<{ reason?: unknown }>;
+          };
+        };
+      };
+    }).response;
+
+    const apiError = response?.data?.error;
+    let reason: string | null = null;
+    let message = '';
+
+    if (apiError) {
+      if (typeof apiError.message === 'string') {
+        message = apiError.message;
+      }
+
+      if (Array.isArray(apiError.errors)) {
+        const firstReason = apiError.errors.find(
+          (entry): entry is { reason: string } => typeof entry?.reason === 'string',
+        );
+        if (firstReason?.reason) {
+          reason = firstReason.reason;
+        }
+      }
+
+      if (!reason && typeof apiError.status === 'string') {
+        reason = apiError.status;
+      }
+    }
+
+    if (!message && error instanceof Error) {
+      message = error.message;
+    }
+
+    return {
+      reason,
+      message: message.toLowerCase(),
+    };
+  }
+
+  private toGoogleDriveBadRequest(error: unknown, folderLabel?: string) {
+    const status = this.getGoogleApiStatus(error);
+
+    if (status === 401) {
+      return new BadRequestException(
+        'Токен Google Drive недействителен. Переподключите интеграцию.',
+      );
+    }
+
+    if (status === 403) {
+      const details = this.getGoogleApiReasonAndMessage(error);
+
+      if (
+        details.reason === 'accessNotConfigured' ||
+        details.message.includes('api has not been used') ||
+        details.message.includes('access not configured')
+      ) {
+        return new BadRequestException(
+          'Нет доступа к Google Drive: Google Drive API выключен в Google Cloud. Включите Google Drive API и повторите подключение.',
+        );
+      }
+
+      if (
+        details.reason === 'insufficientPermissions' ||
+        details.message.includes('insufficient authentication scopes') ||
+        details.message.includes('insufficient permissions')
+      ) {
+        return new BadRequestException(
+          'Нет доступа к Google Drive: недостаточно OAuth-прав. Переподключите интеграцию и подтвердите доступ к Drive.',
+        );
+      }
+
+      return new BadRequestException(
+        'Нет доступа к Google Drive. Проверьте права приложения и переподключите интеграцию.',
+      );
+    }
+
+    if (status === 404) {
+      if (folderLabel) {
+        return new BadRequestException(
+          `Указанная папка не найдена в Google Drive (${folderLabel}). Проверьте подключение и повторите попытку.`,
+        );
+      }
+
+      return new BadRequestException('Папка не найдена в Google Drive.');
+    }
+
+    return new BadRequestException('Ошибка API Google Drive. Повторите попытку позже.');
+  }
+
+  private async getAuthenticatedGoogleDriveClient(userId: string): Promise<{
+    oauth2: OAuth2Client;
+    drive: drive_v3.Drive;
+  }> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { googleDriveToken: true },
+    });
+
+    const clientId = this.getGoogleDriveClientId();
+    const clientSecret = this.getGoogleDriveClientSecret();
+    if (!clientId || !clientSecret) {
+      throw new BadRequestException('OAuth Google Drive не настроен на сервере.');
+    }
+
+    const storedTokens = this.extractGoogleDriveTokens(user?.googleDriveToken || null);
+
+    const oauth2 = this.createGoogleDriveOAuth2Client();
+    oauth2.setCredentials(storedTokens);
+
+    oauth2.on('tokens', async (newTokens) => {
+      const merged = {
+        ...storedTokens,
+        ...newTokens,
+      };
+
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          googleDriveToken: merged as unknown as Prisma.InputJsonValue,
+        },
+      });
+    });
+
+    return {
+      oauth2,
+      drive: google.drive({ version: 'v3', auth: oauth2 }),
+    };
+  }
+
+  private async fetchGoogleDriveFolder(
+    drive: drive_v3.Drive,
+    folderId: string,
+    displayFolder: string,
+  ) {
+    try {
+      const response = await drive.files.get({
+        fileId: folderId,
+        fields: 'id,name,mimeType,webViewLink',
+        supportsAllDrives: true,
+      });
+
+      const data = response.data;
+      if (!data.id || !data.name || !data.mimeType) {
+        throw new BadRequestException('Google Drive вернул неполные данные по папке.');
+      }
+
+      return data as GoogleDriveResource;
+    } catch (error) {
+      throw this.toGoogleDriveBadRequest(error, displayFolder);
+    }
+  }
+
+  private async listGoogleDriveChildren(drive: drive_v3.Drive, folderId: string) {
+    const children: GoogleDriveResource[] = [];
+    let pageToken: string | undefined = undefined;
+
+    try {
+      do {
+        const response: { data: drive_v3.Schema$FileList } = await drive.files.list({
+          q: `'${folderId}' in parents and trashed = false`,
+          pageSize: 200,
+          pageToken,
+          orderBy: 'folder,name',
+          includeItemsFromAllDrives: true,
+          supportsAllDrives: true,
+          fields: 'nextPageToken,files(id,name,mimeType,size,modifiedTime,webViewLink)',
+        });
+
+        const batch = (response.data.files || []).filter(
+          (item: drive_v3.Schema$File): item is GoogleDriveResource =>
+            !!item.id && !!item.name && !!item.mimeType,
+        );
+
+        children.push(...batch);
+        pageToken = response.data.nextPageToken || undefined;
+      } while (pageToken);
+    } catch (error) {
+      throw this.toGoogleDriveBadRequest(error);
+    }
+
+    return children;
   }
 
   private async fetchYandexResource(
@@ -196,8 +564,15 @@ export class FilesService {
       }
 
       if (response.status === 404) {
+        const normalizedPath = this.normalizeYandexPath(providerPath);
+        if (normalizedPath === 'disk:/') {
+          throw new BadRequestException(
+            'Нет доступа к корню Яндекс.Диска. Проверьте права приложения (доступ к Диску) и переподключите интеграцию.',
+          );
+        }
+
         throw new BadRequestException(
-          'Указанная папка не найдена на Яндекс.Диске. Проверьте путь и повторите подключение.',
+          `Указанная папка не найдена на Яндекс.Диске (${this.yandexDisplayPath(normalizedPath)}). Проверьте путь и повторите подключение.`,
         );
       }
 
@@ -228,107 +603,554 @@ export class FilesService {
     return items;
   }
 
-  private async collectYandexResources(accessToken: string, rootPath: string) {
-    const rootResource = await this.fetchYandexResource(accessToken, rootPath, 1, 0);
-    if (rootResource.type !== 'dir') {
-      throw new BadRequestException('Для интеграции можно выбрать только папку.');
+  private async createYandexFolder(accessToken: string, providerPath: string) {
+    const normalizedPath = this.normalizeYandexPath(providerPath);
+    if (normalizedPath === 'disk:/') {
+      return;
     }
 
-    const synced: SyncedResource[] = [
-      {
-        providerPath: rootPath,
-        parentProviderPath: null,
-        relativePath: '/',
-        name: rootPath === 'disk:/' ? 'Мой диск' : rootResource.name,
+    const url = new URL('https://cloud-api.yandex.net/v1/disk/resources');
+    url.searchParams.set('path', normalizedPath);
+
+    const response = await fetch(url.toString(), {
+      method: 'PUT',
+      headers: {
+        Authorization: `OAuth ${accessToken}`,
+      },
+    });
+
+    if ([201, 202, 409].includes(response.status)) {
+      return;
+    }
+
+    if (response.status === 401) {
+      throw new BadRequestException(
+        'Токен Яндекс.Диска недействителен. Переподключите интеграцию.',
+      );
+    }
+
+    throw new BadRequestException(
+      `Не удалось создать папку ${this.yandexDisplayPath(normalizedPath)} на Яндекс.Диске.`,
+    );
+  }
+
+  private async ensureYandexRootFolderRecord(
+    userId: string,
+    rootPath: string,
+    rootName: string,
+  ) {
+    const existingRoot = await this.prisma.fileRecord.findFirst({
+      where: {
+        userId,
+        cloudProvider: CloudProvider.YANDEX_DISK,
+        type: FileType.FOLDER,
+        parentId: null,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (existingRoot) {
+      await this.prisma.fileRecord.update({
+        where: { id: existingRoot.id },
+        data: {
+          name: rootName,
+          extension: null,
+          size: null,
+          cloudUrl: this.yandexFolderUrl(rootPath),
+        },
+      });
+
+      return existingRoot.id;
+    }
+
+    const createdRoot = await this.prisma.fileRecord.create({
+      data: {
+        userId,
+        name: rootName,
         type: FileType.FOLDER,
         extension: null,
         size: null,
+        cloudProvider: CloudProvider.YANDEX_DISK,
         cloudUrl: this.yandexFolderUrl(rootPath),
+        parentId: null,
       },
-    ];
+      select: {
+        id: true,
+      },
+    });
 
-    const queue: string[] = [rootPath];
+    return createdRoot.id;
+  }
 
-    while (queue.length > 0) {
-      const currentPath = queue.shift() as string;
-      const children = await this.listYandexChildren(accessToken, currentPath);
+  private async ensureGoogleDriveRootFolderRecord(
+    userId: string,
+    rootFolderId: string,
+    rootName: string,
+  ) {
+    const existingRoot = await this.prisma.fileRecord.findFirst({
+      where: {
+        userId,
+        cloudProvider: CloudProvider.GOOGLE_DRIVE,
+        type: FileType.FOLDER,
+        parentId: null,
+      },
+      select: {
+        id: true,
+      },
+    });
 
+    if (existingRoot) {
+      await this.prisma.fileRecord.update({
+        where: { id: existingRoot.id },
+        data: {
+          name: rootName,
+          extension: null,
+          size: null,
+          cloudUrl: this.googleDriveFolderUrl(rootFolderId),
+        },
+      });
+
+      return existingRoot.id;
+    }
+
+    const createdRoot = await this.prisma.fileRecord.create({
+      data: {
+        userId,
+        name: rootName,
+        type: FileType.FOLDER,
+        extension: null,
+        size: null,
+        cloudProvider: CloudProvider.GOOGLE_DRIVE,
+        cloudUrl: this.googleDriveFolderUrl(rootFolderId),
+        parentId: null,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    return createdRoot.id;
+  }
+
+  private async collectDescendantIdsWithClient(
+    db: PrismaService | Prisma.TransactionClient,
+    userId: string,
+    rootId: string,
+  ) {
+    const all = new Set<string>([rootId]);
+    let frontier = [rootId];
+
+    while (frontier.length > 0) {
+      const children = await db.fileRecord.findMany({
+        where: {
+          userId,
+          parentId: { in: frontier },
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      frontier = [];
       for (const child of children) {
-        const normalizedChildPath = this.normalizeYandexPath(child.path);
-        const isFolder = child.type === 'dir';
-
-        synced.push({
-          providerPath: normalizedChildPath,
-          parentProviderPath: currentPath,
-          relativePath: this.toRelativePath(normalizedChildPath, rootPath),
-          name: child.name,
-          type: isFolder ? FileType.FOLDER : FileType.FILE,
-          extension: isFolder ? null : this.getExtension(child.name) || null,
-          size: isFolder ? null : this.formatFileSize(child.size) || null,
-          cloudUrl: isFolder
-            ? this.yandexFolderUrl(normalizedChildPath)
-            : child.file || this.yandexFolderUrl(normalizedChildPath),
-        });
-
-        if (isFolder) {
-          queue.push(normalizedChildPath);
+        if (!all.has(child.id)) {
+          all.add(child.id);
+          frontier.push(child.id);
         }
       }
     }
 
-    return synced;
+    return Array.from(all);
   }
 
-  private buildShareMapByRelativePath(
-    existingFiles: Array<{
-      id: string;
-      name: string;
-      type: FileType;
-      parentId: string | null;
-      shares: Array<{ studentId: string }>;
-    }>,
+  private async syncYandexFolderChildrenSnapshot(
+    userId: string,
+    folderId: string,
+    accessToken: string,
+    folderProviderPath: string,
   ) {
-    const byId = new Map(existingFiles.map((item) => [item.id, item]));
-    const pathById = new Map<string, string>();
+    const children = await this.listYandexChildren(accessToken, folderProviderPath);
 
-    const buildPath = (fileId: string): string => {
-      if (pathById.has(fileId)) {
-        return pathById.get(fileId) as string;
+    return this.prisma.$transaction(async (tx) => {
+      const existingChildren = await tx.fileRecord.findMany({
+        where: {
+          userId,
+          cloudProvider: CloudProvider.YANDEX_DISK,
+          parentId: folderId,
+        },
+        select: {
+          id: true,
+          name: true,
+          type: true,
+        },
+      });
+
+      const existingByKey = new Map<string, { id: string }>();
+      for (const item of existingChildren) {
+        existingByKey.set(`${item.type}:${item.name}`, { id: item.id });
       }
 
-      const file = byId.get(fileId);
-      if (!file) {
-        return '/';
+      const touchedIds = new Set<string>();
+      let createdItems = 0;
+      let updatedItems = 0;
+
+      for (const child of children) {
+        const normalizedChildPath = this.normalizeYandexPath(child.path);
+        const childType = child.type === 'dir' ? FileType.FOLDER : FileType.FILE;
+        const key = `${childType}:${child.name}`;
+        const existing = existingByKey.get(key);
+
+        const payload = {
+          name: child.name,
+          type: childType,
+          extension: childType === FileType.FILE ? this.getExtension(child.name) || null : null,
+          size: childType === FileType.FILE ? this.formatFileSize(child.size) || null : null,
+          // Persist stable Yandex web URLs; temporary downloader links may return 410 after expiry.
+          cloudUrl: this.yandexFolderUrl(normalizedChildPath),
+        };
+
+        if (existing) {
+          await tx.fileRecord.update({
+            where: { id: existing.id },
+            data: payload,
+          });
+          touchedIds.add(existing.id);
+          updatedItems += 1;
+        } else {
+          const created = await tx.fileRecord.create({
+            data: {
+              userId,
+              parentId: folderId,
+              cloudProvider: CloudProvider.YANDEX_DISK,
+              ...payload,
+            },
+            select: {
+              id: true,
+            },
+          });
+          touchedIds.add(created.id);
+          createdItems += 1;
+        }
       }
 
-      if (!file.parentId) {
-        pathById.set(fileId, '/');
-        return '/';
+      const staleDirectChildren = existingChildren.filter((item) => !touchedIds.has(item.id));
+      if (staleDirectChildren.length > 0) {
+        const idsToDelete = new Set<string>();
+
+        for (const stale of staleDirectChildren) {
+          const subtreeIds = await this.collectDescendantIdsWithClient(tx, userId, stale.id);
+          for (const id of subtreeIds) {
+            idsToDelete.add(id);
+          }
+        }
+
+        const staleIds = Array.from(idsToDelete);
+        if (staleIds.length > 0) {
+          await tx.fileRecord.deleteMany({
+            where: {
+              id: { in: staleIds },
+              userId,
+              cloudProvider: CloudProvider.YANDEX_DISK,
+            },
+          });
+        }
       }
 
-      const parentPath = buildPath(file.parentId);
-      const currentPath = parentPath === '/' ? `/${file.name}` : `${parentPath}/${file.name}`;
-      pathById.set(fileId, currentPath);
-      return currentPath;
+      return {
+        syncedItems: children.length,
+        createdItems,
+        updatedItems,
+        removedItems: staleDirectChildren.length,
+      };
+    });
+  }
+
+  private async syncGoogleDriveFolderChildrenSnapshot(
+    userId: string,
+    folderId: string,
+    drive: drive_v3.Drive,
+    driveFolderId: string,
+  ) {
+    const children = await this.listGoogleDriveChildren(drive, driveFolderId);
+
+    return this.prisma.$transaction(async (tx) => {
+      const existingChildren = await tx.fileRecord.findMany({
+        where: {
+          userId,
+          cloudProvider: CloudProvider.GOOGLE_DRIVE,
+          parentId: folderId,
+        },
+        select: {
+          id: true,
+          name: true,
+          type: true,
+        },
+      });
+
+      const existingByKey = new Map<string, Array<{ id: string }>>();
+      for (const item of existingChildren) {
+        const key = `${item.type}:${item.name}`;
+        const current = existingByKey.get(key) || [];
+        current.push({ id: item.id });
+        existingByKey.set(key, current);
+      }
+
+      const touchedIds = new Set<string>();
+      let createdItems = 0;
+      let updatedItems = 0;
+
+      for (const child of children) {
+        const isFolder = child.mimeType === 'application/vnd.google-apps.folder';
+        const childType = isFolder ? FileType.FOLDER : FileType.FILE;
+        const key = `${childType}:${child.name}`;
+
+        const bucket = existingByKey.get(key) || [];
+        const existing = bucket.shift();
+        if (bucket.length > 0) {
+          existingByKey.set(key, bucket);
+        } else {
+          existingByKey.delete(key);
+        }
+
+        const parsedSize =
+          child.size && Number.isFinite(Number(child.size)) ? Number(child.size) : null;
+
+        const payload = {
+          name: child.name,
+          type: childType,
+          extension: childType === FileType.FILE ? this.getExtension(child.name) || null : null,
+          size: childType === FileType.FILE ? this.formatFileSize(parsedSize) || null : null,
+          cloudUrl:
+            childType === FileType.FOLDER
+              ? this.googleDriveFolderUrl(child.id)
+              : child.webViewLink || this.googleDriveFileUrl(child.id),
+        };
+
+        if (existing) {
+          await tx.fileRecord.update({
+            where: { id: existing.id },
+            data: payload,
+          });
+          touchedIds.add(existing.id);
+          updatedItems += 1;
+        } else {
+          const created = await tx.fileRecord.create({
+            data: {
+              userId,
+              parentId: folderId,
+              cloudProvider: CloudProvider.GOOGLE_DRIVE,
+              ...payload,
+            },
+            select: {
+              id: true,
+            },
+          });
+          touchedIds.add(created.id);
+          createdItems += 1;
+        }
+      }
+
+      const staleDirectChildren = Array.from(existingByKey.values()).flat();
+      if (staleDirectChildren.length > 0) {
+        const idsToDelete = new Set<string>();
+
+        for (const stale of staleDirectChildren) {
+          const subtreeIds = await this.collectDescendantIdsWithClient(tx, userId, stale.id);
+          for (const id of subtreeIds) {
+            idsToDelete.add(id);
+          }
+        }
+
+        const staleIds = Array.from(idsToDelete);
+        if (staleIds.length > 0) {
+          await tx.fileRecord.deleteMany({
+            where: {
+              id: { in: staleIds },
+              userId,
+              cloudProvider: CloudProvider.GOOGLE_DRIVE,
+            },
+          });
+        }
+      }
+
+      return {
+        syncedItems: children.length,
+        createdItems,
+        updatedItems,
+        removedItems: staleDirectChildren.length,
+      };
+    });
+  }
+
+  private async resolveYandexFolderProviderPath(
+    userId: string,
+    folderId: string,
+    rootPath: string,
+  ) {
+    const segments: string[] = [];
+    let currentId: string | null = folderId;
+
+    while (currentId) {
+      const current: { id: string; name: string; parentId: string | null } | null =
+        await this.prisma.fileRecord.findFirst({
+          where: {
+            id: currentId,
+            userId,
+            cloudProvider: CloudProvider.YANDEX_DISK,
+            type: FileType.FOLDER,
+          },
+          select: {
+            id: true,
+            name: true,
+            parentId: true,
+          },
+        });
+
+      if (!current) {
+        throw new NotFoundException('Папка не найдена');
+      }
+
+      if (!current.parentId) {
+        break;
+      }
+
+      segments.unshift(current.name);
+      currentId = current.parentId;
+    }
+
+    if (segments.length === 0) {
+      return rootPath;
+    }
+
+    const basePath = rootPath === 'disk:/' ? 'disk:' : rootPath;
+    return this.normalizeYandexPath(`${basePath}/${segments.join('/')}`);
+  }
+
+  private async resolveGoogleDriveFolderId(userId: string, folderId: string) {
+    const folder = await this.prisma.fileRecord.findFirst({
+      where: {
+        id: folderId,
+        userId,
+        cloudProvider: CloudProvider.GOOGLE_DRIVE,
+        type: FileType.FOLDER,
+      },
+      select: {
+        cloudUrl: true,
+        parentId: true,
+      },
+    });
+
+    if (!folder) {
+      throw new NotFoundException('Папка не найдена');
+    }
+
+    const folderDriveId = this.extractGoogleDriveItemId(folder.cloudUrl);
+    if (folderDriveId) {
+      return folderDriveId;
+    }
+
+    if (!folder.parentId) {
+      return 'root';
+    }
+
+    throw new BadRequestException(
+      'Не удалось определить папку Google Drive. Синхронизируйте корень заново.',
+    );
+  }
+
+  async syncFromGoogleDrive(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        googleDriveToken: true,
+        googleDriveRootPath: true,
+      },
+    });
+
+    if (!user?.googleDriveToken) {
+      throw new BadRequestException('Интеграция с Google Drive не подключена.');
+    }
+
+    const { drive } = await this.getAuthenticatedGoogleDriveClient(userId);
+    const rootFolderDriveId = this.normalizeGoogleDriveRootId(user.googleDriveRootPath || 'root');
+    const displayRootPath = this.toDisplayGoogleDriveRootPath(user.googleDriveRootPath);
+
+    const rootResource = await this.fetchGoogleDriveFolder(
+      drive,
+      rootFolderDriveId,
+      displayRootPath,
+    );
+
+    if (rootResource.mimeType !== 'application/vnd.google-apps.folder') {
+      throw new BadRequestException('Для интеграции можно выбрать только папку.');
+    }
+
+    const rootFolderName = rootFolderDriveId === 'root' ? 'Мой диск' : rootResource.name;
+    const rootFolderId = await this.ensureGoogleDriveRootFolderRecord(
+      userId,
+      rootFolderDriveId,
+      rootFolderName,
+    );
+
+    const result = await this.syncGoogleDriveFolderChildrenSnapshot(
+      userId,
+      rootFolderId,
+      drive,
+      rootFolderDriveId,
+    );
+
+    return {
+      connected: true,
+      rootPath: displayRootPath,
+      syncedItems: result.syncedItems,
+      restoredShares: 0,
+      removedItems: result.removedItems,
+      scope: 'root' as const,
+      syncedAt: new Date().toISOString(),
     };
+  }
 
-    for (const file of existingFiles) {
-      buildPath(file.id);
+  async syncGoogleDriveFolder(userId: string, folderId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        googleDriveToken: true,
+        googleDriveRootPath: true,
+      },
+    });
+
+    if (!user?.googleDriveToken) {
+      throw new BadRequestException('Интеграция с Google Drive не подключена.');
     }
 
-    const sharesByPath = new Map<string, string[]>();
-    for (const file of existingFiles) {
-      const relativePath = pathById.get(file.id) || '/';
-      const key = `${file.type}:${relativePath}`;
-      if (file.shares.length > 0) {
-        sharesByPath.set(
-          key,
-          Array.from(new Set(file.shares.map((share) => share.studentId))),
-        );
-      }
+    const { drive } = await this.getAuthenticatedGoogleDriveClient(userId);
+    const displayRootPath = this.toDisplayGoogleDriveRootPath(user.googleDriveRootPath);
+
+    const folderDriveId = await this.resolveGoogleDriveFolderId(userId, folderId);
+    const folderResource = await this.fetchGoogleDriveFolder(drive, folderDriveId, folderDriveId);
+
+    if (folderResource.mimeType !== 'application/vnd.google-apps.folder') {
+      throw new BadRequestException('Синхронизировать можно только папку.');
     }
 
-    return sharesByPath;
+    const result = await this.syncGoogleDriveFolderChildrenSnapshot(
+      userId,
+      folderId,
+      drive,
+      folderDriveId,
+    );
+
+    return {
+      connected: true,
+      rootPath: displayRootPath,
+      folderId,
+      syncedItems: result.syncedItems,
+      removedItems: result.removedItems,
+      scope: 'folder' as const,
+      syncedAt: new Date().toISOString(),
+    };
   }
 
   async syncFromYandexDisk(userId: string) {
@@ -346,88 +1168,90 @@ export class FilesService {
 
     const rootPath = this.normalizeYandexPath(user.yandexDiskRootPath || 'disk:/');
     const accessToken = this.extractAccessToken(user.yandexDiskToken);
-    const resources = await this.collectYandexResources(accessToken, rootPath);
+    let effectiveRootPath = rootPath;
+    let rootResource: YandexResource;
 
-    const result = await this.prisma.$transaction(async (tx) => {
-      const existingFiles = await tx.fileRecord.findMany({
-        where: {
-          userId,
-          cloudProvider: CloudProvider.YANDEX_DISK,
-        },
-        select: {
-          id: true,
-          name: true,
-          type: true,
-          parentId: true,
-          shares: {
-            select: {
-              studentId: true,
-            },
-          },
-        },
-      });
-
-      const sharesByPath = this.buildShareMapByRelativePath(existingFiles);
-
-      await tx.fileRecord.deleteMany({
-        where: {
-          userId,
-          cloudProvider: CloudProvider.YANDEX_DISK,
-        },
-      });
-
-      const idByProviderPath = new Map<string, string>();
-      let restoredShares = 0;
-
-      for (const resource of resources) {
-        const parentId = resource.parentProviderPath
-          ? idByProviderPath.get(resource.parentProviderPath) || null
-          : null;
-
-        const created = await tx.fileRecord.create({
-          data: {
-            userId,
-            name: resource.name,
-            type: resource.type,
-            extension: resource.extension,
-            size: resource.size,
-            cloudProvider: CloudProvider.YANDEX_DISK,
-            cloudUrl: resource.cloudUrl,
-            parentId,
-          },
-          select: {
-            id: true,
-            type: true,
-          },
-        });
-
-        idByProviderPath.set(resource.providerPath, created.id);
-
-        const shareKey = `${created.type}:${resource.relativePath}`;
-        const studentIds = sharesByPath.get(shareKey) || [];
-        if (studentIds.length > 0) {
-          restoredShares += studentIds.length;
-          await tx.fileShare.createMany({
-            data: studentIds.map((studentId) => ({
-              fileId: created.id,
-              studentId,
-            })),
-            skipDuplicates: true,
-          });
-        }
+    try {
+      rootResource = await this.fetchYandexResource(accessToken, effectiveRootPath, 1, 0);
+    } catch (error) {
+      if (!this.isYandexPathNotFoundError(error) || effectiveRootPath === 'disk:/') {
+        throw error;
       }
 
-      return {
-        syncedItems: resources.length,
-        restoredShares,
-      };
+      await this.createYandexFolder(accessToken, effectiveRootPath);
+      rootResource = await this.fetchYandexResource(accessToken, effectiveRootPath, 1, 0);
+    }
+
+    if (rootResource.type !== 'dir') {
+      throw new BadRequestException('Для интеграции можно выбрать только папку.');
+    }
+
+    const rootFolderName = effectiveRootPath === 'disk:/' ? 'Мой диск' : rootResource.name;
+    const rootFolderId = await this.ensureYandexRootFolderRecord(
+      userId,
+      effectiveRootPath,
+      rootFolderName,
+    );
+
+    const result = await this.syncYandexFolderChildrenSnapshot(
+      userId,
+      rootFolderId,
+      accessToken,
+      effectiveRootPath,
+    );
+
+    return {
+      connected: true,
+      rootPath: this.yandexDisplayPath(effectiveRootPath),
+      syncedItems: result.syncedItems,
+      restoredShares: 0,
+      removedItems: result.removedItems,
+      scope: 'root' as const,
+      syncedAt: new Date().toISOString(),
+    };
+  }
+
+  async syncYandexDiskFolder(userId: string, folderId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        yandexDiskToken: true,
+        yandexDiskRootPath: true,
+      },
     });
+
+    if (!user?.yandexDiskToken) {
+      throw new BadRequestException('Интеграция с Яндекс.Диском не подключена.');
+    }
+
+    const rootPath = this.normalizeYandexPath(user.yandexDiskRootPath || 'disk:/');
+    const accessToken = this.extractAccessToken(user.yandexDiskToken);
+
+    const folderProviderPath = await this.resolveYandexFolderProviderPath(
+      userId,
+      folderId,
+      rootPath,
+    );
+
+    const folderResource = await this.fetchYandexResource(accessToken, folderProviderPath, 1, 0);
+    if (folderResource.type !== 'dir') {
+      throw new BadRequestException('Синхронизировать можно только папку.');
+    }
+
+    const result = await this.syncYandexFolderChildrenSnapshot(
+      userId,
+      folderId,
+      accessToken,
+      folderProviderPath,
+    );
 
     return {
       connected: true,
       rootPath: this.yandexDisplayPath(rootPath),
+      folderId,
       syncedItems: result.syncedItems,
-      restoredShares: result.restoredShares,
+      removedItems: result.removedItems,
+      scope: 'folder' as const,
       syncedAt: new Date().toISOString(),
     };
   }
@@ -440,6 +1264,9 @@ export class FilesService {
           yandexDiskToken: true,
           yandexDiskRootPath: true,
           yandexDiskEmail: true,
+          googleDriveToken: true,
+          googleDriveRootPath: true,
+          googleDriveEmail: true,
         },
       }),
       this.prisma.fileRecord.findMany({
@@ -491,8 +1318,14 @@ export class FilesService {
     }
 
     const yandexFiles = files.filter((item) => item.cloudProvider === CloudProvider.YANDEX_DISK);
+    const googleFiles = files.filter((item) => item.cloudProvider === CloudProvider.GOOGLE_DRIVE);
     const totalBytes = yandexFiles.reduce((sum, item) => sum + this.parseSizeToBytes(item.size), 0);
+    const googleTotalBytes = googleFiles.reduce((sum, item) => sum + this.parseSizeToBytes(item.size), 0);
     const lastSyncedAt = yandexFiles.reduce<Date | null>((latest, item) => {
+      if (!latest || item.updatedAt > latest) return item.updatedAt;
+      return latest;
+    }, null);
+    const googleLastSyncedAt = googleFiles.reduce<Date | null>((latest, item) => {
       if (!latest || item.updatedAt > latest) return item.updatedAt;
       return latest;
     }, null);
@@ -522,6 +1355,18 @@ export class FilesService {
           folderCount: yandexFiles.filter((item) => item.type === FileType.FOLDER).length,
           sizeGb: Number((totalBytes / (1024 * 1024 * 1024)).toFixed(2)),
           lastSynced: lastSyncedAt ? lastSyncedAt.toISOString() : null,
+        },
+        {
+          provider: 'google-drive',
+          connected: !!user?.googleDriveToken,
+          rootPath: this.toDisplayGoogleDriveRootPath(user?.googleDriveRootPath),
+          email: user?.googleDriveEmail || '',
+          label: 'Google Drive',
+          status: user?.googleDriveToken ? 'active' : 'disconnected',
+          fileCount: googleFiles.filter((item) => item.type === FileType.FILE).length,
+          folderCount: googleFiles.filter((item) => item.type === FileType.FOLDER).length,
+          sizeGb: Number((googleTotalBytes / (1024 * 1024 * 1024)).toFixed(2)),
+          lastSynced: googleLastSyncedAt ? googleLastSyncedAt.toISOString() : null,
         },
       ],
       files: files.map((item) => ({
@@ -556,30 +1401,7 @@ export class FilesService {
   }
 
   private async collectDescendantIds(userId: string, rootId: string) {
-    const all = new Set<string>([rootId]);
-    let frontier = [rootId];
-
-    while (frontier.length > 0) {
-      const children = await this.prisma.fileRecord.findMany({
-        where: {
-          userId,
-          parentId: { in: frontier },
-        },
-        select: {
-          id: true,
-        },
-      });
-
-      frontier = [];
-      for (const child of children) {
-        if (!all.has(child.id)) {
-          all.add(child.id);
-          frontier.push(child.id);
-        }
-      }
-    }
-
-    return Array.from(all);
+    return this.collectDescendantIdsWithClient(this.prisma, userId, rootId);
   }
 
   async updateFileShare(userId: string, fileId: string, dto: UpdateFileShareDto) {

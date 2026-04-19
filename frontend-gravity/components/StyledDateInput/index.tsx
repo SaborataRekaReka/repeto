@@ -16,6 +16,8 @@ type StyledDateInputProps = {
     disabled?: boolean;
     width?: number | string;
     className?: string;
+    popupClassName?: string;
+    popupZIndex?: number;
     style?: CSSProperties;
 };
 
@@ -68,6 +70,8 @@ const StyledDateInput = ({
     disabled,
     width = "100%",
     className,
+    popupClassName,
+    popupZIndex,
     style,
 }: StyledDateInputProps) => {
     const anchorRef = useRef<HTMLButtonElement>(null);
@@ -162,6 +166,8 @@ const StyledDateInput = ({
                 anchorRef={anchorRef}
                 placement="bottom-start"
                 onClose={() => setCalendarOpen(false)}
+                floatingClassName={popupClassName}
+                zIndex={popupZIndex}
             >
                 <div
                     style={{
@@ -271,20 +277,24 @@ const StyledDateInput = ({
                                     style={{
                                         height: 28,
                                         borderRadius: 7,
-                                        border: isSelected
-                                            ? "1px solid var(--g-color-line-brand)"
-                                            : "1px solid transparent",
-                                        background: isSelected
-                                            ? "var(--g-color-base-brand)"
-                                            : isToday
-                                              ? "var(--g-color-base-brand-hover)"
+                                        border: isToday
+                                            ? "1px solid var(--g-color-line-positive)"
+                                            : isSelected
+                                              ? "1px solid var(--g-color-line-brand)"
+                                              : "1px solid transparent",
+                                        background: isToday
+                                            ? "var(--g-color-base-positive-heavy, #22c55e)"
+                                            : isSelected
+                                              ? "var(--g-color-base-brand)"
                                               : "transparent",
-                                        color: isSelected
+                                        color: isToday
                                             ? "var(--g-color-text-light-primary)"
-                                            : "var(--g-color-text-primary)",
+                                            : isSelected
+                                              ? "var(--g-color-text-brand-contrast)"
+                                              : "var(--g-color-text-primary)",
                                         cursor: "pointer",
                                         fontSize: 12,
-                                        fontWeight: isSelected ? 600 : 500,
+                                        fontWeight: isSelected || isToday ? 600 : 500,
                                     }}
                                 >
                                     {cellDate.getDate()}

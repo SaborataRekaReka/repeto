@@ -3,34 +3,66 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
-  Logger,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { LessonStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { NotificationsService } from '../notifications/notifications.service';
 import { CreatePaymentDto, UpdatePaymentDto } from './dto';
 
 @Injectable()
 export class PaymentsService {
-  private readonly logger = new Logger(PaymentsService.name);
-
   constructor(
     private prisma: PrismaService,
-    private notifications: NotificationsService,
   ) {}
 
-  private formatMethodLabel(method: string) {
-    switch (method) {
-      case 'SBP':
-        return 'СБП';
-      case 'CASH':
-        return 'Наличные';
-      case 'TRANSFER':
-        return 'Перевод';
-      case 'YUKASSA':
-        return 'ЮKassa';
-      default:
-        return method;
+  private async validateLessonLink(params: {
+    userId: string;
+    studentId: string;
+    lessonId: string;
+    excludePaymentId?: string;
+  }) {
+    const lesson = await this.prisma.lesson.findUnique({
+      where: { id: params.lessonId },
+      select: {
+        id: true,
+        userId: true,
+        studentId: true,
+        status: true,
+      },
+    });
+
+    if (!lesson) {
+      throw new NotFoundException('Занятие не найдено');
+    }
+
+    if (lesson.userId !== params.userId) {
+      throw new ForbiddenException();
+    }
+
+    if (lesson.studentId !== params.studentId) {
+      throw new BadRequestException('Занятие не принадлежит выбранному ученику');
+    }
+
+    if (lesson.status !== LessonStatus.COMPLETED) {
+      throw new BadRequestException('Можно привязывать оплату только к проведенному занятию');
+    }
+
+    const existingPayment = await this.prisma.payment.findFirst({
+      where: {
+        userId: params.userId,
+        lessonId: params.lessonId,
+        ...(params.excludePaymentId
+          ? {
+              id: {
+                not: params.excludePaymentId,
+              },
+            }
+          : {}),
+      },
+      select: { id: true },
+    });
+
+    if (existingPayment) {
+      throw new BadRequestException('Это занятие уже связано с оплатой');
     }
   }
 
@@ -80,6 +112,7 @@ export class PaymentsService {
         take: limit,
         include: {
           student: { select: { id: true, name: true } },
+          lesson: { select: { id: true, subject: true, scheduledAt: true } },
         },
       }),
       this.prisma.payment.count({ where }),
@@ -93,6 +126,7 @@ export class PaymentsService {
       where: { id },
       include: {
         student: { select: { id: true, name: true } },
+        lesson: { select: { id: true, subject: true, scheduledAt: true } },
         package: true,
       },
     });
@@ -104,6 +138,14 @@ export class PaymentsService {
   }
 
   async create(userId: string, dto: CreatePaymentDto) {
+    if (dto.lessonId) {
+      await this.validateLessonLink({
+        userId,
+        studentId: dto.studentId,
+        lessonId: dto.lessonId,
+      });
+    }
+
     const payment = await this.prisma.payment.create({
       data: {
         ...dto,
@@ -111,24 +153,11 @@ export class PaymentsService {
         date: dto.date ? new Date(dto.date) : new Date(),
         status: 'PAID',
       },
-      include: { student: { select: { id: true, name: true } } },
+      include: {
+        student: { select: { id: true, name: true } },
+        lesson: { select: { id: true, subject: true, scheduledAt: true } },
+      },
     });
-
-    try {
-      await this.notifications.create({
-        userId,
-        studentId: payment.studentId,
-        type: 'PAYMENT_RECEIVED',
-        title: 'Оплата получена',
-        description: `${payment.student.name} · ${payment.amount.toLocaleString('ru-RU')} ₽ (${this.formatMethodLabel(payment.method)})`,
-        actionUrl: '/finance/payments',
-      });
-    } catch (error) {
-      this.logger.warn(
-        `Payment ${payment.id} was created, but notification dispatch failed`,
-        error instanceof Error ? error.stack : String(error),
-      );
-    }
 
     return payment;
   }
@@ -138,10 +167,29 @@ export class PaymentsService {
     if (!payment) throw new NotFoundException('Payment not found');
     if (payment.userId !== userId) throw new ForbiddenException();
 
+    const nextStudentId = dto.studentId || payment.studentId;
+    const nextLessonId = dto.lessonId !== undefined ? dto.lessonId : payment.lessonId;
+
+    if (nextLessonId) {
+      await this.validateLessonLink({
+        userId,
+        studentId: nextStudentId,
+        lessonId: nextLessonId,
+        excludePaymentId: id,
+      });
+    }
+
     const data: any = { ...dto };
     if (dto.date) data.date = new Date(dto.date);
 
-    return this.prisma.payment.update({ where: { id }, data });
+    return this.prisma.payment.update({
+      where: { id },
+      data,
+      include: {
+        student: { select: { id: true, name: true } },
+        lesson: { select: { id: true, subject: true, scheduledAt: true } },
+      },
+    });
   }
 
   async remove(id: string, userId: string) {

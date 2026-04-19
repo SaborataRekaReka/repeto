@@ -36,4 +36,25 @@ export class FilesController {
   syncYandexDisk(@CurrentUser('id') userId: string) {
     return this.filesService.syncFromYandexDisk(userId);
   }
+
+  @Post('yandex-disk/sync-folder/:id')
+  syncYandexDiskFolder(
+    @CurrentUser('id') userId: string,
+    @Param('id', ParseUUIDPipe) folderId: string,
+  ) {
+    return this.filesService.syncYandexDiskFolder(userId, folderId);
+  }
+
+  @Post('google-drive/sync')
+  syncGoogleDrive(@CurrentUser('id') userId: string) {
+    return this.filesService.syncFromGoogleDrive(userId);
+  }
+
+  @Post('google-drive/sync-folder/:id')
+  syncGoogleDriveFolder(
+    @CurrentUser('id') userId: string,
+    @Param('id', ParseUUIDPipe) folderId: string,
+  ) {
+    return this.filesService.syncGoogleDriveFolder(userId, folderId);
+  }
 }

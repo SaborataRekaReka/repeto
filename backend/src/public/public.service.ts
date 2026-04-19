@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AvailabilityService } from '../availability/availability.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { BotPollerService } from '../messenger/bot-poller.service';
+import { StudentAuthService } from '../student-auth/student-auth.service';
 import { mapCancelPolicy } from '../common/utils/cancel-policy';
 
 type ReminderMethod = 'telegram' | 'max' | 'email' | 'push';
@@ -16,6 +17,7 @@ export class PublicService {
     private availability: AvailabilityService,
     private notifications: NotificationsService,
     private botPoller: BotPollerService,
+    private studentAuth: StudentAuthService,
   ) {}
 
   private normalizePhone(value?: string | null): string {
@@ -55,7 +57,7 @@ export class PublicService {
         telegramConnected: false,
         maxConnected: false,
         emailKnown: false,
-        portalToken: null,
+        hasAccount: false,
       };
     }
 
@@ -65,7 +67,7 @@ export class PublicService {
         id: true,
         phone: true,
         email: true,
-        portalToken: true,
+        accountId: true,
         telegramChatId: true,
         maxChatId: true,
       },
@@ -90,7 +92,7 @@ export class PublicService {
         telegramConnected: false,
         maxConnected: false,
         emailKnown: !!normalizedEmail,
-        portalToken: null,
+        hasAccount: false,
       };
     }
 
@@ -99,7 +101,7 @@ export class PublicService {
       telegramConnected: !!matched.telegramChatId,
       maxConnected: !!matched.maxChatId,
       emailKnown: !!matched.email,
-      portalToken: matched.portalToken || null,
+      hasAccount: !!matched.accountId,
     };
   }
 
@@ -109,6 +111,7 @@ export class PublicService {
       select: {
         id: true,
         published: true,
+        showPublicPackages: true,
         name: true,
         slug: true,
         subjects: true,
@@ -127,10 +130,6 @@ export class PublicService {
 
     if (!user || !user.published) throw new NotFoundException('Tutor not found');
 
-    const weeklySlotsCount = await this.prisma.tutorAvailability.count({
-      where: { userId: user.id },
-    });
-
     // Build enriched subjects from subjectDetails or plain names
     const details = user.subjectDetails as any[] | null;
     const enrichedSubjects = details && Array.isArray(details) && details.length > 0
@@ -140,6 +139,57 @@ export class PublicService {
           price: Number(d.price) || 0,
         }))
       : user.subjects.map((name) => ({ name, duration: 60, price: 0 }));
+
+    const subjectPriceMap = new Map(
+      enrichedSubjects.map((subject) => [subject.name, Number(subject.price) || 0]),
+    );
+
+    const [weeklySlotsCount, publicPackagesRaw] = await Promise.all([
+      this.prisma.tutorAvailability.count({
+        where: { userId: user.id },
+      }),
+      user.showPublicPackages
+        ? this.prisma.package.findMany({
+            where: {
+              userId: user.id,
+              isPublic: true,
+              status: 'ACTIVE',
+              OR: [{ validUntil: null }, { validUntil: { gte: new Date() } }],
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 20,
+          })
+        : Promise.resolve([]),
+    ]);
+
+    const publicPackages = publicPackagesRaw.map((pkg) => {
+      const baseLessonPrice = subjectPriceMap.get(pkg.subject) || 0;
+      const originalTotalPrice =
+        baseLessonPrice > 0 ? baseLessonPrice * pkg.lessonsTotal : null;
+      const discountAmount =
+        originalTotalPrice && originalTotalPrice > pkg.totalPrice
+          ? originalTotalPrice - pkg.totalPrice
+          : 0;
+
+      return {
+        id: pkg.id,
+        subject: pkg.subject,
+        lessonsTotal: pkg.lessonsTotal,
+        totalPrice: pkg.totalPrice,
+        pricePerLesson:
+          pkg.lessonsTotal > 0
+            ? Math.round(pkg.totalPrice / pkg.lessonsTotal)
+            : pkg.totalPrice,
+        originalTotalPrice,
+        discountAmount,
+        discountPercent:
+          originalTotalPrice && discountAmount > 0
+            ? Math.round((discountAmount / originalTotalPrice) * 100)
+            : 0,
+        validUntil: pkg.validUntil,
+        comment: pkg.comment,
+      };
+    });
 
     // Fetch portal reviews for this tutor
     const reviewNotes = await this.prisma.lessonNote.findMany({
@@ -168,11 +218,28 @@ export class PublicService {
       })
       .filter(Boolean);
 
+    const cancelPolicySettings =
+      user.cancelPolicySettings && typeof user.cancelPolicySettings === 'object'
+        ? (user.cancelPolicySettings as Record<string, unknown>)
+        : {};
+    const defaultPaymentMethodRaw = String(
+      cancelPolicySettings.defaultPaymentMethod ?? '',
+    )
+      .trim()
+      .toLowerCase();
+    const preferredPaymentMethod = ['sbp', 'cash', 'transfer'].includes(
+      defaultPaymentMethodRaw,
+    )
+      ? defaultPaymentMethodRaw
+      : 'sbp';
+
     return {
       slug: user.slug,
       name: user.name,
       tagline: user.tagline,
       subjects: enrichedSubjects,
+      showPublicPackages: user.showPublicPackages,
+      publicPackages,
       aboutText: user.aboutText,
       avatarUrl: user.avatarUrl,
       lessonsCount: user.lessonsCount,
@@ -184,6 +251,7 @@ export class PublicService {
         whatsapp: user.whatsapp,
       },
       cancelPolicy: mapCancelPolicy(user.cancelPolicySettings),
+      preferredPaymentMethod,
       memberSince: user.createdAt,
       hasWorkingDays: weeklySlotsCount > 0,
     };
@@ -211,6 +279,7 @@ export class PublicService {
     slug: string,
     data: {
       subject: string;
+      packageId?: string;
       date: string;
       startTime: string;
       clientName: string;
@@ -225,10 +294,48 @@ export class PublicService {
   ) {
     const user = await this.prisma.user.findUnique({
       where: { slug },
-      select: { id: true, published: true },
+      select: { id: true, published: true, showPublicPackages: true },
     });
 
     if (!user || !user.published) throw new NotFoundException('Tutor not found');
+
+    let selectedPublicPackage: {
+      id: string;
+      subject: string;
+      lessonsTotal: number;
+      totalPrice: number;
+      validUntil: Date | null;
+      comment: string | null;
+    } | null = null;
+
+    if (data.packageId) {
+      if (!user.showPublicPackages) {
+        throw new BadRequestException('Выбранный пакет недоступен');
+      }
+
+      const pkg = await this.prisma.package.findFirst({
+        where: {
+          id: data.packageId,
+          userId: user.id,
+          status: 'ACTIVE',
+          isPublic: true,
+        },
+        select: {
+          id: true,
+          subject: true,
+          lessonsTotal: true,
+          totalPrice: true,
+          validUntil: true,
+          comment: true,
+        },
+      });
+
+      if (!pkg || (pkg.validUntil && pkg.validUntil < new Date())) {
+        throw new BadRequestException('Выбранный пакет недоступен');
+      }
+
+      selectedPublicPackage = pkg;
+    }
 
     // Verify the slot is actually free
     const date = new Date(data.date);
@@ -273,14 +380,21 @@ export class PublicService {
         }).join(', ')}${reminderMins ? ` · за ${reminderMins >= 60 ? `${Math.round(reminderMins / 60)} ч` : `${reminderMins} мин`}` : ''}`
       : null;
 
-    const mergedComment = [data.comment?.trim(), reminderMeta]
+    const packageMeta = selectedPublicPackage
+      ? `Публичный пакет: ${selectedPublicPackage.subject} · ${selectedPublicPackage.lessonsTotal} занятий · ${selectedPublicPackage.totalPrice.toLocaleString('ru-RU')} ₽`
+      : null;
+
+    const mergedComment = [packageMeta, data.comment?.trim(), reminderMeta]
       .filter(Boolean)
       .join('\n\n');
+
+    const bookingSubject = selectedPublicPackage?.subject || data.subject;
 
     const booking = await this.prisma.bookingRequest.create({
       data: {
         userId: user.id,
-        subject: data.subject,
+        packageId: selectedPublicPackage?.id,
+        subject: bookingSubject,
         date,
         startTime: data.startTime,
         duration: 30,
@@ -304,7 +418,7 @@ export class PublicService {
       userId: user.id,
       type: 'BOOKING_NEW' as any,
       title: 'Новая заявка на занятие',
-      description: `${data.clientName} · ${data.subject} · ${dateStr} в ${data.startTime}${
+      description: `${data.clientName} · ${bookingSubject} · ${dateStr} в ${data.startTime}${
         comment ? ` · Комментарий: ${comment}` : ''
       }`,
       bookingRequestId: booking.id,
@@ -314,51 +428,93 @@ export class PublicService {
     const normalizedClientPhone = this.normalizePhone(data.clientPhone);
     const normalizedClientEmail = data.clientEmail?.trim().toLowerCase();
 
-    let portalToken: string | null = null;
+    // Send a booking-purpose OTP to verify the email address. The portal
+    // account itself is only created after the tutor approves the booking
+    // (see NotificationsService.confirmBooking).
+    if (normalizedClientEmail) {
+      this.studentAuth
+        .issueOtp(normalizedClientEmail, 'BOOKING')
+        .catch(() => {
+          /* issueOtp logs internally; best-effort send */
+        });
+    }
+
+    // Still attempt to pick up messenger chat IDs onto a matching existing
+    // student record (same tutor, same phone/email) for continuity.
     if (normalizedClientPhone || normalizedClientEmail) {
-      const students = await this.prisma.student.findMany({
+      const matched = await this.prisma.student.findFirst({
         where: {
           userId: user.id,
-          portalToken: { not: null },
+          OR: [
+            ...(normalizedClientEmail ? [{ email: normalizedClientEmail }] : []),
+            ...(normalizedClientPhone ? [{ phone: data.clientPhone }] : []),
+          ],
         },
-        select: {
-          id: true,
-          portalToken: true,
-          phone: true,
-          email: true,
-        },
+        select: { id: true, telegramChatId: true, maxChatId: true },
       });
 
-      const matched = students.find((student) => {
-        const emailMatch =
-          !!normalizedClientEmail &&
-          !!student.email &&
-          student.email.trim().toLowerCase() === normalizedClientEmail;
-
-        const phoneMatch =
-          !!normalizedClientPhone &&
-          this.normalizePhone(student.phone) === normalizedClientPhone;
-
-        return emailMatch || phoneMatch;
-      });
-
-      portalToken = matched?.portalToken || null;
-
-      // Update existing student's chat IDs if resolved
       if (matched && (telegramChatId || maxChatId)) {
         const updateData: Record<string, string> = {};
-        if (telegramChatId) updateData.telegramChatId = telegramChatId;
-        if (maxChatId) updateData.maxChatId = maxChatId;
-        await this.prisma.student.update({
-          where: { id: matched.id },
-          data: updateData,
-        });
+        if (telegramChatId && !matched.telegramChatId) updateData.telegramChatId = telegramChatId;
+        if (maxChatId && !matched.maxChatId) updateData.maxChatId = maxChatId;
+        if (Object.keys(updateData).length > 0) {
+          await this.prisma.student.update({
+            where: { id: matched.id },
+            data: updateData,
+          });
+        }
       }
     }
 
     return {
       ...booking,
-      portalToken,
+      otpSent: !!normalizedClientEmail,
     };
+  }
+
+  /**
+   * Verify the BOOKING-purpose OTP for a public booking form and sign the
+   * student in. Creates / links StudentAccount + Student for the given tutor.
+   */
+  async verifyBookingEmailForSlug(
+    slug: string,
+    data: { email: string; code: string; bookingRequestId?: string },
+  ) {
+    const user = await this.prisma.user.findUnique({
+      where: { slug },
+      select: { id: true, published: true },
+    });
+    if (!user || !user.published) throw new NotFoundException('Tutor not found');
+
+    const normalizedEmail = (data.email || '').trim().toLowerCase();
+    if (!normalizedEmail || !normalizedEmail.includes('@')) {
+      throw new BadRequestException('Некорректный email');
+    }
+
+    // Pull the most recent pending booking from this tutor+email to prefill
+    // name/subject/phone/chat IDs on the Student row.
+    const booking = data.bookingRequestId
+      ? await this.prisma.bookingRequest.findFirst({
+          where: {
+            id: data.bookingRequestId,
+            userId: user.id,
+            clientEmail: normalizedEmail,
+          },
+        })
+      : await this.prisma.bookingRequest.findFirst({
+          where: { userId: user.id, clientEmail: normalizedEmail },
+          orderBy: { createdAt: 'desc' },
+        });
+
+    return this.studentAuth.verifyBookingOtpAndSignIn({
+      email: normalizedEmail,
+      code: data.code,
+      tutorUserId: user.id,
+      fallbackName: booking?.clientName || normalizedEmail.split('@')[0],
+      subject: booking?.subject || 'Занятие',
+      phone: booking?.clientPhone || undefined,
+      telegramChatId: booking?.telegramChatId || undefined,
+      maxChatId: booking?.maxChatId || undefined,
+    });
   }
 }

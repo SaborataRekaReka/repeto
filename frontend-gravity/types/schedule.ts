@@ -24,6 +24,9 @@ export type Lesson = {
     rate: number; // rubles
     color?: SubjectColor;
     notes?: string;
+    reviewRating?: number;
+    reviewFeedback?: string;
+    hasReview?: boolean;
 };
 
 export type MonthDay = {

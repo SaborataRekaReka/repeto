@@ -1,111 +1,104 @@
 import Link from "next/link";
-import { Text, Card } from "@gravity-ui/uikit";
-import { useFinanceStats } from "@/hooks/usePayments";
-
-type FinanceCardKey = "totalIncome" | "totalPending" | "totalDebt";
-type FinanceTrendKey =
-    | "incomeChangePercent"
-    | "pendingChangePercent"
-    | "debtChangePercent";
+import { useFinanceStats, useFinanceSummary } from "@/hooks/usePayments";
 
 const formatTrendValue = (trend: number) => {
-    const formatted = trend.toLocaleString("ru-RU", {
-        maximumFractionDigits: 2,
-    });
+    const formatted = trend.toLocaleString("ru-RU", { maximumFractionDigits: 2 });
     return `${trend > 0 ? "+" : ""}${formatted}%`;
+};
+
+const formatCurrencyValue = (value: number) => `${value.toLocaleString("ru-RU")} ₽`;
+const formatPercentValue = (value: number) =>
+    `${value.toLocaleString("ru-RU", { maximumFractionDigits: 1 })}%`;
+
+const trendColors = (positive: boolean) =>
+    positive
+        ? { bg: "rgba(44,168,74,0.10)", color: "#2ca84a" }
+        : { bg: "rgba(209,67,67,0.10)", color: "#d14343" };
+
+const getCancellationAccent = (rate: number) => {
+    if (rate <= 12) return { dot: "#2ca84a", bg: "rgba(44,168,74,0.10)", color: "#2ca84a" };
+    if (rate <= 22) return { dot: "#AE7AFF", bg: "rgba(174,122,255,0.12)", color: "#AE7AFF" };
+    return { dot: "#d16b8f", bg: "rgba(209,107,143,0.12)", color: "#d16b8f" };
 };
 
 const StatCards = () => {
     const { data: stats, loading } = useFinanceStats();
+    const { data: monthSummary, loading: summaryLoading } = useFinanceSummary("month");
 
-    const cards: Array<{
-        title: string;
-        key: FinanceCardKey;
-        trendKey: FinanceTrendKey;
-        href: string;
-        accent: string;
-    }> = [
+    const cancellation = getCancellationAccent(monthSummary?.cancellationRate ?? 0);
+
+    const cards = [
         {
+            id: "income",
             title: "Доход за месяц",
-            key: "totalIncome",
-            trendKey: "incomeChangePercent",
             href: "/payments",
-            accent: "#2ca84a",
+            dot: "#2ca84a",
+            value: loading ? "—" : formatCurrencyValue(stats?.totalIncome ?? 0),
+            metaText: !loading ? formatTrendValue(stats?.incomeChangePercent ?? 0) : null,
+            metaPositive: (stats?.incomeChangePercent ?? 0) >= 0,
+            metaArrow: true,
         },
         {
+            id: "pending",
             title: "Запланировано",
-            key: "totalPending",
-            trendKey: "pendingChangePercent",
             href: "/schedule",
-            accent: "#c9a225",
+            dot: "#c9a225",
+            value: loading ? "—" : formatCurrencyValue(stats?.totalPending ?? 0),
+            metaText: !loading ? formatTrendValue(stats?.pendingChangePercent ?? 0) : null,
+            metaPositive: (stats?.pendingChangePercent ?? 0) >= 0,
+            metaArrow: true,
         },
         {
+            id: "debt",
             title: "Задолженность",
-            key: "totalDebt",
-            trendKey: "debtChangePercent",
             href: "/payments",
-            accent: "#d14343",
+            dot: "#d14343",
+            value: loading ? "—" : formatCurrencyValue(stats?.totalDebt ?? 0),
+            metaText: !loading ? formatTrendValue(stats?.debtChangePercent ?? 0) : null,
+            metaPositive: (stats?.debtChangePercent ?? 0) >= 0,
+            metaArrow: true,
+        },
+        {
+            id: "cancellations",
+            title: "Доля отмен",
+            href: "/schedule",
+            dot: cancellation.dot,
+            value: summaryLoading
+                ? "—"
+                : formatPercentValue(monthSummary?.cancellationRate ?? 0),
+            metaText: !summaryLoading
+                ? `${(monthSummary?.cancelledLessons ?? 0).toLocaleString("ru-RU")} отмен`
+                : null,
+            metaCustom: { bg: cancellation.bg, color: cancellation.color },
         },
     ];
 
     return (
-        <div style={{ display: "flex", gap: 16 }}>
+        <div className="repeto-stat-cards" style={{ marginBottom: 20 }}>
             {cards.map((card) => {
-                const value = stats?.[card.key] ?? 0;
-                const trend = stats?.[card.trendKey] ?? 0;
-
+                const meta = (card as any).metaCustom
+                    ? (card as any).metaCustom
+                    : trendColors(!!card.metaPositive);
                 return (
-                    <Link
-                        href={card.href}
-                        key={card.key}
-                        style={{ flex: 1, minWidth: 0, textDecoration: "none", color: "inherit" }}
-                    >
-                        <Card
-                            view="outlined"
-                            style={{
-                                padding: "20px 24px",
-                                background: "var(--g-color-base-float)",
-                                cursor: "pointer",
-                                height: "100%",
-                            }}
-                        >
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                                <Text variant="body-1" color="secondary">
-                                    {card.title}
-                                </Text>
-                                <div
-                                    style={{
-                                        width: 8,
-                                        height: 8,
-                                        borderRadius: "50%",
-                                        background: card.accent,
-                                    }}
-                                />
-                            </div>
-                            <Text variant="header-1" style={{ display: "block", marginBottom: 8 }}>
-                                {loading ? "—" : value.toLocaleString("ru-RU") + " ₽"}
-                            </Text>
-                            {!loading && (
-                                <div
-                                    style={{
-                                        display: "inline-flex",
-                                        alignItems: "center",
-                                        gap: 4,
-                                        padding: "2px 8px",
-                                        borderRadius: 6,
-                                        background: trend >= 0 ? "rgba(44,168,74,0.10)" : "rgba(209,67,67,0.10)",
-                                        color: trend >= 0 ? "#2ca84a" : "#d14343",
-                                        fontSize: 13,
-                                        fontWeight: 600,
-                                    }}
-                                >
+                    <Link key={card.id} href={card.href} className="repeto-stat-card">
+                        <div className="repeto-stat-card__head">
+                            <div className="repeto-stat-card__title">{card.title}</div>
+                            <div className="repeto-stat-card__dot" style={{ background: card.dot }} />
+                        </div>
+                        <div className="repeto-stat-card__value">{card.value}</div>
+                        {card.metaText && (
+                            <div
+                                className="repeto-stat-card__meta"
+                                style={{ background: meta.bg, color: meta.color }}
+                            >
+                                {card.metaArrow && (
                                     <span style={{ fontSize: 11 }}>
-                                        {trend >= 0 ? "↑" : "↓"}
+                                        {card.metaPositive ? "↑" : "↓"}
                                     </span>
-                                    {formatTrendValue(trend)}
-                                </div>
-                            )}
-                        </Card>
+                                )}
+                                {card.metaText}
+                            </div>
+                        )}
                     </Link>
                 );
             })}

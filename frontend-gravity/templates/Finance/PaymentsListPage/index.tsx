@@ -1,27 +1,36 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/router";
-import GravityLayout from "@/components/GravityLayout";
-import { Text, Card, Button, Icon, TextInput, Label, Modal, SegmentedRadioGroup } from "@gravity-ui/uikit";
-import { Plus, Magnifier, TrashBin } from "@gravity-ui/icons";
+import {
+    Alert,
+    Text,
+    Button,
+    Icon,
+    TextInput,
+    Loader,
+} from "@gravity-ui/uikit";
+import { Magnifier, TrashBin, Receipt, Persons } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
+import GravityLayout from "@/components/GravityLayout";
+import PageOverlay from "@/components/PageOverlay";
+import AppDialog from "@/components/AppDialog";
 import CreatePaymentModal from "@/components/CreatePaymentModal";
 import { deletePayment, usePayments } from "@/hooks/usePayments";
 import { getMethodLabel, getStatusLabel } from "@/mocks/finance-tutor";
 import type { Payment } from "@/types/finance";
 import { codedErrorMessage } from "@/lib/errorCodes";
 
-const tabOptions = [
-    { value: "all", content: "Все" },
-    { value: "paid", content: "Оплачено" },
+const filterTabs: { value: string; label: string }[] = [
+    { value: "all", label: "Все" },
+    { value: "paid", label: "Оплачено" },
 ];
 
 const PaymentsListPage = () => {
     const router = useRouter();
-    const [tab, setTab] = useState("all");
-    const [search, setSearch] = useState("");
+    const [tab, setTab] = useState<string>("all");
+    const [search, setSearch] = useState<string>("");
     const [selected, setSelected] = useState<Payment | null>(null);
     const [pendingDelete, setPendingDelete] = useState<Payment | null>(null);
-    const [createModal, setCreateModal] = useState(false);
+    const [createModal, setCreateModal] = useState<boolean>(false);
     const [deletingPaymentId, setDeletingPaymentId] = useState<string | null>(null);
     const [deleteError, setDeleteError] = useState<string | null>(null);
 
@@ -37,10 +46,22 @@ const PaymentsListPage = () => {
         page: 1,
         limit: 50,
     });
+
+    // Separate request for totals across statuses
+    const { data: allPaymentsData } = usePayments({ page: 1, limit: 1000 });
+    const stats = useMemo(() => {
+        const all = allPaymentsData?.data || [];
+        return {
+            total: all.length,
+            paid: all.filter((p) => p.status === "paid").length,
+        };
+    }, [allPaymentsData]);
+
     const filtered = (paymentsData?.data || []).filter((p) => {
         if (!search) return true;
         return p.studentName.toLowerCase().includes(search.toLowerCase());
     });
+    const hasSearch = search.trim().length > 0;
 
     const requestDeletePayment = (payment: Payment) => {
         if (!payment.isManual || deletingPaymentId) return;
@@ -50,14 +71,11 @@ const PaymentsListPage = () => {
 
     const handleDeletePayment = async () => {
         if (!pendingDelete || deletingPaymentId) return;
-
         const payment = pendingDelete;
         setDeletingPaymentId(payment.id);
         try {
             await deletePayment(payment.id);
-            if (selected?.id === payment.id) {
-                setSelected(null);
-            }
+            if (selected?.id === payment.id) setSelected(null);
             setPendingDelete(null);
             await refetchPayments();
         } catch (error) {
@@ -67,221 +85,213 @@ const PaymentsListPage = () => {
         }
     };
 
+    const overlayNav = [
+        { key: "create", label: "Добавить оплату", icon: Receipt as IconData },
+        { key: "debtors", label: "Найти должников", icon: Persons as IconData },
+    ];
+
+    const handleOverlayNav = (key: string) => {
+        if (key === "create") {
+            setCreateModal(true);
+            return;
+        }
+        if (key === "debtors") {
+            router.push("/students?filter=debt");
+        }
+    };
+
     return (
-        <GravityLayout title="Оплаты">
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-                <SegmentedRadioGroup
-                    size="m"
-                    value={tab}
-                    onUpdate={setTab}
-                    options={tabOptions}
-                />
-                <div style={{ display: "flex", gap: 8 }}>
-                    <Button view="action" size="m" onClick={() => setCreateModal(true)}>
-                        <Icon data={Plus as IconData} size={16} />
-                        Записать оплату
-                    </Button>
+        <GravityLayout title="Оплаты" hideSidebar>
+            <PageOverlay
+                title="Оплаты"
+                breadcrumb="Дашборд"
+                backHref="/dashboard"
+                nav={overlayNav}
+                onNavChange={handleOverlayNav}
+            >
+                <div className="repeto-sl-search-row">
                     <TextInput
-                        size="m"
-                        placeholder="Поиск..."
+                        size="l"
+                        placeholder="Имя ученика"
                         value={search}
                         onUpdate={setSearch}
+                        className="repeto-sl-search"
                         startContent={
                             <Icon
                                 data={Magnifier as IconData}
                                 size={16}
                                 style={{
-                                    color: "var(--g-color-text-secondary)",
-                                    marginLeft: 4,
-                                    marginRight: 2,
+                                    color: "var(--g-color-text-hint)",
+                                    marginLeft: 6,
+                                    marginRight: 4,
                                 }}
                             />
                         }
-                        style={{ width: 220 }}
                     />
                 </div>
-            </div>
 
-            {deleteError && (
-                <Text
-                    variant="body-1"
-                    style={{ display: "block", marginBottom: 12, color: "var(--g-color-text-danger)" }}
-                >
-                    {deleteError}
-                </Text>
-            )}
-
-            {filtered.length === 0 ? (
-                <Card view="outlined" style={{ padding: "48px 24px", textAlign: "center", background: "var(--g-color-base-float)" }}>
-                    <Text variant="subheader-2" style={{ display: "block", marginBottom: 8 }}>Нет оплат</Text>
-                    <Text variant="body-1" color="secondary" style={{ display: "block", marginBottom: 16 }}>
-                        Здесь будут отображаться записи об оплатах.
-                    </Text>
-                    <Button view="action" size="m" onClick={() => setCreateModal(true)}>
-                        Записать оплату
-                    </Button>
-                </Card>
-            ) : (
-                <Card view="outlined" style={{ background: "var(--g-color-base-float)", overflow: "hidden" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                        <thead>
-                            <tr style={{ borderBottom: "1px solid var(--g-color-line-generic)" }}>
-                                {["Дата", "Ученик", "Сумма", "Способ", "Статус"].map((h) => (
-                                    <th
-                                        key={h}
-                                        style={{
-                                            padding: "10px 20px",
-                                            textAlign: "left",
-                                            fontWeight: 500,
-                                            fontSize: 13,
-                                            color: "var(--g-color-text-secondary)",
-                                        }}
-                                    >
-                                        {h}
-                                    </th>
-                                ))}
-                                <th
-                                    style={{
-                                        padding: "10px 12px",
-                                        textAlign: "right",
-                                        width: 56,
-                                    }}
-                                />
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filtered.map((p) => (
-                                <tr
-                                    key={p.id}
-                                    onClick={() => setSelected(p)}
-                                    style={{
-                                        cursor: "pointer",
-                                        borderBottom: "1px solid var(--g-color-line-generic)",
-                                        transition: "background 0.15s",
-                                    }}
-                                    onMouseEnter={(e) => (e.currentTarget.style.background = "var(--g-color-base-simple-hover)")}
-                                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                <div className="repeto-sl-tabs-row">
+                    <div className="repeto-sl-pills">
+                        {filterTabs.map((t) => {
+                            const count = t.value === "all" ? stats.total : stats.paid;
+                            return (
+                                <button
+                                    key={t.value}
+                                    className={`repeto-sl-pill${tab === t.value ? " repeto-sl-pill--active" : ""}`}
+                                    onClick={() => setTab(t.value)}
                                 >
-                                    <td style={{ padding: "12px 20px" }}>
-                                        <Text variant="body-1">{p.date}</Text>
-                                    </td>
-                                    <td style={{ padding: "12px 20px" }}>
-                                        <Text variant="body-1" style={{ fontWeight: 600 }}>{p.studentName}</Text>
-                                    </td>
-                                    <td style={{ padding: "12px 20px" }}>
-                                        <Text variant="body-1" style={{ fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
-                                            {p.amount.toLocaleString("ru-RU")} ₽
-                                        </Text>
-                                    </td>
-                                    <td style={{ padding: "12px 20px" }}>
-                                        <Text variant="body-1">{getMethodLabel(p.method)}</Text>
-                                    </td>
-                                    <td style={{ padding: "12px 20px" }}>
-                                        <Label theme="success" size="s">
+                                    {t.label}
+                                    {count > 0 && (
+                                        <span className="repeto-sl-pill__count">{count}</span>
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {deleteError && (
+                    <Alert
+                        theme="danger"
+                        view="filled"
+                        corners="rounded"
+                        title="Не удалось удалить оплату"
+                        message={deleteError}
+                        style={{ marginBottom: 12 }}
+                    />
+                )}
+
+                {loading ? (
+                    <div style={{ padding: "64px 0", textAlign: "center" }}>
+                        <Loader size="m" />
+                    </div>
+                ) : filtered.length === 0 ? (
+                    <div className="repeto-sl-empty">
+                        <Text variant="subheader-2" style={{ marginBottom: 8, display: "block" }}>
+                            {hasSearch ? "Ничего не найдено" : "Пока нет оплат"}
+                        </Text>
+                        <Text variant="body-1" color="secondary" style={{ marginBottom: 24, display: "block" }}>
+                            {hasSearch
+                                ? "Попробуйте изменить запрос или очистить поиск."
+                                : "Записывайте оплаты, чтобы видеть историю и баланс учеников."}
+                        </Text>
+                        {hasSearch && (
+                            <Button view="outlined" size="l" onClick={() => setSearch("")}>Очистить поиск</Button>
+                        )}
+                    </div>
+                ) : (
+                    <div className="repeto-sl-table">
+                        <div className="repeto-sl-list-header repeto-sl-list-header--payments">
+                            <span className="repeto-sl-lh__col">Дата</span>
+                            <span className="repeto-sl-lh__col">Ученик</span>
+                            <span className="repeto-sl-lh__col repeto-sl-lh__col--rate">Сумма</span>
+                            <span className="repeto-sl-lh__col">Способ</span>
+                            <span className="repeto-sl-lh__col">Статус</span>
+                            <span className="repeto-sl-lh__col">&nbsp;</span>
+                        </div>
+
+                        <div className="repeto-sl-list">
+                            {filtered.map((p) => (
+                                <div
+                                    key={p.id}
+                                    className="repeto-sl-row repeto-sl-row--payments"
+                                    onClick={() => setSelected(p)}
+                                >
+                                    <div className="repeto-sl-row__cell">
+                                        <span className="repeto-sl-row__secondary" style={{ color: "var(--g-color-text-primary)" }}>
+                                            {p.date}
+                                        </span>
+                                    </div>
+                                    <div className="repeto-sl-row__cell">
+                                        <span className="repeto-sl-row__primary">{p.studentName}</span>
+                                    </div>
+                                    <div className="repeto-sl-row__cell repeto-sl-row__cell--rate">
+                                        <span className="repeto-sl-cell-money">
+                                            {p.amount.toLocaleString("ru-RU")}&nbsp;₽
+                                        </span>
+                                    </div>
+                                    <div className="repeto-sl-row__cell">
+                                        <span className="repeto-sl-cell-badge">{getMethodLabel(p.method)}</span>
+                                    </div>
+                                    <div className="repeto-sl-row__cell">
+                                        <span
+                                            className={`repeto-sl-cell-chip repeto-sl-cell-chip--${
+                                                p.status === "paid" ? "active" : "paused"
+                                            }`}
+                                        >
                                             {getStatusLabel(p.status)}
-                                        </Label>
-                                    </td>
-                                    <td
-                                        style={{ padding: "12px 12px", textAlign: "right", width: 56 }}
+                                        </span>
+                                    </div>
+                                    <div
+                                        className="repeto-sl-row__cell repeto-sl-row__cell--actions"
                                         onClick={(e) => e.stopPropagation()}
                                     >
                                         {p.isManual ? (
-                                            <Button
-                                                view="flat"
-                                                size="s"
+                                            <button
+                                                type="button"
+                                                className="repeto-sl-row__menu-btn"
                                                 title="Удалить оплату"
+                                                aria-label="Удалить оплату"
                                                 onClick={() => requestDeletePayment(p)}
-                                                loading={deletingPaymentId === p.id}
                                                 disabled={!!deletingPaymentId || !!pendingDelete}
                                             >
-                                                <Icon data={TrashBin as IconData} size={14} />
-                                            </Button>
+                                                <Icon data={TrashBin as IconData} size={16} />
+                                            </button>
                                         ) : (
                                             <span style={{ color: "var(--g-color-text-hint)", fontSize: 12 }}>—</span>
                                         )}
-                                    </td>
-                                </tr>
+                                    </div>
+                                </div>
                             ))}
-                        </tbody>
-                    </table>
-                </Card>
-            )}
-
-            {/* Detail modal */}
-            <Modal open={!!selected} onClose={() => setSelected(null)}>
-                <div style={{ padding: 24, minWidth: 360 }}>
-                    <Text variant="subheader-2" style={{ display: "block", marginBottom: 20 }}>
-                        Детали оплаты
-                    </Text>
-                    {selected && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                            <DetailRow label="Ученик" value={selected.studentName} bold />
-                            <DetailRow label="Сумма" value={selected.amount.toLocaleString("ru-RU") + " ₽"} bold />
-                            <DetailRow label="Дата" value={selected.date} />
-                            <DetailRow label="Способ" value={getMethodLabel(selected.method)} />
-                            <DetailRow label="Статус" value={getStatusLabel(selected.status)} />
-                            {selected.comment && (
-                                <DetailRow label="Комментарий" value={selected.comment} />
-                            )}
                         </div>
-                    )}
-                    <div style={{ marginTop: 20, display: "flex", justifyContent: "flex-end" }}>
-                        <Button view="normal" size="m" onClick={() => setSelected(null)}>
-                            Закрыть
-                        </Button>
                     </div>
-                </div>
-            </Modal>
+                )}
 
-            <Modal
-                open={!!pendingDelete}
-                onClose={() => {
-                    if (!deletingPaymentId) setPendingDelete(null);
-                }}
-            >
-                <div style={{ padding: 24, minWidth: 360 }}>
-                    <Text variant="subheader-2" style={{ display: "block", marginBottom: 12 }}>
-                        Подтвердите удаление
+                <AppDialog
+                    open={!!pendingDelete}
+                    onClose={() => { if (!deletingPaymentId) setPendingDelete(null); }}
+                    size="s"
+                    caption="Подтвердите удаление оплаты"
+                    footer={{
+                        onClickButtonApply: handleDeletePayment,
+                        textButtonApply: "Удалить",
+                        propsButtonApply: {
+                            view: "outlined-danger",
+                            loading: !!deletingPaymentId,
+                            disabled: !!deletingPaymentId || !pendingDelete,
+                        },
+                        onClickButtonCancel: () => setPendingDelete(null),
+                        textButtonCancel: "Отмена",
+                        propsButtonCancel: { disabled: !!deletingPaymentId },
+                    }}
+                >
+                    <Text variant="body-2" color="secondary">
+                        {pendingDelete
+                            ? `${pendingDelete.studentName}, ${pendingDelete.amount.toLocaleString("ru-RU")} ₽. Действие нельзя отменить.`
+                            : "Действие нельзя отменить."}
                     </Text>
-                    <Text variant="body-1" color="secondary" style={{ display: "block", marginBottom: 20 }}>
-                        Удалить оплату{pendingDelete ? `: ${pendingDelete.studentName}, ${pendingDelete.amount.toLocaleString("ru-RU")} ₽` : ""}?
-                    </Text>
-                    <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-                        <Button
-                            view="outlined"
-                            size="m"
-                            onClick={() => setPendingDelete(null)}
-                            disabled={!!deletingPaymentId}
-                        >
-                            Отмена
-                        </Button>
-                        <Button
-                            view="outlined-danger"
-                            size="m"
-                            onClick={handleDeletePayment}
-                            loading={!!deletingPaymentId}
-                            disabled={!!deletingPaymentId}
-                        >
-                            Удалить
-                        </Button>
-                    </div>
-                </div>
-            </Modal>
+                </AppDialog>
 
-            <CreatePaymentModal
-                visible={createModal}
-                onClose={() => setCreateModal(false)}
-                onCreated={refetchPayments}
-            />
+                <CreatePaymentModal
+                    visible={createModal}
+                    onClose={() => setCreateModal(false)}
+                    onCreated={refetchPayments}
+                />
+
+                <CreatePaymentModal
+                    visible={!!selected}
+                    onClose={() => setSelected(null)}
+                    paymentData={selected}
+                    onCreated={async () => {
+                        await refetchPayments();
+                    }}
+                    onDeleted={async () => {
+                        setSelected(null);
+                    }}
+                />
+            </PageOverlay>
         </GravityLayout>
     );
 };
-
-const DetailRow = ({ label, value, bold }: { label: string; value: string; bold?: boolean }) => (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <Text variant="body-1" color="secondary">{label}</Text>
-        <Text variant="body-1" style={bold ? { fontWeight: 600 } : undefined}>{value}</Text>
-    </div>
-);
 
 export default PaymentsListPage;

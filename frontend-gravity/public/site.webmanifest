@@ -1,6 +1,8 @@
 {
-    "name": "",
-    "short_name": "",
+    "name": "Repeto",
+    "short_name": "Repeto",
+    "id": "/dashboard",
+    "start_url": "/dashboard",
     "icons": [
         {
             "src": "/android-chrome-192x192.png",

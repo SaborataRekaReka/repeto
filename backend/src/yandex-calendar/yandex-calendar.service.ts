@@ -6,6 +6,7 @@ import {
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { getPrimaryFrontendUrl } from '../common/utils/frontend-url';
 
 const CALDAV_BASE = 'https://caldav.yandex.ru';
 
@@ -24,14 +25,46 @@ export class YandexCalendarService {
 
   // ── helpers ──
 
+  private isProductionEnv() {
+    return process.env.NODE_ENV === 'production';
+  }
+
+  private getEnvValue(prodKey: string, devKey?: string) {
+    if (!this.isProductionEnv() && devKey) {
+      const devValue = (process.env[devKey] || '').trim();
+      if (devValue) {
+        return devValue;
+      }
+    }
+
+    const prodValue = (process.env[prodKey] || '').trim();
+    return prodValue || null;
+  }
+
   private getClientId(): string | null {
-    return process.env.YANDEX_CALENDAR_CLIENT_ID
-      || process.env.YANDEX_DISK_CLIENT_ID
+    return this.getEnvValue('YANDEX_CALENDAR_CLIENT_ID', 'YANDEX_CALENDAR_CLIENT_ID_DEV')
+      || this.getEnvValue('YANDEX_DISK_CLIENT_ID', 'YANDEX_DISK_CLIENT_ID_DEV')
       || null;
   }
 
   private getRedirectUri(): string {
-    const frontend = process.env.FRONTEND_URL || 'http://localhost:3300';
+    const calendarRedirect = this.getEnvValue(
+      'YANDEX_CALENDAR_REDIRECT_URI',
+      'YANDEX_CALENDAR_REDIRECT_URI_DEV',
+    );
+    if (calendarRedirect) {
+      return calendarRedirect;
+    }
+
+    const diskRedirect = this.getEnvValue(
+      'YANDEX_DISK_REDIRECT_URI',
+      'YANDEX_DISK_REDIRECT_URI_DEV',
+    );
+    if (diskRedirect) {
+      return diskRedirect;
+    }
+
+    const frontend = getPrimaryFrontendUrl();
     return `${frontend}/settings?tab=integrations&integration=yandex-calendar`;
   }
 

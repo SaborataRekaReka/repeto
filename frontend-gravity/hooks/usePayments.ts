@@ -4,11 +4,21 @@ import type { Payment, StudentBalance } from '@/types/finance';
 
 function mapPayment(raw: any): Payment {
   const externalPaymentId = raw.externalPaymentId || undefined;
+  const lessonDate = raw.lesson?.scheduledAt
+    ? new Date(raw.lesson.scheduledAt).toLocaleDateString('ru-RU', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      })
+    : undefined;
 
   return {
     id: raw.id,
     studentId: raw.studentId,
     studentName: raw.student?.name || raw.studentName || '',
+    lessonId: raw.lessonId || raw.lesson?.id || undefined,
+    lessonSubject: raw.lesson?.subject || undefined,
+    lessonDate,
     amount: raw.amount,
     date: new Date(raw.date).toLocaleDateString('ru-RU', {
       day: '2-digit',
@@ -89,6 +99,7 @@ function normalizePaymentDate(date?: string): string | undefined {
 
 export async function createPayment(data: {
   studentId: string;
+  lessonId?: string;
   amount: number;
   method: string;
   date?: string;

@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseInterceptors,
   UploadedFile,
   ParseFilePipe,
@@ -28,6 +29,7 @@ import {
   CompleteYandexDiskDto,
   ConnectYandexDiskTokenDto,
   CompleteGoogleCalendarDto,
+  CompleteGoogleDriveDto,
   ConnectYandexCalendarTokenDto,
 } from './dto';
 
@@ -44,6 +46,15 @@ export class SettingsController {
   @Get()
   getSettings(@CurrentUser('id') userId: string) {
     return this.settingsService.getSettings(userId);
+  }
+
+  @Get('account/slug')
+  checkAccountSlug(
+    @CurrentUser('id') userId: string,
+    @Query('value') value?: string,
+    @Query('name') name?: string,
+  ) {
+    return this.settingsService.checkSlugAvailability(userId, value, name);
   }
 
   @Patch('account')
@@ -155,6 +166,21 @@ export class SettingsController {
   @Post('integrations/google-calendar/pull')
   pullGoogleCalendar(@CurrentUser('id') userId: string) {
     return this.googleCalendarService.pullChanges(userId);
+  }
+
+  // ── Google Drive ──
+
+  @Post('integrations/google-drive/start')
+  startGoogleDriveConnect(@CurrentUser('id') userId: string) {
+    return this.settingsService.startGoogleDriveConnect(userId);
+  }
+
+  @Post('integrations/google-drive/complete')
+  completeGoogleDriveConnect(
+    @CurrentUser('id') userId: string,
+    @Body() dto: CompleteGoogleDriveDto,
+  ) {
+    return this.settingsService.completeGoogleDriveConnect(userId, dto.code);
   }
 
   // ── Yandex Calendar ──

@@ -879,7 +879,7 @@ const visualsByArticleId: Record<string, SupportArticleVisual[]> = {
             src: "/images/support/articles/start-1-registration.png",
             alt: "Экран регистрации Repeto",
             caption: "Введите email и пароль — аккаунт будет готов за минуту.",
-            href: "/registration",
+            href: "/auth?view=signup",
         },
         {
             src: "/images/support/articles/start-1-dashboard.png",

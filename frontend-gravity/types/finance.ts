@@ -5,6 +5,9 @@ export type Payment = {
     id: string;
     studentId: string;
     studentName: string;
+    lessonId?: string;
+    lessonSubject?: string;
+    lessonDate?: string;
     amount: number;
     date: string; // DD.MM.YYYY
     method: PaymentMethod;

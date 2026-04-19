@@ -1,25 +1,19 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import {
-    Card,
+    Alert,
     Text,
     Button,
-    Icon,
-    Label,
-    Avatar,
 } from "@gravity-ui/uikit";
-import { Envelope, Link, Calendar, Person, CreditCard, Pencil, CircleCheck, Bell } from "@gravity-ui/icons";
-import type { IconData } from "@gravity-ui/uikit";
-import GravityLayout from "@/components/GravityLayout";
-import LessonDetailModal from "@/components/LessonDetailModal";
-import CreateLessonModal from "@/components/CreateLessonModal";
+import PageOverlay from "@/components/PageOverlay";
+import AppDialog from "@/components/AppDialog";
+import LessonPanelV2 from "@/components/LessonPanelV2";
 import CreatePaymentModal from "@/components/CreatePaymentModal";
-import PortalLinkModal from "./PortalLinkModal";
+import ActivateAccountModal from "./ActivateAccountModal";
 import RemindModal from "@/components/RemindModal";
 import LessonHistory from "./LessonHistory";
 import PaymentHistory from "./PaymentHistory";
 import ProfileTab from "./ProfileTab";
-import ContactsTab from "./ContactsTab";
 import NotesTab from "./NotesTab";
 import HomeworkTab from "./HomeworkTab";
 import { useLessons, deleteLesson } from "@/hooks/useLessons";
@@ -32,42 +26,24 @@ import {
     useStudentHomework,
 } from "@/hooks/useStudents";
 
-import {
-    getInitials,
-    formatBalance,
-    getStatusLabel,
-} from "@/mocks/students";
 import type { Student } from "@/types/student";
 import type { Lesson } from "@/types/schedule";
 
 const TAB_VALUES = [
-    "lessons",
     "profile",
-    "contacts",
+    "lessons",
     "payments",
     "notes",
     "homework",
 ] as const;
 
 const tabs = [
-    { title: "Занятия", value: "lessons", icon: Calendar },
-    { title: "Профиль", value: "profile", icon: Person },
-    { title: "Контакты", value: "contacts", icon: Envelope },
-    { title: "Оплаты", value: "payments", icon: CreditCard },
-    { title: "Заметки", value: "notes", icon: Pencil },
-    { title: "Домашка", value: "homework", icon: CircleCheck },
+    { title: "Профиль", value: "profile" },
+    { title: "Занятия", value: "lessons" },
+    { title: "Оплаты", value: "payments" },
+    { title: "Заметки", value: "notes" },
+    { title: "Домашка", value: "homework" },
 ];
-
-const statusTheme = (
-    status: Student["status"]
-): "success" | "normal" => {
-    switch (status) {
-        case "active":
-            return "success";
-        default:
-            return "normal";
-    }
-};
 
 type StudentDetailPageProps = {
     student: Student;
@@ -84,7 +60,7 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
         return typeof queryTab === "string" &&
             TAB_VALUES.includes(queryTab as any)
             ? queryTab
-            : "lessons";
+            : "profile";
     };
 
     const [local, setLocal] = useState<Student>(student);
@@ -95,10 +71,13 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
     const [scheduleModal, setScheduleModal] = useState(false);
     const [editLesson, setEditLesson] = useState<Lesson | null>(null);
     const [paymentModal, setPaymentModal] = useState(false);
-    const [portalLinkModal, setPortalLinkModal] = useState(false);
+    const [activateAccountModal, setActivateAccountModal] = useState(false);
     const [remindModal, setRemindModal] = useState(false);
     const [optimisticRemovedLessonIds, setOptimisticRemovedLessonIds] = useState<string[]>([]);
     const [lessonActionError, setLessonActionError] = useState<string | null>(null);
+    const [statusUpdating, setStatusUpdating] = useState(false);
+    const [archiveConfirmOpen, setArchiveConfirmOpen] = useState(false);
+    const [studentActionError, setStudentActionError] = useState<string | null>(null);
 
     useEffect(() => {
         const nextTab = getTabFromQuery();
@@ -110,7 +89,7 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
         setTab(nextTab);
         const { tab: _tab, ...restQuery } = router.query;
         const nextQuery =
-            nextTab === "lessons"
+            nextTab === "profile"
                 ? restQuery
                 : { ...restQuery, tab: nextTab };
         router.replace(
@@ -121,7 +100,14 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
     };
 
     const handleInlineSave = async (data: Partial<Student>) => {
-        setLocal((prev) => ({ ...prev, ...data } as Student));
+        const localPatch = Object.fromEntries(
+            Object.entries(data as Record<string, unknown>).map(([key, value]) => [
+                key,
+                value ?? undefined,
+            ])
+        ) as Partial<Student>;
+
+        setLocal((prev) => ({ ...prev, ...localPatch } as Student));
         try {
             await updateStudent(student.id, data as any);
             onRefresh?.();
@@ -137,6 +123,30 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
     const studentLessons = [...visibleLessons].sort((a, b) =>
         a.date > b.date ? -1 : 1
     );
+
+    useEffect(() => {
+        if (!router.isReady) return;
+
+        const queryLessonId = router.query.lessonId;
+        if (typeof queryLessonId !== "string" || queryLessonId.length === 0) {
+            return;
+        }
+
+        const targetLesson = studentLessons.find((lesson) => lesson.id === queryLessonId);
+        if (!targetLesson) {
+            return;
+        }
+
+        setSelectedLesson((prev) => (prev?.id === targetLesson.id ? prev : targetLesson));
+
+        const nextQuery = { ...router.query };
+        delete nextQuery.lessonId;
+        router.replace(
+            { pathname: router.pathname, query: nextQuery },
+            undefined,
+            { shallow: true }
+        );
+    }, [router.isReady, router.pathname, router.query.lessonId, studentLessons]);
 
     useEffect(() => {
         if (optimisticRemovedLessonIds.length === 0) return;
@@ -170,6 +180,39 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
             setOptimisticRemovedLessonIds((prev) => prev.filter((id) => id !== lessonId));
             setLessonActionError(codedErrorMessage("LESSON-DELETE", error));
         }
+    };
+
+    const applyStudentStatus = async (nextStatus: Student["status"]) => {
+        if (statusUpdating || local.status === nextStatus) return;
+        setStudentActionError(null);
+        const previousStatus = local.status;
+        setLocal((prev) => ({ ...prev, status: nextStatus }));
+        try {
+            await updateStudent(student.id, { status: nextStatus });
+            onRefresh?.();
+        } catch (error: any) {
+            setLocal((prev) => ({ ...prev, status: previousStatus }));
+            setStudentActionError(codedErrorMessage("STUDENT-STATUS", error));
+        } finally {
+            setStatusUpdating(false);
+        }
+    };
+
+    const handleStatusSelect = (nextStatus: Student["status"]) => {
+        if (statusUpdating || local.status === nextStatus) return;
+        if (nextStatus === "archived") {
+            setArchiveConfirmOpen(true);
+            return;
+        }
+        setStatusUpdating(true);
+        void applyStudentStatus(nextStatus);
+    };
+
+    const confirmArchiveStudent = () => {
+        if (statusUpdating) return;
+        setArchiveConfirmOpen(false);
+        setStatusUpdating(true);
+        void applyStudentStatus("archived");
     };
 
     const { data: paymentsData, refetch: refetchPayments } = usePayments({
@@ -216,10 +259,15 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
                 </>
             )}
             {tab === "profile" && (
-                <ProfileTab student={local} onSave={handleInlineSave} />
-            )}
-            {tab === "contacts" && (
-                <ContactsTab student={local} onSave={handleInlineSave} />
+                <ProfileTab
+                    student={local}
+                    onSave={handleInlineSave}
+                    onRemind={() => setRemindModal(true)}
+                    onActivateAccount={() => setActivateAccountModal(true)}
+                    onStatusSelect={handleStatusSelect}
+                    statusUpdating={statusUpdating}
+                    studentActionError={studentActionError}
+                />
             )}
             {tab === "payments" && (
                 <PaymentHistory
@@ -255,6 +303,86 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
                     studentId={student.id}
                     homeworks={homeworks.map((h: any) => {
                         const d = new Date(h.createdAt);
+                        const status =
+                            h.status === "done" ||
+                            h.status === "overdue" ||
+                            h.status === "not_done"
+                                ? h.status
+                                : String(h.status || "not_done").toLowerCase();
+
+                        const normalizedStatus =
+                            status === "done" || status === "completed"
+                                ? "done"
+                                : status === "overdue"
+                                  ? "overdue"
+                                  : "not_done";
+
+                        const formatUploadDate = (value: unknown) => {
+                            if (!value) {
+                                return "—";
+                            }
+                            const parsed = new Date(String(value));
+                            if (Number.isNaN(parsed.getTime())) {
+                                return String(value);
+                            }
+                            return parsed.toLocaleDateString("ru-RU");
+                        };
+
+                        const parseUploadNameFromUrl = (url: string, index: number) => {
+                            const fallback = `Файл ${index + 1}`;
+                            const basename = url.split("/").pop() || fallback;
+
+                            try {
+                                return decodeURIComponent(basename || fallback);
+                            } catch {
+                                return basename || fallback;
+                            }
+                        };
+
+                        const rawUploads = [
+                            ...(Array.isArray(h.studentUploads) ? h.studentUploads : []),
+                            ...(Array.isArray(h.attachments) ? h.attachments : []),
+                        ];
+
+                        const normalizedUploads = rawUploads
+                            .map((upload: any, index: number) => {
+                                if (typeof upload === "string") {
+                                    return {
+                                        id: upload || `upload-${index + 1}`,
+                                        name: parseUploadNameFromUrl(upload, index),
+                                        size: "—",
+                                        uploadedAt: "—",
+                                        expiresAt: "—",
+                                        url: upload,
+                                    };
+                                }
+
+                                const uploadUrl = upload.url || upload.fileUrl || "";
+
+                                return {
+                                    id: upload.id || uploadUrl || `upload-${index + 1}`,
+                                    name:
+                                        upload.name ||
+                                        parseUploadNameFromUrl(uploadUrl || "", index),
+                                    size: upload.size || "—",
+                                    uploadedAt: formatUploadDate(
+                                        upload.uploadedAt || upload.createdAt
+                                    ),
+                                    expiresAt: formatUploadDate(upload.expiresAt),
+                                    url: uploadUrl,
+                                };
+                            })
+                            .filter((upload: any) => !!upload.url);
+
+                        const linkedLesson =
+                            h.lesson && h.lesson.id
+                                ? {
+                                      id: h.lesson.id,
+                                      subject: h.lesson.subject,
+                                      scheduledAt: h.lesson.scheduledAt,
+                                  }
+                                : null;
+
                         return {
                             id: h.id,
                             date: d.toLocaleDateString("ru-RU", {
@@ -266,7 +394,18 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
                             dueDate: h.dueAt
                                 ? new Date(h.dueAt).toLocaleDateString("ru-RU")
                                 : "—",
-                            status: (h.status || "not_done").toLowerCase(),
+                            status: normalizedStatus,
+                            lessonId: h.lessonId || linkedLesson?.id || undefined,
+                            lesson: linkedLesson,
+                            linkedFiles: (h.linkedFiles || []).map((file: any) => ({
+                                id: file.id,
+                                name: file.name,
+                                url: file.url || file.cloudUrl || "#",
+                                provider: file.cloudProvider || file.provider,
+                                extension: file.extension || undefined,
+                                size: file.size || undefined,
+                            })),
+                            studentUploads: normalizedUploads,
                         };
                     })}
                     onMutate={() => mutateHomework()}
@@ -275,175 +414,36 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
         </>
     );
 
+    const navItems = tabs.map((t) => ({
+        key: t.value,
+        label: t.title,
+    }));
+
     return (
-        <GravityLayout title={local.name} back>
-            <div className="repeto-student-layout">
-                {/* Sidebar */}
-                <aside className="repeto-student-sidebar">
-                    {/* Avatar + info */}
-                    <div
-                        style={{
-                            textAlign: "center",
-                            padding: "28px 20px 20px",
-                        }}
-                    >
-                        <Avatar
-                            text={getInitials(local.name)}
-                            size="l"
-                            theme="brand"
-                            style={{ margin: "0 auto 14px", "--g-avatar-size": "72px" } as React.CSSProperties}
-                        />
-                        <Text
-                            variant="subheader-2"
-                            as="div"
-                            style={{ marginBottom: 4 }}
-                        >
-                            {local.name}
-                        </Text>
-                        <Text
-                            variant="body-1"
-                            color="secondary"
-                            as="div"
-                            style={{ marginBottom: 12 }}
-                        >
-                            {local.subject}
-                            {local.grade
-                                ? ` · ${local.grade}${
-                                      local.grade !== "Взрослый" ? " кл." : ""
-                                  }`
-                                : ""}
-                        </Text>
-                        <div
-                            style={{
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                gap: 8,
-                                marginBottom: 16,
-                            }}
-                        >
-                            <Label
-                                theme={statusTheme(local.status)}
-                                size="xs"
-                            >
-                                {getStatusLabel(local.status)}
-                            </Label>
-                            <Text
-                                variant="body-2"
-                                style={{
-                                    color:
-                                        local.balance < 0
-                                            ? "#D16B8F"
-                                            : local.balance > 0
-                                            ? "#22C55E"
-                                            : undefined,
-                                }}
-                            >
-                                {formatBalance(local.balance)}
-                            </Text>
-                        </div>
-                        <div
-                            style={{
-                                display: "flex",
-                                justifyContent: "center",
-                                gap: 8,
-                            }}
-                        >
-                            <Button
-                                view="outlined"
-                                size="s"
-                                onClick={() => setRemindModal(true)}
-                            >
-                                <Icon
-                                    data={Bell as IconData}
-                                    size={14}
-                                />
-                                Напомнить
-                            </Button>
-                            <Button
-                                view="outlined"
-                                size="s"
-                                onClick={() => setPortalLinkModal(true)}
-                            >
-                                <Icon data={Link as IconData} size={14} />
-                                Портал
-                            </Button>
-                        </div>
-                    </div>
+        <PageOverlay
+            title={local.name}
+            breadcrumb="Ученики"
+            nav={navItems}
+            activeNav={tab}
+            onNavChange={handleTabChange}
+            backHref="/students"
+        >
+            {renderTabContent()}
 
-                    {/* Nav */}
-                    <nav style={{ padding: "8px", display: "flex", flexDirection: "column", gap: 2 }}>
-                        {tabs.map((t) => (
-                            <button
-                                key={t.value}
-                                onClick={() => handleTabChange(t.value)}
-                                style={{
-                                    display: "flex", alignItems: "center", gap: 12,
-                                    padding: "10px 16px", borderRadius: 10,
-                                    border: "none", cursor: "pointer", width: "100%", textAlign: "left",
-                                    background: tab === t.value ? "rgba(174,122,255,0.08)" : "transparent",
-                                    color: tab === t.value ? "var(--g-color-text-brand)" : "var(--g-color-text-primary)",
-                                    fontWeight: tab === t.value ? 600 : 400, fontSize: 14,
-                                    transition: "all 0.15s",
-                                }}
-                                onMouseEnter={(e) => { if (tab !== t.value) e.currentTarget.style.background = "var(--g-color-base-simple-hover)"; }}
-                                onMouseLeave={(e) => { if (tab !== t.value) e.currentTarget.style.background = "transparent"; }}
-                            >
-                                <Icon data={t.icon as IconData} size={18} />
-                                {t.title}
-                            </button>
-                        ))}
-                    </nav>
-                </aside>
-
-                {/* Content */}
-                <div className="repeto-student-content">
-                    {/* Mobile tabs */}
-                    <div className="repeto-student-mobile-tabs">
-                        <div
-                            className="repeto-students-toolbar__tabs"
-                            style={{ width: "100%", overflowX: "auto" }}
-                        >
-                            {tabs.map((t) => (
-                                <button
-                                    key={t.value}
-                                    className={`repeto-students-toolbar__tab${
-                                        tab === t.value
-                                            ? " repeto-students-toolbar__tab--active"
-                                            : ""
-                                    }`}
-                                    onClick={() => handleTabChange(t.value)}
-                                >
-                                    {t.title}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {renderTabContent()}
-                </div>
-            </div>
-
-            <LessonDetailModal
-                visible={!!selectedLesson}
-                onClose={() => setSelectedLesson(null)}
-                lesson={selectedLesson}
-                onEdit={handleEditLesson}
-                onDelete={handleDeleteLesson}
-                onUpdated={refetchLessons}
-            />
-            <CreateLessonModal
-                visible={scheduleModal}
+            <LessonPanelV2
+                open={!!selectedLesson || scheduleModal}
                 onClose={() => {
+                    setSelectedLesson(null);
                     setScheduleModal(false);
                     setEditLesson(null);
                 }}
-                onCreated={async () => {
+                lesson={selectedLesson || editLesson}
+                onSaved={async () => {
                     await refetchLessons();
                     onRefresh?.();
                 }}
-                lesson={editLesson}
-                defaultStudent={editLesson ? undefined : { id: student.id, name: student.name }}
+                onDeleted={handleDeleteLesson}
+                defaultStudent={selectedLesson || editLesson ? undefined : { id: student.id, name: student.name }}
             />
             <CreatePaymentModal
                 visible={paymentModal}
@@ -451,12 +451,13 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
                 onCreated={handlePaymentCreated}
                 defaultStudent={{ id: student.id, name: student.name }}
             />
-            <PortalLinkModal
-                visible={portalLinkModal}
-                onClose={() => setPortalLinkModal(false)}
+            <ActivateAccountModal
+                visible={activateAccountModal}
+                onClose={() => setActivateAccountModal(false)}
                 studentId={student.id}
                 studentName={student.name}
-                tutorSlug={tutorSlug}
+                studentEmail={local.email}
+                hasAccount={!!local.accountId}
             />
             <RemindModal
                 visible={remindModal}
@@ -465,9 +466,46 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
                 studentId={student.id}
                 studentName={student.name}
                 hasDebt={local.balance < 0}
-                hasParent={!!local.parentName || !!local.parentPhone}
+                hasParentEmail={!!local.parentEmail}
             />
-        </GravityLayout>
+            <AppDialog
+                size="s"
+                open={archiveConfirmOpen}
+                onClose={() => setArchiveConfirmOpen(false)}
+                caption="Перенести в архив"
+            >
+                <Alert
+                    theme="warning"
+                    view="filled"
+                    corners="rounded"
+                    title="Подтвердите перенос в архив"
+                    message={
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                            <div>{`Ученик «${local.name}» будет перенесен в архив.`}</div>
+                            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
+                                <Button
+                                    view="outlined"
+                                    size="m"
+                                    onClick={() => setArchiveConfirmOpen(false)}
+                                    disabled={statusUpdating}
+                                >
+                                    Отмена
+                                </Button>
+                                <Button
+                                    view="action"
+                                    size="m"
+                                    onClick={confirmArchiveStudent}
+                                    loading={statusUpdating}
+                                    disabled={statusUpdating}
+                                >
+                                    Перенести
+                                </Button>
+                            </div>
+                        </div>
+                    }
+                />
+            </AppDialog>
+        </PageOverlay>
     );
 };
 

@@ -54,7 +54,7 @@ const CategoriesPage = () => {
             </div>
 
             {/* Categories grid */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 40 }}>
+            <div className="repeto-support-grid-3" style={{ marginBottom: 40 }}>
                 {productCategories.map((cat: any) => (
                     <Category item={cat} key={cat.id} />
                 ))}

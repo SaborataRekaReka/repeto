@@ -17,6 +17,19 @@ export async function updateAccount(data: Record<string, unknown>) {
   return api('/settings/account', { method: 'PATCH', body: data });
 }
 
+export type AccountSlugCheckResponse = {
+  requested: string;
+  isAvailable: boolean;
+  suggested: string;
+};
+
+export async function checkAccountSlug(data: { value?: string; name?: string }) {
+  return api<AccountSlugCheckResponse>('/settings/account/slug', {
+    method: 'GET',
+    params: data,
+  });
+}
+
 export async function uploadAvatar(file: File) {
   const formData = new FormData();
   formData.append('file', file);
@@ -117,6 +130,30 @@ export async function pullGoogleCalendar() {
   return api<{ created: number; updated: number; cancelled: number }>(
     '/settings/integrations/google-calendar/pull',
     { method: 'POST' },
+  );
+}
+
+// ── Google Drive ──
+
+export async function startGoogleDriveConnect() {
+  return api<
+    | { oauthConfigured: false }
+    | { oauthConfigured: true; authUrl: string }
+  >('/settings/integrations/google-drive/start', {
+    method: 'POST',
+    body: {},
+  });
+}
+
+export async function completeGoogleDriveConnect(data: { code: string }) {
+  return api<{
+    connected: boolean;
+    email: string;
+    rootPath: string;
+    syncedItems?: number;
+  }>(
+    '/settings/integrations/google-drive/complete',
+    { method: 'POST', body: data },
   );
 }
 

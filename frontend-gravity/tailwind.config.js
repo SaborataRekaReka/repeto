@@ -21,8 +21,8 @@ module.exports = {
             // => @media (max-width: 1179px) { ... }
             lg: { max: "1023px" },
             // => @media (max-width: 1023px) { ... }
-            md: { max: "767px" },
-            // => @media (max-width: 767px) { ... }
+            md: { max: "768px" },
+            // => @media (max-width: 768px) { ... }
             sm: { max: "480px" },
             // => @media (max-width: 480px) { ... }
         },
@@ -56,7 +56,7 @@ module.exports = {
                     800: "#216E35",
                     900: "#1B5A2C",
                 },
-                /* ═══ Backward-compat aliases (Bruddle kit naming) ═══ */
+                /* ═══ Backward-compat aliases (legacy kit naming) ═══ */
                 purple: {
                     1: "#AE7AFF",
                     2: "#7030D9",

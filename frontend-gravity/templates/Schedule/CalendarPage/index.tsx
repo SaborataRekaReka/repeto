@@ -1,22 +1,21 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/router";
 import GravityLayout from "@/components/GravityLayout";
-import { Text, Button, Icon, SegmentedRadioGroup, Select } from "@gravity-ui/uikit";
+import { Text, Button, Icon, SegmentedRadioGroup, Select, DropdownMenu } from "@gravity-ui/uikit";
 import {
     ArrowChevronLeft,
     ArrowChevronRight,
-    Calendar,
+    ArrowUpFromLine,
     CirclePlus,
 } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
-import LessonDetailModal from "@/components/LessonDetailModal";
-import CreateLessonModal from "@/components/CreateLessonModal";
+import LessonPanelV2 from "@/components/LessonPanelV2";
 import Month from "./Month";
 import Week from "./Week";
 import Day from "./Day";
 import AvailabilityEditor from "./AvailabilityEditor";
 import { useLessons, deleteLesson } from "@/hooks/useLessons";
-import { useSettings, syncYandexCalendar } from "@/hooks/useSettings";
+import { useSettings, syncYandexCalendar, syncGoogleCalendar } from "@/hooks/useSettings";
 import { toLocalDateKey } from "@/lib/dates";
 import { codedErrorMessage } from "@/lib/errorCodes";
 import type { Lesson } from "@/types/schedule";
@@ -63,12 +62,13 @@ const CalendarPage = () => {
     const [editLesson, setEditLesson] = useState<Lesson | null>(null);
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedStatuses, setSelectedStatuses] = useState<LessonStatusFilter[]>(ALL_STATUS_VALUES);
-    const [exportingYandex, setExportingYandex] = useState(false);
+    const [exportingProvider, setExportingProvider] = useState<"yandex" | "google" | null>(null);
     const [exportStatus, setExportStatus] = useState<{ type: "ok" | "error"; text: string } | null>(null);
     const [optimisticRemovedLessonIds, setOptimisticRemovedLessonIds] = useState<string[]>([]);
 
     const { data: settings } = useSettings();
     const hasYandexCalendar = !!settings?.hasYandexCalendar;
+    const hasGoogleCalendar = !!settings?.hasGoogleCalendar;
 
     const handleEdit = useCallback((lesson: Lesson) => {
         setCreateSlot(null);
@@ -94,7 +94,7 @@ const CalendarPage = () => {
             return;
         }
 
-        setExportingYandex(true);
+        setExportingProvider("yandex");
         setExportStatus(null);
         try {
             const result = await syncYandexCalendar();
@@ -111,9 +111,36 @@ const CalendarPage = () => {
                 text: codedErrorMessage("SCHED-YDEX-EXP", error),
             });
         } finally {
-            setExportingYandex(false);
+            setExportingProvider(null);
         }
     }, [hasYandexCalendar, router]);
+
+    const handleExportToGoogleCalendar = useCallback(async () => {
+        if (!hasGoogleCalendar) {
+            router.push("/settings?tab=integrations&integration=google-calendar");
+            return;
+        }
+
+        setExportingProvider("google");
+        setExportStatus(null);
+        try {
+            const result = await syncGoogleCalendar();
+            const errors = result?.errors || 0;
+            setExportStatus({
+                type: "ok",
+                text: errors > 0
+                    ? `Экспорт завершен: ${result.synced} уроков, ошибок: ${errors}`
+                    : `Экспорт завершен: ${result.synced} уроков отправлено в Google Calendar`,
+            });
+        } catch (error: any) {
+            setExportStatus({
+                type: "error",
+                text: codedErrorMessage("SCHED-GCAL-EXP", error),
+            });
+        } finally {
+            setExportingProvider(null);
+        }
+    }, [hasGoogleCalendar, router]);
 
     useEffect(() => {
         if (router.query.create === "1") {
@@ -214,17 +241,9 @@ const CalendarPage = () => {
             <AvailabilityEditor />
 
             {/* ── Toolbar ── */}
-            <div
-                style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    marginBottom: 20,
-                    flexWrap: "wrap",
-                }}
-            >
+            <div className="repeto-schedule-toolbar">
                 {/* Lessons visibility filter */}
-                <div style={{ width: 220 }}>
+                <div className="repeto-schedule-toolbar__filter">
                     <Select
                         size="m"
                         width="max"
@@ -241,7 +260,7 @@ const CalendarPage = () => {
                 </div>
 
                 {/* Navigation */}
-                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <div className="repeto-schedule-toolbar__nav">
                     <Button
                         view="flat"
                         size="m"
@@ -259,43 +278,63 @@ const CalendarPage = () => {
                 </div>
 
                 {/* Date label */}
-                <Text variant="subheader-3" style={{ minWidth: 160 }}>
+                <Text variant="subheader-3" className="repeto-schedule-toolbar__date">
                     {formatDateLabel()}
                 </Text>
 
                 {/* Spacer */}
-                <div style={{ flex: 1 }} />
+                <div className="repeto-schedule-toolbar__spacer" />
 
                 {/* View toggle */}
-                <SegmentedRadioGroup
-                    size="m"
-                    value={view}
-                    onUpdate={(v) => setView(v as ViewType)}
-                    options={VIEW_OPTIONS}
-                />
+                <div className="repeto-schedule-toolbar__view">
+                    <SegmentedRadioGroup
+                        size="m"
+                        value={view}
+                        onUpdate={(v) => setView(v as ViewType)}
+                        options={VIEW_OPTIONS}
+                    />
+                </div>
 
-                <Button
-                    view="outlined"
-                    size="m"
-                    onClick={handleExportToYandexCalendar}
-                    loading={exportingYandex}
-                    style={hasYandexCalendar
-                        ? {
-                            borderColor: "rgba(252,63,29,0.35)",
-                            color: "#B42318",
-                          }
-                        : {}
-                    }
-                >
-                    <Icon data={Calendar as IconData} size={16} />
-                    {hasYandexCalendar ? "Экспорт в Яндекс.Календарь" : "Подключить Яндекс.Календарь"}
-                </Button>
+                <div className="repeto-schedule-toolbar__export">
+                    <DropdownMenu
+                        switcher={
+                            <Button
+                                view="outlined"
+                                size="m"
+                                loading={exportingProvider !== null}
+                            >
+                                <Icon data={ArrowUpFromLine as IconData} size={16} />
+                                Экспорт
+                            </Button>
+                        }
+                        items={[
+                            {
+                                text: hasYandexCalendar
+                                    ? "Экспорт в Яндекс.Календарь"
+                                    : "Подключить Яндекс.Календарь",
+                                action: () => {
+                                    void handleExportToYandexCalendar();
+                                },
+                            },
+                            {
+                                text: hasGoogleCalendar
+                                    ? "Экспорт в Google Calendar"
+                                    : "Подключить Google Calendar",
+                                action: () => {
+                                    void handleExportToGoogleCalendar();
+                                },
+                            },
+                        ]}
+                    />
+                </div>
 
                 {/* Create button */}
-                <Button view="action" size="m" onClick={handleOpenCreate}>
-                    <Icon data={CirclePlus as IconData} size={16} />
-                    Новое занятие
-                </Button>
+                <div className="repeto-schedule-toolbar__create">
+                    <Button view="action" size="m" onClick={handleOpenCreate}>
+                        <Icon data={CirclePlus as IconData} size={16} />
+                        Новое занятие
+                    </Button>
+                </div>
             </div>
 
             {exportStatus && (
@@ -335,23 +374,17 @@ const CalendarPage = () => {
             )}
 
             {/* ── Modals ── */}
-            <LessonDetailModal
-                visible={!!selectedLesson}
-                onClose={() => setSelectedLesson(null)}
-                lesson={selectedLesson}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onUpdated={refetchLessons}
-            />
-            <CreateLessonModal
-                visible={createModal}
+            <LessonPanelV2
+                open={!!selectedLesson || createModal}
                 onClose={() => {
+                    setSelectedLesson(null);
                     setCreateModal(false);
                     setCreateSlot(null);
                     setEditLesson(null);
                 }}
-                onCreated={refetchLessons}
-                lesson={editLesson}
+                lesson={selectedLesson || editLesson}
+                onSaved={refetchLessons}
+                onDeleted={handleDelete}
                 defaultDate={createSlot?.date}
                 defaultTime={createSlot?.time}
             />

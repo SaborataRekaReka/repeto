@@ -1,21 +1,24 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import {
-    Dialog,
     Text,
     TextArea,
     Checkbox,
     Switch,
-    SegmentedRadioGroup,
-    Loader,
     Button,
+    Icon,
+    Loader,
+    Select,
 } from "@gravity-ui/uikit";
+import { ArrowLeft } from "@gravity-ui/icons";
+import type { IconData } from "@gravity-ui/uikit";
 import { useLessons } from "@/hooks/useLessons";
+import { usePayments } from "@/hooks/usePayments";
 import { useStudentHomework } from "@/hooks/useStudents";
 import { sendReminder } from "@/hooks/useNotifications";
 import { codedErrorMessage } from "@/lib/errorCodes";
+import { Lp2Field } from "@/components/Lp2Field";
 import type { Lesson } from "@/types/schedule";
-
-const GDialog = Dialog as any;
 
 type ReminderType = "payment" | "lesson" | "homework";
 
@@ -26,7 +29,8 @@ type RemindModalProps = {
     studentId: string;
     studentName: string;
     hasDebt: boolean;
-    hasParent: boolean;
+    hasParentEmail: boolean;
+    initialType?: ReminderType;
 };
 
 type HomeworkItem = {
@@ -37,10 +41,12 @@ type HomeworkItem = {
 };
 
 const typeOptions = [
-    { value: "payment" as ReminderType, content: "Об оплате" },
-    { value: "lesson" as ReminderType, content: "О занятии" },
-    { value: "homework" as ReminderType, content: "О домашке" },
+    { value: "payment", content: "Об оплате" },
+    { value: "lesson", content: "О занятии" },
+    { value: "homework", content: "О домашке" },
 ];
+
+const PANEL_Z = 135;
 
 const RemindModal = ({
     visible,
@@ -49,8 +55,14 @@ const RemindModal = ({
     studentId,
     studentName,
     hasDebt,
-    hasParent,
+    hasParentEmail,
+    initialType,
 }: RemindModalProps) => {
+    const panelRef = useRef<HTMLDivElement>(null);
+    const [mounted, setMounted] = useState(false);
+    const [shouldRender, setShouldRender] = useState(false);
+    const [isPanelVisible, setIsPanelVisible] = useState(false);
+
     const [reminderType, setReminderType] = useState<ReminderType>("payment");
     const [selectedLessonIds, setSelectedLessonIds] = useState<string[]>([]);
     const [selectedHomeworkIds, setSelectedHomeworkIds] = useState<string[]>([]);
@@ -61,10 +73,56 @@ const RemindModal = ({
     const [errorText, setErrorText] = useState<string | null>(null);
     const [successText, setSuccessText] = useState<string | null>(null);
 
+    // LP2 panel lifecycle
+    useEffect(() => { setMounted(true); }, []);
+
+    useEffect(() => {
+        if (visible) {
+            setShouldRender(true);
+            const raf1 = requestAnimationFrame(() => {
+                requestAnimationFrame(() => setIsPanelVisible(true));
+            });
+            return () => cancelAnimationFrame(raf1);
+        } else {
+            setIsPanelVisible(false);
+        }
+    }, [visible]);
+
+    const handleTransitionEnd = useCallback(() => {
+        if (!isPanelVisible) setShouldRender(false);
+    }, [isPanelVisible]);
+
+    const handleClose = useCallback(() => {
+        setIsPanelVisible(false);
+        setTimeout(() => onClose(), 350);
+    }, [onClose]);
+
+    useEffect(() => {
+        if (!visible) return;
+        const handler = (e: KeyboardEvent) => { if (e.key === "Escape") handleClose(); };
+        document.addEventListener("keydown", handler);
+        return () => document.removeEventListener("keydown", handler);
+    }, [visible, handleClose]);
+
     // Fetch lessons for this student
     const { data: allLessons = [], loading: lessonsLoading } = useLessons({
         studentId,
     });
+
+    const { data: studentPaymentsData } = usePayments({
+        studentId,
+        limit: 300,
+    });
+
+    const linkedLessonIdSet = useMemo(() => {
+        const ids = new Set<string>();
+        (studentPaymentsData?.data || []).forEach((payment) => {
+            if (payment.lessonId) {
+                ids.add(payment.lessonId);
+            }
+        });
+        return ids;
+    }, [studentPaymentsData?.data]);
 
     // Planned lessons (nearest first)
     const plannedLessons = useMemo(() => {
@@ -80,9 +138,11 @@ const RemindModal = ({
     // Completed lessons (for payment context — shows what's unpaid)
     const completedLessons = useMemo(() => {
         return [...allLessons]
-            .filter((l) => l.status === "completed")
+            .filter(
+                (l) => l.status === "completed" && !linkedLessonIdSet.has(l.id)
+            )
             .sort((a, b) => (a.date > b.date ? -1 : 1));
-    }, [allLessons]);
+    }, [allLessons, linkedLessonIdSet]);
 
     // Fetch homework for this student
     const { data: hwData, loading: hwLoading } = useStudentHomework(studentId) as {
@@ -104,7 +164,7 @@ const RemindModal = ({
     // Reset on open
     useEffect(() => {
         if (!visible) return;
-        setReminderType(hasDebt ? "payment" : "lesson");
+        setReminderType(initialType || (hasDebt ? "payment" : "lesson"));
         setSelectedLessonIds([]);
         setSelectedHomeworkIds([]);
         setShowComment(false);
@@ -113,7 +173,13 @@ const RemindModal = ({
         setSaving(false);
         setErrorText(null);
         setSuccessText(null);
-    }, [visible, hasDebt]);
+    }, [visible, hasDebt, initialType]);
+
+    useEffect(() => {
+        if (!hasParentEmail && notifyParent) {
+            setNotifyParent(false);
+        }
+    }, [hasParentEmail, notifyParent]);
 
     // Auto-select nearest planned lesson when switching to "lesson" type
     useEffect(() => {
@@ -121,6 +187,14 @@ const RemindModal = ({
             setSelectedLessonIds([plannedLessons[0].id]);
         }
     }, [reminderType, plannedLessons, selectedLessonIds.length]);
+
+    useEffect(() => {
+        if (reminderType !== "payment") return;
+        if (selectedLessonIds.length === 0) return;
+
+        const allowedIds = new Set(completedLessons.map((lesson) => lesson.id));
+        setSelectedLessonIds((prev) => prev.filter((id) => allowedIds.has(id)));
+    }, [reminderType, completedLessons, selectedLessonIds.length]);
 
     // Auto-select first pending homework
     useEffect(() => {
@@ -175,6 +249,13 @@ const RemindModal = ({
 
     const canSubmit = () => {
         if (saving) return false;
+        if (
+            reminderType === "payment" &&
+            completedLessons.length > 0 &&
+            selectedLessonIds.length === 0
+        ) {
+            return false;
+        }
         if (reminderType === "lesson" && selectedLessonIds.length === 0) return false;
         if (reminderType === "homework" && selectedHomeworkIds.length === 0) return false;
         return true;
@@ -189,7 +270,10 @@ const RemindModal = ({
         try {
             const result = await sendReminder(studentId, {
                 type: reminderType,
-                lessonIds: reminderType === "lesson" ? selectedLessonIds : undefined,
+                lessonIds:
+                    reminderType === "lesson" || reminderType === "payment"
+                        ? selectedLessonIds
+                        : undefined,
                 homeworkIds: reminderType === "homework" ? selectedHomeworkIds : undefined,
                 comment: comment.trim() || undefined,
                 notifyParent: reminderType === "payment" ? notifyParent : undefined,
@@ -214,22 +298,21 @@ const RemindModal = ({
     };
 
     const renderTypeSelection = () => (
-        <div>
-            <Text variant="body-2" color="secondary" style={{ marginBottom: 8, display: "block" }}>
-                Тип напоминания
-            </Text>
-            <SegmentedRadioGroup
-                value={reminderType}
-                onUpdate={(val) => {
+        <Lp2Field label="Тип напоминания">
+            <Select
+                size="l"
+                width="max"
+                options={typeOptions}
+                value={[reminderType]}
+                onUpdate={([val]) => {
                     setReminderType(val as ReminderType);
                     setSelectedLessonIds([]);
                     setSelectedHomeworkIds([]);
                     setErrorText(null);
                 }}
-                size="m"
-                options={typeOptions}
+                popupClassName="lp2-popup"
             />
-        </div>
+        </Lp2Field>
     );
 
     const renderPaymentSection = () => (
@@ -254,7 +337,7 @@ const RemindModal = ({
             ) : completedLessons.length > 0 ? (
                 <div>
                     <Text variant="body-2" color="secondary" style={{ marginBottom: 8, display: "block" }}>
-                        Проведённые занятия без оплаты
+                        Выберите проведенные занятия для напоминания о долге
                     </Text>
                     <div
                         style={{
@@ -266,19 +349,31 @@ const RemindModal = ({
                         }}
                     >
                         {completedLessons.map((lesson) => (
-                            <div
+                            <label
                                 key={lesson.id}
                                 style={{
                                     display: "flex",
                                     alignItems: "center",
                                     gap: 10,
-                                    padding: "8px 14px",
+                                    padding: "10px 14px",
                                     borderRadius: 10,
-                                    background: "var(--g-color-base-generic)",
+                                    cursor: "pointer",
+                                    background: selectedLessonIds.includes(lesson.id)
+                                        ? "rgba(174,122,255,0.08)"
+                                        : "var(--g-color-base-generic)",
+                                    border: selectedLessonIds.includes(lesson.id)
+                                        ? "1px solid var(--g-color-line-brand)"
+                                        : "1px solid transparent",
+                                    transition: "all 0.15s",
                                 }}
                             >
+                                <Checkbox
+                                    checked={selectedLessonIds.includes(lesson.id)}
+                                    onUpdate={() => toggleLesson(lesson.id)}
+                                    size="m"
+                                />
                                 <Text variant="body-2">{formatCompletedLessonLabel(lesson)}</Text>
-                            </div>
+                            </label>
                         ))}
                     </div>
                 </div>
@@ -296,24 +391,34 @@ const RemindModal = ({
                 </div>
             )}
 
-            {/* Notify parent toggle — outside the container */}
-            {hasParent && (
-                <div
-                    style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "10px 0",
-                    }}
-                >
-                    <Text variant="body-2">Уведомить родителя</Text>
-                    <Switch
-                        checked={notifyParent}
-                        onUpdate={setNotifyParent}
-                        size="l"
-                    />
+            <div
+                title={!hasParentEmail ? "Сначала добавьте почту родителя" : undefined}
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "10px 0",
+                    opacity: hasParentEmail ? 1 : 0.65,
+                }}
+            >
+                <div>
+                    <Text variant="body-2">Напомнить родителям</Text>
+                    {!hasParentEmail && (
+                        <Text as="div" variant="caption-2" color="secondary" style={{ marginTop: 2 }}>
+                            Сначала добавьте почту родителя
+                        </Text>
+                    )}
                 </div>
-            )}
+                <Switch
+                    checked={notifyParent}
+                    onUpdate={(value) => {
+                        if (!hasParentEmail) return;
+                        setNotifyParent(value);
+                    }}
+                    size="l"
+                    disabled={!hasParentEmail}
+                />
+            </div>
         </div>
     );
 
@@ -473,82 +578,75 @@ const RemindModal = ({
         );
     };
 
-    return (
-        <GDialog
-            open={visible}
-            onClose={onClose}
-            size="s"
-            hasCloseButton
+    if (!mounted || (!shouldRender && !visible)) return null;
+
+    const panelContent = (
+        <div
+            ref={panelRef}
+            className={`lp2 ${isPanelVisible ? "lp2--open" : ""}`}
+            style={{ zIndex: PANEL_Z }}
+            onTransitionEnd={handleTransitionEnd}
+            role="dialog"
+            aria-modal="false"
+            aria-label={`Напомнить · ${studentName}`}
         >
-            <GDialog.Header caption={`Напомнить · ${studentName}`} />
-            <GDialog.Body>
-                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            <div className="lp2__topbar">
+                <button type="button" className="lp2__back" onClick={handleClose} aria-label="Назад">
+                    <Icon data={ArrowLeft as IconData} size={18} />
+                </button>
+                <div className="lp2__topbar-actions" />
+            </div>
+
+            <div className="lp2__scroll">
+                <div className="lp2__center">
+                    <h1 className="lp2__page-title">Напомнить · {studentName}</h1>
+
                     {renderTypeSelection()}
 
                     {reminderType === "payment" && renderPaymentSection()}
                     {reminderType === "lesson" && renderLessonSection()}
                     {reminderType === "homework" && renderHomeworkSection()}
 
-                    {/* Expandable comment field */}
-                    {!showComment ? (
-                        <Button
-                            view="flat"
-                            size="m"
-                            onClick={() => setShowComment(true)}
-                            style={{ alignSelf: "flex-start" }}
-                        >
-                            + Добавить сообщение
-                        </Button>
-                    ) : (
-                        <div>
-                            <Text
-                                variant="body-2"
-                                color="secondary"
-                                style={{ marginBottom: 8, display: "block" }}
-                            >
-                                Сообщение
-                            </Text>
-                            <TextArea
-                                value={comment}
-                                onUpdate={setComment}
-                                placeholder="Добавить сообщение к напоминанию…"
-                                rows={2}
-                                size="m"
-                                autoFocus
-                            />
-                        </div>
-                    )}
+                    <Lp2Field label="Сообщение">
+                        <TextArea
+                            value={comment}
+                            onUpdate={setComment}
+                            placeholder="Добавить сообщение к напоминанию…"
+                            rows={2}
+                            size="l"
+                        />
+                    </Lp2Field>
 
                     {errorText && (
-                        <Text
-                            variant="body-2"
-                            style={{ color: "var(--g-color-text-danger)" }}
-                        >
+                        <Text variant="body-1" style={{ color: "var(--g-color-text-danger)" }}>
                             {errorText}
                         </Text>
                     )}
                     {successText && (
-                        <Text
-                            variant="body-2"
-                            style={{ color: "var(--g-color-text-positive)" }}
-                        >
+                        <Text variant="body-1" style={{ color: "var(--g-color-text-positive)" }}>
                             ✓ {successText}
                         </Text>
                     )}
                 </div>
-            </GDialog.Body>
-            <GDialog.Footer
-                textButtonApply="Отправить"
-                textButtonCancel="Отмена"
-                propsButtonApply={{
-                    disabled: !canSubmit(),
-                    loading: saving,
-                }}
-                onClickButtonApply={handleSubmit}
-                onClickButtonCancel={onClose}
-            />
-        </GDialog>
+            </div>
+
+            <div className="lp2__bottombar">
+                <Button
+                    className="lp2__submit"
+                    view="action"
+                    size="xl"
+                    width="max"
+                    onClick={handleSubmit}
+                    loading={saving}
+                    disabled={!canSubmit()}
+                >
+                    Отправить
+                </Button>
+            </div>
+        </div>
     );
+
+    return createPortal(panelContent, document.body);
 };
 
 export default RemindModal;

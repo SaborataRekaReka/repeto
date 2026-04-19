@@ -44,7 +44,9 @@ function PageTransitionLoader() {
 
 function AppContent({ Component, pageProps }: { Component: AppProps["Component"]; pageProps: AppProps["pageProps"] }) {
     const { theme } = useThemeMode();
+    const router = useRouter();
     const PageComponent = Component as any;
+    const isLandingRoute = router.pathname === "/";
 
     return (
         <GravityTheme theme={theme}>
@@ -53,6 +55,7 @@ function AppContent({ Component, pageProps }: { Component: AppProps["Component"]
                     name="viewport"
                     content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
                 />
+                {!isLandingRoute ? <link rel="manifest" href="/site.webmanifest" /> : null}
             </Head>
             <PageTransitionLoader />
             <GAuthProvider>

@@ -86,53 +86,55 @@ const Month = ({ currentDate, onLessonClick, lessons = [] }: MonthProps) => {
 
     return (
         <Card view="outlined" style={{ overflow: "hidden" }}>
-            {/* Day-of-week header */}
-            <div
-                className="repeto-calendar-header"
-                style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(7, 1fr)",
-                    borderBottom: "1px solid var(--g-color-line-generic)",
-                }}
-            >
-                {DAY_NAMES.map((name) => (
+            <div className="repeto-calendar-shell">
+                <div className="repeto-calendar-shell__inner">
+                    {/* Day-of-week header */}
                     <div
-                        key={name}
+                        className="repeto-calendar-header"
                         style={{
-                            padding: "10px 8px",
-                            textAlign: "center",
-                            minWidth: 0,
-                            overflow: "hidden",
+                            display: "grid",
+                            gridTemplateColumns: "repeat(7, 1fr)",
+                            borderBottom: "1px solid var(--g-color-line-generic)",
                         }}
                     >
-                        <Text
-                            variant="caption-2"
-                            color="secondary"
+                        {DAY_NAMES.map((name) => (
+                            <div
+                                key={name}
+                                style={{
+                                    padding: "10px 8px",
+                                    textAlign: "center",
+                                    minWidth: 0,
+                                    overflow: "hidden",
+                                }}
+                            >
+                                <Text
+                                    variant="caption-2"
+                                    color="secondary"
+                                    style={{
+                                        textTransform: "uppercase",
+                                        fontWeight: 500,
+                                        letterSpacing: 0.5,
+                                    }}
+                                >
+                                    {name}
+                                </Text>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Weeks */}
+                    {weeks.map((week, wi) => (
+                        <div
+                            key={wi}
                             style={{
-                                textTransform: "uppercase",
-                                fontWeight: 500,
-                                letterSpacing: 0.5,
+                                display: "grid",
+                                gridTemplateColumns: "repeat(7, 1fr)",
+                                borderBottom:
+                                    wi < weeks.length - 1
+                                        ? "1px solid var(--g-color-line-generic)"
+                                        : "none",
                             }}
                         >
-                            {name}
-                        </Text>
-                    </div>
-                ))}
-            </div>
-
-            {/* Weeks */}
-            {weeks.map((week, wi) => (
-                <div
-                    key={wi}
-                    style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(7, 1fr)",
-                        borderBottom:
-                            wi < weeks.length - 1
-                                ? "1px solid var(--g-color-line-generic)"
-                                : "none",
-                    }}
-                >
                     {week.map((item, di) => {
                         const cellDate = new Date(
                             currentYear,
@@ -234,9 +236,11 @@ const Month = ({ currentDate, onLessonClick, lessons = [] }: MonthProps) => {
                                 </div>
                             </div>
                         );
-                    })}
+                        })}
+                        </div>
+                    ))}
                 </div>
-            ))}
+            </div>
         </Card>
     );
 };

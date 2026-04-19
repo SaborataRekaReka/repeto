@@ -59,7 +59,7 @@ const HomePage = () => {
 
             {/* Sections */}
             <Text variant="subheader-2" style={{ display: "block", marginBottom: 16 }}>Разделы</Text>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 40 }}>
+            <div className="repeto-support-grid-3" style={{ marginBottom: 40 }}>
                 {products.map((item) => {
                     const si = sectionIcons[item.id] || sectionIcons["start-1"];
                     return (
@@ -92,7 +92,7 @@ const HomePage = () => {
                     Все категории →
                 </Link>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+            <div className="repeto-support-grid-3">
                 {popularArticles.map((article) => (
                     <Post item={article} key={article.id} />
                 ))}

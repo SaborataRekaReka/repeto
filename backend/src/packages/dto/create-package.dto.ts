@@ -6,12 +6,19 @@ import {
   Min,
   IsOptional,
   IsDateString,
+  IsBoolean,
 } from 'class-validator';
 
 export class CreatePackageDto {
-  @ApiProperty()
+  @ApiPropertyOptional({ description: 'Student id for private package' })
+  @IsOptional()
   @IsUUID()
-  studentId: string;
+  studentId?: string;
+
+  @ApiPropertyOptional({ description: 'Package is available on public page' })
+  @IsOptional()
+  @IsBoolean()
+  isPublic?: boolean;
 
   @ApiProperty({ example: 'Математика' })
   @IsString()

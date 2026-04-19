@@ -1,6 +1,6 @@
 import { useApi } from './useApi';
 import { api } from '@/lib/api';
-import type { FilesOverviewResponse } from '@/types/files';
+import type { CloudSyncResponse, FilesOverviewResponse } from '@/types/files';
 
 export function useFilesOverview() {
   return useApi<FilesOverviewResponse>('/files');
@@ -17,7 +17,25 @@ export async function updateFileShare(
 }
 
 export async function syncYandexDiskFiles() {
-  return api('/files/yandex-disk/sync', {
+  return api<CloudSyncResponse>('/files/yandex-disk/sync', {
+    method: 'POST',
+  });
+}
+
+export async function syncYandexDiskFolder(folderId: string) {
+  return api<CloudSyncResponse>(`/files/yandex-disk/sync-folder/${folderId}`, {
+    method: 'POST',
+  });
+}
+
+export async function syncGoogleDriveFiles() {
+  return api<CloudSyncResponse>('/files/google-drive/sync', {
+    method: 'POST',
+  });
+}
+
+export async function syncGoogleDriveFolder(folderId: string) {
+  return api<CloudSyncResponse>(`/files/google-drive/sync-folder/${folderId}`, {
     method: 'POST',
   });
 }

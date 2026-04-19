@@ -9,10 +9,8 @@ type ContactsTabProps = {
 
 type FieldKey =
     | "phone"
-    | "whatsapp"
     | "parentName"
     | "parentPhone"
-    | "parentWhatsapp"
     | "parentEmail";
 
 const FieldLabel = ({ children }: { children: React.ReactNode }) => (
@@ -28,14 +26,32 @@ const FieldLabel = ({ children }: { children: React.ReactNode }) => (
 
 type MessengerStatusCardProps = {
     title: string;
-    shortLabel: string;
+    icon: React.ReactNode;
     connected: boolean;
     connectedTint: string;
 };
 
+const TelegramGlyph = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <path
+            d="M21.2 4.84c.38-.15.78.18.7.57l-2.86 13.66a.58.58 0 0 1-.87.38l-4.2-2.43-2.12 2.07a.58.58 0 0 1-.98-.42v-3.45l8.57-7.74c.26-.24-.08-.63-.38-.44l-10.37 6.17-3.9-1.15a.58.58 0 0 1-.03-1.1l15.44-6.12Z"
+            fill="currentColor"
+        />
+    </svg>
+);
+
+const MaxGlyph = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <path
+            d="M4 18V6h2.25l5.75 7.25L17.75 6H20v12h-2.75v-7.3L12 17.15 6.75 10.7V18H4Z"
+            fill="currentColor"
+        />
+    </svg>
+);
+
 const MessengerStatusCard = ({
     title,
-    shortLabel,
+    icon,
     connected,
     connectedTint,
 }: MessengerStatusCardProps) => (
@@ -60,15 +76,14 @@ const MessengerStatusCard = ({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: 11,
-                fontWeight: 800,
-                letterSpacing: "0.04em",
-                background: "var(--g-color-base-float)",
+                background: connected
+                    ? "var(--g-color-base-float)"
+                    : "var(--g-color-base-generic)",
                 color: "var(--g-color-text-primary)",
                 flexShrink: 0,
             }}
         >
-            {shortLabel}
+            {icon}
         </div>
 
         <div style={{ minWidth: 0, flex: 1 }}>
@@ -96,12 +111,8 @@ const ContactsTab = ({ student, onSave }: ContactsTabProps) => {
     const busyRef = useRef(false);
 
     const [phone, setPhone] = useState(student.phone || "");
-    const [whatsapp, setWhatsapp] = useState(student.whatsapp || "");
     const [parentName, setParentName] = useState(student.parentName || "");
     const [parentPhone, setParentPhone] = useState(student.parentPhone || "");
-    const [parentWhatsapp, setParentWhatsapp] = useState(
-        student.parentWhatsapp || ""
-    );
     const [parentEmail, setParentEmail] = useState(student.parentEmail || "");
 
     const persist = useCallback(
@@ -125,7 +136,8 @@ const ContactsTab = ({ student, onSave }: ContactsTabProps) => {
     ) => {
         const trimmed = value.trim();
         if (trimmed !== (prev || "")) {
-            persist({ [key]: trimmed || undefined } as any);
+            // Send null for cleared fields so backend can persist deletion.
+            persist({ [key]: trimmed.length > 0 ? trimmed : null } as any);
         }
     };
 
@@ -158,22 +170,6 @@ const ContactsTab = ({ student, onSave }: ContactsTabProps) => {
                             size="l"
                         />
                     </div>
-                    <div>
-                        <FieldLabel>WhatsApp</FieldLabel>
-                        <TextInput
-                            value={whatsapp}
-                            onUpdate={setWhatsapp}
-                            onBlur={() =>
-                                handleBlur(
-                                    "whatsapp",
-                                    whatsapp,
-                                    student.whatsapp
-                                )
-                            }
-                            placeholder="+79001234567"
-                            size="l"
-                        />
-                    </div>
                     <div style={{ gridColumn: "1 / -1" }}>
                         <FieldLabel>Мессенджеры</FieldLabel>
                         <div
@@ -186,13 +182,13 @@ const ContactsTab = ({ student, onSave }: ContactsTabProps) => {
                         >
                             <MessengerStatusCard
                                 title="Telegram"
-                                shortLabel="TG"
+                                icon={<TelegramGlyph />}
                                 connected={Boolean(student.telegramChatId)}
                                 connectedTint="rgba(80, 154, 255, 0.16)"
                             />
                             <MessengerStatusCard
                                 title="Макс"
-                                shortLabel="MX"
+                                icon={<MaxGlyph />}
                                 connected={Boolean(student.maxChatId)}
                                 connectedTint="rgba(84, 209, 153, 0.16)"
                             />
@@ -244,22 +240,6 @@ const ContactsTab = ({ student, onSave }: ContactsTabProps) => {
                                 )
                             }
                             placeholder="+7 900 765-43-21"
-                            size="l"
-                        />
-                    </div>
-                    <div>
-                        <FieldLabel>WhatsApp родителя</FieldLabel>
-                        <TextInput
-                            value={parentWhatsapp}
-                            onUpdate={setParentWhatsapp}
-                            onBlur={() =>
-                                handleBlur(
-                                    "parentWhatsapp",
-                                    parentWhatsapp,
-                                    student.parentWhatsapp
-                                )
-                            }
-                            placeholder="+79007654321"
                             size="l"
                         />
                     </div>

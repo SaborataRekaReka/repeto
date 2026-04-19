@@ -1,0 +1,1759 @@
+.page {
+    /* ─ Hero / button tokens ─ */
+    --landing-text: #ffffff;
+    --landing-subtext: rgba(255, 255, 255, 0.92);
+    --landing-button-ghost: rgba(255, 255, 255, 0.18);
+    --landing-button-primary: #8840f5;
+    --landing-button-primary-hover: #7630e0;
+    --landing-section-bg: #f4f6fb;
+    --landing-border: rgba(15, 23, 40, 0.1);
+
+    /* ─ Design tokens ─ */
+    --lp-ink:   #0f1728;
+    --lp-mid:   #263447;
+    --lp-body:  #44576c;
+    --lp-muted: #6b7f97;
+    --lp-brand: #8840f5;
+    --lp-inner: 1200px;
+
+    /* ─ Button tokens ─ */
+    --btn-radius: 14px;
+    --btn-primary-bg: #8840f5;
+    --btn-primary-bg-hover: #7030d9;
+    --btn-primary-color: #ffffff;
+    --btn-ghost-border: rgba(136, 64, 245, 0.28);
+    --btn-ghost-color: #8840f5;
+    --btn-ghost-bg-hover: rgba(136, 64, 245, 0.06);
+
+    font-family: "YS Text", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    color: var(--lp-ink);
+    background: #ffffff;
+}
+
+.heroSurface {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(108.51deg, #905de1 59.9%, #98e9ab 105.94%);
+    min-height: 100vh;
+    min-height: 100dvh;
+}
+
+.desktopFrame {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    max-width: 1440px;
+    height: 749px;
+    margin: 0 auto;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.header {
+    position: absolute;
+    left: 120.68px;
+    top: 58px;
+    width: 1198.64px;
+    height: 38.44px;
+    z-index: 10;
+}
+
+.stickyHeader {
+    position: fixed;
+    top: 14px;
+    left: 50%;
+    transform: translate(-50%, -12px);
+    width: min(var(--lp-inner), calc(100% - 24px));
+    height: 64px;
+    border-radius: 18px;
+    border: 1px solid rgba(15, 23, 40, 0.1);
+    background: rgba(255, 255, 255, 0.98);
+    box-shadow: 0 12px 30px rgba(15, 23, 40, 0.16);
+    backdrop-filter: blur(8px);
+    padding: 0 16px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 18px;
+    margin: 0;
+    z-index: 80;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+}
+
+.stickyHeaderVisible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translate(-50%, 0);
+    animation: stickyHeaderIn 0.22s ease;
+}
+
+@keyframes stickyHeaderIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -10px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+
+.logoLink {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 160px;
+    height: auto;
+    display: inline-flex;
+    align-items: center;
+}
+
+.stickyLogoLink {
+    position: static;
+    top: auto;
+    left: auto;
+    right: auto;
+    transform: none;
+    width: auto;
+    height: auto;
+    display: inline-flex;
+    align-items: center;
+}
+
+.nav {
+    position: absolute;
+    left: 388.86px;
+    top: 10.72px;
+    display: flex;
+    align-items: center;
+    gap: 60.73px;
+}
+
+.stickyNav {
+    position: static;
+    justify-content: center;
+    display: flex;
+    align-items: center;
+    gap: clamp(16px, 3vw, 44px);
+}
+
+.navLink {
+    font-size: 16px;
+    line-height: 89%;
+    letter-spacing: 0;
+    font-weight: 500;
+    color: #ffffff;
+    text-decoration: none;
+    transition: opacity 0.2s ease;
+}
+
+.stickyNavLink {
+    font-size: 16px;
+    line-height: 89%;
+    letter-spacing: 0;
+    font-weight: 500;
+    color: var(--lp-ink);
+    text-decoration: none;
+    transition: opacity 0.2s ease;
+}
+
+.stickyNavLink:hover {
+    opacity: 0.72;
+}
+
+.navLink:hover {
+    opacity: 0.78;
+}
+
+.headerActions {
+    position: absolute;
+    right: 0;
+    top: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.stickyHeaderActions {
+    position: static;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.headerButton {
+    height: 36px;
+    padding: 0 18px;
+    border-radius: var(--btn-radius);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: var(--landing-text);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1;
+    transition: opacity 0.18s ease;
+    white-space: nowrap;
+}
+
+.headerButton:hover {
+    opacity: 0.82;
+}
+
+.headerButtonGhost {
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.headerButtonPrimary {
+    background: #ffffff;
+    color: #7030d9;
+}
+
+.headerButtonPrimary:hover {
+    opacity: 0.9;
+}
+
+.headerProfileTrigger {
+    height: 40px;
+    padding: 0 14px 0 10px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.14);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1;
+    cursor: pointer;
+    transition: opacity 0.18s ease, background-color 0.18s ease;
+}
+
+.headerProfileTrigger:hover {
+    opacity: 0.86;
+}
+
+.headerProfileName {
+    max-width: 200px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.stickyHeader .headerButton {
+    height: 40px;
+    color: var(--lp-ink);
+}
+
+.stickyHeader .headerButton:hover {
+    opacity: 1;
+}
+
+.stickyHeader .headerButtonGhost {
+    background: #ffffff;
+    border: 1px solid rgba(15, 23, 40, 0.14);
+    color: var(--lp-ink);
+}
+
+.stickyHeader .headerButtonGhost:hover {
+    background: rgba(15, 23, 40, 0.04);
+}
+
+.stickyHeader .headerButtonPrimary {
+    background: var(--btn-primary-bg);
+    color: #ffffff;
+}
+
+.stickyHeader .headerButtonPrimary:hover {
+    background: var(--btn-primary-bg-hover);
+}
+
+.stickyHeader .headerProfileTrigger {
+    border-color: rgba(15, 23, 40, 0.14);
+    background: #ffffff;
+    color: var(--lp-ink);
+}
+
+.stickyHeader .headerProfileTrigger:hover {
+    opacity: 1;
+    background: rgba(15, 23, 40, 0.04);
+}
+
+.hero {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.heroTitle {
+    position: absolute;
+    width: 660.71px;
+    left: 120.68px;
+    top: 251.99px;
+    margin: 0;
+    color: #ffffff;
+    font-size: 64px;
+    line-height: 0.96;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+}
+
+.heroSubtitle {
+    position: absolute;
+    width: 579.12px;
+    left: 120.68px;
+    top: 455.99px;
+    margin: 0;
+    font-size: 17px;
+    line-height: 1.44;
+    font-weight: 400;
+    color: var(--landing-subtext);
+}
+
+.heroActions {
+    position: absolute;
+    left: 120.68px;
+    top: 545.99px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.heroButton {
+    padding: 12px 20px;
+    border: 0;
+    border-radius: var(--btn-radius);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: transform 0.16s ease, opacity 0.16s ease, background-color 0.16s ease;
+    white-space: nowrap;
+}
+
+.heroButton:hover {
+    transform: translateY(-1px);
+}
+
+.heroButtonGhost {
+    background: #ffffff;
+    border: none;
+    color: #1f2f4a;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    height: 56px;
+    padding: 0 24px;
+}
+
+.heroButtonGhost:hover {
+    background: rgba(255, 255, 255, 0.92);
+}
+
+.heroButtonPriceRow {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+}
+
+.heroButtonPriceCrossed {
+    font-size: 14px;
+    font-weight: 400;
+    text-decoration: line-through;
+    opacity: 0.45;
+}
+
+.heroButtonPriceDesc {
+    font-size: 12px;
+    font-weight: 400;
+    opacity: 0.55;
+    line-height: 1.2;
+}
+
+.heroButtonPrimary {
+    background: rgba(255, 255, 255, 0.26);
+    border: none;
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 600;
+    height: 56px;
+    padding: 0 28px;
+}
+
+.heroButtonPrimary:hover {
+    background: rgba(255, 255, 255, 0.36);
+}
+
+.previewWrap {
+    position: absolute;
+    width: 900px;
+
+    left: 749.91px;
+    top: 107.7px;
+    filter: drop-shadow(-4.43304px 10.3446px 65.756px rgba(121, 89, 182, 0.47));
+    overflow: hidden;
+    z-index: 1;
+}
+
+.previewImage {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.section,
+.sectionAlt {
+    padding: 72px 20px;
+}
+
+.sectionAlt {
+    background: var(--landing-section-bg);
+}
+
+.sectionInner {
+    max-width: var(--lp-inner);
+    margin: 0 auto;
+}
+
+.sectionTitle {
+    margin: 0;
+    color: var(--lp-ink);
+    font-size: clamp(34px, 4vw, 54px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.02;
+}
+
+.grid4,
+.grid3 {
+    margin-top: 28px;
+    display: grid;
+    gap: 14px;
+}
+
+.grid4 {
+    grid-template-columns: repeat(4, minmax(170px, 1fr));
+}
+
+.grid3 {
+    grid-template-columns: repeat(3, minmax(170px, 1fr));
+}
+
+.featureCard,
+.pricingCard,
+.faqItem {
+    border-radius: 16px;
+    border: 1px solid var(--landing-border);
+    background: #ffffff;
+    padding: 20px;
+    box-shadow: 0 12px 28px rgba(31, 15, 58, 0.06);
+}
+
+.featureTitle {
+    margin: 0;
+    font-size: 20px;
+    line-height: 1.2;
+    color: var(--lp-ink);
+}
+
+.featureText {
+    margin: 10px 0 0;
+    color: var(--lp-body);
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+.priceValue {
+    margin: 10px 0 0;
+    color: var(--lp-brand);
+    font-size: 35px;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.faqList {
+    margin-top: 28px;
+    display: grid;
+    gap: 14px;
+}
+
+.faqQuestion {
+    margin: 0;
+    color: var(--lp-ink);
+    font-size: 18px;
+    line-height: 1.3;
+}
+
+/* Features Section based on the sample block */
+.scheduleSection {
+    padding: 96px 20px 48px;
+    background: #ffffff;
+    overflow: hidden;
+}
+
+.scheduleSectionInner,
+.featureRow {
+    max-width: var(--lp-inner);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 64px;
+    align-items: center;
+}
+
+.scheduleContent {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.scheduleTag {
+    display: inline-block;
+    width: fit-content;
+    color: var(--lp-ink);
+    font-size: 13px;
+    line-height: 1.2;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.scheduleTitle {
+    margin: 0;
+    font-size: clamp(28px, 3.2vw, 44px);
+    line-height: 1.06;
+    letter-spacing: -0.02em;
+    color: var(--lp-ink);
+    font-weight: 700;
+}
+
+.scheduleText {
+    margin: 0;
+    color: var(--lp-body);
+    font-size: 16px;
+    line-height: 1.52;
+}
+
+.schedulePointList {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 8px;
+}
+
+.schedulePointItem {
+    position: relative;
+    padding-left: 16px;
+    color: var(--lp-muted);
+    font-size: 15px;
+    line-height: 1.52;
+}
+
+.schedulePointItem::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 8px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--lp-brand);
+}
+
+.scheduleImageWrap,
+.featureVisualWrap {
+    position: relative;
+    width: 100%;
+    min-height: 360px;
+    background: transparent;
+}
+
+.scheduleImage,
+.featureVisualImage {
+    width: 100%;
+    height: 100%;
+    min-height: 360px;
+    object-fit: contain;
+    display: block;
+    background: transparent;
+}
+
+.scheduleImageWrap {
+    overflow: visible;
+}
+
+.scheduleImage {
+    width: 200%;
+    max-width: none;
+    height: auto;
+    min-height: 0;
+}
+
+.featureVisualWrapExpanded {
+    overflow: visible;
+}
+
+.featureVisualImageExpanded {
+    width: 200%;
+    max-width: none;
+    height: auto;
+    min-height: 0;
+}
+
+.featuresContinuation {
+    padding: 0 20px 96px;
+    background: #ffffff;
+    overflow: hidden;
+}
+
+.featuresContinuationInner {
+    max-width: var(--lp-inner);
+    margin: 0 auto;
+    display: grid;
+    gap: 80px;
+}
+
+.featureRowReverse .scheduleContent {
+    order: 2;
+}
+
+.featureRowReverse .featureVisualWrap {
+    order: 1;
+}
+
+.featureRow.featureRowExpandedRight .scheduleContent {
+    order: 1;
+}
+
+.featureRow.featureRowExpandedRight .featureVisualWrap {
+    order: 2;
+}
+
+.featureStub {
+    width: 100%;
+    height: 100%;
+    min-height: 360px;
+    border-radius: 20px;
+    background: var(--landing-section-bg);
+}
+
+.integrationsSection {
+    padding: 96px 20px 96px;
+    background: var(--landing-section-bg);
+}
+
+.integrationsInner {
+    max-width: var(--lp-inner);
+    margin: 0 auto;
+}
+
+.integrationsLabel {
+    display: block;
+    width: fit-content;
+    margin: 0 auto;
+    color: var(--lp-ink);
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.integrationsTitle {
+    margin: 14px auto 0;
+    max-width: 820px;
+    text-align: center;
+    color: var(--lp-ink);
+    font-size: clamp(34px, 4vw, 54px);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+}
+
+.integrationsGrid {
+    margin-top: 42px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.integrationsCard {
+    position: relative;
+    min-height: 362px;
+    border-radius: 44px;
+    background: #ffffff;
+    border: 1px solid var(--landing-border);
+    padding: 42px 40px 36px;
+    overflow: hidden;
+}
+
+.integrationsCardAccent {
+    background: #ffffff;
+}
+
+.integrationsCardIconWrap {
+    display: flex;
+    align-items: center;
+    min-height: 70px;
+}
+
+.integrationsCardImage {
+    display: block;
+    height: 70px;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+    pointer-events: none;
+}
+
+.integrationsCardDotPrimary,
+.integrationsCardDotSecondary {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.integrationsCardDotPrimary {
+    background: radial-gradient(circle at 30% 30%, #ffd96d, #f3af42 68%);
+}
+
+.integrationsCardDotSecondary {
+    margin-left: -14px;
+    background: radial-gradient(circle at 30% 30%, #8eb8ff, #4f78df 72%);
+}
+
+.integrationsCardTitle {
+    margin: 24px 0 0;
+    color: var(--lp-ink);
+    font-size: clamp(22px, 2vw, 34px);
+    line-height: 1.08;
+    letter-spacing: -0.015em;
+    font-weight: 700;
+}
+
+.integrationsCardText {
+    margin: 12px 0 0;
+    color: var(--lp-body);
+    font-size: 16px;
+    line-height: 1.48;
+    max-width: 430px;
+}
+
+.integrationsArrow {
+    position: absolute;
+    left: 40px;
+    bottom: 34px;
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+    background: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #25324a;
+    font-size: 22px;
+    line-height: 1;
+    font-weight: 500;
+}
+
+
+.capabilitiesSection {
+    padding: 96px 20px 96px;
+    background: #ffffff;
+}
+
+.capabilitiesInner {
+    max-width: var(--lp-inner);
+    margin: 0 auto;
+}
+
+.capabilitiesLabel {
+    display: block;
+    width: fit-content;
+    margin: 0 auto;
+    color: var(--lp-ink);
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.capabilitiesTitle {
+    margin: 14px auto 0;
+    max-width: 820px;
+    text-align: center;
+    color: var(--lp-ink);
+    font-size: clamp(34px, 4vw, 54px);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+}
+
+.capabilitiesGrid {
+    margin-top: 34px;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    grid-template-areas:
+        "one one two  two  three three"
+        "one one four four five  five"
+        "six six six  svn  svn   svn";
+    gap: 14px;
+}
+
+.capabilitiesCard {
+    position: relative;
+    border-radius: 34px;
+    padding: 26px 24px 20px;
+    overflow: hidden;
+}
+
+.capabilitiesCard:nth-child(1) {
+    grid-area: one;
+    min-height: 516px;
+    padding-top: 348px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+.capabilitiesCard:nth-child(2) {
+    grid-area: two;
+    min-height: 242px;
+}
+
+.capabilitiesCard:nth-child(3) {
+    grid-area: three;
+    min-height: 242px;
+}
+
+.capabilitiesCard:nth-child(4) {
+    grid-area: four;
+    min-height: 242px;
+}
+
+.capabilitiesCard:nth-child(5) {
+    grid-area: five;
+    min-height: 242px;
+}
+
+.capabilitiesCard:nth-child(6) {
+    grid-area: six;
+    min-height: 224px;
+}
+
+.capabilitiesCard:nth-child(7) {
+    grid-area: svn;
+    min-height: 224px;
+}
+
+/* ─ Card tone variants ─ */
+.capabilitiesCardSoft {
+    background: #ffffff;
+    border: 1px solid var(--landing-border);
+}
+
+.capabilitiesCardPurple {
+    background: #f5eeff;
+    border: 1px solid rgba(136, 64, 245, 0.1);
+}
+
+.capabilitiesCardGray {
+    background: var(--landing-section-bg);
+    border: 1px solid rgba(15, 23, 40, 0.07);
+}
+
+.capabilitiesCardGreen {
+    background: #e8f9ef;
+    border: 1px solid rgba(66, 200, 98, 0.18);
+}
+
+.capabilitiesCardDark {
+    background: linear-gradient(145deg, #7030d9 0%, #ae7aff 100%);
+    border: none;
+}
+
+/* ─ Icon colors per tone ─ */
+.capabilitiesCardIcon {
+    width: 54px;
+    height: 54px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, #8840f5, #ae7aff);
+    box-shadow: 0 6px 16px rgba(136, 64, 245, 0.28);
+}
+
+.capabilitiesCardPurple .capabilitiesCardIcon {
+    background: linear-gradient(135deg, #c09fff, #9460ff);
+    box-shadow: 0 6px 16px rgba(136, 64, 245, 0.22);
+}
+
+.capabilitiesCardGray .capabilitiesCardIcon {
+    background: linear-gradient(135deg, #b0b8d8, #8892b8);
+    box-shadow: 0 6px 14px rgba(100, 110, 160, 0.24);
+}
+
+.capabilitiesCardGreen .capabilitiesCardIcon {
+    background: linear-gradient(135deg, #68d983, #2fa84d);
+    box-shadow: 0 6px 16px rgba(47, 168, 77, 0.28);
+}
+
+.capabilitiesCardDark .capabilitiesCardIcon {
+    background: rgba(255, 255, 255, 0.22);
+    box-shadow: none;
+}
+
+.capabilitiesCard:nth-child(1) .capabilitiesCardIcon {
+    position: absolute;
+    left: 26px;
+    top: 26px;
+    width: 84px;
+    height: 84px;
+    border-radius: 26px;
+}
+
+/* ─ Card text colors per tone ─ */
+.capabilitiesCardTitle {
+    margin: 14px 0 0;
+    color: var(--lp-mid);
+    font-size: 32px;
+    line-height: 1.18;
+    letter-spacing: -0.02em;
+    font-weight: 500;
+}
+
+.capabilitiesCardText {
+    margin: 8px 0 0;
+    color: var(--lp-body);
+    font-size: 18px;
+    line-height: 1.48;
+}
+
+.capabilitiesCardDark .capabilitiesCardTitle {
+    color: #ffffff;
+}
+
+.capabilitiesCardDark .capabilitiesCardText {
+    color: rgba(255, 255, 255, 0.76);
+}
+
+.capabilitiesCardGreen .capabilitiesCardTitle {
+    color: #000000;
+}
+
+.capabilitiesCardGreen .capabilitiesCardText {
+    color: #000000;
+}
+
+.capabilitiesCardAccent {
+    position: absolute;
+    left: -20px;
+    top: 108px;
+    width: 206px;
+    height: 206px;
+    border-radius: 44% 56% 53% 47% / 56% 42% 58% 44%;
+    border: 12px solid rgba(255, 255, 255, 0.24);
+    opacity: 0.7;
+}
+
+.capabilitiesCardPreview {
+    position: absolute;
+    top: -14px;
+    left: -28px;
+    width: calc(100% + 56px);
+    height: 346px;
+    overflow: hidden;
+    border-radius: 0;
+}
+
+.capabilitiesCardPreview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+}
+
+.capabilitiesCardStudentImg {
+    display: block;
+    height: 70px;
+    width: auto;
+    pointer-events: none;
+    margin-bottom: 14px;
+}
+
+.capabilitiesCardPlainImg {
+    display: block;
+    height: 70px;
+    width: auto;
+    pointer-events: none;
+    margin-bottom: 14px;
+}
+
+.tariffsSection {
+    padding: 96px 20px 112px;
+    background: var(--landing-section-bg);
+}
+
+.tariffsInner {
+    max-width: var(--lp-inner);
+    margin: 0 auto;
+}
+
+.tariffsLabel {
+    display: block;
+    width: fit-content;
+    margin: 0 auto;
+    color: var(--lp-ink);
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.tariffsTitle {
+    margin: 14px auto 0;
+    max-width: 760px;
+    text-align: center;
+    color: var(--lp-ink);
+    font-size: clamp(34px, 4vw, 54px);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+}
+
+.tariffsSwitch {
+    margin-top: 28px;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+}
+
+.tariffsSwitchButton {
+    border-radius: var(--btn-radius);
+    border: 1px solid rgba(31, 47, 74, 0.16);
+    padding: 9px 18px;
+    color: var(--lp-body);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1;
+    background: #ffffff;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+.tariffsSwitchButton:hover {
+    border-color: rgba(31, 47, 74, 0.32);
+    color: var(--lp-ink);
+}
+
+.tariffsSwitchButtonActive {
+    border-color: var(--lp-ink);
+    background: var(--lp-ink);
+    color: #ffffff;
+}
+
+.tariffsGrid {
+    margin-top: 24px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.tariffCard {
+    border: 1px solid var(--landing-border);
+    border-radius: 24px;
+    background: #ffffff;
+    overflow: hidden;
+}
+
+.tariffCardFeatured {
+    background: linear-gradient(145deg, #7030d9 0%, #ae7aff 100%);
+    border-color: #8840f5;
+    box-shadow: 0 18px 40px rgba(136, 64, 245, 0.36);
+}
+
+.tariffCardHead {
+    padding: 24px 24px 18px;
+}
+
+.tariffName {
+    margin: 0;
+    color: var(--lp-ink);
+    font-size: clamp(18px, 1.6vw, 24px);
+    line-height: 1;
+    font-weight: 700;
+}
+
+.tariffPriceRow {
+    margin-top: 14px;
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.tariffPrice {
+    color: var(--lp-ink);
+    font-size: clamp(44px, 4.2vw, 52px);
+    line-height: 0.92;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+}
+
+.tariffPeriod {
+    color: var(--lp-muted);
+    font-size: 14px;
+    line-height: 1.2;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.tariffSubtitle {
+    margin: 12px 0 0;
+    color: var(--lp-mid);
+    font-size: 16px;
+    line-height: 1.2;
+    font-weight: 600;
+}
+
+.tariffDescription {
+    margin: 6px 0 0;
+    color: var(--lp-body);
+    font-size: 14px;
+    line-height: 1.44;
+}
+
+.tariffButtons {
+    margin-top: 18px;
+    display: grid;
+    gap: 8px;
+}
+
+.tariffButtonPrimary {
+    height: 46px;
+    padding: 0 20px;
+    border-radius: var(--btn-radius);
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-color);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1;
+    border: none;
+    transition: background-color 0.18s ease;
+}
+
+.tariffButtonPrimary:hover {
+    background: var(--btn-primary-bg-hover);
+}
+
+.tariffButtonGhost {
+    height: 40px;
+    padding: 0 20px;
+    border-radius: var(--btn-radius);
+    border: 1.5px solid var(--btn-ghost-border);
+    color: var(--btn-ghost-color);
+    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1;
+    text-decoration: none;
+    transition: background-color 0.18s ease;
+}
+
+.tariffButtonGhost:hover {
+    background: var(--btn-ghost-bg-hover);
+}
+
+.tariffFeaturesBlock {
+    border-top: 1px solid rgba(31, 47, 74, 0.14);
+    padding: 18px 24px 22px;
+}
+
+.tariffFeaturesTitle {
+    margin: 0;
+    color: var(--lp-muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+}
+
+.tariffFeaturesList {
+    margin: 10px 0 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 7px;
+}
+
+.tariffFeatureItem {
+    position: relative;
+    padding-left: 22px;
+    color: var(--lp-body);
+    font-size: 14px;
+    line-height: 1.44;
+}
+
+.tariffFeatureItem::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #b5ff31, #86df00 72%);
+}
+
+.tariffCardFeatured .tariffName,
+.tariffCardFeatured .tariffPrice,
+.tariffCardFeatured .tariffSubtitle {
+    color: #ffffff;
+}
+
+.tariffCardFeatured .tariffPeriod,
+.tariffCardFeatured .tariffDescription,
+.tariffCardFeatured .tariffFeaturesTitle,
+.tariffCardFeatured .tariffFeatureItem {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.tariffCardFeatured .tariffButtonPrimary {
+    background: #ffffff;
+    color: #7030d9;
+}
+
+.tariffCardFeatured .tariffButtonPrimary:hover {
+    opacity: 0.9;
+    background: #ffffff;
+}
+
+.tariffCardFeatured .tariffButtonGhost {
+    border-color: rgba(255, 255, 255, 0.35);
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.tariffCardFeatured .tariffButtonGhost:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.tariffCardFeatured .tariffFeaturesBlock {
+    border-top-color: rgba(255, 255, 255, 0.22);
+}
+
+@media (max-width: 1320px) {
+    .heroSurface {
+        min-height: 100vh;
+        min-height: 100dvh;
+        padding: 28px 18px 40px;
+    }
+
+    .desktopFrame {
+        position: relative;
+        inset: auto;
+        left: auto;
+        transform: none;
+        max-width: none;
+        height: auto;
+    }
+
+    .header {
+        position: relative;
+        left: auto;
+        top: auto;
+        width: auto;
+        height: auto;
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 16px;
+        align-items: center;
+        margin: 0 auto;
+    }
+
+    .logoLink,
+    .nav,
+    .headerActions {
+        position: static;
+    }
+
+    .logoLink {
+        width: auto;
+        height: auto;
+    }
+
+    .nav {
+        justify-content: center;
+        gap: clamp(16px, 4vw, 42px);
+    }
+
+    .headerActions {
+        justify-content: flex-end;
+    }
+
+    .headerButton {
+        padding: 0 16px;
+    }
+
+    .hero {
+        margin-top: 26px;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+
+    .heroTitle,
+    .heroSubtitle,
+    .heroActions,
+    .previewWrap {
+        position: static;
+    }
+
+    .heroTitle {
+        width: min(860px, 100%);
+        font-size: clamp(38px, 6.4vw, 64px);
+    }
+
+    .heroSubtitle {
+        width: min(740px, 100%);
+        margin-top: 14px;
+    }
+
+    .heroActions {
+        margin-top: 24px;
+    }
+
+    .heroButton {
+        height: 52px;
+        font-size: 17px;
+    }
+
+    .previewWrap {
+        width: min(962px, 100%);
+        height: auto;
+        aspect-ratio: 962.2 / 641.46;
+        margin-left: auto;
+        border-radius: 18px;
+    }
+
+    .grid4 {
+        grid-template-columns: repeat(2, minmax(170px, 1fr));
+    }
+
+    .scheduleSectionInner,
+    .featureRow {
+        gap: 36px;
+    }
+
+    .scheduleTitle {
+        font-size: clamp(26px, 3vw, 38px);
+    }
+
+    .scheduleImageWrap,
+    .featureVisualWrap,
+    .scheduleImage,
+    .featureVisualImage,
+    .featureStub {
+        min-height: 280px;
+    }
+
+    .scheduleImage {
+        width: 100%;
+        max-width: 100%;
+        height: 100%;
+        min-height: 280px;
+    }
+
+    .featureVisualImageExpanded {
+        width: 100%;
+        max-width: 100%;
+        height: 100%;
+        min-height: 280px;
+    }
+
+    .integrationsCard {
+        min-height: 330px;
+        border-radius: 34px;
+        padding: 34px 30px 30px;
+    }
+
+    .integrationsCardTitle {
+        margin-top: 38px;
+        font-size: clamp(20px, 1.8vw, 28px);
+    }
+
+    .capabilitiesCard {
+        border-radius: 26px;
+        padding: 22px 20px 18px;
+    }
+
+    .capabilitiesCard:nth-child(1) {
+        min-height: 468px;
+        padding-top: 300px;
+    }
+
+    .capabilitiesCardPreview {
+        top: -8px;
+        left: -18px;
+        width: calc(100% + 36px);
+        height: 294px;
+    }
+
+    .capabilitiesCardTitle {
+        font-size: clamp(14px, 1.2vw, 18px);
+    }
+
+    .tariffCardHead,
+    .tariffFeaturesBlock {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+
+    .tariffPrice {
+        font-size: clamp(44px, 4.2vw, 58px);
+    }
+}
+
+@media (max-width: 900px) {
+    .scheduleSectionInner,
+    .featureRow {
+        grid-template-columns: 1fr;
+        gap: 32px;
+    }
+
+    .featureRowReverse .scheduleContent,
+    .featureRowReverse .featureVisualWrap {
+        order: initial;
+    }
+
+    .featureRow.featureRowExpandedRight .scheduleContent,
+    .featureRow.featureRowExpandedRight .featureVisualWrap {
+        order: initial;
+    }
+
+    .scheduleTitle {
+        font-size: clamp(22px, 5vw, 30px);
+    }
+
+    .scheduleImageWrap,
+    .featureVisualWrap,
+    .scheduleImage,
+    .featureVisualImage,
+    .featureStub {
+        min-height: 240px;
+    }
+
+    .scheduleImage {
+        width: 100%;
+        max-width: 100%;
+        height: 100%;
+        min-height: 240px;
+    }
+
+    .featureVisualImageExpanded {
+        width: 100%;
+        max-width: 100%;
+        height: 100%;
+        min-height: 240px;
+    }
+
+    .header {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+
+    .stickyHeader {
+        height: auto;
+        top: 8px;
+        width: calc(100% - 16px);
+        border-radius: 16px;
+        padding: 12px;
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .nav {
+        justify-content: flex-start;
+        gap: 20px;
+        overflow: auto;
+        scrollbar-width: none;
+    }
+
+    .stickyNav {
+        justify-content: flex-start;
+        overflow: auto;
+        scrollbar-width: none;
+    }
+
+    .stickyNav::-webkit-scrollbar {
+        display: none;
+    }
+
+    .stickyHeaderActions {
+        justify-content: flex-start;
+    }
+
+    .nav::-webkit-scrollbar {
+        display: none;
+    }
+
+    .headerActions {
+        justify-content: flex-start;
+    }
+
+    .heroTitle {
+        font-size: clamp(36px, 10vw, 58px);
+    }
+
+    .heroSubtitle {
+        font-size: 16px;
+    }
+
+    .heroButton {
+        height: 50px;
+        font-size: 16px;
+    }
+
+    .grid3 {
+        grid-template-columns: 1fr;
+    }
+
+    .integrationsTitle {
+        font-size: clamp(26px, 7vw, 40px);
+    }
+
+    .integrationsGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .integrationsCard {
+        min-height: 296px;
+    }
+
+    .integrationsCardTitle {
+        margin-top: 36px;
+        font-size: clamp(30px, 7vw, 42px);
+    }
+
+    .capabilitiesGrid {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "one"
+            "two"
+            "three"
+            "four"
+            "five"
+            "six"
+            "seven";
+    }
+
+    .capabilitiesCard {
+        min-height: auto !important;
+        padding: 22px 18px 18px;
+    }
+
+    .capabilitiesCard:nth-child(1) {
+        padding-top: 198px;
+    }
+
+    .capabilitiesCardPreview {
+        top: 0;
+        left: -10px;
+        width: calc(100% + 20px);
+        height: 196px;
+    }
+
+    .capabilitiesCardTitle {
+        font-size: clamp(18px, 5vw, 26px);
+    }
+
+    .tariffsGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .tariffsTitle {
+        font-size: clamp(26px, 7vw, 40px);
+    }
+}
+
+@media (max-width: 560px) {
+    .headerButton {
+        font-size: 13px;
+        padding: 0 14px;
+    }
+
+    .headerProfileTrigger {
+        height: 38px;
+        padding: 0 12px 0 8px;
+        gap: 8px;
+    }
+
+    .headerProfileName {
+        max-width: 140px;
+        font-size: 13px;
+    }
+
+    .heroActions {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .heroButton {
+        width: 100%;
+        min-width: 0;
+        font-size: 16px;
+        height: 50px;
+    }
+
+    .section,
+    .sectionAlt,
+    .scheduleSection,
+    .featuresContinuation {
+        padding: 56px 14px;
+    }
+
+    .grid4 {
+        grid-template-columns: 1fr;
+    }
+
+    .featuresContinuationInner {
+        gap: 42px;
+    }
+
+    .scheduleContent {
+        gap: 12px;
+    }
+
+    .integrationsSection {
+        padding: 34px 14px 72px;
+    }
+
+    .integrationsGrid {
+        margin-top: 28px;
+        gap: 12px;
+    }
+
+    .integrationsCard {
+        min-height: 272px;
+        border-radius: 26px;
+        padding: 24px 20px 20px;
+    }
+
+    .integrationsCardIconWrap {
+        min-height: 78px;
+    }
+
+    .integrationsCardImage {
+        height: 78px;
+    }
+
+    .integrationsCardTitle {
+        margin-top: 22px;
+        font-size: clamp(24px, 8vw, 34px);
+    }
+
+    .integrationsCardText {
+        margin-top: 12px;
+        font-size: 15px;
+    }
+
+    .integrationsArrow {
+        left: 20px;
+        bottom: 20px;
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        font-size: 18px;
+    }
+
+    .capabilitiesSection {
+        padding: 24px 14px 72px;
+    }
+
+    .capabilitiesGrid {
+        margin-top: 24px;
+        gap: 10px;
+    }
+
+    .capabilitiesCard {
+        border-radius: 20px;
+    }
+
+    .capabilitiesCardIcon {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+    }
+
+    .capabilitiesCard:nth-child(1) .capabilitiesCardIcon {
+        width: 58px;
+        height: 58px;
+        border-radius: 18px;
+    }
+
+    .capabilitiesCardAccent {
+        width: 140px;
+        height: 140px;
+        border-width: 8px;
+        top: 76px;
+    }
+
+    .capabilitiesCardText {
+        font-size: 14px;
+    }
+
+    .tariffsSection {
+        padding: 24px 14px 76px;
+    }
+
+    .tariffsSwitch {
+        margin-top: 20px;
+        gap: 6px;
+    }
+
+    .tariffsSwitchButton {
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+
+    .tariffsGrid {
+        margin-top: 18px;
+        gap: 10px;
+    }
+
+    .tariffCard {
+        border-radius: 18px;
+    }
+
+    .tariffName {
+        font-size: clamp(22px, 7vw, 30px);
+    }
+
+    .tariffPrice {
+        font-size: clamp(44px, 12vw, 60px);
+    }
+
+    .tariffSubtitle {
+        font-size: 16px;
+    }
+}

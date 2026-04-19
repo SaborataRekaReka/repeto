@@ -9,10 +9,10 @@
   ],
   "scripts": {
     "predev:frontend": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$ErrorActionPreference='SilentlyContinue'; try { $connPids = @(Get-NetTCPConnection -LocalPort 3300 | Select-Object -ExpandProperty OwningProcess -Unique); foreach ($processId in $connPids) { if ($processId) { Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue } } } catch {}; exit 0\"",
-    "dev:frontend": "npm run dev --workspace=frontend-gravity -- -p 3300",
+    "dev:frontend": "cmd /c \"set NEXT_TELEMETRY_DISABLED=1&& set NEXT_IGNORE_INCORRECT_LOCKFILE=1&& cd frontend-gravity&& node ../node_modules/next/dist/bin/next dev -p 3300\"",
     "predev:gravity": "npm run predev:frontend",
     "dev:gravity": "npm run dev:frontend",
-    "predev:backend": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$ErrorActionPreference='SilentlyContinue'; try { $connPids = @(Get-NetTCPConnection -LocalPort 3200 | Select-Object -ExpandProperty OwningProcess -Unique); foreach ($processId in $connPids) { if ($processId) { Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue } } } catch {}; exit 0\"",
+    "predev:backend": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/kill-backend-dev.ps1",
     "dev:backend": "npm --prefix ./backend run start:dev",
     "start:frontend": "npm --prefix ./frontend-gravity run start -- -p 3300",
     "start:backend": "npm --prefix ./backend run start:prod",

@@ -41,6 +41,18 @@ const colorMap: Record<NotificationType, string> = {
 };
 
 function getEntityLink(item: Notification): { href: string; label: string } | null {
+    if (item.title === "Оставлен отзыв на занятие") {
+        const reviewHref =
+            item.studentId && item.lessonId
+                ? `/students/${item.studentId}?tab=lessons&lessonId=${item.lessonId}`
+                : undefined;
+
+        const href = reviewHref || item.actionUrl || (item.studentId ? `/students/${item.studentId}` : undefined);
+        if (href) {
+            return { href, label: "Открыть отзыв" };
+        }
+    }
+
     const t = item.type;
     if (
         (t === "lesson_cancelled" || t === "lesson_reminder" ||

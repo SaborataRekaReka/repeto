@@ -2,6 +2,7 @@ import type { NextPage } from "next";
 import { useRouter } from "next/router";
 import { Loader } from "@gravity-ui/uikit";
 import StudentDetailPage from "@/templates/Students/StudentDetailPage";
+import GravityLayout from "@/components/GravityLayout";
 import { useStudent } from "@/hooks/useStudents";
 
 const StudentDetail: NextPage = () => {
@@ -24,7 +25,11 @@ const StudentDetail: NextPage = () => {
         );
     }
 
-    return <StudentDetailPage student={student} onRefresh={refetch} />;
+    return (
+        <GravityLayout title="Ученики" hideSidebar>
+            <StudentDetailPage student={student} onRefresh={refetch} />
+        </GravityLayout>
+    );
 };
 
 export default StudentDetail;

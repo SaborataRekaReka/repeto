@@ -40,3 +40,17 @@ export type FilesOverviewResponse = {
     files: FileItem[];
     studentAccess: StudentFileAccess[];
 };
+
+export type CloudSyncResponse = {
+    connected: boolean;
+    rootPath: string;
+    syncedItems: number;
+    restoredShares?: number;
+    removedItems?: number;
+    scope?: "root" | "folder";
+    folderId?: string;
+    syncedAt: string;
+};
+
+export type YandexDiskSyncResponse = CloudSyncResponse;
+export type GoogleDriveSyncResponse = CloudSyncResponse;
