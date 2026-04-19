@@ -14,6 +14,7 @@ export type Lesson = {
     id: string;
     studentId?: string;
     studentName: string;
+    studentAccountId?: string | null;
     subject: string;
     date: string; // ISO date string YYYY-MM-DD
     startTime: string; // "15:00"

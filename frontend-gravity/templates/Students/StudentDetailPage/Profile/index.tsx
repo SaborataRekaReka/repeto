@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Icon from "@/components/Icon";
+import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 import type { Student } from "@/types/student";
 import {
     formatBalance,
@@ -49,7 +50,12 @@ const Profile = ({ student, onMessage, onEdit }: ProfileProps) => {
                 >
                     {getInitials(student.name)}
                 </div>
-                <div className="text-h4">{student.name}</div>
+                <div className="text-h4">
+                    <StudentNameWithBadge
+                        name={student.name}
+                        hasRepetoAccount={Boolean(student.accountId)}
+                    />
+                </div>
                 <div className="text-sm">
                     {student.subject}
                     {student.grade

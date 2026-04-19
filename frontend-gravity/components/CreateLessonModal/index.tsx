@@ -23,6 +23,7 @@ import { Lp2Field, Lp2Row } from "@/components/Lp2Field";
 import { codedErrorMessage } from "@/lib/errorCodes";
 import { useAuth } from "@/contexts/AuthContext";
 import { useApi } from "@/hooks/useApi";
+import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 
 const durationItems = [
     { value: "30", content: "30 минут" },
@@ -73,7 +74,11 @@ type CreateLessonModalProps = {
     onClose: () => void;
     onCreated?: (savedLesson?: Lesson | Lesson[]) => void | Promise<void>;
     lesson?: Lesson | null;
-    defaultStudent?: { id: string; name: string } | null;
+    defaultStudent?: {
+        id: string;
+        name: string;
+        accountId?: string | null;
+    } | null;
     defaultDate?: string;
     defaultTime?: string;
 };
@@ -182,7 +187,10 @@ const CreateLessonModal = ({
         ...students.map((s) => ({
             value: s.id,
             content: s.name,
-            data: { color: getStudentBadgeColor(s.name) },
+            data: {
+                color: getStudentBadgeColor(s.name),
+                accountId: s.accountId ?? null,
+            },
         })),
         { value: ADD_STUDENT_OPTION_VALUE, content: "Добавить ученика" },
     ];
@@ -416,7 +424,12 @@ const CreateLessonModal = ({
                 >
                     {optionLabel.charAt(0).toUpperCase()}
                 </div>
-                <Text variant="body-1">{optionLabel}</Text>
+                <Text variant="body-1">
+                    <StudentNameWithBadge
+                        name={optionLabel}
+                        hasRepetoAccount={Boolean(option?.data?.accountId)}
+                    />
+                </Text>
             </div>
         );
     };
@@ -466,6 +479,16 @@ const CreateLessonModal = ({
                                 popupWidth="fit"
                                 popupPlacement={["bottom-start", "top-start"]}
                                 popupClassName="lp2-popup"
+                                renderSelectedOption={(option: any) => (
+                                    <StudentNameWithBadge
+                                        name={
+                                            typeof option?.content === "string" && option.content.trim().length
+                                                ? option.content
+                                                : "Ученик"
+                                        }
+                                        hasRepetoAccount={Boolean(option?.data?.accountId)}
+                                    />
+                                )}
                             />
                         </Lp2Field>
                     )}

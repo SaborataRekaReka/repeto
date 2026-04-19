@@ -5,6 +5,7 @@ export type Payment = {
     id: string;
     studentId: string;
     studentName: string;
+    studentAccountId?: string | null;
     lessonId?: string;
     lessonSubject?: string;
     lessonDate?: string;
@@ -20,6 +21,7 @@ export type Payment = {
 export type StudentBalance = {
     studentId: string;
     studentName: string;
+    studentAccountId?: string | null;
     subject: string;
     lessonsCount: number;
     totalAmount: number;

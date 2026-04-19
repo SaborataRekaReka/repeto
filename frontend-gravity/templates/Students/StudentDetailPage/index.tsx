@@ -9,6 +9,7 @@ import PageOverlay from "@/components/PageOverlay";
 import AppDialog from "@/components/AppDialog";
 import LessonPanelV2 from "@/components/LessonPanelV2";
 import CreatePaymentModal from "@/components/CreatePaymentModal";
+import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 import ActivateAccountModal from "./ActivateAccountModal";
 import RemindModal from "@/components/RemindModal";
 import LessonHistory from "./LessonHistory";
@@ -421,7 +422,12 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
 
     return (
         <PageOverlay
-            title={local.name}
+            title={
+                <StudentNameWithBadge
+                    name={local.name}
+                    hasRepetoAccount={Boolean(local.accountId)}
+                />
+            }
             breadcrumb="Ученики"
             nav={navItems}
             activeNav={tab}
@@ -443,13 +449,21 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
                     onRefresh?.();
                 }}
                 onDeleted={handleDeleteLesson}
-                defaultStudent={selectedLesson || editLesson ? undefined : { id: student.id, name: student.name }}
+                defaultStudent={
+                    selectedLesson || editLesson
+                        ? undefined
+                        : { id: student.id, name: student.name, accountId: student.accountId ?? null }
+                }
             />
             <CreatePaymentModal
                 visible={paymentModal}
                 onClose={() => setPaymentModal(false)}
                 onCreated={handlePaymentCreated}
-                defaultStudent={{ id: student.id, name: student.name }}
+                defaultStudent={{
+                    id: student.id,
+                    name: student.name,
+                    accountId: student.accountId ?? null,
+                }}
             />
             <ActivateAccountModal
                 visible={activateAccountModal}
@@ -466,6 +480,7 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
                 onSent={onRefresh}
                 studentId={student.id}
                 studentName={student.name}
+                hasRepetoAccount={Boolean(local.accountId)}
                 hasDebt={local.balance < 0}
                 hasParentEmail={!!local.parentEmail}
             />

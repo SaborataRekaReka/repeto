@@ -12,6 +12,7 @@ type DashboardStats = {
 type DebtStudent = {
   id: string;
   name: string;
+  accountId?: string | null;
   subject: string;
   balance: number;
   parentEmail?: string | null;
@@ -21,6 +22,7 @@ type RecentPayment = {
   id: string;
   date: string;
   studentName: string;
+  studentAccountId?: string | null;
   amount: number;
   method: string;
   status: 'received';
@@ -49,7 +51,20 @@ export function useTodayLessons() {
 }
 
 export function useDebts(limit = 5) {
-  return useApi<DebtStudent[]>('/dashboard/debts', { limit });
+  const result = useApi<any[]>('/dashboard/debts', { limit });
+  return {
+    ...result,
+    data: (result.data || []).map(
+      (row: any): DebtStudent => ({
+        id: row.id,
+        name: row.name,
+        accountId: row.accountId ?? row.student?.accountId ?? null,
+        subject: row.subject,
+        balance: Number(row.balance ?? 0),
+        parentEmail: row.parentEmail ?? null,
+      }),
+    ),
+  };
 }
 
 export function useRecentPayments(limit = 5) {
@@ -65,6 +80,7 @@ export function useRecentPayments(limit = 5) {
         year: 'numeric',
       }),
       studentName: p.student?.name || '',
+      studentAccountId: p.student?.accountId ?? p.studentAccountId ?? null,
       amount: p.amount,
       method: mapPaymentMethod(p.method),
       status: 'received' as const,
@@ -124,6 +140,7 @@ export function useConversion(period: 'month' | 'quarter' | 'year' = 'month') {
 type ExpiringPackage = {
   id: string;
   studentName: string;
+  studentAccountId?: string | null;
   subject: string;
   lessonsTotal: number;
   lessonsUsed: number;
@@ -137,6 +154,7 @@ export function useExpiringPackages() {
     data: (result.data || []).map((p: any): ExpiringPackage => ({
       id: p.id,
       studentName: p.student?.name || '',
+      studentAccountId: p.student?.accountId ?? p.studentAccountId ?? null,
       subject: p.subject,
       lessonsTotal: p.lessonsTotal,
       lessonsUsed: p.lessonsUsed,

@@ -6,6 +6,7 @@ import { ChevronDown, Pencil, TrashBin } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import { updateLessonStatus } from "@/hooks/useLessons";
 import type { Lesson } from "@/types/schedule";
+import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 import CreateLessonModal from "@/components/CreateLessonModal";
 import AppDialog from "@/components/AppDialog";
 const GText = Text as any;
@@ -234,11 +235,19 @@ const LessonDetailModal = ({
                                     className="repeto-lesson-modal-student-link"
                                 >
                                     <GText as="span" variant="subheader-2">
-                                        {lesson.studentName}
+                                        <StudentNameWithBadge
+                                            name={lesson.studentName}
+                                            hasRepetoAccount={Boolean(lesson.studentAccountId)}
+                                        />
                                     </GText>
                                 </button>
                             ) : (
-                                <GText variant="subheader-2">{lesson.studentName}</GText>
+                                <GText variant="subheader-2">
+                                    <StudentNameWithBadge
+                                        name={lesson.studentName}
+                                        hasRepetoAccount={Boolean(lesson.studentAccountId)}
+                                    />
+                                </GText>
                             )}
                             <GLabel theme={statusTheme(lesson.status)} size="s">
                                 {statusLabel(lesson.status)}

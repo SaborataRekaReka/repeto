@@ -6,6 +6,7 @@ import type { IconData } from "@gravity-ui/uikit";
 import { getInitials } from "@/lib/formatters";
 import { useStudents } from "@/hooks/useStudents";
 import { updateFileShare } from "@/hooks/useFiles";
+import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 import type { FileItem, StudentFileAccess } from "@/types/files";
 import { codedErrorMessage } from "@/lib/errorCodes";
 
@@ -132,7 +133,12 @@ const StudentAccessTab = ({ files, studentAccess, onUpdated }: StudentAccessTabP
                                         {getInitials(student.name)}
                                     </div>
                                     <div style={{ flex: 1, minWidth: 0, marginRight: 12 }}>
-                                        <Text variant="body-1" style={{ fontWeight: 600 }}>{student.name}</Text>
+                                        <Text variant="body-1" style={{ fontWeight: 600 }}>
+                                            <StudentNameWithBadge
+                                                name={student.name}
+                                                hasRepetoAccount={Boolean(student.accountId)}
+                                            />
+                                        </Text>
                                         <Text variant="caption-2" color="secondary" style={{ display: "block" }}>
                                             {student.subject}
                                             {access.filesCount > 0 && ` · ${access.filesCount} файлов`}
@@ -290,7 +296,12 @@ const StudentAccessTab = ({ files, studentAccess, onUpdated }: StudentAccessTabP
                                             {getInitials(s.name)}
                                         </div>
                                         <div style={{ flex: 1, minWidth: 0, marginRight: 12 }}>
-                                            <Text variant="body-1" style={{ fontWeight: 600 }}>{s.name}</Text>
+                                            <Text variant="body-1" style={{ fontWeight: 600 }}>
+                                                <StudentNameWithBadge
+                                                    name={s.name}
+                                                    hasRepetoAccount={Boolean(s.accountId)}
+                                                />
+                                            </Text>
                                             <Text variant="caption-2" color="secondary" style={{ display: "block" }}>{s.subject}</Text>
                                         </div>
                                         <Text variant="caption-2" color="secondary">Нет файлов</Text>

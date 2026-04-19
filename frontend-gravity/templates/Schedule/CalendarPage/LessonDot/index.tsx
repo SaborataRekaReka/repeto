@@ -1,5 +1,6 @@
 import type { Lesson } from "@/types/schedule";
 import { shortName } from "@/lib/formatters";
+import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 
 type LessonDotProps = {
     className?: string;
@@ -44,7 +45,12 @@ const LessonDot = ({ className, classTitle, lesson, time, onClick }: LessonDotPr
             <div
                 className={`ml-2 truncate text-xs font-bold ${classTitle}`}
             >
-                {shortName(lesson.studentName)} · {lesson.subject}
+                <StudentNameWithBadge
+                    name={shortName(lesson.studentName)}
+                    hasRepetoAccount={Boolean(lesson.studentAccountId)}
+                    truncate
+                />{" "}
+                · {lesson.subject}
             </div>
         </button>
     );

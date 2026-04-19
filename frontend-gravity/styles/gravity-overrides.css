@@ -6681,6 +6681,41 @@ body {
     min-width: 0;
 }
 
+.repeto-student-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    max-width: 100%;
+    vertical-align: baseline;
+}
+
+.repeto-student-name--truncate .repeto-student-name__text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.repeto-student-name__text {
+    min-width: 0;
+}
+
+.repeto-student-name__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    flex-shrink: 0;
+    line-height: 0;
+}
+
+.repeto-student-name__icon {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
 .profile-hero__repeto-badge {
     display: inline-flex;
     align-items: center;

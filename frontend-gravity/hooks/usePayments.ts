@@ -16,6 +16,11 @@ function mapPayment(raw: any): Payment {
     id: raw.id,
     studentId: raw.studentId,
     studentName: raw.student?.name || raw.studentName || '',
+    studentAccountId:
+      raw.student?.accountId ??
+      raw.studentAccountId ??
+      raw.accountId ??
+      null,
     lessonId: raw.lessonId || raw.lesson?.id || undefined,
     lessonSubject: raw.lesson?.subject || undefined,
     lessonDate,
@@ -189,19 +194,55 @@ export function useStudentBalances(params?: {
   limit?: number;
   sort?: string;
 }) {
-  return useApi<{ data: StudentBalance[]; total: number; page: number; pages: number }>(
+  const result = useApi<{ data: any[]; total: number; page: number; pages: number }>(
     '/finance/balances',
     params
   );
+
+  return {
+    ...result,
+    data: result.data
+      ? {
+          ...result.data,
+          data: result.data.data.map(
+            (row: any): StudentBalance => ({
+              ...row,
+              studentAccountId:
+                row.studentAccountId ??
+                row.accountId ??
+                row.student?.accountId ??
+                null,
+            }),
+          ),
+        }
+      : undefined,
+  };
 }
 
 type IncomeByStudent = {
   studentId: string;
   studentName: string;
+  studentAccountId?: string | null;
   subject: string;
   total: number;
 };
 
 export function useIncomeByStudents(period = 'month') {
-  return useApi<IncomeByStudent[]>('/finance/income-by-students', { period });
+  const result = useApi<any[]>('/finance/income-by-students', { period });
+  return {
+    ...result,
+    data: (result.data || []).map(
+      (row: any): IncomeByStudent => ({
+        studentId: row.studentId,
+        studentName: row.studentName,
+        studentAccountId:
+          row.studentAccountId ??
+          row.accountId ??
+          row.student?.accountId ??
+          null,
+        subject: row.subject,
+        total: Number(row.total ?? 0),
+      }),
+    ),
+  };
 }

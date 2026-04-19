@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Card, Text, Label, Loader } from "@gravity-ui/uikit";
 import { useRecentPayments } from "@/hooks/useDashboard";
+import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 
 const getStatusLabel = (status: string) =>
     status === "received" ? "Получен" : "Ожидается";
@@ -47,7 +48,11 @@ const RecentPayments = () => {
                             <div key={payment.id} className="repeto-recent-payments-feed__item">
                                 <div className="repeto-recent-payments-feed__head">
                                     <Text variant="body-2" className="repeto-dashboard-entity-name" ellipsis>
-                                        {payment.studentName}
+                                        <StudentNameWithBadge
+                                            name={payment.studentName}
+                                            hasRepetoAccount={Boolean(payment.studentAccountId)}
+                                            truncate
+                                        />
                                     </Text>
                                     <span className="repeto-dashboard-amount-pill">
                                         {formatAmount(payment.amount)}

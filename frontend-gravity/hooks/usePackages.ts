@@ -17,6 +17,11 @@ function mapPackage(raw: any): LessonPackage {
     id: raw.id,
     studentId: raw.studentId,
     studentName,
+    studentAccountId:
+      raw.student?.accountId ??
+      raw.studentAccountId ??
+      raw.accountId ??
+      null,
     subject: raw.subject || raw.student?.subject || '',
     lessonsTotal: raw.lessonsTotal,
     lessonsUsed: raw.lessonsUsed,

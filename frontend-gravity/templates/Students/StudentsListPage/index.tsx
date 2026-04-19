@@ -17,6 +17,7 @@ import GravityLayout from "@/components/GravityLayout";
 import PageOverlay from "@/components/PageOverlay";
 import AppDialog from "@/components/AppDialog";
 import StudentAvatar from "@/components/StudentAvatar";
+import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 import CreateStudentModal from "@/components/CreateStudentModal";
 import CreatePaymentModal from "@/components/CreatePaymentModal";
 import LessonPanelV2 from "@/components/LessonPanelV2";
@@ -421,7 +422,13 @@ const StudentsListPage = () => {
                                     <div className="repeto-sl-row__cell repeto-sl-row__cell--name">
                                         <StudentAvatar student={student} size="m" />
                                         <div className="repeto-sl-row__name-text">
-                                            <span className="repeto-sl-row__primary">{student.name}</span>
+                                            <span className="repeto-sl-row__primary">
+                                                <StudentNameWithBadge
+                                                    name={student.name}
+                                                    hasRepetoAccount={Boolean(student.accountId)}
+                                                    truncate
+                                                />
+                                            </span>
                                             <span className="repeto-sl-row__secondary">{student.subject}</span>
                                         </div>
                                     </div>

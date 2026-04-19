@@ -1,5 +1,6 @@
 import { Text } from "@gravity-ui/uikit";
 import type { Lesson } from "@/types/schedule";
+import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 
 type LessonBlockProps = {
     lesson: Lesson;
@@ -80,7 +81,11 @@ const LessonBlock = ({ lesson, compact, showTime, onClick, style }: LessonBlockP
                     ellipsis
                     style={{ color: textColor }}
                 >
-                    {shortName(lesson.studentName)} · {lesson.subject}
+                    <StudentNameWithBadge
+                        name={shortName(lesson.studentName)}
+                        hasRepetoAccount={Boolean(lesson.studentAccountId)}
+                    />{" "}
+                    · {lesson.subject}
                 </Text>
             </button>
         );
@@ -127,7 +132,10 @@ const LessonBlock = ({ lesson, compact, showTime, onClick, style }: LessonBlockP
                 {lesson.subject}
             </Text>
             <Text variant="caption-2" color="secondary" ellipsis>
-                {shortName(lesson.studentName)}
+                <StudentNameWithBadge
+                    name={shortName(lesson.studentName)}
+                    hasRepetoAccount={Boolean(lesson.studentAccountId)}
+                />
             </Text>
         </button>
     );

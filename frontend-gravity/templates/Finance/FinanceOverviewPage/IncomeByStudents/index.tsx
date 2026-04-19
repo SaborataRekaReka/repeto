@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { Text, Card } from "@gravity-ui/uikit";
 import { SegmentedRadioGroup } from "@gravity-ui/uikit";
 import { useIncomeByStudents } from "@/hooks/usePayments";
+import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 
 const periodOptions = [
     { value: "month", content: "Месяц" },
@@ -106,7 +107,11 @@ const IncomeByStudents = () => {
                                         <div className="repeto-income-students-card__content" style={{ flex: 1, minWidth: 0 }}>
                                             <div className="repeto-income-students-card__row" style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 6 }}>
                                                 <Text variant="body-1" ellipsis className="repeto-income-students-card__name" style={{ fontWeight: 600 }}>
-                                                    {s.studentName}
+                                                    <StudentNameWithBadge
+                                                        name={s.studentName}
+                                                        hasRepetoAccount={Boolean(s.studentAccountId)}
+                                                        truncate
+                                                    />
                                                 </Text>
                                                 <Text variant="body-1" className="repeto-income-students-card__amount" style={{ flexShrink: 0, marginLeft: 12, fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>
                                                     {s.total.toLocaleString("ru-RU")} ₽

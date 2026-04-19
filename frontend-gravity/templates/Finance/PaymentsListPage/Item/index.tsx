@@ -1,4 +1,5 @@
 import type { Payment } from "@/types/finance";
+import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 import {
     getMethodLabel,
     getStatusLabel,
@@ -17,7 +18,11 @@ const Item = ({ item, onClick }: ItemProps) => (
     >
         <div className="w-[calc(100%-5rem)] mr-auto">
             <div className="truncate text-sm font-bold">
-                {item.studentName}
+                <StudentNameWithBadge
+                    name={item.studentName}
+                    hasRepetoAccount={Boolean(item.studentAccountId)}
+                    truncate
+                />
             </div>
             <div className="truncate text-xs text-n-3 dark:text-white/50">
                 {item.date} · {getMethodLabel(item.method)}

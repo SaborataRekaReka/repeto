@@ -42,6 +42,7 @@ import type { Lesson, LessonStatus } from "@/types/schedule";
 import type { Student } from "@/types/student";
 import type { HomeworkFile } from "@/mocks/student-details";
 import StudentAvatar from "@/components/StudentAvatar";
+import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 import StyledDateInput from "@/components/StyledDateInput";
 import CreateStudentModal from "@/components/CreateStudentModal";
 import AddSubjectModal from "@/components/AddSubjectModal";
@@ -348,7 +349,11 @@ type LessonPanelProps = {
     lesson?: Lesson | null;
     onSaved?: () => void | Promise<void>;
     onDeleted?: (lessonId: string) => void;
-    defaultStudent?: { id: string; name: string } | null;
+    defaultStudent?: {
+        id: string;
+        name: string;
+        accountId?: string | null;
+    } | null;
     defaultDate?: string;
     defaultTime?: string;
 };
@@ -397,7 +402,15 @@ const SectionBlock = ({
    ═══════════════════════════════════════════════════════════ */
 
 const renderStudentOption = (
-    option: { value: string; content?: string; data?: { avatarUrl?: string; color?: string } },
+    option: {
+        value: string;
+        content?: string;
+        data?: {
+            avatarUrl?: string;
+            color?: string;
+            accountId?: string | null;
+        };
+    },
 ) => {
     const optionLabel =
         typeof option.content === "string" && option.content.trim().length
@@ -420,7 +433,12 @@ const renderStudentOption = (
             >
                 {optionLabel.charAt(0).toUpperCase()}
             </div>
-            <GText variant="body-1">{optionLabel}</GText>
+            <GText variant="body-1">
+                <StudentNameWithBadge
+                    name={optionLabel}
+                    hasRepetoAccount={Boolean(option.data?.accountId)}
+                />
+            </GText>
         </div>
     );
 };
@@ -1491,16 +1509,28 @@ const LessonPanel = ({
         : null;
 
     const paymentDefaultStudent = lesson?.studentId
-        ? { id: lesson.studentId, name: lesson.studentName }
+        ? {
+            id: lesson.studentId,
+            name: lesson.studentName,
+            accountId: lesson.studentAccountId ?? null,
+        }
         : currentStudent
-            ? { id: currentStudent.id, name: currentStudent.name }
+            ? {
+                id: currentStudent.id,
+                name: currentStudent.name,
+                accountId: currentStudent.accountId ?? null,
+            }
             : null;
 
     const studentOptions = [
         ...students.map((s) => ({
             value: s.id,
             content: s.name || "Ученик",
-            data: { avatarUrl: (s as any).avatarUrl, color: (s as any).color },
+            data: {
+                avatarUrl: (s as any).avatarUrl,
+                color: (s as any).color,
+                accountId: s.accountId ?? null,
+            },
         })),
         { value: ADD_STUDENT_OPTION_VALUE, content: "Добавить ученика", data: {} },
     ];
@@ -1577,7 +1607,12 @@ const LessonPanel = ({
                                                     {selectedLabel.charAt(0).toUpperCase()}
                                                 </div>
                                             )}
-                                            <GText variant="subheader-2">{selectedLabel}</GText>
+                                            <GText variant="subheader-2">
+                                                <StudentNameWithBadge
+                                                    name={selectedLabel}
+                                                    hasRepetoAccount={Boolean(selectedStudent?.accountId ?? option?.data?.accountId)}
+                                                />
+                                            </GText>
                                         </div>
                                     );
                                 }}

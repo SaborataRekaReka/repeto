@@ -7,6 +7,7 @@ import { getInitials } from "@/lib/formatters";
 import { accent, brand } from "@/constants/brand";
 import { useThemeMode } from "@/contexts/ThemeContext";
 import type { Lesson } from "@/types/schedule";
+import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 
 const dayNames = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
 
@@ -142,7 +143,11 @@ const WeekSchedule = ({ onLessonClick, refreshKey }: Props) => {
                                                 }}
                                             >
                                                 <Text variant="body-2" ellipsis className="repeto-dashboard-entity-name">
-                                                    {shortName(lesson.studentName)}
+                                                    <StudentNameWithBadge
+                                                        name={shortName(lesson.studentName)}
+                                                        hasRepetoAccount={Boolean(lesson.studentAccountId)}
+                                                        truncate
+                                                    />
                                                 </Text>
                                                 <Text
                                                     variant="body-1"

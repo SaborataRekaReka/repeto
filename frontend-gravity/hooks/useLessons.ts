@@ -95,6 +95,7 @@ function mapLesson(raw: any): Lesson {
     id: raw.id,
     studentId: raw.studentId || raw.student?.id || undefined,
     studentName,
+    studentAccountId: raw.student?.accountId ?? raw.studentAccountId ?? null,
     subject,
     date: toLocalDateKey(scheduledAt),
     startTime: `${pad(scheduledAt.getHours())}:${pad(scheduledAt.getMinutes())}`,

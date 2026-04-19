@@ -7,7 +7,7 @@ import type { IconData } from "@gravity-ui/uikit";
 
 type PageOverlayProps = {
     /** Title shown below the breadcrumb */
-    title: string;
+    title: ReactNode;
     /** Optional breadcrumb above the title */
     breadcrumb?: string;
     /** Sidebar nav items */

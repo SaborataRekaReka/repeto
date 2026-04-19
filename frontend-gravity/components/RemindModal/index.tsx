@@ -19,6 +19,7 @@ import { sendReminder } from "@/hooks/useNotifications";
 import { codedErrorMessage } from "@/lib/errorCodes";
 import { Lp2Field } from "@/components/Lp2Field";
 import type { Lesson } from "@/types/schedule";
+import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 
 type ReminderType = "payment" | "lesson" | "homework";
 
@@ -28,6 +29,7 @@ type RemindModalProps = {
     onSent?: () => void;
     studentId: string;
     studentName: string;
+    hasRepetoAccount?: boolean;
     hasDebt: boolean;
     hasParentEmail: boolean;
     initialType?: ReminderType;
@@ -54,6 +56,7 @@ const RemindModal = ({
     onSent,
     studentId,
     studentName,
+    hasRepetoAccount,
     hasDebt,
     hasParentEmail,
     initialType,
@@ -599,7 +602,16 @@ const RemindModal = ({
 
             <div className="lp2__scroll">
                 <div className="lp2__center">
-                    <h1 className="lp2__page-title">Напомнить · {studentName}</h1>
+                    <h1
+                        className="lp2__page-title"
+                        style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}
+                    >
+                        <span>Напомнить ·</span>
+                        <StudentNameWithBadge
+                            name={studentName}
+                            hasRepetoAccount={Boolean(hasRepetoAccount)}
+                        />
+                    </h1>
 
                     {renderTypeSelection()}
 

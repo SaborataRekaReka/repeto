@@ -4,6 +4,7 @@ import { ArrowChevronLeft, ArrowChevronRight } from "@gravity-ui/icons";
 import { Button, Card, Icon, Text, Label, Loader } from "@gravity-ui/uikit";
 import type { IconData } from "@gravity-ui/uikit";
 import { useExpiringPackages } from "@/hooks/useDashboard";
+import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 
 const formatLessonsLeft = (count: number) => {
     const mod10 = count % 10;
@@ -121,7 +122,11 @@ const ExpiringPackages = () => {
                                 <div className="repeto-expiring-packages__head">
                                     <div className="repeto-expiring-packages__primary">
                                         <Text variant="body-2" ellipsis className="repeto-dashboard-entity-name">
-                                            {currentPackage.studentName}
+                                            <StudentNameWithBadge
+                                                name={currentPackage.studentName}
+                                                hasRepetoAccount={Boolean(currentPackage.studentAccountId)}
+                                                truncate
+                                            />
                                         </Text>
                                         <Text
                                             variant="body-1"

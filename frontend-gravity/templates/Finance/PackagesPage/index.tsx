@@ -14,6 +14,7 @@ import {
 import type { IconData } from "@gravity-ui/uikit";
 import GravityLayout from "@/components/GravityLayout";
 import PageOverlay from "@/components/PageOverlay";
+import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 import CreatePackageModal from "@/components/CreatePackageModal";
 import { usePackages } from "@/hooks/usePackages";
 import { getPackageStatusLabel } from "@/mocks/packages";
@@ -267,7 +268,13 @@ const PackagesPage = () => {
                                         <div className="repeto-sl-row__cell repeto-sl-row__cell--name">
                                             <div className="repeto-sl-initials">{getInitials(pkg.studentName)}</div>
                                             <div className="repeto-sl-row__name-text">
-                                                <span className="repeto-sl-row__primary">{pkg.studentName}</span>
+                                                <span className="repeto-sl-row__primary">
+                                                    <StudentNameWithBadge
+                                                        name={pkg.studentName}
+                                                        hasRepetoAccount={Boolean(pkg.studentAccountId)}
+                                                        truncate
+                                                    />
+                                                </span>
                                                 <span className="repeto-sl-row__secondary">{pkg.subject}</span>
                                             </div>
                                         </div>

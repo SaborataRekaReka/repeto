@@ -4,7 +4,7 @@ import { Bell, Link, ChevronDown } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import type { Student, StudentStatus } from "@/types/student";
 import StudentAvatar from "@/components/StudentAvatar";
-import Image from "@/components/Image";
+import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 import Lp2Field, { Lp2Row } from "@/components/Lp2Field";
 import { formatBalance, getStatusLabel } from "@/mocks/students";
 
@@ -114,7 +114,10 @@ const ProfileTab = ({
                 />
                 <div className="profile-hero__info">
                     <Text variant="header-1" as="div">
-                        {student.name}
+                        <StudentNameWithBadge
+                            name={student.name}
+                            hasRepetoAccount={hasRepetoAccount}
+                        />
                     </Text>
                     <Text variant="body-1" color="secondary" as="div">
                         {student.subject}
@@ -123,18 +126,6 @@ const ProfileTab = ({
                             : ""}
                         {student.age ? ` · ${student.age} лет` : ""}
                     </Text>
-                    {hasRepetoAccount && (
-                        <div className="profile-hero__repeto-badge">
-                            <Image
-                                src="/brand/icon.svg"
-                                alt="Repeto"
-                                width={14}
-                                height={14}
-                                className="profile-hero__repeto-icon"
-                            />
-                            <Text variant="caption-2">Ученик в Repeto</Text>
-                        </div>
-                    )}
 
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
                         <GDropdownMenu

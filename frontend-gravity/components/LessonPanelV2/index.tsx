@@ -41,6 +41,7 @@ import type { Lesson, LessonStatus } from "@/types/schedule";
 import type { Student } from "@/types/student";
 import type { HomeworkFile } from "@/mocks/student-details";
 import StudentAvatar from "@/components/StudentAvatar";
+import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 import StyledDateInput from "@/components/StyledDateInput";
 import CreateStudentModal from "@/components/CreateStudentModal";
 import AddSubjectModal from "@/components/AddSubjectModal";
@@ -293,7 +294,11 @@ type LessonPanelV2Props = {
     lesson?: Lesson | null;
     onSaved?: () => void | Promise<void>;
     onDeleted?: (lessonId: string) => void;
-    defaultStudent?: { id: string; name: string } | null;
+    defaultStudent?: {
+        id: string;
+        name: string;
+        accountId?: string | null;
+    } | null;
     defaultDate?: string;
     defaultTime?: string;
 };
@@ -1047,16 +1052,28 @@ const LessonPanelV2 = ({
     const currentStudent = studentId.length ? students.find((s) => s.id === studentId[0]) : null;
 
     const paymentDefaultStudent = lesson?.studentId
-        ? { id: lesson.studentId, name: lesson.studentName }
+        ? {
+            id: lesson.studentId,
+            name: lesson.studentName,
+            accountId: lesson.studentAccountId ?? null,
+        }
         : currentStudent
-            ? { id: currentStudent.id, name: currentStudent.name }
+            ? {
+                id: currentStudent.id,
+                name: currentStudent.name,
+                accountId: currentStudent.accountId ?? null,
+            }
             : null;
 
     const studentOptions = [
         ...students.map((s) => ({
             value: s.id,
             content: s.name || "Ученик",
-            data: { avatarUrl: (s as any).avatarUrl, color: (s as any).color },
+            data: {
+                avatarUrl: (s as any).avatarUrl,
+                color: (s as any).color,
+                accountId: s.accountId ?? null,
+            },
         })),
         { value: ADD_STUDENT_OPTION_VALUE, content: "Добавить ученика", data: {} },
     ];
@@ -1076,7 +1093,15 @@ const LessonPanelV2 = ({
     if (!shouldRender && !open) return null;
 
     const renderStudentOption = (
-        option: { value: string; content?: string; data?: { avatarUrl?: string; color?: string } },
+        option: {
+            value: string;
+            content?: string;
+            data?: {
+                avatarUrl?: string;
+                color?: string;
+                accountId?: string | null;
+            };
+        },
     ) => {
         const optionLabel =
             typeof option.content === "string" && option.content.trim().length
@@ -1095,7 +1120,12 @@ const LessonPanelV2 = ({
                 <div style={{ width: 28, height: 28, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 600, fontSize: 13, flexShrink: 0, background: option.data?.color || "var(--g-color-base-brand)" }}>
                     {optionLabel.charAt(0).toUpperCase()}
                 </div>
-                <GText variant="body-1">{optionLabel}</GText>
+                <GText variant="body-1">
+                    <StudentNameWithBadge
+                        name={optionLabel}
+                        hasRepetoAccount={Boolean(option.data?.accountId)}
+                    />
+                </GText>
             </div>
         );
     };
@@ -1174,7 +1204,12 @@ const LessonPanelV2 = ({
                                                 {selectedLabel.charAt(0).toUpperCase()}
                                             </div>
                                         )}
-                                        <GText variant="body-1">{selectedLabel}</GText>
+                                        <GText variant="body-1">
+                                            <StudentNameWithBadge
+                                                name={selectedLabel}
+                                                hasRepetoAccount={Boolean(selectedStudent?.accountId ?? option?.data?.accountId)}
+                                            />
+                                        </GText>
                                     </div>
                                 );
                             }}

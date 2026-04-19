@@ -1,5 +1,6 @@
 import Icon from "@/components/Icon";
 import DropdownMenu from "@/components/DropdownMenu";
+import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 import type { Payment } from "@/types/finance";
 import {
     getMethodLabel,
@@ -19,7 +20,13 @@ const Row = ({ item, onClick }: RowProps) => (
     >
         <td className="td-custom text-sm">{item.date}</td>
         <td className="td-custom">
-            <div className="text-sm font-bold">{item.studentName}</div>
+            <div className="text-sm font-bold">
+                <StudentNameWithBadge
+                    name={item.studentName}
+                    hasRepetoAccount={Boolean(item.studentAccountId)}
+                    truncate
+                />
+            </div>
         </td>
         <td className="td-custom text-sm font-bold">
             {item.amount.toLocaleString("ru-RU")} ₽

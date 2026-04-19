@@ -4,6 +4,7 @@ import { Card, Text, Button, Icon, Loader, Avatar } from "@gravity-ui/uikit";
 import type { IconData } from "@gravity-ui/uikit";
 import { Envelope } from "@gravity-ui/icons";
 import RemindModal from "@/components/RemindModal";
+import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 import { useDebts } from "@/hooks/useDashboard";
 import { accent, brand } from "@/constants/brand";
 import {
@@ -14,6 +15,7 @@ import {
 type DebtStudent = {
     id: string;
     name: string;
+    accountId?: string | null;
     subject: string;
     balance: number;
     parentEmail?: string | null;
@@ -88,7 +90,11 @@ const DebtList = () => {
                                     }}
                                 >
                                     <Text as="div" variant="body-2" ellipsis className="repeto-dashboard-entity-name">
-                                        {student.name}
+                                        <StudentNameWithBadge
+                                            name={student.name}
+                                            hasRepetoAccount={Boolean(student.accountId)}
+                                            truncate
+                                        />
                                     </Text>
                                     <Text as="div" variant="body-1" color="secondary" style={{ marginTop: 2 }}>
                                         {student.subject}
@@ -134,6 +140,7 @@ const DebtList = () => {
                     onSent={() => setReminderTarget(null)}
                     studentId={reminderTarget.id}
                     studentName={reminderTarget.name}
+                    hasRepetoAccount={Boolean(reminderTarget.accountId)}
                     hasDebt={true}
                     hasParentEmail={!!reminderTarget.parentEmail}
                     initialType="payment"

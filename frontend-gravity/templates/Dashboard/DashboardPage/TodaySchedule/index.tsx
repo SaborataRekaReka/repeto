@@ -6,6 +6,7 @@ import { shortName } from "@/lib/formatters";
 import { getInitials } from "@/lib/formatters";
 import { accent, brand } from "@/constants/brand";
 import type { Lesson } from "@/types/schedule";
+import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 
 type TodayScheduleProps = {
     onLessonClick: (lesson: Lesson) => void;
@@ -122,7 +123,11 @@ const TodaySchedule = ({ onLessonClick, refreshKey }: TodayScheduleProps) => {
                                     }}
                                 >
                                     <Text variant="body-2" ellipsis className="repeto-dashboard-entity-name">
-                                        {shortName(lesson.studentName)}
+                                        <StudentNameWithBadge
+                                            name={shortName(lesson.studentName)}
+                                            hasRepetoAccount={Boolean(lesson.studentAccountId)}
+                                            truncate
+                                        />
                                     </Text>
                                     <Text variant="body-1" color="secondary" style={{ flexShrink: 0, marginLeft: 8, fontVariantNumeric: "tabular-nums" }}>
                                         {lesson.startTime} – {lesson.endTime}

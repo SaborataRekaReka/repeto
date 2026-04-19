@@ -17,6 +17,7 @@ import { toDateInputValue } from "@/lib/dates";
 import StyledDateInput from "@/components/StyledDateInput";
 import { Lp2Field, Lp2Row } from "@/components/Lp2Field";
 import { codedErrorMessage } from "@/lib/errorCodes";
+import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 import type { Payment } from "@/types/finance";
 
 const methodOptions = [
@@ -44,6 +45,7 @@ type CreatePaymentModalProps = {
     defaultStudent?: {
         id: string;
         name: string;
+        accountId?: string | null;
     } | null;
     paymentData?: Payment | null;
 };
@@ -134,7 +136,7 @@ const CreatePaymentModal = ({
     const studentOptions = (studentsData?.data || []).map((s) => ({
         value: s.id,
         content: s.name,
-        data: { color: getStudentBadgeColor(s.name) },
+        data: { color: getStudentBadgeColor(s.name), accountId: s.accountId ?? null },
     }));
     const hasStudentLoadError = Boolean(studentsError);
     const hasNoActiveStudents =
@@ -383,7 +385,12 @@ const CreatePaymentModal = ({
                 >
                     {optionLabel.charAt(0).toUpperCase()}
                 </div>
-                <Text variant="body-1">{optionLabel}</Text>
+                <Text variant="body-1">
+                    <StudentNameWithBadge
+                        name={optionLabel}
+                        hasRepetoAccount={Boolean(option?.data?.accountId)}
+                    />
+                </Text>
             </div>
         );
     };
@@ -413,7 +420,12 @@ const CreatePaymentModal = ({
 
                     {defaultStudent ? (
                         <Lp2Field label="Ученик">
-                            <Text variant="body-1" style={{ fontWeight: 600 }}>{defaultStudent.name}</Text>
+                            <Text variant="body-1" style={{ fontWeight: 600 }}>
+                                <StudentNameWithBadge
+                                    name={defaultStudent.name}
+                                    hasRepetoAccount={Boolean(defaultStudent.accountId)}
+                                />
+                            </Text>
                         </Lp2Field>
                     ) : (
                         <Lp2Field label="Ученик *" error={studentError} errorText="Обязательное поле">

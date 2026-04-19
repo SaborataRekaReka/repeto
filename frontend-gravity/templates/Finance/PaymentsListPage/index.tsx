@@ -14,6 +14,7 @@ import GravityLayout from "@/components/GravityLayout";
 import PageOverlay from "@/components/PageOverlay";
 import AppDialog from "@/components/AppDialog";
 import CreatePaymentModal from "@/components/CreatePaymentModal";
+import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 import { deletePayment, usePayments } from "@/hooks/usePayments";
 import { getMethodLabel, getStatusLabel } from "@/mocks/finance-tutor";
 import type { Payment } from "@/types/finance";
@@ -203,7 +204,13 @@ const PaymentsListPage = () => {
                                         </span>
                                     </div>
                                     <div className="repeto-sl-row__cell">
-                                        <span className="repeto-sl-row__primary">{p.studentName}</span>
+                                        <span className="repeto-sl-row__primary">
+                                            <StudentNameWithBadge
+                                                name={p.studentName}
+                                                hasRepetoAccount={Boolean(p.studentAccountId)}
+                                                truncate
+                                            />
+                                        </span>
                                     </div>
                                     <div className="repeto-sl-row__cell repeto-sl-row__cell--rate">
                                         <span className="repeto-sl-cell-money">

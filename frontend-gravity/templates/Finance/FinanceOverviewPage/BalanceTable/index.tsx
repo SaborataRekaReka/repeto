@@ -2,6 +2,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { Text, Card, Label } from "@gravity-ui/uikit";
 import { useStudentBalances } from "@/hooks/usePayments";
+import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 
 const BalanceTable = () => {
     const router = useRouter();
@@ -56,7 +57,12 @@ const BalanceTable = () => {
                                         onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                                     >
                                         <td style={{ padding: "12px 20px" }}>
-                                            <Text variant="body-1" style={{ fontWeight: 600 }}>{s.studentName}</Text>
+                                            <Text variant="body-1" style={{ fontWeight: 600 }}>
+                                                <StudentNameWithBadge
+                                                    name={s.studentName}
+                                                    hasRepetoAccount={Boolean(s.studentAccountId)}
+                                                />
+                                            </Text>
                                             <Text variant="caption-2" color="secondary" style={{ display: "block" }}>{s.subject}</Text>
                                         </td>
                                         <td style={{ padding: "12px 20px", textAlign: "right" }}>

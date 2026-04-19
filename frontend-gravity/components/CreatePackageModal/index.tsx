@@ -12,6 +12,7 @@ import {
 import StyledDateInput from "@/components/StyledDateInput";
 import { Lp2Field, Lp2Row } from "@/components/Lp2Field";
 import type { LessonPackage } from "@/types/package";
+import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 
 function toPositiveNumber(value: string): number {
     const normalized = String(value || "").replace(",", ".").trim();
@@ -91,7 +92,11 @@ const CreatePackageModal = ({
     const studentOptions = (studentsData?.data || []).map((s) => ({
         value: s.id,
         content: s.name,
-        data: { ...s, color: getStudentBadgeColor(s.name) },
+        data: {
+            ...s,
+            color: getStudentBadgeColor(s.name),
+            accountId: s.accountId ?? null,
+        },
     }));
 
     const [studentId, setStudentId] = useState<string[]>([]);
@@ -329,7 +334,12 @@ const CreatePackageModal = ({
                 >
                     {optionLabel.charAt(0).toUpperCase()}
                 </div>
-                <Text variant="body-1">{optionLabel}</Text>
+                <Text variant="body-1">
+                    <StudentNameWithBadge
+                        name={optionLabel}
+                        hasRepetoAccount={Boolean(option?.data?.accountId)}
+                    />
+                </Text>
             </div>
         );
     };
@@ -392,6 +402,16 @@ const CreatePackageModal = ({
                                 popupWidth="fit"
                                 popupPlacement={["bottom-start", "top-start"]}
                                 popupClassName="lp2-popup"
+                                renderSelectedOption={(option: any) => (
+                                    <StudentNameWithBadge
+                                        name={
+                                            typeof option?.content === "string" && option.content.trim().length
+                                                ? option.content
+                                                : "Ученик"
+                                        }
+                                        hasRepetoAccount={Boolean(option?.data?.accountId)}
+                                    />
+                                )}
                             />
                         </Lp2Field>
                     ) : (

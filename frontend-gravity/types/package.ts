@@ -4,6 +4,7 @@ export type LessonPackage = {
     id: string;
     studentId?: string;
     studentName: string;
+    studentAccountId?: string | null;
     subject: string;
     lessonsTotal: number;
     lessonsUsed: number;
