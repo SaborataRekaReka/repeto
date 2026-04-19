@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   Logger,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -84,7 +85,7 @@ export class StudentAuthService {
     const codeHash = this.hashCode(code);
     const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000);
 
-    await this.prisma.studentOtp.create({
+    const createdOtp = await this.prisma.studentOtp.create({
       data: {
         email: normalizedEmail,
         codeHash,
@@ -103,7 +104,18 @@ export class StudentAuthService {
       // Dev-only log: still let caller know we couldn't reach email.
       if (process.env.NODE_ENV !== 'production') {
         this.logger.log(`[DEV][STUDENT_OTP][${purpose}] ${normalizedEmail}: ${code}`);
+        return {
+          email: normalizedEmail,
+          expiresInMinutes: OTP_TTL_MINUTES,
+          cooldown: false,
+        };
       }
+
+      // In production do not pretend that OTP was sent.
+      await this.prisma.studentOtp.deleteMany({ where: { id: createdOtp.id } });
+      throw new ServiceUnavailableException(
+        'Не удалось отправить код. Попробуйте снова через минуту.',
+      );
     }
 
     return {

@@ -3,6 +3,7 @@
  * localStorage under dedicated keys so that they don't collide with the tutor
  * session managed by AuthContext.
  */
+import { ApiError } from "@/lib/api";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
 const ACCESS_KEY = "repeto:student:accessToken";
@@ -64,7 +65,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     });
     const data = await res.json().catch(() => null);
     if (!res.ok) {
-        throw (data && typeof data === "object" ? data : new Error("request_failed"));
+        throw new ApiError(res.status, res.statusText, data);
     }
     return data as T;
 }
@@ -158,7 +159,7 @@ export async function studentApi<T>(path: string, init: RequestInit = {}): Promi
 
     const data = await res.json().catch(() => null);
     if (!res.ok) {
-        throw (data && typeof data === "object" ? data : new Error("request_failed"));
+        throw new ApiError(res.status, res.statusText, data);
     }
     return data as T;
 }

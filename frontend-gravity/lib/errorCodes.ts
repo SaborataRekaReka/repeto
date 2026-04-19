@@ -11,6 +11,10 @@ function getStatus(error: unknown): number | null {
         const status = (error as { status?: unknown }).status;
         if (typeof status === "number") return status;
     }
+    if (typeof error === "object" && error && "statusCode" in error) {
+        const statusCode = (error as { statusCode?: unknown }).statusCode;
+        if (typeof statusCode === "number") return statusCode;
+    }
     return null;
 }
 
@@ -57,6 +61,36 @@ function extractReadableMessage(error?: unknown): string | null {
     if (error instanceof ApiError) {
         const message = (error.message || "").trim();
         if (message && message !== "Запрос не выполнен") return message;
+    }
+
+    if (typeof error === "object" && error) {
+        const payload = error as { message?: unknown; details?: unknown; error?: unknown };
+
+        if (Array.isArray(payload.details)) {
+            const details = payload.details
+                .filter((item): item is string => typeof item === "string")
+                .map((item) => item.trim())
+                .filter(Boolean);
+            if (details.length > 0) return details.join("; ");
+        }
+
+        if (Array.isArray(payload.message)) {
+            const message = payload.message
+                .filter((item): item is string => typeof item === "string")
+                .map((item) => item.trim())
+                .filter(Boolean);
+            if (message.length > 0) return message.join("; ");
+        }
+
+        if (typeof payload.message === "string") {
+            const message = payload.message.trim();
+            if (message && message !== "Запрос не выполнен") return message;
+        }
+
+        if (typeof payload.error === "string") {
+            const fallback = payload.error.trim();
+            if (fallback) return fallback;
+        }
     }
 
     if (error instanceof Error) {
