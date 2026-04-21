@@ -1,8 +1,12 @@
 import { test as base, expect, Page } from '@playwright/test';
 
 const API_BASE = 'http://127.0.0.1:3200/api';
-const DEMO_EMAIL = 'demo@repeto.ru';
-const DEMO_PASSWORD = 'demo1234';
+const DEMO_EMAIL =
+  String(process.env.E2E_TUTOR_EMAIL || process.env.E2E_EMAIL || 'demo@repeto.ru').trim() ||
+  'demo@repeto.ru';
+const DEMO_PASSWORD =
+  String(process.env.E2E_TUTOR_PASSWORD || process.env.E2E_PASSWORD || 'demo1234').trim() ||
+  'demo1234';
 let cachedAuthCookies: any[] | null = null;
 
 async function hasActiveSession(page: Page): Promise<boolean> {
