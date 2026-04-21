@@ -7,7 +7,7 @@ import {
 import { CloudProvider, Prisma } from '@prisma/client';
 import { google } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
