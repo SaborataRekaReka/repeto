@@ -1,5 +1,6 @@
 import {
   Controller,
+  Delete,
   Get,
   Patch,
   Post,
@@ -65,6 +66,19 @@ export class NotificationsController {
     @Body() body: { endpoint?: string },
   ) {
     return this.notificationsService.unsubscribePush(userId, body?.endpoint || '');
+  }
+
+  @Get('testing/messenger-outbox')
+  getMessengerOutbox(
+    @CurrentUser('id') userId: string,
+    @Query('studentId') studentId?: string,
+  ) {
+    return this.notificationsService.getMessengerOutbox(userId, studentId);
+  }
+
+  @Delete('testing/messenger-outbox')
+  clearMessengerOutbox(@CurrentUser('id') userId: string) {
+    return this.notificationsService.clearMessengerOutbox(userId);
   }
 
   @Patch(':id/read')

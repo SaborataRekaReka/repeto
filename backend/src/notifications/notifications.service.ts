@@ -670,6 +670,14 @@ export class NotificationsService {
     return this.pushNotifications.unsubscribe(userId, endpoint);
   }
 
+  getMessengerOutbox(userId: string, studentId?: string) {
+    return this.messenger.getOutboxForTutor(userId, studentId);
+  }
+
+  clearMessengerOutbox(userId: string) {
+    return this.messenger.clearOutboxForTutor(userId);
+  }
+
   async create(data: {
     userId: string;
     type: any;

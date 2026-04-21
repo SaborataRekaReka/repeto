@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { NotificationChannel } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { TelegramService } from './telegram.service';
@@ -24,15 +25,78 @@ export type NotificationEvent = {
   channels?: NotificationChannel[];
 };
 
+export type MessengerOutboxRecord = {
+  id: string;
+  createdAt: string;
+  deliveryMode: 'record' | 'live';
+  eventType: NotificationEvent['type'];
+  tutorId: string;
+  studentId: string;
+  message: string;
+  channels: NotificationChannel[];
+  results: {
+    telegram: boolean;
+    max: boolean;
+  };
+};
+
 @Injectable()
 export class MessengerDeliveryService {
   private readonly logger = new Logger(MessengerDeliveryService.name);
+  private readonly outbox: MessengerOutboxRecord[] = [];
+  private readonly outboxLimit = 500;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly telegram: TelegramService,
     private readonly max: MaxService,
   ) {}
+
+  private isTestingEnvironment() {
+    return process.env.NODE_ENV !== 'production';
+  }
+
+  private resolveDeliveryMode(): 'record' | 'live' {
+    if (!this.isTestingEnvironment()) {
+      return 'live';
+    }
+
+    const configuredMode = String(process.env.MESSENGER_TEST_MODE || '')
+      .trim()
+      .toLowerCase();
+    if (configuredMode === 'record' || configuredMode === 'mock' || configuredMode === 'outbox') {
+      return 'record';
+    }
+
+    return 'live';
+  }
+
+  private pushOutbox(
+    event: NotificationEvent,
+    channels: NotificationChannel[],
+    results: { telegram: boolean; max: boolean },
+    deliveryMode: 'record' | 'live',
+  ) {
+    if (!this.isTestingEnvironment()) {
+      return;
+    }
+
+    this.outbox.push({
+      id: randomUUID(),
+      createdAt: new Date().toISOString(),
+      deliveryMode,
+      eventType: event.type,
+      tutorId: event.tutorId,
+      studentId: event.studentId,
+      message: event.message,
+      channels,
+      results,
+    });
+
+    if (this.outbox.length > this.outboxLimit) {
+      this.outbox.splice(0, this.outbox.length - this.outboxLimit);
+    }
+  }
 
   async sendToStudent(event: NotificationEvent): Promise<{ telegram: boolean; max: boolean }> {
     const results = { telegram: false, max: false };
@@ -61,6 +125,14 @@ export class MessengerDeliveryService {
 
     const settings = (tutor.notificationSettings as Record<string, unknown>) || {};
     const channels = event.channels || this.resolveChannels(settings);
+    const deliveryMode = this.resolveDeliveryMode();
+
+    if (deliveryMode === 'record') {
+      results.telegram = channels.includes(NotificationChannel.TELEGRAM);
+      results.max = channels.includes(NotificationChannel.MAX);
+      this.pushOutbox(event, channels, results, deliveryMode);
+      return results;
+    }
 
     // Send via Telegram (global Repeto bot)
     if (channels.includes(NotificationChannel.TELEGRAM)) {
@@ -86,7 +158,48 @@ export class MessengerDeliveryService {
       }
     }
 
+    this.pushOutbox(event, channels, results, deliveryMode);
+
     return results;
+  }
+
+  getTestingMode() {
+    return this.resolveDeliveryMode();
+  }
+
+  getOutboxForTutor(tutorId: string, studentId?: string) {
+    if (!this.isTestingEnvironment()) {
+      throw new ForbiddenException('Messenger outbox is disabled in production');
+    }
+
+    const records = this.outbox.filter((row) => {
+      if (row.tutorId !== tutorId) return false;
+      if (studentId && row.studentId !== studentId) return false;
+      return true;
+    });
+
+    return {
+      mode: this.resolveDeliveryMode(),
+      count: records.length,
+      records,
+    };
+  }
+
+  clearOutboxForTutor(tutorId: string) {
+    if (!this.isTestingEnvironment()) {
+      throw new ForbiddenException('Messenger outbox is disabled in production');
+    }
+
+    const before = this.outbox.length;
+    const filtered = this.outbox.filter((row) => row.tutorId !== tutorId);
+    this.outbox.length = 0;
+    this.outbox.push(...filtered);
+
+    return {
+      mode: this.resolveDeliveryMode(),
+      cleared: before - this.outbox.length,
+      remaining: this.outbox.length,
+    };
   }
 
   async sendToTutor(

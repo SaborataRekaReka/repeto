@@ -1,10 +1,12 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Get,
   HttpCode,
   HttpStatus,
   Post,
+  Query,
   Req,
   Res,
   UseGuards,
@@ -29,6 +31,33 @@ export class StudentAuthController {
   @HttpCode(HttpStatus.OK)
   requestOtp(@Body() dto: RequestStudentOtpDto) {
     return this.service.issueOtp(dto.email, 'LOGIN');
+  }
+
+  @Public()
+  @Post('testing/issue-and-read-otp')
+  @HttpCode(HttpStatus.OK)
+  issueAndReadOtpForTesting(
+    @Req() req: Request,
+    @Body()
+    body: {
+      email: string;
+      purpose?: 'LOGIN' | 'BOOKING';
+      code?: string;
+    },
+  ) {
+    this.assertTestingAccess(req);
+    return this.service.issueOtpForTesting(body.email, body.purpose || 'LOGIN', body.code);
+  }
+
+  @Public()
+  @Get('testing/latest-otp')
+  latestOtpForTesting(
+    @Req() req: Request,
+    @Query('email') email: string,
+    @Query('purpose') purpose?: 'LOGIN' | 'BOOKING',
+  ) {
+    this.assertTestingAccess(req);
+    return this.service.getLatestOtpForTesting(email, purpose || 'LOGIN');
   }
 
   @Public()
@@ -89,5 +118,21 @@ export class StudentAuthController {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       path: '/',
     });
+  }
+
+  private assertTestingAccess(req: Request) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new ForbiddenException('Testing endpoint is disabled in production');
+    }
+
+    const expectedKey = String(process.env.E2E_TEST_HARNESS_KEY || '').trim();
+    if (!expectedKey) {
+      return;
+    }
+
+    const provided = String(req.headers['x-test-harness-key'] || '').trim();
+    if (provided !== expectedKey) {
+      throw new ForbiddenException('Invalid test harness key');
+    }
   }
 }

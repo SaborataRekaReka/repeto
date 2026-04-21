@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   Logger,
   ServiceUnavailableException,
@@ -21,9 +22,23 @@ const STUDENT_ACCOUNT_NOT_FOUND_MESSAGE =
 
 type OtpPurpose = 'LOGIN' | 'BOOKING';
 
+type OtpIssueOptions = {
+  force?: boolean;
+  explicitCode?: string;
+};
+
+type OtpTestingRecord = {
+  email: string;
+  purpose: OtpPurpose;
+  code: string;
+  expiresAt: Date;
+  issuedAt: Date;
+};
+
 @Injectable()
 export class StudentAuthService {
   private readonly logger = new Logger(StudentAuthService.name);
+  private readonly latestOtpByKey = new Map<string, OtpTestingRecord>();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -42,6 +57,38 @@ export class StudentAuthService {
     return code;
   }
 
+  private normalizeExplicitCode(value?: string) {
+    const code = String(value || '').trim();
+    return /^\d{6}$/.test(code) ? code : null;
+  }
+
+  private otpTestingKey(email: string, purpose: OtpPurpose) {
+    return `${purpose}:${email}`;
+  }
+
+  private isTestingHarnessEnabled() {
+    return process.env.NODE_ENV !== 'production';
+  }
+
+  private rememberOtpForTesting(
+    email: string,
+    purpose: OtpPurpose,
+    code: string,
+    expiresAt: Date,
+  ) {
+    if (!this.isTestingHarnessEnabled()) {
+      return;
+    }
+
+    this.latestOtpByKey.set(this.otpTestingKey(email, purpose), {
+      email,
+      purpose,
+      code,
+      expiresAt,
+      issuedAt: new Date(),
+    });
+  }
+
   private hashCode(code: string) {
     const secret =
       process.env.STUDENT_OTP_SECRET ||
@@ -54,7 +101,11 @@ export class StudentAuthService {
    * Create (or rotate) an OTP for a given email & purpose, and email it.
    * Returns the code in dev if email delivery fails (logged).
    */
-  async issueOtp(email: string, purpose: OtpPurpose = 'LOGIN') {
+  async issueOtp(
+    email: string,
+    purpose: OtpPurpose = 'LOGIN',
+    options: OtpIssueOptions = {},
+  ) {
     const normalizedEmail = this.normalizeEmail(email);
     if (!normalizedEmail || !normalizedEmail.includes('@')) {
       throw new BadRequestException('Некорректный email');
@@ -79,22 +130,24 @@ export class StudentAuthService {
       }
     }
 
-    // Cooldown: prevent spam — if last OTP for this (email, purpose) was issued <45s ago, reuse it silently.
-    const recent = await this.prisma.studentOtp.findFirst({
-      where: {
-        email: normalizedEmail,
-        purpose,
-        createdAt: { gt: new Date(Date.now() - OTP_SEND_COOLDOWN_SECONDS * 1000) },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    if (!options.force) {
+      // Cooldown: prevent spam — if last OTP for this (email, purpose) was issued <45s ago, reuse it silently.
+      const recent = await this.prisma.studentOtp.findFirst({
+        where: {
+          email: normalizedEmail,
+          purpose,
+          createdAt: { gt: new Date(Date.now() - OTP_SEND_COOLDOWN_SECONDS * 1000) },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
 
-    if (recent) {
-      return {
-        email: normalizedEmail,
-        expiresInMinutes: OTP_TTL_MINUTES,
-        cooldown: true,
-      };
+      if (recent) {
+        return {
+          email: normalizedEmail,
+          expiresInMinutes: OTP_TTL_MINUTES,
+          cooldown: true,
+        };
+      }
     }
 
     // Clean up expired OTPs for hygiene
@@ -102,7 +155,7 @@ export class StudentAuthService {
       where: { OR: [{ expiresAt: { lt: new Date() } }, { email: normalizedEmail, purpose }] },
     });
 
-    const code = this.generateCode();
+    const code = this.normalizeExplicitCode(options.explicitCode) || this.generateCode();
     const codeHash = this.hashCode(code);
     const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000);
 
@@ -114,6 +167,8 @@ export class StudentAuthService {
         expiresAt,
       },
     });
+
+    this.rememberOtpForTesting(normalizedEmail, purpose, code, expiresAt);
 
     try {
       await this.sendOtpEmail(normalizedEmail, code, purpose);
@@ -143,6 +198,49 @@ export class StudentAuthService {
       email: normalizedEmail,
       expiresInMinutes: OTP_TTL_MINUTES,
       cooldown: false,
+    };
+  }
+
+  async issueOtpForTesting(email: string, purpose: OtpPurpose = 'LOGIN', explicitCode?: string) {
+    if (!this.isTestingHarnessEnabled()) {
+      throw new ForbiddenException('OTP testing endpoints are disabled in production');
+    }
+
+    await this.issueOtp(email, purpose, {
+      force: true,
+      explicitCode,
+    });
+
+    const latest = this.getLatestOtpForTesting(email, purpose);
+    if (!latest) {
+      throw new ServiceUnavailableException('Не удалось получить OTP для тестового сценария');
+    }
+
+    return latest;
+  }
+
+  getLatestOtpForTesting(email: string, purpose: OtpPurpose = 'LOGIN') {
+    if (!this.isTestingHarnessEnabled()) {
+      throw new ForbiddenException('OTP testing endpoints are disabled in production');
+    }
+
+    const normalizedEmail = this.normalizeEmail(email);
+    const record = this.latestOtpByKey.get(this.otpTestingKey(normalizedEmail, purpose));
+    if (!record) {
+      return null;
+    }
+
+    if (record.expiresAt.getTime() <= Date.now()) {
+      this.latestOtpByKey.delete(this.otpTestingKey(normalizedEmail, purpose));
+      return null;
+    }
+
+    return {
+      email: record.email,
+      purpose: record.purpose,
+      code: record.code,
+      expiresAt: record.expiresAt.toISOString(),
+      issuedAt: record.issuedAt.toISOString(),
     };
   }
 

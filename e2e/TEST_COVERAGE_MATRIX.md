@@ -8,7 +8,12 @@
 ## Coverage Rules
 - `SMK-*`: Fast critical path checks. Must pass on every PR.
 - `JRN-*`: User journeys and interaction mechanics. Run on PR and nightly.
-- `EXT-*`: Deep scenarios for full 100% target (edge cases, negative paths, integrations, policy behavior, portals).
+- `EXT-*`: Deep scenarios for edge cases, negative paths, integrations, policy behavior, and portal guardrails.
+- `CTRL-*`: Per-control contract checks: every visible button/checkbox must produce observable UI effect.
+- `SYNC-*`: Cross-account tutor<->student state propagation checks.
+- `PERS-*`: Save/reload/new-session persistence checks.
+- `VIS-*`: Visual regression checks against approved baseline.
+- `RWC-*`: Real-world full lifecycle chains across tutor/public/student accounts.
 
 ## Scope Inventory
 - Authentication and access control
@@ -25,6 +30,8 @@
 - Public tutor page and booking
 - Student portal
 - Landing and auth entry points
+
+See also: `e2e/REAL_WORLD_SCENARIOS_100.md` for full user-lifecycle chain coverage status.
 
 ## Smoke Scenarios (`e2e/smoke.spec.ts`)
 - `SMK-AUTH-001`: Unauthorized tutor route redirects to auth entry.
@@ -56,29 +63,90 @@
 - `JRN-SUP-001`: Support search to results and article navigation works.
 - `JRN-PUBLIC-001`: Public tutor to booking transition works.
 
-## Extended Scenarios For 100% Target (Backlog)
-- `EXT-AUTH-*`: Signup code verification, reset password, invalid credentials, expired token, payment return flow.
-- `EXT-STUD-*`: Full create/edit/archive/unarchive, portal invite, unlink, notes CRUD, homework CRUD, lesson CRUD, debt filters.
-- `EXT-SCHED-*`: Recurrence creation, cancel/no-show/reschedule transitions, calendar export (Google/Yandex), availability editor edge cases.
-- `EXT-PAY-*`: Manual and linked payment creation, deletion permissions, method/status matrix, notifications side-effects.
-- `EXT-PKG-*`: Public vs private packages full CRUD, discount rules, validity expiration behavior.
-- `EXT-FILE-*`: Cloud sync, share modal, access revocation, provider switch, broken links.
-- `EXT-NOTIF-*`: Booking/reschedule approve/reject actions and resulting state transitions.
-- `EXT-SET-*`: Slug uniqueness, publish guards, public packages toggle persistence, integrations connect/disconnect.
-- `EXT-PUBLIC-*`: Public page sections rendering by profile completeness, reviews modal, policy modal, certificate preview.
-- `EXT-BOOK-*`: Full booking wizard: slot select, reminder channels, OTP verify, student portal login handoff.
-- `EXT-PORTAL-*`: Student portal settings save, avatar upload, tab mechanics, tutor switching.
-- `EXT-RESP-*`: Mobile navigation/fab/overlay behavior across core modules.
-- `EXT-A11Y-*`: Keyboard navigation, focus traps, aria labels for dialogs and critical controls.
+## Extended Scenarios (`e2e/ext.spec.ts`)
+- `EXT-AUTH-001`: Auth negative/recovery paths, student OTP negative, invalid platform-payment completion.
+- `EXT-STUD-001`: Students lifecycle, account link/unlink, notes CRUD, homework CRUD.
+- `EXT-SCHED-001`: Recurrence creation and lesson status transition matrix.
+- `EXT-SCHED-002`: Availability weekly slots and date overrides edge cases.
+- `EXT-PAY-001`: Linked/manual payments, method matrix, invalid link guards.
+- `EXT-PKG-001`: Private/public package flow and validity behavior on public profile.
+- `EXT-FILE-001`: Sync branches and share/revoke checks.
+- `EXT-NOTIF-001`: Booking confirm/reject and invalid reschedule action guards.
+- `EXT-SET-001`: Slug/publish guards and settings persistence checks.
+- `EXT-PUBLIC-001`: Public profile sections and dialogs.
+- `EXT-BOOK-001`: Booking wizard until OTP step.
+- `EXT-PORTAL-001`: Student portal OTP/auth guard paths.
+- `EXT-RESP-001`: Mobile nav/FAB mechanics.
+- `EXT-A11Y-001`: Keyboard and dialog semantics.
+
+## Controls Contract Scenarios (`e2e/controls-contract.spec.ts`)
+- `CTRL-DASH-001`: `/dashboard` every visible control has UI effect.
+- `CTRL-STUD-001`: `/students` every visible control has UI effect.
+- `CTRL-SCHED-001`: `/schedule` every visible control has UI effect.
+- `CTRL-FIN-001`: `/finance` every visible control has UI effect.
+- `CTRL-PAY-001`: `/payments` every visible control has UI effect.
+- `CTRL-PKG-001`: `/packages` every visible control has UI effect.
+- `CTRL-FILES-001`: `/files` every visible control has UI effect.
+- `CTRL-NOTIF-001`: `/notifications` every visible control has UI effect.
+- `CTRL-SET-001`: `/settings` every visible control has UI effect.
+- `CTRL-SUP-001`: `/support` every visible control has UI effect.
+- `CTRL-PUBLIC-001`: `/t/:slug` every visible control has UI effect.
+- `CTRL-BOOK-001`: `/t/:slug/book` every visible control has UI effect.
+- `CTRL-AUTH-001`: `/auth?view=signin` every visible control has UI effect.
+- `CTRL-AUTH-002`: `/auth?view=student` every visible control has UI effect.
+- `CTRL-CHECKBOX-001`: Every visible checkbox on `/settings` toggles state.
+
+## Strict 100% Mandatory Layers
+
+### Cross-Account Sync Scenarios (`e2e/cross-account-sync.spec.ts`)
+- `SYNC-INVITE-001`: Tutor account invite/activate flow is reflected in student auth entry.
+- `SYNC-BOOK-001`: Public booking appears in tutor notifications and transitions confirm/reject states.
+- `SYNC-PORTAL-001`: Booking wizard handoff reaches OTP step and event is visible in tutor notifications.
+- `SYNC-LINK-001`: Link/unlink account transitions are consistent on both account types.
+
+### Persistence Scenarios (`e2e/persistence-contract.spec.ts`)
+- `PERS-CHECKBOX-001`: Every settings checkbox persists after save + reload.
+- `PERS-CHECKBOX-002`: Checkbox states persist after new browser context/session.
+- `PERS-TOGGLE-001`: Critical account toggle `showPublicPackages` persists across API/UI reload and fresh session.
+
+### Visual Consistency Scenarios (`e2e/visual-consistency.spec.ts`)
+- `VIS-DESKTOP-001`: Critical desktop routes match baseline snapshots.
+- `VIS-MOBILE-001`: Critical mobile routes match baseline snapshots.
+- `VIS-COMPONENT-001`: Core controls (checkboxes, buttons, tab groups, dialogs) match baseline styling/states.
+
+### Real-World Chains (`e2e/real-world-chains.spec.ts`)
+- `RWC-BOOK-001`: Booking -> tutor confirms -> student sees lesson in portal -> student reschedules -> tutor receives reschedule request.
+- `RWC-BOOK-004`: Student late-cancels lesson -> lateCancelCharge is recorded -> tutor gets cancellation notification.
+- `RWC-HW-001/002`: Tutor creates lesson+homework(+materials if available) -> student sees homework -> marks done and uploads file -> tutor gets HOMEWORK_SUBMITTED.
+- `RWC-MULTI-001`: One student account linked to two tutors and tutor switching list is visible in portal (requires second tutor credentials).
+
+## Readiness Snapshot (Without Running)
+- Implemented executable layers: `SMK`, `JRN`, `EXT`, `CTRL`, `SYNC`, `PERS`, `VIS`.
+- Implemented executable real-world layer: `RWC`.
+- Visual snapshot note: `VIS-*` assertions require initialized baseline snapshots on first run.
+- This snapshot tracks implementation state, not green execution state.
 
 ## Data & Environment Requirements
 - Running frontend on `http://localhost:3300`.
 - Running backend API behind `/api` proxy (default dev setup).
 - Existing demo tutor account for automation login.
 - At least one tutor slug available for public page checks.
+- For deterministic messenger checks: `MESSENGER_TEST_MODE=record`.
+- For OTP harness access: `E2E_TEST_HARNESS_KEY` (+ `x-test-harness-key` header in tests).
+- For `RWC-MULTI-001`: `E2E_SECOND_TUTOR_EMAIL` and `E2E_SECOND_TUTOR_PASSWORD`.
 
 ## Execution Commands
 - Smoke: `npm run test:e2e:smoke`
 - Journeys: `npm run test:e2e:journeys`
+- Extended: `npm run test:e2e:ext`
+- Controls contract: `npm run test:e2e:controls`
+- Cross-account sync: `npm run test:e2e:sync`
+- Persistence: `npm run test:e2e:persistence`
+- Visual consistency: `npm run test:e2e:visual`
+- Visual baseline init: `npm run test:e2e:visual:update`
+- Real-world chains: `npm run test:e2e:realworld`
+- 100% core gate: `npm run test:e2e:100:core`
+- 100% gate: `npm run test:e2e:100`
+- 100% full gate (with real-world): `npm run test:e2e:100:full`
 - Full current suite: `npm run test:e2e`
 
