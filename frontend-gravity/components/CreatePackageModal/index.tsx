@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+﻿import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Alert, TextInput, Select, Button, Text, TextArea, Icon, Checkbox } from "@gravity-ui/uikit";
+import { Alert, TextInput, Select, Button, Text, TextArea, Icon, Switch } from "@gravity-ui/uikit";
 import { TrashBin, ArrowLeft } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import { useStudents } from "@/hooks/useStudents";
@@ -13,6 +13,7 @@ import StyledDateInput from "@/components/StyledDateInput";
 import { Lp2Field, Lp2Row } from "@/components/Lp2Field";
 import type { LessonPackage } from "@/types/package";
 import StudentNameWithBadge from "@/components/StudentNameWithBadge";
+import StudentAvatar from "@/components/StudentAvatar";
 
 function toPositiveNumber(value: string): number {
     const normalized = String(value || "").replace(",", ".").trim();
@@ -33,16 +34,6 @@ type CreatePackageModalProps = {
     packageData?: LessonPackage | null;
     defaultPublic?: boolean;
 };
-
-const STUDENT_BADGE_COLORS = ["#7a98ff", "#9f7aea", "#e29a6a", "#6fb38b", "#5ca8a8"];
-
-function getStudentBadgeColor(name: string) {
-    let hash = 0;
-    for (let i = 0; i < name.length; i += 1) {
-        hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
-    }
-    return STUDENT_BADGE_COLORS[hash % STUDENT_BADGE_COLORS.length];
-}
 
 const PANEL_Z = 950;
 
@@ -94,7 +85,6 @@ const CreatePackageModal = ({
         content: s.name,
         data: {
             ...s,
-            color: getStudentBadgeColor(s.name),
             accountId: s.accountId ?? null,
         },
     }));
@@ -110,7 +100,6 @@ const CreatePackageModal = ({
     const [isPublicPackage, setIsPublicPackage] = useState(false);
     const [manualTotal, setManualTotal] = useState(false);
     const [submitting, setSubmitting] = useState(false);
-    const [confirmDelete, setConfirmDelete] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [touched, setTouched] = useState({
         studentId: false,
@@ -174,7 +163,6 @@ const CreatePackageModal = ({
         if (!visible) return;
         setError(null);
         setSubmitting(false);
-        setConfirmDelete(false);
         setTouched({
             studentId: false,
             subject: false,
@@ -285,12 +273,6 @@ const CreatePackageModal = ({
         }
     };
 
-    const requestDelete = () => {
-        if (!packageData || submitting) return;
-        setError(null);
-        setConfirmDelete(true);
-    };
-
     const studentError = !isPublicPackage && touched.studentId && !studentId.length;
     const subjectError = touched.subject && !subject.trim();
     const lessonsCountError =
@@ -316,30 +298,19 @@ const CreatePackageModal = ({
                 : "Ученик";
 
         return (
-            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "4px 0" }}>
-                <div
-                    style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: "50%",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "#fff",
-                        fontWeight: 600,
-                        fontSize: 13,
-                        flexShrink: 0,
-                        background: option?.data?.color || getStudentBadgeColor(optionLabel),
-                    }}
-                >
-                    {optionLabel.charAt(0).toUpperCase()}
+            <div className="app-select-option-entity">
+                <StudentAvatar
+                    student={{ name: optionLabel, avatarUrl: option?.data?.avatarUrl }}
+                    size="s"
+                />
+                <div className="app-select-option-entity__meta">
+                    <span className="app-select-option-entity__title">
+                        <StudentNameWithBadge
+                            name={optionLabel}
+                            hasRepetoAccount={Boolean(option?.data?.accountId)}
+                        />
+                    </span>
                 </div>
-                <Text variant="body-1">
-                    <StudentNameWithBadge
-                        name={optionLabel}
-                        hasRepetoAccount={Boolean(option?.data?.accountId)}
-                    />
-                </Text>
             </div>
         );
     };
@@ -368,7 +339,7 @@ const CreatePackageModal = ({
                 </button>
                 <div className="lp2__topbar-actions">
                     {isEditing && (
-                        <Button view="flat" size="s" onClick={requestDelete} disabled={submitting} title="Удалить пакет">
+                        <Button view="flat" size="s" onClick={handleDelete} disabled={submitting} title="Удалить пакет">
                             <Icon data={TrashBin as IconData} size={16} />
                         </Button>
                     )}
@@ -384,6 +355,20 @@ const CreatePackageModal = ({
                             ? "Новый публичный пакет"
                             : "Новый пакет"}
                     </h1>
+
+                    <Lp2Field label="Публичный пакет">
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                            <Text as="div" variant="body-2" color="secondary">
+                                Показывать пакет на публичной странице преподавателя
+                            </Text>
+                            <Switch
+                                checked={isPublicPackage}
+                                onUpdate={setIsPublicPackage}
+                                size="l"
+                                disabled={submitting}
+                            />
+                        </div>
+                    </Lp2Field>
 
                     {!isPublicPackage ? (
                         <Lp2Field label="Ученик *" error={studentError} errorText="Обязательное поле">
@@ -401,17 +386,31 @@ const CreatePackageModal = ({
                                 filterable
                                 popupWidth="fit"
                                 popupPlacement={["bottom-start", "top-start"]}
-                                popupClassName="lp2-popup"
-                                renderSelectedOption={(option: any) => (
-                                    <StudentNameWithBadge
-                                        name={
-                                            typeof option?.content === "string" && option.content.trim().length
-                                                ? option.content
-                                                : "Ученик"
-                                        }
-                                        hasRepetoAccount={Boolean(option?.data?.accountId)}
-                                    />
-                                )}
+                                popupClassName="app-select-popup"
+                                renderSelectedOption={(option: any) => {
+                                    const optionLabel =
+                                        typeof option?.content === "string" && option.content.trim().length
+                                            ? option.content
+                                            : "Ученик";
+
+                                    return (
+                                        <span className="app-select-selected-entity">
+                                            <StudentAvatar
+                                                student={{
+                                                    name: optionLabel,
+                                                    avatarUrl: option?.data?.avatarUrl,
+                                                }}
+                                                size="xs"
+                                            />
+                                            <span className="app-select-selected-entity__text">
+                                                <StudentNameWithBadge
+                                                    name={optionLabel}
+                                                    hasRepetoAccount={Boolean(option?.data?.accountId)}
+                                                />
+                                            </span>
+                                        </span>
+                                    );
+                                }}
                             />
                         </Lp2Field>
                     ) : (
@@ -467,7 +466,7 @@ const CreatePackageModal = ({
                                 onUpdate={setDiscount}
                             />
                         </Lp2Field>
-                        <Lp2Field label="Сумма пакета (₽) *" half error={totalAmountError} errorText="Введите число больше 0">
+                        <Lp2Field label="Сђмма пакета (₽) *" half error={totalAmountError} errorText="Введите число больше 0">
                             <TextInput
                                 size="l"
                                 type="number"
@@ -504,6 +503,8 @@ const CreatePackageModal = ({
                         <StyledDateInput
                             value={validUntil}
                             onUpdate={setValidUntil}
+                            popupClassName="lp2-popup"
+                            popupZIndex={1300}
                             style={{ height: 36, padding: 0 }}
                         />
                     </Lp2Field>
@@ -517,55 +518,12 @@ const CreatePackageModal = ({
                             rows={2}
                         />
                     </Lp2Field>
-
-                    <Lp2Field label="Видимость">
-                        <Checkbox
-                            checked={isPublicPackage}
-                            onUpdate={setIsPublicPackage}
-                            disabled={submitting}
-                        >
-                            Показывать пакет на публичной странице преподавателя
-                        </Checkbox>
-                    </Lp2Field>
-
-                    {isEditing && confirmDelete && (
-                        <Alert
-                            theme="danger"
-                            view="filled"
-                            corners="rounded"
-                            title="Подтвердите удаление пакета"
-                            message={
-                                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                                    <div>Пакет будет удален без возможности восстановления.</div>
-                                    <div style={{ display: "flex", gap: 8 }}>
-                                        <Button
-                                            view="outlined-danger"
-                                            size="m"
-                                            onClick={handleDelete}
-                                            disabled={submitting}
-                                            loading={submitting}
-                                        >
-                                            Да, удалить
-                                        </Button>
-                                        <Button
-                                            view="outlined"
-                                            size="m"
-                                            onClick={() => setConfirmDelete(false)}
-                                            disabled={submitting}
-                                        >
-                                            Отмена
-                                        </Button>
-                                    </div>
-                                </div>
-                            }
-                        />
-                    )}
                     {error && (
                         <Alert
                             theme="danger"
                             view="filled"
                             corners="rounded"
-                            title="Ошибка при сохранении пакета"
+                            title="Ошибка пѬи сохранении пакета"
                             message={error}
                         />
                     )}
@@ -573,16 +531,44 @@ const CreatePackageModal = ({
             </div>
 
             <div className="lp2__bottombar">
-                <Button
-                    className="lp2__submit"
-                    view="action"
-                    size="xl"
-                    width="max"
-                    onClick={handleSubmit}
-                    loading={submitting}
-                >
-                    {isEditing ? "Сохранить изменения" : "Сохранить"}
-                </Button>
+                {isEditing ? (
+                    <div className="lp2__actions lp2__actions--split">
+                        <Button
+                            className="lp2__action lp2__action--secondary"
+                            view="outlined"
+                            size="xl"
+                            width="max"
+                            onClick={handleDelete}
+                            loading={submitting}
+                            disabled={submitting}
+                        >
+                            Удалить пакет
+                        </Button>
+                        <Button
+                            className="lp2__submit lp2__action"
+                            view="action"
+                            size="xl"
+                            width="max"
+                            onClick={handleSubmit}
+                            loading={submitting}
+                        >
+                            Сохранить изменения
+                        </Button>
+                    </div>
+                ) : (
+                    <div className="lp2__actions">
+                        <Button
+                            className="lp2__submit lp2__action"
+                            view="action"
+                            size="xl"
+                            width="max"
+                            onClick={handleSubmit}
+                            loading={submitting}
+                        >
+                            Сохранить
+                        </Button>
+                    </div>
+                )}
             </div>
         </div>
     );

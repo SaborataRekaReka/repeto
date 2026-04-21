@@ -13,6 +13,7 @@ import {
 } from "@/lib/studentAuth";
 import { codedErrorMessage } from "@/lib/errorCodes";
 import { Lp2Field, Lp2Row } from "@/components/Lp2Field";
+import PhoneInput from "@/components/PhoneInput";
 
 type SetupData = {
     name: string;
@@ -230,11 +231,9 @@ const StudentSetupPage = () => {
                         </Lp2Field>
 
                         <Lp2Field label="Телефон">
-                            <TextInput
+                            <PhoneInput
                                 value={phone}
                                 onUpdate={setPhone}
-                                placeholder="+7 900 123-45-67"
-                                size="l"
                             />
                         </Lp2Field>
 
@@ -278,11 +277,9 @@ const StudentSetupPage = () => {
 
                         <Lp2Row>
                             <Lp2Field label="Телефон родителя" half>
-                                <TextInput
+                                <PhoneInput
                                     value={parentPhone}
                                     onUpdate={setParentPhone}
-                                    placeholder="+7 900 765-43-21"
-                                    size="l"
                                 />
                             </Lp2Field>
                             <Lp2Field label="Email родителя" half>

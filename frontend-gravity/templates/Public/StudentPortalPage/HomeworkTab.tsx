@@ -1,18 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Card, Text, Button, Icon } from "@gravity-ui/uikit";
 import {
+    ArrowLeft,
     File as FileIcon,
     ArrowUpRightFromSquare,
     TrashBin,
-    ArrowUpFromLine,
+    Plus,
     Calendar,
     CircleCheck,
     Link as LinkIcon,
 } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
-import AppDialog from "@/components/AppDialog";
 import { studentApi } from "@/lib/studentAuth";
 import type { PortalHomework, StudentUpload } from "@/types/student-portal";
+import PortalModal from "./PortalModal";
 
 type HomeworkTabProps = {
     homework: PortalHomework[];
@@ -48,6 +49,7 @@ const HomeworkTab = ({ homework: initial, studentId }: HomeworkTabProps) => {
     const [uploadingId, setUploadingId] = useState<string | null>(null);
     const [actionError, setActionError] = useState<string | null>(null);
     const [openedHomeworkId, setOpenedHomeworkId] = useState<string | null>(null);
+    const [isHomeworkModalOpen, setIsHomeworkModalOpen] = useState(false);
     const encodedStudentId = encodeURIComponent(studentId);
     const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
     const loadMoreRef = useRef<HTMLDivElement | null>(null);
@@ -67,22 +69,31 @@ const HomeworkTab = ({ homework: initial, studentId }: HomeworkTabProps) => {
         }
         const exists = homework.some((item) => item.id === openedHomeworkId);
         if (!exists) {
+            setIsHomeworkModalOpen(false);
             setOpenedHomeworkId(null);
         }
     }, [homework, openedHomeworkId]);
 
-    const toggleHomework = async (id: string) => {
+    const closeHomeworkModal = useCallback(() => {
+        setIsHomeworkModalOpen(false);
+    }, []);
+
+    const openHomeworkModal = useCallback((id: string) => {
+        setOpenedHomeworkId(id);
+        setIsHomeworkModalOpen(true);
+    }, []);
+
+    const setHomeworkDone = async (id: string, nextDone: boolean) => {
         const current = homework.find((h) => h.id === id);
         if (!current) return;
 
-        if (current.done) {
+        if (current.done === nextDone) {
             return;
         }
 
         setActionError(null);
         setUpdatingId(id);
         try {
-            const nextDone = true;
             await studentApi(`/student-portal/students/${encodedStudentId}/homework/${id}`, {
                 method: "PATCH",
                 body: JSON.stringify({ done: nextDone }),
@@ -291,11 +302,11 @@ const HomeworkTab = ({ homework: initial, studentId }: HomeworkTabProps) => {
                                     className="repeto-portal-homework-open-surface"
                                     role="button"
                                     tabIndex={0}
-                                    onClick={() => setOpenedHomeworkId(h.id)}
+                                    onClick={() => openHomeworkModal(h.id)}
                                     onKeyDown={(event) => {
                                         if (event.key === "Enter" || event.key === " ") {
                                             event.preventDefault();
-                                            setOpenedHomeworkId(h.id);
+                                            openHomeworkModal(h.id);
                                         }
                                     }}
                                 >
@@ -362,7 +373,7 @@ const HomeworkTab = ({ homework: initial, studentId }: HomeworkTabProps) => {
                                                     onClick={(event) => {
                                                         event.stopPropagation();
                                                         if (!h.done) {
-                                                            void toggleHomework(h.id);
+                                                            void setHomeworkDone(h.id, true);
                                                         }
                                                     }}
                                                     onKeyDown={(event) => {
@@ -398,165 +409,245 @@ const HomeworkTab = ({ homework: initial, studentId }: HomeworkTabProps) => {
                 </div>
             )}
 
-            <AppDialog
-                open={!!openedHomework}
-                onClose={() => setOpenedHomeworkId(null)}
-                size="m"
-                caption="Домашнее задание"
-                footer={{
-                    textButtonCancel: "Закрыть",
-                    onClickButtonCancel: () => setOpenedHomeworkId(null),
-                }}
-            >
-                {openedHomework && (
-                        <div className="repeto-portal-stack">
-                            <div className="repeto-portal-item-mainline">
-                                <Icon data={Calendar as IconData} size={16} />
-                                <Text variant="body-2" style={{ fontWeight: 600 }}>
-                                    {openedHomework.due && openedHomework.due.trim()
-                                        ? openedHomework.due
-                                        : "Без срока"}
-                                </Text>
-                            </div>
+            {openedHomework && (
+                <PortalModal
+                    open={isHomeworkModalOpen}
+                    onClose={closeHomeworkModal}
+                    onClosed={() => setOpenedHomeworkId(null)}
+                    ariaLabel="Домашнее задание"
+                    overlayClassName="lp2-overlay"
+                    overlayOpenClassName="lp2-overlay--open"
+                    panelClassName="lp2 lp2--homework lp2--portal-homework"
+                    panelOpenClassName="lp2--open"
+                >
+                    <div className="lp2__topbar">
+                        <button
+                            type="button"
+                            className="lp2__back"
+                            onClick={closeHomeworkModal}
+                            aria-label="Закрыть"
+                        >
+                            <Icon data={ArrowLeft as IconData} size={18} />
+                        </button>
+                        <Text variant="subheader-2">Домашнее задание</Text>
+                        <div className="lp2__topbar-actions" />
+                    </div>
 
-                            <Text
-                                variant="body-1"
-                                style={
-                                    openedHomework.done
-                                        ? {
-                                              textDecoration: "line-through",
-                                              color: "var(--g-color-text-secondary)",
-                                          }
-                                        : undefined
-                                }
-                            >
-                                {openedHomework.task}
-                            </Text>
-
-                            {openedHomework.linkedFiles && openedHomework.linkedFiles.length > 0 && (
-                                <div className="repeto-portal-stack">
-                                    <Text variant="caption-1" color="secondary" style={{ fontWeight: 600 }}>
-                                        Материалы от репетитора
+                    <div className="lp2__scroll">
+                        <div className="lp2__center lp2__center--homework lp2__center--portal-homework">
+                            <div className="repeto-portal-stack repeto-portal-homework-modal">
+                                <div className="repeto-portal-item-mainline repeto-portal-homework-modal__due">
+                                    <Icon data={Calendar as IconData} size={16} />
+                                    <Text variant="body-2" style={{ fontWeight: 600 }}>
+                                        {openedHomework.due && openedHomework.due.trim()
+                                            ? openedHomework.due
+                                            : "Без срока"}
                                     </Text>
-                                    <div className="repeto-portal-stack">
-                                        {openedHomework.linkedFiles.map((file) => (
-                                            <a
-                                                key={file.id}
-                                                href={file.cloudUrl}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="repeto-portal-file-row"
+                                </div>
+
+                                <Text
+                                    variant="body-1"
+                                    className={`repeto-portal-homework-modal__task${
+                                        openedHomework.done
+                                            ? " repeto-portal-homework-modal__task--done"
+                                            : ""
+                                    }`}
+                                >
+                                    {openedHomework.task}
+                                </Text>
+
+                                {openedHomework.linkedFiles &&
+                                    openedHomework.linkedFiles.length > 0 && (
+                                        <div className="repeto-portal-stack repeto-portal-homework-modal__section">
+                                            <Text
+                                                variant="caption-1"
+                                                color="secondary"
+                                                className="repeto-portal-homework-modal__section-title"
                                             >
-                                                <div className="repeto-portal-file-row__left">
-                                                    <Icon data={FileIcon as IconData} size={20} />
-                                                    <div className="repeto-portal-file-row__meta">
-                                                        <Text
-                                                            variant="body-1"
-                                                            as="div"
-                                                            ellipsis
-                                                            className="repeto-portal-file-row__title"
-                                                            style={{ fontWeight: 600 }}
-                                                        >
-                                                            {file.name}
-                                                        </Text>
-                                                        {file.size && (
+                                                Материалы от репетитора
+                                            </Text>
+                                            <div className="repeto-portal-stack repeto-portal-homework-modal__uploads">
+                                                {openedHomework.linkedFiles.map((file) => (
+                                                    <a
+                                                        key={file.id}
+                                                        href={file.cloudUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="repeto-portal-file-row repeto-portal-file-pill"
+                                                    >
+                                                        <div className="repeto-portal-file-row__left">
+                                                            <Icon data={FileIcon as IconData} size={18} />
+                                                            <div className="repeto-portal-file-row__meta">
+                                                                <Text
+                                                                    variant="body-1"
+                                                                    as="div"
+                                                                    ellipsis
+                                                                    className="repeto-portal-file-row__title"
+                                                                    style={{ fontWeight: 600 }}
+                                                                >
+                                                                    {file.name}
+                                                                </Text>
+                                                                {file.size && (
+                                                                    <Text
+                                                                        variant="caption-1"
+                                                                        color="secondary"
+                                                                        as="div"
+                                                                        className="repeto-portal-file-row__subtitle"
+                                                                    >
+                                                                        {file.size}
+                                                                    </Text>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        <span className="repeto-portal-file-pill__open">
+                                                            <span>Открыть</span>
+                                                            <Icon
+                                                                data={ArrowUpRightFromSquare as IconData}
+                                                                size={14}
+                                                            />
+                                                        </span>
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                <div className="repeto-portal-stack repeto-portal-homework-modal__section">
+                                    <div
+                                        className="repeto-portal-item-mainline repeto-portal-homework-modal__section-head"
+                                    >
+                                        <Text
+                                            variant="caption-1"
+                                            color="secondary"
+                                            className="repeto-portal-homework-modal__section-title"
+                                        >
+                                            Мои файлы
+                                        </Text>
+                                        <Text
+                                            variant="caption-1"
+                                            color="secondary"
+                                            className="repeto-portal-homework-modal__section-hint"
+                                        >
+                                            до 5 МБ · хранятся 3 дня
+                                        </Text>
+                                    </div>
+
+                                    {openedHomework.studentUploads &&
+                                        openedHomework.studentUploads.length > 0 && (
+                                            <div className="repeto-portal-stack repeto-portal-homework-modal__uploads">
+                                                {openedHomework.studentUploads.map((upload) => (
+                                                    <Card
+                                                        key={upload.id}
+                                                        view="outlined"
+                                                        className="repeto-portal-upload-card"
+                                                    >
+                                                        <Icon data={FileIcon as IconData} size={16} />
+                                                        <div style={{ flex: 1, minWidth: 0 }}>
                                                             <Text
                                                                 variant="caption-1"
-                                                                color="secondary"
-                                                                as="div"
-                                                                className="repeto-portal-file-row__subtitle"
+                                                                ellipsis
+                                                                style={{
+                                                                    fontWeight: 600,
+                                                                    display: "block",
+                                                                }}
                                                             >
-                                                                {file.size}
+                                                                {upload.name}
                                                             </Text>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                                <Icon
-                                                    data={ArrowUpRightFromSquare as IconData}
-                                                    size={16}
-                                                    className="repeto-portal-file-row__tail"
-                                                />
-                                            </a>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
+                                                            <Text variant="caption-1" color="secondary">
+                                                                {upload.size}
+                                                                {upload.expiresAt
+                                                                    ? ` · до ${upload.expiresAt}`
+                                                                    : ""}
+                                                            </Text>
+                                                        </div>
+                                                        <Button
+                                                            view="flat-danger"
+                                                            size="xs"
+                                                            onClick={() =>
+                                                                handleRemoveUpload(
+                                                                    openedHomework.id,
+                                                                    upload.id
+                                                                )
+                                                            }
+                                                        >
+                                                            <Icon data={TrashBin as IconData} size={14} />
+                                                        </Button>
+                                                    </Card>
+                                                ))}
+                                            </div>
+                                        )}
 
-                            <div className="repeto-portal-stack">
-                                <div className="repeto-portal-item-mainline" style={{ justifyContent: "space-between" }}>
-                                    <Text variant="caption-1" color="secondary" style={{ fontWeight: 600 }}>
-                                        Мои файлы
-                                    </Text>
-                                    <Text variant="caption-1" color="secondary">
-                                        до 5 МБ · хранятся 3 дня
-                                    </Text>
-                                </div>
+                                    <input
+                                        ref={(el) => {
+                                            fileInputRefs.current[openedHomework.id] = el;
+                                        }}
+                                        type="file"
+                                        hidden
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) {
+                                                void handleFileUpload(openedHomework.id, file);
+                                            }
+                                            e.target.value = "";
+                                        }}
+                                    />
 
-                                {openedHomework.studentUploads && openedHomework.studentUploads.length > 0 && (
-                                    <div className="repeto-portal-stack">
-                                        {openedHomework.studentUploads.map((upload) => (
-                                            <Card
-                                                key={upload.id}
-                                                view="outlined"
-                                                className="repeto-portal-upload-card"
-                                            >
-                                                <Icon data={FileIcon as IconData} size={16} />
-                                                <div style={{ flex: 1, minWidth: 0 }}>
-                                                    <Text
-                                                        variant="caption-1"
-                                                        ellipsis
-                                                        style={{ fontWeight: 600, display: "block" }}
-                                                    >
-                                                        {upload.name}
-                                                    </Text>
-                                                    <Text variant="caption-1" color="secondary">
-                                                        {upload.size}
-                                                        {upload.expiresAt ? ` · до ${upload.expiresAt}` : ""}
-                                                    </Text>
-                                                </div>
-                                                <Button
-                                                    view="flat-danger"
-                                                    size="xs"
-                                                    onClick={() =>
-                                                        handleRemoveUpload(openedHomework.id, upload.id)
-                                                    }
-                                                >
-                                                    <Icon data={TrashBin as IconData} size={14} />
-                                                </Button>
-                                            </Card>
-                                        ))}
-                                    </div>
-                                )}
-
-                                <input
-                                    ref={(el) => {
-                                        fileInputRefs.current[openedHomework.id] = el;
-                                    }}
-                                    type="file"
-                                    hidden
-                                    onChange={(e) => {
-                                        const file = e.target.files?.[0];
-                                        if (file) {
-                                            void handleFileUpload(openedHomework.id, file);
+                                    <button
+                                        type="button"
+                                        className="hw-material-upload-btn repeto-portal-homework-modal__upload-trigger"
+                                        onClick={() =>
+                                            fileInputRefs.current[openedHomework.id]?.click()
                                         }
-                                        e.target.value = "";
-                                    }}
-                                />
-
-                                <Button
-                                    view="outlined"
-                                    size="m"
-                                    width="max"
-                                    loading={uploadingId === openedHomework.id}
-                                    onClick={() => fileInputRefs.current[openedHomework.id]?.click()}
-                                >
-                                    <Icon data={ArrowUpFromLine as IconData} size={14} />
-                                    Загрузить файл
-                                </Button>
+                                        disabled={uploadingId === openedHomework.id}
+                                    >
+                                        <span className="hw-material-upload-btn__icon">
+                                            <Icon data={Plus as IconData} size={20} />
+                                        </span>
+                                        <span className="hw-material-upload-btn__content">
+                                            <span className="hw-material-upload-btn__title">
+                                                {uploadingId === openedHomework.id
+                                                    ? "Загружаем файл..."
+                                                    : "Загрузить файл"}
+                                            </span>
+                                            <span className="hw-material-upload-btn__hint">
+                                                до 5 МБ · хранятся 3 дня
+                                            </span>
+                                        </span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                )}
-            </AppDialog>
+                    </div>
+
+                    <div className="lp2__bottombar">
+                        <div className="lp2__actions lp2__actions--split">
+                            <Button
+                                view="outlined"
+                                size="xl"
+                                className="lp2__action lp2__action--secondary"
+                                onClick={closeHomeworkModal}
+                            >
+                                Закрыть
+                            </Button>
+                            <Button
+                                view="action"
+                                size="xl"
+                                className="lp2__action"
+                                loading={updatingId === openedHomework.id}
+                                disabled={updatingId === openedHomework.id}
+                                onClick={() =>
+                                    void setHomeworkDone(
+                                        openedHomework.id,
+                                        !openedHomework.done
+                                    )
+                                }
+                            >
+                                {openedHomework.done ? "Вернуть в работу" : "Выполнено"}
+                            </Button>
+                        </div>
+                    </div>
+                </PortalModal>
+            )}
         </div>
     );
 };

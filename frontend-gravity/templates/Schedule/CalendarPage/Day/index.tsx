@@ -159,7 +159,7 @@ const Day = ({ currentDate, onLessonClick, onSlotClick, lessons = [] }: DayProps
                                 position: "relative",
                             }}
                         >
-                    {/* â”€â”€ Time labels â”€â”€ */}
+                    {/* ── Time labels ── */}
                     <div
                         style={{
                             width: TIME_COL,
@@ -192,7 +192,7 @@ const Day = ({ currentDate, onLessonClick, onSlotClick, lessons = [] }: DayProps
                         )}
                     </div>
 
-                    {/* â”€â”€ Day column â”€â”€ */}
+                    {/* ── Day column ── */}
                     <div
                         onClick={handleSlotClick}
                         style={{

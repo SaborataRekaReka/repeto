@@ -407,7 +407,6 @@ const renderStudentOption = (
         content?: string;
         data?: {
             avatarUrl?: string;
-            color?: string;
             accountId?: string | null;
         };
     },
@@ -427,12 +426,11 @@ const renderStudentOption = (
     }
     return (
         <div className="repeto-lp__student-option">
-            <div
-                className="repeto-lp__student-option-avatar"
-                style={{ background: option.data?.color || "var(--g-color-base-brand)" }}
-            >
-                {optionLabel.charAt(0).toUpperCase()}
-            </div>
+            <StudentAvatar
+                student={{ name: optionLabel, avatarUrl: option.data?.avatarUrl }}
+                size="s"
+                style={{ flexShrink: 0 }}
+            />
             <GText variant="body-1">
                 <StudentNameWithBadge
                     name={optionLabel}
@@ -577,7 +575,7 @@ const LessonPanel = ({
         user?.subjects,
     ]);
 
-    const { data: filesOverview } = useApi<FilesOverviewResponse>(
+    const { data: filesOverview, refetch: refetchFilesOverview } = useApi<FilesOverviewResponse>(
         open && (hwFormVisible || materialsPickerOpen) ? "/files" : null,
     );
 
@@ -1528,7 +1526,6 @@ const LessonPanel = ({
             content: s.name || "Ученик",
             data: {
                 avatarUrl: (s as any).avatarUrl,
-                color: (s as any).color,
                 accountId: s.accountId ?? null,
             },
         })),
@@ -1600,12 +1597,10 @@ const LessonPanel = ({
                                             {selectedStudent ? (
                                                 <StudentAvatar student={selectedStudent} size="xs" />
                                             ) : (
-                                                <div
-                                                    className="repeto-lp__student-option-avatar repeto-lp__student-option-avatar--xs"
-                                                    style={{ background: option.data?.color || "var(--g-color-base-brand)" }}
-                                                >
-                                                    {selectedLabel.charAt(0).toUpperCase()}
-                                                </div>
+                                                <StudentAvatar
+                                                    student={{ name: selectedLabel, avatarUrl: option?.data?.avatarUrl }}
+                                                    size="xs"
+                                                />
                                             )}
                                             <GText variant="subheader-2">
                                                 <StudentNameWithBadge
@@ -2208,6 +2203,7 @@ const LessonPanel = ({
                 availableFiles={availableHomeworkFiles}
                 connectedProviders={connectedProviders}
                 defaultProvider={defaultMaterialsProvider}
+                onRefreshAvailableFiles={refetchFilesOverview}
                 onApply={setHwLinkedFiles}
             />
 

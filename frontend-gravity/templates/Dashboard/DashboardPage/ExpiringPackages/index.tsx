@@ -1,24 +1,24 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowChevronLeft, ArrowChevronRight } from "@gravity-ui/icons";
-import { Button, Card, Icon, Text, Label, Loader } from "@gravity-ui/uikit";
+import { Button, Card, Icon, Text, Loader } from "@gravity-ui/uikit";
 import type { IconData } from "@gravity-ui/uikit";
 import { useExpiringPackages } from "@/hooks/useDashboard";
 import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 
-const formatLessonsLeft = (count: number) => {
+const getLessonsLeftLabel = (count: number) => {
     const mod10 = count % 10;
     const mod100 = count % 100;
 
     if (mod10 === 1 && mod100 !== 11) {
-        return `${count} занятие осталось`;
+        return "занятие осталось";
     }
 
     if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
-        return `${count} занятия осталось`;
+        return "занятия осталось";
     }
 
-    return `${count} занятий осталось`;
+    return "занятий осталось";
 };
 
 const ExpiringPackages = () => {
@@ -48,9 +48,9 @@ const ExpiringPackages = () => {
 
     return (
         <Card
-            className="repeto-expiring-packages-card"
+            className="repeto-expiring-packages-card repeto-section-card"
             view="outlined"
-            style={{ overflow: "hidden", background: "var(--g-color-base-float)" }}
+            style={{ overflow: "hidden" }}
         >
             <div className="repeto-card-header">
                 <Text variant="subheader-2">Истекающие пакеты</Text>
@@ -109,6 +109,7 @@ const ExpiringPackages = () => {
                         const progressColor = urgent
                             ? "var(--g-color-base-danger)"
                             : "var(--g-color-base-brand)";
+                        const remainingLabel = getLessonsLeftLabel(remaining);
                         const itemClassName = [
                             "repeto-expiring-packages__item",
                             urgent ? "repeto-expiring-packages__item--urgent" : "",
@@ -119,7 +120,7 @@ const ExpiringPackages = () => {
 
                         return (
                             <div key={currentPackage.id} className={itemClassName}>
-                                <div className="repeto-expiring-packages__head">
+                                <div className="repeto-expiring-packages__top">
                                     <div className="repeto-expiring-packages__primary">
                                         <Text variant="body-2" ellipsis className="repeto-dashboard-entity-name">
                                             <StudentNameWithBadge
@@ -137,21 +138,29 @@ const ExpiringPackages = () => {
                                             {currentPackage.subject}
                                         </Text>
                                     </div>
-                                    <Label theme={urgent ? "danger" : "normal"} size="xs">
+                                    <span className="repeto-expiring-packages__deadline">
                                         до {currentPackage.validUntil}
-                                    </Label>
+                                    </span>
                                 </div>
-                                <div className="repeto-expiring-packages__meta">
-                                    <Text
-                                        variant="caption-2"
-                                        color="secondary"
-                                        className="repeto-expiring-packages__remaining"
+                                <div className="repeto-expiring-packages__summary">
+                                    <div
+                                        className={[
+                                            "repeto-expiring-packages__main-metric",
+                                            urgent ? "repeto-expiring-packages__main-metric--urgent" : "",
+                                        ]
+                                            .filter(Boolean)
+                                            .join(" ")}
                                     >
-                                        {formatLessonsLeft(remaining)}
-                                    </Text>
-                                    <Text variant="body-2" className="repeto-expiring-packages__count repeto-dashboard-inline-value">
-                                        {currentPackage.lessonsUsed}/{currentPackage.lessonsTotal}
-                                    </Text>
+                                        <span className="repeto-expiring-packages__main-metric-value">
+                                            {remaining}
+                                        </span>
+                                        <span className="repeto-expiring-packages__main-metric-label">
+                                            {remainingLabel}
+                                        </span>
+                                    </div>
+                                    <span className="repeto-expiring-packages__metric repeto-expiring-packages__metric--count repeto-dashboard-inline-value">
+                                        {currentPackage.lessonsUsed} из {currentPackage.lessonsTotal}
+                                    </span>
                                 </div>
                                 <div className="repeto-progress-track repeto-expiring-packages__track">
                                     <div

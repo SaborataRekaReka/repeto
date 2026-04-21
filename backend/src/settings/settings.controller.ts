@@ -106,6 +106,32 @@ export class SettingsController {
     return this.settingsService.updatePolicies(userId, dto);
   }
 
+  @Post('certificates')
+  @UseInterceptors(FileInterceptor('file'))
+  uploadCertificate(
+    @CurrentUser('id') userId: string,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new FileTypeValidator({ fileType: /image\/(jpeg|png|webp|gif)|application\/pdf/ }),
+          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }),
+        ],
+      }),
+    )
+    file: Express.Multer.File,
+    @Body('title') title?: string,
+  ) {
+    return this.settingsService.uploadCertificate(userId, file, title);
+  }
+
+  @Delete('certificates/:id')
+  deleteCertificate(
+    @CurrentUser('id') userId: string,
+    @Param('id') certId: string,
+  ) {
+    return this.settingsService.deleteCertificate(userId, certId);
+  }
+
   @Post('integrations/yukassa')
   connectYukassa(
     @CurrentUser('id') userId: string,

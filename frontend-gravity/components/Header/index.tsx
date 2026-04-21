@@ -4,8 +4,9 @@ import { useRouter } from "next/router";
 import Icon from "@/components/Icon";
 import Image from "@/components/Image";
 import Create from "./Create";
+import StudentAvatar from "@/components/StudentAvatar";
 import { useStudents } from "@/hooks/useStudents";
-import { getInitials, getSubjectBgColor } from "@/lib/formatters";
+import { getInitials } from "@/lib/formatters";
 import { onNotificationsChanged, useUnreadCount } from "@/hooks/useNotifications";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -127,11 +128,7 @@ const Header = ({ back, title }: HeaderProps) => {
                                                     setSearchQuery("");
                                                 }}
                                             >
-                                                <div
-                                                    className={`flex items-center justify-center w-8 h-8 mr-3 rounded-full text-xs font-bold text-n-1 ${getSubjectBgColor(s.subject)}`}
-                                                >
-                                                    {getInitials(s.name)}
-                                                </div>
+                                                <StudentAvatar student={s} size="s" style={{ marginRight: 12 }} />
                                                 <div>
                                                     <div className="text-sm font-bold text-n-1 dark:text-white">
                                                         {s.name}

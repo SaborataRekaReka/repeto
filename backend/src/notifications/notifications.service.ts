@@ -821,6 +821,40 @@ export class NotificationsService {
       },
     });
 
+    if (booking.packageId) {
+      const sourcePackage = await this.prisma.package.findFirst({
+        where: {
+          id: booking.packageId,
+          userId,
+          isPublic: true,
+        },
+        select: {
+          subject: true,
+          lessonsTotal: true,
+          totalPrice: true,
+          comment: true,
+          validUntil: true,
+        },
+      });
+
+      if (sourcePackage) {
+        await this.prisma.package.create({
+          data: {
+            userId,
+            studentId: student.id,
+            isPublic: false,
+            subject: sourcePackage.subject,
+            lessonsTotal: sourcePackage.lessonsTotal,
+            lessonsUsed: 0,
+            totalPrice: sourcePackage.totalPrice,
+            comment: sourcePackage.comment || undefined,
+            status: 'ACTIVE',
+            validUntil: sourcePackage.validUntil || undefined,
+          },
+        });
+      }
+    }
+
     await this.prisma.bookingRequest.update({
       where: { id: booking.id },
       data: { status: 'CONFIRMED' },

@@ -39,6 +39,32 @@ export async function uploadAvatar(file: File) {
   });
 }
 
+export type CertificateEntry = {
+  id: string;
+  title: string;
+  fileUrl: string;
+  uploadedAt: string;
+};
+
+export async function uploadCertificate(file: File, title?: string) {
+  const formData = new FormData();
+  formData.append('file', file);
+  if (title) {
+    formData.append('title', title);
+  }
+
+  return api<CertificateEntry>('/settings/certificates', {
+    method: 'POST',
+    body: formData,
+  });
+}
+
+export async function deleteCertificate(certId: string) {
+  return api<{ deleted: boolean }>(`/settings/certificates/${encodeURIComponent(certId)}`, {
+    method: 'DELETE',
+  });
+}
+
 export async function changePassword(data: {
   currentPassword: string;
   newPassword: string;

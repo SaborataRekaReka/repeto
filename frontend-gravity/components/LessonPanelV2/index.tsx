@@ -8,7 +8,7 @@ import {
     Select,
     TextInput,
     TextArea,
-    Checkbox,
+    Switch,
     Alert,
 } from "@gravity-ui/uikit";
 import {
@@ -29,13 +29,17 @@ import {
 } from "@/hooks/useLessons";
 import {
     useStudents,
+    useStudentNotes,
     useStudentHomework,
     createHomework,
     updateHomework,
     deleteHomework,
     createNote,
+    updateNote,
+    deleteNote,
 } from "@/hooks/useStudents";
 import { useApi } from "@/hooks/useApi";
+import { updateFileShare } from "@/hooks/useFiles";
 import type { CloudProvider, FilesOverviewResponse } from "@/types/files";
 import type { Lesson, LessonStatus } from "@/types/schedule";
 import type { Student } from "@/types/student";
@@ -46,8 +50,11 @@ import StyledDateInput from "@/components/StyledDateInput";
 import CreateStudentModal from "@/components/CreateStudentModal";
 import AddSubjectModal from "@/components/AddSubjectModal";
 import CreatePaymentModal from "@/components/CreatePaymentModal";
+import { updatePayment } from "@/hooks/usePayments";
 import AppDialog from "@/components/AppDialog";
 import MaterialsPickerDialog from "@/components/MaterialsPickerDialog";
+import AppSelect from "@/components/AppSelect";
+import AppField from "@/components/AppField";
 import { codedErrorMessage } from "@/lib/errorCodes";
 import { useRouter } from "next/router";
 import { useAuth } from "@/contexts/AuthContext";
@@ -85,7 +92,8 @@ const timeItems = Array.from({ length: 48 }, (_, index) => {
 const ADD_STUDENT_OPTION_VALUE = "__add_student__";
 const ADD_SUBJECT_OPTION_VALUE = "__add_subject__";
 const RECURRENCE_WEEKS_AHEAD = 52;
-const PANEL_Z = 135;
+const PANEL_Z = 960;
+const LESSON_MATERIALS_PREFIX = "LESSON_MATERIALS:";
 
 type EditableLessonStatus =
     | "planned"
@@ -168,6 +176,21 @@ const normalizeSubjectName = (value: unknown) => {
     return value.trim();
 };
 
+const splitSubjectNames = (value: unknown): string[] => {
+    if (Array.isArray(value)) {
+        return value.flatMap((entry) => splitSubjectNames(entry));
+    }
+
+    if (typeof value !== "string") {
+        return [];
+    }
+
+    return value
+        .split(/[,;\/|\n]+/g)
+        .map((item) => normalizeSubjectName(item))
+        .filter((item): item is string => Boolean(item));
+};
+
 function getIsoWeekday(dateKey: string) {
     const day = new Date(`${dateKey}T12:00:00`).getDay();
     return day === 0 ? 7 : day;
@@ -239,6 +262,57 @@ const mapHomeworkLinkedFiles = (files: any[]): HomeworkFile[] => {
         .filter((file): file is HomeworkFile => !!file && !!file.id);
 };
 
+const normalizeMaterialFile = (raw: any): HomeworkFile | null => {
+    if (!raw || typeof raw !== "object") return null;
+    const id = String(raw.id || "").trim();
+    if (!id) return null;
+    const provider = raw.provider || raw.cloudProvider;
+    return {
+        id,
+        name: String(raw.name || "Файл"),
+        url: raw.url || raw.cloudUrl || "#",
+        provider:
+            provider === "google-drive" || provider === "yandex-disk"
+                ? provider
+                : undefined,
+        type: raw.type === "folder" ? "folder" : "file",
+        extension: raw.extension || undefined,
+        size: raw.size || undefined,
+    };
+};
+
+const parseLessonMaterialsNote = (content: unknown): HomeworkFile[] => {
+    if (typeof content !== "string" || !content.startsWith(LESSON_MATERIALS_PREFIX)) {
+        return [];
+    }
+
+    try {
+        const parsed = JSON.parse(content.slice(LESSON_MATERIALS_PREFIX.length));
+        if (!Array.isArray(parsed)) return [];
+        return parsed
+            .map((item) => normalizeMaterialFile(item))
+            .filter((item): item is HomeworkFile => !!item);
+    } catch {
+        return [];
+    }
+};
+
+const buildLessonMaterialsNote = (files: HomeworkFile[]): string => {
+    const payload = files
+        .map((file) => ({
+            id: file.id,
+            name: file.name,
+            url: file.url,
+            provider: file.provider,
+            type: file.type || "file",
+            extension: file.extension,
+            size: file.size,
+        }))
+        .filter((file) => file.id);
+
+    return `${LESSON_MATERIALS_PREFIX}${JSON.stringify(payload)}`;
+};
+
 const normalizeHomeworkForPanel = (raw: any): LessonPanelHomeworkItem | null => {
     if (!raw || typeof raw !== "object") return null;
     const id = String(raw.id || "").trim();
@@ -304,73 +378,8 @@ type LessonPanelV2Props = {
 };
 
 /* ═══════════════════════════════════════════════════════════
-   Sub-components — Tochka-style
+   Sub-components
    ═══════════════════════════════════════════════════════════ */
-
-const TochkaField = ({
-    label,
-    children,
-    required,
-    error,
-    half,
-}: {
-    label: string;
-    children: React.ReactNode;
-    required?: boolean;
-    error?: string;
-    half?: boolean;
-}) => {
-    const fieldRef = useRef<HTMLDivElement>(null);
-
-    const focusFieldControl = (event: React.MouseEvent<HTMLDivElement>) => {
-        if (event.button !== 0) return;
-
-        const target = event.target as HTMLElement | null;
-        if (target?.closest("input, textarea, button, [role='combobox']")) {
-            return;
-        }
-
-        const root = fieldRef.current;
-        if (!root) return;
-
-        const selectButton = root.querySelector(".g-select-control__button") as HTMLButtonElement | null;
-        if (selectButton) {
-            event.preventDefault();
-            selectButton.focus();
-            selectButton.click();
-            return;
-        }
-
-        const dateButton = root.querySelector("button") as HTMLButtonElement | null;
-        if (dateButton) {
-            event.preventDefault();
-            dateButton.focus();
-            dateButton.click();
-            return;
-        }
-
-        const textControl = root.querySelector("input, textarea") as
-            | HTMLInputElement
-            | HTMLTextAreaElement
-            | null;
-        if (textControl) {
-            event.preventDefault();
-            textControl.focus();
-        }
-    };
-
-    return (
-        <div className={`lp2-field${half ? " lp2-field--half" : ""}`}>
-            <div className="lp2-field__inner" ref={fieldRef} onMouseDown={focusFieldControl}>
-                <span className="lp2-field__label">
-                    {label}{required ? " *" : ""}
-                </span>
-                <div className="lp2-field__control">{children}</div>
-            </div>
-            {error && <span className="lp2-field__error">{error}</span>}
-        </div>
-    );
-};
 
 const SectionTitle = ({ children }: { children: React.ReactNode }) => (
     <h3 className="lp2-section-title">{children}</h3>
@@ -451,11 +460,14 @@ const LessonPanelV2 = ({
     const [hwDueDate, setHwDueDate] = useState("");
     const [hwLinkedFiles, setHwLinkedFiles] = useState<HomeworkFile[]>([]);
     const [materialsPickerOpen, setMaterialsPickerOpen] = useState(false);
+    const [homeworkMaterialsPickerOpen, setHomeworkMaterialsPickerOpen] = useState(false);
     const [draftSelectedKeys, setDraftSelectedKeys] = useState<string[]>([]);
     const [hwSaving, setHwSaving] = useState(false);
     const [hwBusyId, setHwBusyId] = useState<string | null>(null);
     const [sessionHomeworkItems, setSessionHomeworkItems] = useState<LessonPanelHomeworkItem[]>([]);
     const [removedHomeworkIds, setRemovedHomeworkIds] = useState<string[]>([]);
+    const [lessonMaterials, setLessonMaterials] = useState<HomeworkFile[]>([]);
+    const [materialsDirty, setMaterialsDirty] = useState(false);
 
     const subjectItems = useMemo(() => {
         const names = new Set<string>();
@@ -475,8 +487,8 @@ const LessonPanelV2 = ({
         return [...options, { value: ADD_SUBJECT_OPTION_VALUE, content: "Добавить предмет" }];
     }, [lesson?.subject, settingsData?.subjectDetails, settingsData?.subjects, subject, user?.subjects]);
 
-    const { data: filesOverview } = useApi<FilesOverviewResponse>(
-        open && (hwFormVisible || materialsPickerOpen) ? "/files" : null,
+    const { data: filesOverview, refetch: refetchFilesOverview } = useApi<FilesOverviewResponse>(
+        open && (hwFormVisible || materialsPickerOpen || homeworkMaterialsPickerOpen) ? "/files" : null,
     );
 
     const availableHomeworkFiles = useMemo<HomeworkFile[]>(() => {
@@ -510,6 +522,21 @@ const LessonPanelV2 = ({
         return connectedProviders[0];
     }, [settingsData?.homeworkDefaultCloud, connectedProviders]);
 
+    const homeworkMaterialsHint = useMemo(() => {
+        const hasYandex = connectedProviders.includes("yandex-disk");
+        const hasGoogle = connectedProviders.includes("google-drive");
+        if (hasYandex && hasGoogle) {
+            return "Яндекс Диск и Google Drive · доступ ученику";
+        }
+        if (hasYandex) {
+            return "Яндекс Диск · доступ ученику";
+        }
+        if (hasGoogle) {
+            return "Google Drive · доступ ученику";
+        }
+        return "Подключите облачное хранилище";
+    }, [connectedProviders]);
+
     const normalizedAvailableFiles = useMemo(() => {
         const deduped = new Map<string, HomeworkFile>();
         availableHomeworkFiles.forEach((item) => {
@@ -528,8 +555,32 @@ const LessonPanelV2 = ({
         return map;
     }, [normalizedAvailableFiles]);
 
+    const sharedStudentIdsByFileId = useMemo(() => {
+        const map = new Map<string, string[]>();
+        (filesOverview?.files || []).forEach((file) => {
+            map.set(file.id, Array.isArray(file.sharedWith) ? file.sharedWith : []);
+        });
+        return map;
+    }, [filesOverview?.files]);
+
     const sectionStudentId = open ? (lesson?.studentId || studentId[0]) : undefined;
+    const { data: studentNotesData, refetch: refetchStudentNotes } = useStudentNotes(sectionStudentId);
     const { data: studentHomeworkData, refetch: refetchStudentHomework } = useStudentHomework(sectionStudentId);
+
+    const persistedLessonMaterialsNote = useMemo(() => {
+        if (!lesson?.id) return null;
+        return (studentNotesData?.data || []).find(
+            (item: any) =>
+                item?.lessonId === lesson.id &&
+                typeof item?.content === "string" &&
+                item.content.startsWith(LESSON_MATERIALS_PREFIX),
+        ) || null;
+    }, [studentNotesData?.data, lesson?.id]);
+
+    const persistedLessonMaterials = useMemo(
+        () => parseLessonMaterialsNote(persistedLessonMaterialsNote?.content),
+        [persistedLessonMaterialsNote?.content],
+    );
 
     const persistedLessonHomeworkItems = useMemo(() => {
         if (!lesson?.id) return [] as LessonPanelHomeworkItem[];
@@ -633,11 +684,14 @@ const LessonPanelV2 = ({
         setHwDueDate("");
         setHwLinkedFiles([]);
         setMaterialsPickerOpen(false);
+        setHomeworkMaterialsPickerOpen(false);
         setDraftSelectedKeys([]);
         setSessionHomeworkItems([]);
         setHwEditingId(null);
         setHwBusyId(null);
         setRemovedHomeworkIds([]);
+        setLessonMaterials([]);
+        setMaterialsDirty(false);
         setStatusTouchedManually(false);
         setFormError(null);
         setTouched({ student: false, subject: false, date: false, time: false });
@@ -653,6 +707,15 @@ const LessonPanelV2 = ({
         document.addEventListener("keydown", onKey);
         return () => document.removeEventListener("keydown", onKey);
     }, [open, onClose]);
+
+    useEffect(() => {
+        if (!open || materialsDirty) return;
+        if (isExisting) {
+            setLessonMaterials(persistedLessonMaterials);
+            return;
+        }
+        setLessonMaterials([]);
+    }, [open, isExisting, persistedLessonMaterials, materialsDirty]);
 
     /* ════════════════════════════════════════════════════════
        Form init
@@ -695,17 +758,40 @@ const LessonPanelV2 = ({
 
     // Auto-fill subject & cost from student (new only)
     useEffect(() => {
-        if (isExisting || !studentId.length) return;
-        const s = students.find((st) => st.id === studentId[0]);
-        if (s) {
-            if (!subject.length) {
-                const matchedSubject = normalizeSubjectName(s.subject);
-                if (matchedSubject) setSubject([matchedSubject]);
+        if (!isExisting && studentId.length > 0) {
+            const s = students.find((st) => st.id === studentId[0]);
+            if (s) {
+                const mergedSubjects = Array.from(
+                    new Set([
+                        ...splitSubjectNames(s.subject),
+                        ...splitSubjectNames((s as any)?.subjects),
+                    ]),
+                );
+
+                if (mergedSubjects.length === 1) {
+                    const singleSubject = mergedSubjects[0];
+                    if (singleSubject) {
+                        setSubject((prev) => (prev[0] === singleSubject ? prev : [singleSubject]));
+                    }
+                } else if (!subject.length && mergedSubjects.length === 0) {
+                    const fallbackSubject = normalizeSubjectName(s.subject);
+                    if (fallbackSubject) setSubject([fallbackSubject]);
+                }
+
+                if (mergedSubjects.length > 1) {
+                    setSubject((prev) => {
+                        if (!prev[0]) return prev;
+                        return mergedSubjects.includes(prev[0]) ? prev : [];
+                    });
+                }
+
+                if (!cost) setCost(String(s.rate || ""));
             }
-            if (!cost) setCost(String(s.rate || ""));
+        } else if (!isExisting && studentId.length === 0) {
+            setSubject([]);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [studentId]);
+    }, [studentId, isExisting]);
 
     /* ════════════════════════════════════════════════════════
        Handlers
@@ -720,6 +806,57 @@ const LessonPanelV2 = ({
         markTouched("subject");
         await Promise.allSettled([refetchSettings(), refreshUser()]);
     };
+
+    const syncLessonMaterials = useCallback(async (targetStudentId: string, targetLessonId: string) => {
+        if (isExisting && !materialsDirty) return;
+
+        const uniqueById = new Map<string, HomeworkFile>();
+        lessonMaterials.forEach((file) => {
+            if (!file?.id) return;
+            uniqueById.set(file.id, file);
+        });
+        const uniqueMaterials = Array.from(uniqueById.values());
+
+        if (uniqueMaterials.length > 0) {
+            await Promise.allSettled(
+                uniqueMaterials.map((file) => {
+                    const sharedIds = new Set(sharedStudentIdsByFileId.get(file.id) || []);
+                    sharedIds.add(targetStudentId);
+                    return updateFileShare(file.id, {
+                        studentIds: Array.from(sharedIds),
+                        applyToChildren: false,
+                    });
+                }),
+            );
+        }
+
+        if (persistedLessonMaterialsNote?.id) {
+            if (uniqueMaterials.length === 0) {
+                await deleteNote(targetStudentId, persistedLessonMaterialsNote.id);
+            } else {
+                await updateNote(
+                    targetStudentId,
+                    persistedLessonMaterialsNote.id,
+                    buildLessonMaterialsNote(uniqueMaterials),
+                );
+            }
+        } else if (uniqueMaterials.length > 0) {
+            await createNote(
+                targetStudentId,
+                buildLessonMaterialsNote(uniqueMaterials),
+                targetLessonId,
+            );
+        }
+
+        void refetchStudentNotes().catch(() => undefined);
+    }, [
+        isExisting,
+        materialsDirty,
+        lessonMaterials,
+        sharedStudentIdsByFileId,
+        persistedLessonMaterialsNote?.id,
+        refetchStudentNotes,
+    ]);
 
     const handleSubmit = async () => {
         const hasHomeworkDraft =
@@ -737,7 +874,9 @@ const LessonPanelV2 = ({
         }
 
         const hasStudent = studentId.length > 0;
-        const hasSubject = subject.length > 0;
+        const resolvedSubject =
+            subject[0] || (hasSingleStudentSubject ? selectedStudentSubjects[0] : undefined);
+        const hasSubject = Boolean(resolvedSubject);
         const hasDate = !!date;
         const hasTime = !!time;
         const durationMinutes = Number(duration[0]);
@@ -765,7 +904,7 @@ const LessonPanelV2 = ({
 
             if (isExisting && lesson) {
                 await updateLesson(lesson.id, {
-                    subject: subject[0],
+                    subject: resolvedSubject,
                     scheduledAt,
                     duration: durationMinutes,
                     format: format[0].toUpperCase(),
@@ -785,10 +924,14 @@ const LessonPanelV2 = ({
                         ).catch(() => undefined);
                     }
                 }
+
+                if (lesson.studentId && (materialsDirty || lessonMaterials.length > 0)) {
+                    await syncLessonMaterials(lesson.studentId, lesson.id);
+                }
             } else {
                 const created = await createLesson({
                     studentId: studentId[0],
-                    subject: subject[0],
+                    subject: resolvedSubject,
                     scheduledAt,
                     duration: durationMinutes,
                     format: format[0].toUpperCase(),
@@ -819,6 +962,39 @@ const LessonPanelV2 = ({
                                 unlinkedSet.has(item.id) ? { ...item, lessonId: primaryCreatedLessonId } : item,
                             ),
                         );
+                    }
+
+                    // Create tmp homework items that were deferred until lesson was saved
+                    const tmpHomeworkItems = sessionHomeworkItems.filter(
+                        (item) => item.id.startsWith("tmp-") && !removedHomeworkIds.includes(item.id),
+                    );
+                    if (tmpHomeworkItems.length > 0) {
+                        await Promise.allSettled(
+                            tmpHomeworkItems.map((item) =>
+                                createHomework(studentId[0], {
+                                    task: item.task,
+                                    dueAt: item.dueAt || undefined,
+                                    lessonId: primaryCreatedLessonId,
+                                    fileIds: item.linkedFiles.map((f) => f.id),
+                                }),
+                            ),
+                        );
+                    }
+
+                    // Link session payments to the newly created lesson
+                    const unlinkedPaymentIds = sessionPaymentItems
+                        .filter((item) => !item.lessonId && item.id)
+                        .map((item) => item.id);
+                    if (unlinkedPaymentIds.length > 0) {
+                        await Promise.allSettled(
+                            unlinkedPaymentIds.map((paymentId) =>
+                                updatePayment(paymentId, { lessonId: primaryCreatedLessonId }),
+                            ),
+                        );
+                    }
+
+                    if (lessonMaterials.length > 0) {
+                        await syncLessonMaterials(studentId[0], primaryCreatedLessonId);
                     }
                 }
 
@@ -895,14 +1071,8 @@ const LessonPanelV2 = ({
     };
 
     const openMaterialsPicker = () => {
-        if (!hwFormVisible) {
-            setHwFormVisible(true);
-            setActionError("Сначала заполните домашнее задание, затем прикрепите материалы.");
-            return;
-        }
-
         setDraftSelectedKeys(
-            hwLinkedFiles
+            lessonMaterials
                 .map((file) => {
                     if (file.provider) {
                         const directKey = makeSelectionKey(file.provider, file.id);
@@ -917,12 +1087,17 @@ const LessonPanelV2 = ({
         setMaterialsPickerOpen(true);
     };
 
+    const openHomeworkMaterialsPicker = () => {
+        setHomeworkMaterialsPickerOpen(true);
+    };
+
     const resetHomeworkForm = () => {
         setHwFormVisible(false);
         setHwEditingId(null);
         setHwTask("");
         setHwDueDate("");
         setHwLinkedFiles([]);
+        setHomeworkMaterialsPickerOpen(false);
     };
 
     const handleEditHomework = (homework: LessonPanelHomeworkItem) => {
@@ -1007,19 +1182,24 @@ const LessonPanelV2 = ({
                 return;
             }
 
-            const createdHomework = await createHomework(targetStudentId, {
-                task: taskText,
-                dueAt: hwDueDate || undefined,
-                lessonId: lesson?.id || undefined,
-                fileIds: linkedFileIds,
-            });
-            const normalizedHomework = normalizeHomeworkForPanel(createdHomework) || {
+            const createdHomework = !isExisting
+                ? null
+                : await createHomework(targetStudentId, {
+                    task: taskText,
+                    dueAt: hwDueDate || undefined,
+                    lessonId: lesson?.id || undefined,
+                    fileIds: linkedFileIds,
+                });
+            const fallbackHomework: LessonPanelHomeworkItem = {
                 id: `tmp-${Date.now()}`,
                 task: taskText,
                 dueAt: hwDueDate || undefined,
                 lessonId: lesson?.id || null,
                 linkedFiles: [...hwLinkedFiles],
             };
+            const normalizedHomework: LessonPanelHomeworkItem = createdHomework
+                ? normalizeHomeworkForPanel(createdHomework) || fallbackHomework
+                : fallbackHomework;
             setSessionHomeworkItems((prev) => [
                 normalizedHomework,
                 ...prev.filter((item) => item.id !== normalizedHomework.id),
@@ -1050,6 +1230,14 @@ const LessonPanelV2 = ({
        ════════════════════════════════════════════════════════ */
 
     const currentStudent = studentId.length ? students.find((s) => s.id === studentId[0]) : null;
+    const selectedStudentSubjects = useMemo(() => {
+        if (!currentStudent) return [] as string[];
+
+        const unique = new Set<string>();
+        splitSubjectNames(currentStudent.subject).forEach((item) => unique.add(item));
+        splitSubjectNames((currentStudent as any)?.subjects).forEach((item) => unique.add(item));
+        return Array.from(unique);
+    }, [currentStudent]);
 
     const paymentDefaultStudent = lesson?.studentId
         ? {
@@ -1071,7 +1259,6 @@ const LessonPanelV2 = ({
             content: s.name || "Ученик",
             data: {
                 avatarUrl: (s as any).avatarUrl,
-                color: (s as any).color,
                 accountId: s.accountId ?? null,
             },
         })),
@@ -1079,11 +1266,19 @@ const LessonPanelV2 = ({
     ];
 
     const studentError = touched.student && !studentId.length;
-    const subjectError = touched.subject && !subject.length;
     const dateError = touched.date && !date;
     const timeError = touched.time && !time;
-    const showingDraftMaterials = hwLinkedFiles.length > 0;
-    const materialItemsForSection = showingDraftMaterials ? hwLinkedFiles : savedMaterialsFromHomework;
+    const hasSelectedStudent = isExisting || studentId.length > 0;
+    const hasSingleStudentSubject = !isExisting && selectedStudentSubjects.length === 1;
+    const hasMultipleStudentSubjects = !isExisting && selectedStudentSubjects.length > 1;
+    const resolvedSubjectValue =
+        subject[0] || (hasSingleStudentSubject ? selectedStudentSubjects[0] : "");
+    const subjectError = touched.subject && !resolvedSubjectValue;
+    const availableSubjectItems = hasMultipleStudentSubjects
+        ? selectedStudentSubjects.map((item) => ({ value: item, content: item }))
+        : subjectItems;
+    const showingLessonMaterialsDraft = lessonMaterials.length > 0;
+    const materialItemsForSection = showingLessonMaterialsDraft ? lessonMaterials : savedMaterialsFromHomework;
 
     /* ════════════════════════════════════════════════════════
        Render
@@ -1098,7 +1293,6 @@ const LessonPanelV2 = ({
             content?: string;
             data?: {
                 avatarUrl?: string;
-                color?: string;
                 accountId?: string | null;
             };
         },
@@ -1109,23 +1303,28 @@ const LessonPanelV2 = ({
                 : "Ученик";
         if (option.value === ADD_STUDENT_OPTION_VALUE) {
             return (
-                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "4px 0", color: "var(--g-color-text-brand)" }}>
-                    <div style={{ width: 28, height: 28, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 600, color: "var(--g-color-text-brand)", border: "1px dashed var(--g-color-line-brand)", flexShrink: 0 }}>+</div>
+                <div className="app-select-option-action">
+                    <div className="app-select-option-action__icon">
+                        +
+                    </div>
                     <GText variant="body-1">Добавить ученика</GText>
                 </div>
             );
         }
         return (
-            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "4px 0" }}>
-                <div style={{ width: 28, height: 28, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 600, fontSize: 13, flexShrink: 0, background: option.data?.color || "var(--g-color-base-brand)" }}>
-                    {optionLabel.charAt(0).toUpperCase()}
+            <div className="app-select-option-entity">
+                <StudentAvatar
+                    student={{ name: optionLabel, avatarUrl: option.data?.avatarUrl }}
+                    size="s"
+                />
+                <div className="app-select-option-entity__meta">
+                    <span className="app-select-option-entity__title">
+                        <StudentNameWithBadge
+                            name={optionLabel}
+                            hasRepetoAccount={Boolean(option.data?.accountId)}
+                        />
+                    </span>
                 </div>
-                <GText variant="body-1">
-                    <StudentNameWithBadge
-                        name={optionLabel}
-                        hasRepetoAccount={Boolean(option.data?.accountId)}
-                    />
-                </GText>
             </div>
         );
     };
@@ -1175,108 +1374,116 @@ const LessonPanelV2 = ({
                     {/* ──────── Ученик ──────── */}
                     <SectionTitle>Ученик</SectionTitle>
 
-                    <TochkaField label="Ученик" required error={studentError ? "Выберите ученика" : undefined}>
-                        <GSelect
-                            options={studentOptions}
-                            value={studentId}
-                            onUpdate={(value: string[]) => {
-                                if (value[0] === ADD_STUDENT_OPTION_VALUE) {
-                                    setCreateStudentModalVisible(true);
-                                    markTouched("student");
-                                    return;
-                                }
-                                setStudentId(value);
+                    <AppSelect
+                        label="Ученик"
+                        required
+                        error={studentError ? "Выберите ученика" : undefined}
+                        options={studentOptions}
+                        value={studentId}
+                        onUpdate={(value: string[]) => {
+                            if (value[0] === ADD_STUDENT_OPTION_VALUE) {
+                                setCreateStudentModalVisible(true);
                                 markTouched("student");
-                            }}
-                            renderOption={renderStudentOption}
-                            renderSelectedOption={(option: any) => {
-                                const selectedStudent = students.find((s) => s.id === option.value);
-                                const selectedLabel =
-                                    typeof option?.content === "string" && option.content.trim().length
-                                        ? option.content
-                                        : selectedStudent?.name || "Ученик";
-                                return (
-                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                        {selectedStudent ? (
-                                            <StudentAvatar student={selectedStudent} size="xs" />
-                                        ) : (
-                                            <div style={{ width: 22, height: 22, borderRadius: "50%", background: option.data?.color || "var(--g-color-base-brand)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 600, fontSize: 11 }}>
-                                                {selectedLabel.charAt(0).toUpperCase()}
-                                            </div>
-                                        )}
-                                        <GText variant="body-1">
-                                            <StudentNameWithBadge
-                                                name={selectedLabel}
-                                                hasRepetoAccount={Boolean(selectedStudent?.accountId ?? option?.data?.accountId)}
-                                            />
-                                        </GText>
-                                    </div>
-                                );
-                            }}
-                            placeholder="Выберите ученика"
-                            size="xl"
-                            width="max"
-                            filterable
-                            popupClassName="lp2-popup"
-                            popupPlacement="bottom-start"
-                        />
-                    </TochkaField>
+                                return;
+                            }
+                            setStudentId(value);
+                            markTouched("student");
+                        }}
+                        renderOption={renderStudentOption}
+                        renderSelectedOption={(option: any) => {
+                            const selectedStudent = students.find((s) => s.id === option.value);
+                            const selectedLabel =
+                                typeof option?.content === "string" && option.content.trim().length
+                                    ? option.content
+                                    : selectedStudent?.name || "Ученик";
+                            return (
+                                <div className="app-select-selected-entity">
+                                    {selectedStudent ? (
+                                        <StudentAvatar student={selectedStudent} size="xs" />
+                                    ) : (
+                                        <StudentAvatar
+                                            student={{ name: selectedLabel, avatarUrl: option?.data?.avatarUrl }}
+                                            size="xs"
+                                        />
+                                    )}
+                                    <span className="app-select-selected-entity__text">
+                                        <StudentNameWithBadge
+                                            name={selectedLabel}
+                                            hasRepetoAccount={Boolean(selectedStudent?.accountId ?? option?.data?.accountId)}
+                                        />
+                                    </span>
+                                </div>
+                            );
+                        }}
+                        placeholder="Выберите ученика"
+                        filterable
+                    />
 
-                    <TochkaField label="Статус">
-                        <Select
-                            options={statusItems}
-                            value={[status]}
-                            onUpdate={(value: string[]) => {
-                                if (!value.length) return;
-                                setStatus(value[0] as EditableLessonStatus);
-                                setStatusTouchedManually(true);
-                            }}
-                            size="xl"
-                            width="max"
-                            popupClassName="lp2-popup"
-                            popupPlacement="bottom-start"
-                        />
-                    </TochkaField>
+                    <AppSelect
+                        label="Статус"
+                        options={statusItems}
+                        value={[status]}
+                        onUpdate={(value: string[]) => {
+                            if (!value.length) return;
+                            setStatus(value[0] as EditableLessonStatus);
+                            setStatusTouchedManually(true);
+                        }}
+                    />
 
                     {/* ──────── О занятии ──────── */}
                     <SectionTitle>О занятии</SectionTitle>
 
-                    <TochkaField label="Предмет" required error={subjectError ? "Обязательное поле" : undefined}>
-                        <Select
-                            options={subjectItems}
-                            value={subject}
-                            onUpdate={(value: string[]) => {
-                                if (value[0] === ADD_SUBJECT_OPTION_VALUE) {
+                    <AppField label="Предмет" required error={subjectError ? "Обязательное поле" : undefined}>
+                        {!hasSelectedStudent ? (
+                            <TextInput
+                                value=""
+                                placeholder="Сначала выберите ученика"
+                                size="xl"
+                                disabled
+                            />
+                        ) : hasSingleStudentSubject ? (
+                            <TextInput
+                                value={selectedStudentSubjects[0] || ""}
+                                size="xl"
+                                disabled
+                            />
+                        ) : (
+                            <Select
+                                options={availableSubjectItems}
+                                value={subject}
+                                onUpdate={(value: string[]) => {
+                                    if (value[0] === ADD_SUBJECT_OPTION_VALUE) {
+                                        markTouched("subject");
+                                        handleAddSubject();
+                                        return;
+                                    }
+                                    setSubject(value);
                                     markTouched("subject");
-                                    handleAddSubject();
-                                    return;
-                                }
-                                setSubject(value);
-                                markTouched("subject");
-                            }}
-                            placeholder="Выберите предмет"
-                            size="xl"
-                            width="max"
-                            filterable
-                            popupClassName="lp2-popup"
-                            popupPlacement="bottom-start"
-                        />
-                    </TochkaField>
+                                }}
+                                placeholder="Выберите предмет"
+                                size="xl"
+                                width="max"
+                                filterable
+                                popupClassName="app-select-popup"
+                                popupPlacement="bottom-start"
+                            />
+                        )}
+                    </AppField>
 
-                    <TochkaField label="Место / ссылка">
+                    <AppField label="Место / ссылка">
                         <TextInput
                             value={location}
                             onUpdate={setLocation}
                             placeholder="Zoom, Skype или адрес"
                             size="xl"
                         />
-                    </TochkaField>
+                    </AppField>
 
                     {/* ──────── Когда ──────── */}
                     <SectionTitle>Когда планируете занятие?</SectionTitle>
 
                     <div className="lp2-row">
-                        <TochkaField label="Дата" required error={dateError ? "Обязательное поле" : undefined} half>
+                        <AppField label="Дата" required error={dateError ? "Обязательное поле" : undefined} half>
                             <StyledDateInput
                                 value={date}
                                 onUpdate={(value: string) => {
@@ -1293,74 +1500,67 @@ const LessonPanelV2 = ({
                                     background: "transparent",
                                 }}
                             />
-                        </TochkaField>
+                        </AppField>
 
-                        <TochkaField label="Время начала" required error={timeError ? "Обязательное поле" : undefined} half>
-                            <Select
-                                options={timeItems}
-                                value={time ? [time] : []}
-                                onUpdate={(value: string[]) => { setTime(value[0] || ""); markTouched("time"); }}
-                                placeholder="Выберите время"
-                                size="xl"
-                                width="max"
-                                popupClassName="lp2-popup lp2-popup--compact"
-                                popupPlacement="bottom-start"
-                            />
-                        </TochkaField>
+                        <AppSelect
+                            label="Время начала"
+                            required
+                            error={timeError ? "Обязательное поле" : undefined}
+                            half
+                            options={timeItems}
+                            value={time ? [time] : []}
+                            onUpdate={(value: string[]) => { setTime(value[0] || ""); markTouched("time"); }}
+                            placeholder="Выберите время"
+                        />
                     </div>
 
                     <div className="lp2-row">
-                        <TochkaField label="Длительность" half>
-                            <Select
-                                options={durationItems}
-                                value={duration}
-                                onUpdate={setDuration}
-                                size="xl"
-                                width="max"
-                                popupClassName="lp2-popup lp2-popup--compact"
-                                popupPlacement="bottom-start"
-                            />
-                        </TochkaField>
+                        <AppSelect
+                            label="Длительность"
+                            half
+                            options={durationItems}
+                            value={duration}
+                            onUpdate={setDuration}
+                        />
 
-                        <TochkaField label="Формат" half>
-                            <Select
-                                options={formatItems}
-                                value={format}
-                                onUpdate={setFormat}
-                                size="xl"
-                                width="max"
-                                popupClassName="lp2-popup"
-                                popupPlacement="bottom-start"
-                            />
-                        </TochkaField>
+                        <AppSelect
+                            label="Формат"
+                            half
+                            options={formatItems}
+                            value={format}
+                            onUpdate={setFormat}
+                        />
                     </div>
 
                     {/* ──────── Оплата ──────── */}
                     <SectionTitle>Оплата и заметки</SectionTitle>
 
-                    <TochkaField label="Стоимость (₽)">
+                    <AppField label="Стоимость (₽)">
                         <TextInput
                             value={cost}
                             onUpdate={setCost}
                             placeholder="2100"
                             size="xl"
                         />
-                    </TochkaField>
+                    </AppField>
 
                     {!isExisting && (
-                        <div className="lp2-field" style={{ background: "transparent" }}>
-                            <Checkbox checked={repeat} onUpdate={setRepeat} size="l">
-                                Повторять еженедельно
-                            </Checkbox>
-                            {repeat && (
-                                <GText as="div" variant="caption-2" color="secondary" style={{ marginTop: 4 }}>
-                                    Повтор создаётся на 12 месяцев вперёд в тот же день и время.
+                        <div className="lp2-invite-card">
+                            <div className="lp2-invite-card__text">
+                                <GText variant="body-2" className="lp2-invite-card__title">
+                                    Повторять еженедельно
                                 </GText>
-                            )}
+                                {repeat && (
+                                    <GText variant="body-2" color="secondary" className="lp2-invite-card__subtitle">
+                                        В тот же день и время каждую неделю
+                                    </GText>
+                                )}
+                            </div>
+                            <Switch checked={repeat} onUpdate={setRepeat} size="l" />
                         </div>
                     )}
 
-                    <TochkaField label="Заметки">
+                    <AppField label="Заметки">
                         <TextArea
                             value={note}
                             onUpdate={setNote}
@@ -1368,7 +1568,7 @@ const LessonPanelV2 = ({
                             rows={3}
                             size="xl"
                         />
-                    </TochkaField>
+                    </AppField>
 
                     {/* ──────── Домашнее задание ──────── */}
                     <SectionTitle>Домашнее задание</SectionTitle>
@@ -1421,11 +1621,11 @@ const LessonPanelV2 = ({
 
                     {hwFormVisible && (
                         <div className="lp2-hw-form">
-                            <TochkaField label="Описание задания">
+                            <AppField label="Описание задания">
                                 <TextArea value={hwTask} onUpdate={setHwTask}
                                     placeholder="Выучить параграф 5, решить задачи №12-18..." rows={3} size="xl" />
-                            </TochkaField>
-                            <TochkaField label="Срок сдачи">
+                            </AppField>
+                            <AppField label="Срок сдачи">
                                 <StyledDateInput value={hwDueDate} onUpdate={setHwDueDate}
                                     style={{
                                         height: 40,
@@ -1435,7 +1635,46 @@ const LessonPanelV2 = ({
                                         borderRadius: 0,
                                         background: "transparent",
                                     }} />
-                            </TochkaField>
+                            </AppField>
+
+                            {hwLinkedFiles.length > 0 && (
+                                <div className="lp2-materials">
+                                    <GText variant="caption-2" color="secondary" style={{ marginBottom: 8 }}>
+                                        Прикрепленные материалы к домашнему заданию
+                                    </GText>
+                                    {hwLinkedFiles.map((file) => (
+                                        <div key={file.provider ? makeSelectionKey(file.provider, file.id) : file.id}
+                                            className="lp2-material-row">
+                                            <GIcon data={((file.type || "file") === "folder" ? Folder : File) as IconData} size={16} />
+                                            <GText variant="body-1" style={{ flex: 1, minWidth: 0 }} ellipsis>{file.name}</GText>
+                                            <GButton view="flat" size="s" onClick={() =>
+                                                setHwLinkedFiles((prev) =>
+                                                    prev.filter((f) => !(f.id === file.id && f.provider === file.provider)),
+                                                )
+                                            }>
+                                                <GIcon data={TrashBin as IconData} size={14} />
+                                            </GButton>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {connectedProviders.length > 0 && (
+                                <button
+                                    type="button"
+                                    className="hw-material-upload-btn"
+                                    onClick={openHomeworkMaterialsPicker}
+                                >
+                                    <span className="hw-material-upload-btn__icon">
+                                        <GIcon data={Plus as IconData} size={20} />
+                                    </span>
+                                    <span className="hw-material-upload-btn__content">
+                                        <span className="hw-material-upload-btn__title">Загрузить материалы</span>
+                                        <span className="hw-material-upload-btn__hint">{homeworkMaterialsHint}</span>
+                                    </span>
+                                </button>
+                            )}
+
                             <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
                                 <GButton view="outlined" size="l" onClick={resetHomeworkForm}>Отмена</GButton>
                                 <GButton view="action" size="l" disabled={!hwTask.trim()} loading={hwSaving}
@@ -1452,16 +1691,21 @@ const LessonPanelV2 = ({
                     {materialItemsForSection.length > 0 ? (
                         <div className="lp2-materials">
                             <GText variant="caption-2" color="secondary" style={{ marginBottom: 8 }}>
-                                {showingDraftMaterials ? "Выбрано для домашнего задания" : "Сохранено в домашних заданиях"}
+                                {showingLessonMaterialsDraft ? "Выбрано для занятия" : "Сохранено в домашних заданиях"}
                             </GText>
                             {materialItemsForSection.map((file) => (
                                 <div key={file.provider ? makeSelectionKey(file.provider, file.id) : file.id}
                                     className="lp2-material-row">
                                     <GIcon data={(file.type || "file") === "folder" ? (Folder as IconData) : (File as IconData)} size={16} />
                                     <GText variant="body-1" style={{ flex: 1, minWidth: 0 }} ellipsis>{file.name}</GText>
-                                    {showingDraftMaterials && (
+                                    {showingLessonMaterialsDraft && (
                                         <GButton view="flat" size="s" onClick={() =>
-                                            setHwLinkedFiles((prev) => prev.filter((f) => !(f.id === file.id && f.provider === file.provider)))
+                                            {
+                                                setMaterialsDirty(true);
+                                                setLessonMaterials((prev) =>
+                                                    prev.filter((f) => !(f.id === file.id && f.provider === file.provider)),
+                                                );
+                                            }
                                         }>
                                             <GIcon data={TrashBin as IconData} size={14} />
                                         </GButton>
@@ -1518,22 +1762,26 @@ const LessonPanelV2 = ({
                     </button>
 
                     {/* ──────── Отзыв ──────── */}
-                    <SectionTitle>Отзыв ученика</SectionTitle>
+                    {isExisting && lesson?.status === "completed" && (
+                        <>
+                            <SectionTitle>Отзыв ученика</SectionTitle>
 
-                    {lesson?.hasReview ? (
-                        <div className="lp2-review">
-                            <div style={{ color: "var(--g-color-text-brand)", fontSize: 20, lineHeight: 1 }}>
-                                {[1, 2, 3, 4, 5].map((star) => star <= (lesson.reviewRating || 0) ? "★" : "☆").join(" ")}
-                            </div>
-                            <GText variant="body-1" color="secondary">Оценка: {lesson.reviewRating || 0}/5</GText>
-                            {lesson.reviewFeedback && (
-                                <GText variant="body-1" style={{ whiteSpace: "pre-wrap", marginTop: 4 }}>{lesson.reviewFeedback}</GText>
+                            {lesson?.hasReview ? (
+                                <div className="lp2-review">
+                                    <div style={{ color: "var(--g-color-text-brand)", fontSize: 20, lineHeight: 1 }}>
+                                        {[1, 2, 3, 4, 5].map((star) => star <= (lesson.reviewRating || 0) ? "★" : "☆").join(" ")}
+                                    </div>
+                                    <GText variant="body-1" color="secondary">Оценка: {lesson.reviewRating || 0}/5</GText>
+                                    {lesson.reviewFeedback && (
+                                        <GText variant="body-1" style={{ whiteSpace: "pre-wrap", marginTop: 4 }}>{lesson.reviewFeedback}</GText>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="lp2-empty">
+                                    Отзыв пока не оставлен
+                                </div>
                             )}
-                        </div>
-                    ) : (
-                        <div className="lp2-empty">
-                            {isExisting ? "Отзыв пока не оставлен" : "Отзыв ученика появится после проведения занятия."}
-                        </div>
+                        </>
                     )}
 
                     {formError && (
@@ -1595,16 +1843,33 @@ const LessonPanelV2 = ({
             <MaterialsPickerDialog
                 open={materialsPickerOpen}
                 onClose={() => setMaterialsPickerOpen(false)}
+                selectedFiles={lessonMaterials}
+                availableFiles={availableHomeworkFiles}
+                connectedProviders={connectedProviders}
+                defaultProvider={defaultMaterialsProvider}
+                onRefreshAvailableFiles={refetchFilesOverview}
+                onApply={(files) => {
+                    setLessonMaterials(files);
+                    setMaterialsDirty(true);
+                }}
+            />
+
+            <MaterialsPickerDialog
+                open={homeworkMaterialsPickerOpen}
+                onClose={() => setHomeworkMaterialsPickerOpen(false)}
                 selectedFiles={hwLinkedFiles}
                 availableFiles={availableHomeworkFiles}
                 connectedProviders={connectedProviders}
                 defaultProvider={defaultMaterialsProvider}
+                onRefreshAvailableFiles={refetchFilesOverview}
                 onApply={setHwLinkedFiles}
+                caption="Материалы к домашнему заданию"
             />
 
             <CreatePaymentModal
                 visible={paymentModalOpen}
                 onClose={() => setPaymentModalOpen(false)}
+                hideLesson={!isExisting}
                 onCreated={async (createdPayment) => {
                     const normalizedPayment = normalizePaymentForPanel(createdPayment);
                     if (normalizedPayment) {

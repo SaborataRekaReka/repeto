@@ -4,6 +4,7 @@ import { toLocalDateKey } from '@/lib/dates';
 import type { Lesson } from '@/types/schedule';
 
 const PORTAL_REVIEW_PREFIX = 'PORTAL_REVIEW:';
+const LESSON_MATERIALS_PREFIX = 'LESSON_MATERIALS:';
 
 function parsePortalReview(content: unknown): { rating: number; feedback?: string } | null {
   if (typeof content !== 'string' || !content.startsWith(PORTAL_REVIEW_PREFIX)) {
@@ -54,7 +55,10 @@ function extractLessonReview(raw: any): { rating: number; feedback?: string } | 
 
 function extractLessonNote(raw: any): string | undefined {
   if (typeof raw?.notes === 'string') {
-    if (raw.notes.startsWith(PORTAL_REVIEW_PREFIX)) {
+    if (
+      raw.notes.startsWith(PORTAL_REVIEW_PREFIX) ||
+      raw.notes.startsWith(LESSON_MATERIALS_PREFIX)
+    ) {
       return undefined;
     }
 
@@ -67,7 +71,8 @@ function extractLessonNote(raw: any): string | undefined {
       .filter(
         (item: any) =>
           typeof item?.content === 'string' &&
-          !item.content.startsWith('PORTAL_REVIEW:'),
+          !item.content.startsWith(PORTAL_REVIEW_PREFIX) &&
+          !item.content.startsWith(LESSON_MATERIALS_PREFIX),
       )
       .sort((a: any, b: any) => {
         const aTime = new Date(a?.updatedAt || a?.createdAt || 0).getTime();

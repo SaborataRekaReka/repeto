@@ -312,7 +312,7 @@ const StudentsListPage = () => {
     ];
 
     return (
-        <GravityLayout title="Ученики" hideSidebar>
+        <GravityLayout title="Ученики" hideSidebar hideHeaderTitle>
             <PageOverlay
                 title="Ученики"
                 breadcrumb="Дашборд"

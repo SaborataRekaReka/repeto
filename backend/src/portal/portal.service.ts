@@ -4,7 +4,7 @@ import {
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
-import { CloudProvider, FileType, Prisma } from '@prisma/client';
+import { CloudProvider, FileType, NotificationType, Prisma } from '@prisma/client';
 import { drive_v3, google } from 'googleapis';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -15,6 +15,12 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { TelegramService } from '../messenger/telegram.service';
 import { MaxService } from '../messenger/max.service';
 import { mapCancelPolicy, calculatePenalty } from '../common/utils/cancel-policy';
+import {
+  buildTutorPaymentRequisitesPreview,
+  extractTutorPaymentCardNumber,
+  extractTutorPaymentRequisites,
+  extractTutorPaymentSbpPhone,
+} from '../common/utils/payment-requisites';
 
 const PORTAL_REVIEW_PREFIX = 'PORTAL_REVIEW:';
 
@@ -50,6 +56,73 @@ export class PortalService {
     } catch {
       return null;
     }
+  }
+
+  private formatPortalDateLabel(value: Date) {
+    const d = new Date(value);
+    const months = [
+      'января',
+      'февраля',
+      'марта',
+      'апреля',
+      'мая',
+      'июня',
+      'июля',
+      'августа',
+      'сентября',
+      'октября',
+      'ноября',
+      'декабря',
+    ];
+    const days = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+
+    return `${d.getDate()} ${months[d.getMonth()]}, ${days[d.getDay()]}`;
+  }
+
+  private normalizePortalTime(rawTime: string) {
+    const value = (rawTime || '').trim();
+    const match = /^(\d{1,2}):(\d{2})$/.exec(value);
+
+    if (!match) {
+      throw new BadRequestException('Неверный формат времени');
+    }
+
+    const hours = Number(match[1]);
+    const minutes = Number(match[2]);
+    if (
+      !Number.isFinite(hours) ||
+      !Number.isFinite(minutes) ||
+      hours < 0 ||
+      hours > 23 ||
+      minutes < 0 ||
+      minutes > 59
+    ) {
+      throw new BadRequestException('Неверный формат времени');
+    }
+
+    return {
+      hours,
+      minutes,
+      normalized: `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`,
+    };
+  }
+
+  private formatPortalShortDate(value: Date) {
+    const date = new Date(value);
+
+    return `${String(date.getDate()).padStart(2, '0')}.${String(
+      date.getMonth() + 1,
+    ).padStart(2, '0')}.${date.getFullYear()}`;
+  }
+
+  private formatPortalPaymentMethodLabel(method?: string | null) {
+    const normalized = String(method || '').toUpperCase();
+
+    if (normalized === 'SBP') return 'Оплата через СБП';
+    if (normalized === 'CASH') return 'Оплата наличными';
+    if (normalized === 'YUKASSA') return 'Оплата через ЮKassa';
+
+    return 'Оплата переводом';
   }
 
   private isProductionEnv() {
@@ -447,10 +520,31 @@ export class PortalService {
     }
   }
 
+  private static readonly ALLOWED_AVATAR_EXT = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+
+  async uploadAvatar(accountId: string, file: Express.Multer.File) {
+    const uploadsDir = path.join(process.cwd(), 'uploads', 'avatars');
+    if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+    const rawExt = path.extname(file.originalname).toLowerCase();
+    const ext = PortalService.ALLOWED_AVATAR_EXT.includes(rawExt) ? rawExt : '.jpg';
+    const filename = `student_${accountId}_${Date.now()}${ext}`;
+    const filepath = path.join(uploadsDir, filename);
+    fs.writeFileSync(filepath, file.buffer);
+    const avatarUrl = `/uploads/avatars/${filename}`;
+    await this.prisma.studentAccount.update({
+      where: { id: accountId },
+      data: { avatarUrl },
+    });
+    return { avatarUrl };
+  }
+
   async getPortalData(studentId: string) {
     const student = await this.prisma.student.findUnique({
       where: { id: studentId },
       include: {
+        account: {
+          select: { avatarUrl: true },
+        },
         user: {
           select: {
             name: true,
@@ -460,13 +554,15 @@ export class PortalService {
             email: true,
             subjects: true,
             avatarUrl: true,
+            rating: true,
             cancelPolicySettings: true,
             notificationSettings: true,
+            paymentSettings: true,
           },
         },
         lessons: {
           orderBy: { scheduledAt: 'desc' },
-          take: 20,
+          take: 40,
           select: {
             id: true,
             subject: true,
@@ -488,7 +584,7 @@ export class PortalService {
         },
         payments: {
           orderBy: { date: 'desc' },
-          take: 10,
+          take: 30,
           select: {
             id: true,
             amount: true,
@@ -584,6 +680,32 @@ export class PortalService {
       },
     });
 
+    const tutorReviewNotes = await this.prisma.lessonNote.findMany({
+      where: {
+        content: { startsWith: PORTAL_REVIEW_PREFIX },
+        lesson: { is: { userId: student.userId } },
+      },
+      select: { content: true },
+    });
+
+    const tutorRatings = tutorReviewNotes
+      .map((note) => this.parsePortalReview(note.content)?.rating)
+      .filter((value): value is number => Number.isFinite(value));
+
+    const tutorReviewsCount = tutorRatings.length;
+    const tutorAverageRating =
+      tutorReviewsCount > 0
+        ? Math.round(
+            (tutorRatings.reduce((sum, value) => sum + value, 0) / tutorReviewsCount) *
+              10,
+          ) / 10
+        : null;
+    const persistedTutorRating = Number(student.user.rating);
+    const normalizedTutorRating = Number.isFinite(persistedTutorRating)
+      ? persistedTutorRating
+      : null;
+    const tutorRating = tutorAverageRating ?? normalizedTutorRating;
+
     const formatDate = (d: Date) => {
       const days = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
       const months = [
@@ -674,6 +796,9 @@ export class PortalService {
     const balance = totalPaid - totalEarned;
 
     const activePackage = student.packages[0] || null;
+    const paymentRequisites = extractTutorPaymentRequisites(student.user.paymentSettings);
+    const paymentCardNumber = extractTutorPaymentCardNumber(student.user.paymentSettings);
+    const paymentSbpPhone = extractTutorPaymentSbpPhone(student.user.paymentSettings);
 
     const recentPayments = student.payments.map((p) => ({
       id: p.id,
@@ -682,6 +807,49 @@ export class PortalService {
       method: p.method || 'Перевод',
       status: p.status.toLowerCase() as 'paid' | 'pending',
     }));
+
+    const balanceOperations = [
+      ...student.payments
+        .filter((payment) => payment.status === 'PAID')
+        .map((payment) => {
+          const paymentDate = new Date(payment.date);
+
+          return {
+            id: `payment-${payment.id}`,
+            kind: 'payment' as const,
+            direction: 'credit' as const,
+            amount: payment.amount,
+            title: this.formatPortalPaymentMethodLabel(payment.method),
+            subtitle: this.formatPortalShortDate(paymentDate),
+            occurredAt: paymentDate.toISOString(),
+          };
+        }),
+      ...student.lessons
+        .filter((lesson) => lesson.status === 'COMPLETED')
+        .map((lesson) => {
+          const lessonDate = new Date(lesson.scheduledAt);
+
+          return {
+            id: `lesson-${lesson.id}`,
+            kind: 'lesson' as const,
+            direction: 'debit' as const,
+            amount: lesson.rate,
+            title: lesson.subject
+              ? `Списание за занятие · ${lesson.subject}`
+              : 'Списание за занятие',
+            subtitle: `${this.formatPortalShortDate(lessonDate)} · ${formatTime(
+              lessonDate,
+              lesson.duration,
+            )}`,
+            occurredAt: lessonDate.toISOString(),
+          };
+        }),
+    ]
+      .sort(
+        (left, right) =>
+          new Date(right.occurredAt).getTime() - new Date(left.occurredAt).getTime(),
+      )
+      .slice(0, 30);
 
     const formatPortalUploadSize = (bytes?: number) => {
       if (!Number.isFinite(bytes) || !bytes || bytes <= 0) {
@@ -833,15 +1001,32 @@ export class PortalService {
       studentName: student.name,
       studentPhone: student.phone || undefined,
       studentEmail: student.email || undefined,
+      studentAvatarUrl: student.account?.avatarUrl || null,
+      studentGrade: student.grade || undefined,
+      studentAge: student.age || undefined,
+      studentParentName: student.parentName || undefined,
+      studentParentPhone: student.parentPhone || undefined,
+      studentParentEmail: student.parentEmail || undefined,
       tutorName: student.user.name,
       tutorSlug: student.user.slug || '',
       tutorPhone: student.user.phone || '',
       tutorWhatsapp: student.user.whatsapp || undefined,
       tutorAvatarUrl: student.user.avatarUrl || null,
+      tutorRating,
+      tutorReviewsCount,
       balance,
       ratePerLesson: student.rate,
+      paymentRequisites,
+      paymentRequisitesPreview: buildTutorPaymentRequisitesPreview(
+        paymentRequisites,
+        paymentCardNumber,
+        paymentSbpPhone,
+      ),
+      paymentCardNumber,
+      paymentSbpPhone,
       package: activePackage
         ? {
+        subject: activePackage.subject,
             used: activePackage.lessonsUsed,
             total: activePackage.lessonsTotal,
             validUntil: activePackage.validUntil
@@ -860,6 +1045,7 @@ export class PortalService {
       upcomingLessons,
       recentLessons,
       recentPayments,
+      balanceOperations,
       homework,
       files: portalFiles,
       pendingBookings: pendingBookings.map((b) => {
@@ -1031,6 +1217,139 @@ export class PortalService {
     });
 
     return updated;
+  }
+
+  async cancelPendingBooking(
+    bookingId: string,
+    tutorId: string,
+    studentDisplayName?: string,
+  ) {
+    const booking = await this.prisma.bookingRequest.findUnique({
+      where: { id: bookingId },
+      select: {
+        id: true,
+        userId: true,
+        status: true,
+        subject: true,
+        date: true,
+        startTime: true,
+        clientName: true,
+      },
+    });
+
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+    if (booking.userId !== tutorId) {
+      throw new ForbiddenException();
+    }
+    if (booking.status !== 'PENDING') {
+      throw new BadRequestException('Заявка уже обработана');
+    }
+
+    await this.prisma.bookingRequest.update({
+      where: { id: booking.id },
+      data: { status: 'CANCELLED' },
+    });
+
+    const dateLabel = this.formatPortalDateLabel(booking.date);
+    const actor = studentDisplayName || booking.clientName || 'Ученик';
+
+    await this.notificationsService.create({
+      userId: tutorId,
+      type: NotificationType.SYSTEM,
+      title: 'Неподтвержденное занятие отменено',
+      description: `${actor} отменил(а) неподтвержденное занятие: ${booking.subject}, ${dateLabel} в ${booking.startTime}`,
+      bookingRequestId: booking.id,
+    });
+
+    return {
+      status: 'cancelled',
+      bookingId: booking.id,
+    };
+  }
+
+  async reschedulePendingBooking(
+    bookingId: string,
+    tutorId: string,
+    studentDisplayName: string | undefined,
+    newDate: string,
+    newTime: string,
+  ) {
+    const booking = await this.prisma.bookingRequest.findUnique({
+      where: { id: bookingId },
+      select: {
+        id: true,
+        userId: true,
+        status: true,
+        subject: true,
+        date: true,
+        startTime: true,
+        duration: true,
+        clientName: true,
+      },
+    });
+
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+    if (booking.userId !== tutorId) {
+      throw new ForbiddenException();
+    }
+    if (booking.status !== 'PENDING') {
+      throw new BadRequestException('Заявка уже обработана');
+    }
+
+    const parsedDate = new Date(newDate);
+    if (Number.isNaN(parsedDate.getTime())) {
+      throw new BadRequestException('Неверная дата');
+    }
+    parsedDate.setHours(0, 0, 0, 0);
+
+    const normalizedTime = this.normalizePortalTime(newTime);
+    const requestedDateTime = new Date(parsedDate);
+    requestedDateTime.setHours(normalizedTime.hours, normalizedTime.minutes, 0, 0);
+
+    if (requestedDateTime.getTime() <= Date.now()) {
+      throw new BadRequestException('Нельзя перенести занятие на прошедшее время');
+    }
+
+    const updated = await this.prisma.bookingRequest.update({
+      where: { id: booking.id },
+      data: {
+        date: parsedDate,
+        startTime: normalizedTime.normalized,
+      },
+      select: {
+        id: true,
+        subject: true,
+        date: true,
+        startTime: true,
+        duration: true,
+      },
+    });
+
+    const actor = studentDisplayName || booking.clientName || 'Ученик';
+    const dateLabel = this.formatPortalDateLabel(updated.date);
+
+    await this.notificationsService.create({
+      userId: tutorId,
+      type: NotificationType.SYSTEM,
+      title: 'Запрос на перенос неподтвержденного занятия',
+      description: `${actor} просит перенести неподтвержденное занятие на ${dateLabel} в ${updated.startTime}`,
+      bookingRequestId: updated.id,
+    });
+
+    return {
+      status: 'reschedule_pending',
+      booking: {
+        id: updated.id,
+        subject: updated.subject,
+        date: this.formatPortalDateLabel(updated.date),
+        startTime: updated.startTime,
+        duration: updated.duration,
+      },
+    };
   }
 
   async requestReschedule(

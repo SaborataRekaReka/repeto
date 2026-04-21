@@ -3,10 +3,10 @@ import { useRouter } from "next/router";
 import { Alert, Card, Text, Icon, Button } from "@gravity-ui/uikit";
 import { FolderOpen, ChevronDown, ArrowUpRightFromSquare, TrashBin } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
-import { getInitials } from "@/lib/formatters";
 import { useStudents } from "@/hooks/useStudents";
 import { updateFileShare } from "@/hooks/useFiles";
 import StudentNameWithBadge from "@/components/StudentNameWithBadge";
+import StudentAvatar from "@/components/StudentAvatar";
 import type { FileItem, StudentFileAccess } from "@/types/files";
 import { codedErrorMessage } from "@/lib/errorCodes";
 
@@ -123,15 +123,7 @@ const StudentAccessTab = ({ files, studentAccess, onUpdated }: StudentAccessTabP
                                     onMouseEnter={(e) => (e.currentTarget.style.background = "var(--g-color-base-simple-hover)")}
                                     onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                                 >
-                                    <div style={{
-                                        width: 40, height: 40, borderRadius: "50%",
-                                        background: "rgba(174,122,255,0.1)",
-                                        display: "flex", alignItems: "center", justifyContent: "center",
-                                        marginRight: 12, fontSize: 13, fontWeight: 700,
-                                        color: "var(--g-color-text-brand)", flexShrink: 0,
-                                    }}>
-                                        {getInitials(student.name)}
-                                    </div>
+                                    <StudentAvatar student={student} size="m" style={{ marginRight: 12, flexShrink: 0 }} />
                                     <div style={{ flex: 1, minWidth: 0, marginRight: 12 }}>
                                         <Text variant="body-1" style={{ fontWeight: 600 }}>
                                             <StudentNameWithBadge
@@ -286,15 +278,7 @@ const StudentAccessTab = ({ files, studentAccess, onUpdated }: StudentAccessTabP
                                             borderTop: i > 0 ? "1px solid var(--g-color-line-generic)" : undefined,
                                         }}
                                     >
-                                        <div style={{
-                                            width: 32, height: 32, borderRadius: "50%",
-                                            background: "rgba(174,122,255,0.1)",
-                                            display: "flex", alignItems: "center", justifyContent: "center",
-                                            marginRight: 12, fontSize: 12, fontWeight: 700,
-                                            color: "var(--g-color-text-brand)", flexShrink: 0,
-                                        }}>
-                                            {getInitials(s.name)}
-                                        </div>
+                                        <StudentAvatar student={s} size="s" style={{ marginRight: 12, flexShrink: 0 }} />
                                         <div style={{ flex: 1, minWidth: 0, marginRight: 12 }}>
                                             <Text variant="body-1" style={{ fontWeight: 600 }}>
                                                 <StudentNameWithBadge

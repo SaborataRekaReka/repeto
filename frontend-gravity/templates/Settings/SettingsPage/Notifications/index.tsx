@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { Card, Text, Button, Select, Switch } from "@gravity-ui/uikit";
+import { Card, Text, Button, Switch } from "@gravity-ui/uikit";
 import { useSettings, updateNotificationSettings } from "@/hooks/useSettings";
-import { disablePushNotifications, enablePushNotifications } from "@/lib/pushNotifications";
+import { disablePushNotifications, enablePushNotifications, isPushSupported } from "@/lib/pushNotifications";
 import { codedErrorMessage } from "@/lib/errorCodes";
+import AppSelect from "@/components/AppSelect";
 
 const reminderHours = [
     { value: "1", content: "1 час" }, { value: "2", content: "2 часа" },
@@ -79,7 +80,24 @@ const Notifications = () => {
         }
     };
 
-    const toggleChannel = (channel: NotificationChannelKey) => {
+    const toggleChannel = async (channel: NotificationChannelKey) => {
+        if (channel === "push") {
+            const isSelected = channels.includes("push");
+            if (!isSelected) {
+                // Try enabling push immediately to get permission
+                if (!isPushSupported()) {
+                    setSaveMsg("Push не поддерживается в этом браузере.");
+                    return;
+                }
+                const pushResult = await enablePushNotifications();
+                if (!pushResult.enabled) {
+                    setSaveMsg(codedErrorMessage("SETT-NOTIF-PUSH", pushResult.reason));
+                    return;
+                }
+                setSaveMsg(null);
+            }
+        }
+
         setChannels((prev) => {
             const isSelected = prev.includes(channel);
             const next = isSelected
@@ -185,7 +203,7 @@ const Notifications = () => {
     ];
 
     return (
-        <Card view="outlined" style={{ background: "var(--g-color-base-float)" }}>
+        <Card className="repeto-settings-section-card" view="outlined">
             <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--g-color-line-generic)" }}>
                 <Text variant="subheader-2">Настройки уведомлений</Text>
             </div>
@@ -194,7 +212,7 @@ const Notifications = () => {
                     <Text variant="caption-2" color="secondary" style={{ display: "block", marginBottom: 10 }}>
                         Каналы уведомлений
                     </Text>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    <div className="repeto-settings-pill-row">
                         {CHANNEL_OPTIONS.map((option) => {
                             const selected = channels.includes(option.value);
                             return (
@@ -202,17 +220,7 @@ const Notifications = () => {
                                     key={option.value}
                                     type="button"
                                     onClick={() => toggleChannel(option.value)}
-                                    style={{
-                                        height: 40,
-                                        padding: "0 14px",
-                                        borderRadius: 10,
-                                        border: `1px solid ${selected ? "var(--g-color-base-brand)" : "var(--g-color-line-generic)"}`,
-                                        background: selected ? "var(--g-color-base-brand)" : "transparent",
-                                        color: selected ? "var(--g-color-text-light-primary)" : "var(--g-color-text-primary)",
-                                        fontSize: 14,
-                                        fontWeight: 700,
-                                        cursor: "pointer",
-                                    }}
+                                    className={`repeto-settings-pill${selected ? " repeto-settings-pill--active" : ""}`}
                                 >
                                     {option.content}
                                 </button>
@@ -228,27 +236,33 @@ const Notifications = () => {
                         </Text>
                     )}
                 </div>
-                <div style={{ display: "flex", flexDirection: "column" }}>
+                <div className="repeto-settings-notification-list">
                     {items.map((item, idx) => (
-                        <div key={idx} style={{ display: "flex", alignItems: "center", padding: "16px 0", borderBottom: idx < items.length - 1 ? "1px solid var(--g-color-line-generic)" : undefined }}>
-                            <div style={{ flex: 1, marginRight: 16 }}>
+                        <div key={idx} className={`repeto-settings-notification-item${idx < items.length - 1 ? " repeto-settings-notification-item--divided" : ""}`}>
+                            <div className="repeto-settings-notification-item__meta">
                                 <Text variant="body-1" style={{ fontWeight: 600, display: "block" }}>{item.label}</Text>
                                 <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 2 }}>{item.desc}</Text>
                             </div>
-                            <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+                            <div className="repeto-settings-notification-item__controls">
                                 {item.opts && item.on && (
-                                    <div style={{ minWidth: 120 }}>
-                                        <Select options={item.opts} value={[item.val!]} onUpdate={(v) => item.setVal!(v[0])} size="s" width="max" />
-                                    </div>
+                                    <AppSelect
+                                        className="repeto-settings-inline-select"
+                                        label="Интервал"
+                                        options={item.opts}
+                                        value={[item.val!]}
+                                        onUpdate={(v) => item.setVal!(v[0])}
+                                        size="l"
+                                        width="max"
+                                    />
                                 )}
                                 <Switch checked={item.on} onUpdate={(v) => item.setOn(v)} size="l" />
                             </div>
                         </div>
                     ))}
                 </div>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", marginTop: 32, gap: 12 }}>
+                <div className="repeto-settings-savebar">
                     {saveMsg && (
-                        <Text variant="body-1" style={{ fontWeight: 600, color: saveMsg === "Сохранено" ? "var(--g-color-text-positive)" : "var(--g-color-text-danger)" }}>
+                        <Text variant="body-1" className={`repeto-settings-savebar__message${saveMsg === "Сохранено" ? " repeto-settings-savebar__message--ok" : " repeto-settings-savebar__message--error"}`}>
                             {saveMsg}
                         </Text>
                     )}

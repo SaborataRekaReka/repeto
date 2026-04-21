@@ -1,13 +1,9 @@
 export type StudentStatus = "active" | "paused" | "archived";
-export type StudentAvatarTone = "soft" | "normal" | "strong";
 
 export type Student = {
     id: string;
     name: string;
     avatarUrl?: string;
-    avatarEmoji?: string;
-    avatarBackground?: string;
-    avatarTone?: StudentAvatarTone;
     subject: string;
     grade: string; // "11" or "Взрослый"
     age?: number; // student's age

@@ -194,6 +194,9 @@ export class StudentsService {
         skip,
         take: limit,
         include: {
+          account: {
+            select: { avatarUrl: true },
+          },
           lessons: {
             where: { status: 'COMPLETED' },
             select: { rate: true },
@@ -210,8 +213,12 @@ export class StudentsService {
     const data = students.map((s) => {
       const earned = s.lessons.reduce((sum, l) => sum + l.rate, 0);
       const paid = s.payments.reduce((sum, p) => sum + p.amount, 0);
-      const { lessons, payments, ...rest } = s;
-      return { ...rest, balance: paid - earned };
+      const { lessons, payments, account, ...rest } = s;
+      return {
+        ...rest,
+        avatarUrl: account?.avatarUrl || null,
+        balance: paid - earned,
+      };
     });
 
     return {
@@ -226,6 +233,9 @@ export class StudentsService {
     const student = await this.prisma.student.findUnique({
       where: { id },
       include: {
+        account: {
+          select: { avatarUrl: true },
+        },
         lessons: {
           where: { status: 'COMPLETED' },
           select: { rate: true },
@@ -248,8 +258,12 @@ export class StudentsService {
 
     const earned = student.lessons.reduce((sum, l) => sum + l.rate, 0);
     const paid = student.payments.reduce((sum, p) => sum + p.amount, 0);
-    const { lessons, payments, ...rest } = student;
-    return { ...rest, balance: paid - earned };
+    const { lessons, payments, account, ...rest } = student;
+    return {
+      ...rest,
+      avatarUrl: account?.avatarUrl || null,
+      balance: paid - earned,
+    };
   }
 
   // Notes CRUD
@@ -449,6 +463,20 @@ export class StudentsService {
     return normalized || null;
   }
 
+  async checkEmail(rawEmail: string) {
+    const email = this.normalizeEmail(rawEmail);
+    if (!email) {
+      return { exists: false };
+    }
+    const account = await this.prisma.studentAccount.findUnique({
+      where: { email },
+      select: { id: true, name: true },
+    });
+    return account
+      ? { exists: true, name: account.name }
+      : { exists: false };
+  }
+
   async create(userId: string, dto: CreateStudentDto) {
     const { invite, ...rawData } = dto;
     const data: Prisma.StudentUncheckedCreateInput = {
@@ -546,6 +574,40 @@ export class StudentsService {
     if (student.userId !== userId) throw new ForbiddenException();
 
     return this.prisma.student.delete({ where: { id } });
+  }
+
+  /**
+   * Detach a per-tutor Student row from a portal StudentAccount and turn it
+   * back into a plain CRM student record editable by the tutor.
+   */
+  async unlinkAccount(id: string, userId: string) {
+    const student = await this.prisma.student.findUnique({ where: { id } });
+    if (!student) throw new NotFoundException('Student not found');
+    if (student.userId !== userId) throw new ForbiddenException();
+
+    let normalizedEmail = this.normalizeEmail(student.email);
+    if (!normalizedEmail && student.accountId) {
+      const linkedAccount = await this.prisma.studentAccount.findUnique({
+        where: { id: student.accountId },
+        select: { email: true },
+      });
+      normalizedEmail = this.normalizeEmail(linkedAccount?.email);
+    }
+
+    const updated = await this.prisma.student.update({
+      where: { id },
+      data: {
+        accountId: null,
+        ...(normalizedEmail ? { email: normalizedEmail } : {}),
+      },
+      select: {
+        id: true,
+        accountId: true,
+        email: true,
+      },
+    });
+
+    return updated;
   }
 
   /**

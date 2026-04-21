@@ -1,4 +1,5 @@
 ﻿import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -132,6 +133,48 @@ export class PortalController {
     return this.portalService.requestReschedule(studentId, lessonId, newDate, newTime);
   }
 
+  @Post('students/:studentId/pending-bookings/:bookingId/cancel')
+  async cancelPendingBooking(
+    @CurrentStudent('id') accountId: string,
+    @Param('studentId') studentId: string,
+    @Param('bookingId') bookingId: string,
+  ) {
+    const context = await this.assertPendingBookingOwnership(
+      accountId,
+      studentId,
+      bookingId,
+    );
+
+    return this.portalService.cancelPendingBooking(
+      context.bookingId,
+      context.tutorId,
+      context.studentDisplayName,
+    );
+  }
+
+  @Post('students/:studentId/pending-bookings/:bookingId/reschedule')
+  async reschedulePendingBooking(
+    @CurrentStudent('id') accountId: string,
+    @Param('studentId') studentId: string,
+    @Param('bookingId') bookingId: string,
+    @Body('newDate') newDate: string,
+    @Body('newTime') newTime: string,
+  ) {
+    const context = await this.assertPendingBookingOwnership(
+      accountId,
+      studentId,
+      bookingId,
+    );
+
+    return this.portalService.reschedulePendingBooking(
+      context.bookingId,
+      context.tutorId,
+      context.studentDisplayName,
+      newDate,
+      newTime,
+    );
+  }
+
   @Post('students/:studentId/lessons/:lessonId/feedback')
   async feedback(
     @CurrentStudent('id') accountId: string,
@@ -142,6 +185,60 @@ export class PortalController {
   ) {
     await this.assertOwnership(accountId, studentId);
     return this.portalService.submitLessonFeedback(studentId, lessonId, rating, feedback);
+  }
+
+  @Patch('students/:studentId/profile')
+  async updateProfile(
+    @CurrentStudent('id') accountId: string,
+    @Param('studentId') studentId: string,
+    @Body('name') name?: string,
+    @Body('phone') phone?: string,
+    @Body('grade') grade?: string,
+    @Body('age') age?: number,
+    @Body('parentName') parentName?: string,
+    @Body('parentPhone') parentPhone?: string,
+    @Body('parentEmail') parentEmail?: string,
+  ) {
+    await this.assertOwnership(accountId, studentId);
+    const updateData: Record<string, any> = {};
+    if (name && name.trim()) updateData.name = name.trim();
+    if (phone !== undefined) updateData.phone = phone ? phone.trim() : null;
+    if (grade !== undefined) updateData.grade = grade ? grade.trim() : null;
+    if (age !== undefined) {
+      const safeAge = Number.isFinite(age) && age > 0 ? Math.floor(age) : null;
+      updateData.age = safeAge;
+    }
+    if (parentName !== undefined) updateData.parentName = parentName ? parentName.trim() : null;
+    if (parentPhone !== undefined) updateData.parentPhone = parentPhone ? parentPhone.trim() : null;
+    if (parentEmail !== undefined) updateData.parentEmail = parentEmail ? parentEmail.trim() : null;
+    if (Object.keys(updateData).length === 0) {
+      return { ok: true };
+    }
+    await this.prisma.student.update({
+      where: { id: studentId },
+      data: updateData,
+    });
+    return { ok: true };
+  }
+
+  @Post('avatar')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadAvatar(
+    @CurrentStudent('id') accountId: string,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
+        ],
+      }),
+    )
+    file: Express.Multer.File,
+  ) {
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedMimes.includes(file.mimetype)) {
+      throw new ForbiddenException('Unsupported image type');
+    }
+    return this.portalService.uploadAvatar(accountId, file);
   }
 
   @Patch('students/:studentId/homework/:homeworkId')
@@ -231,7 +328,7 @@ export class PortalController {
    * and all linked Student rows with the provided contact info.
    */
   @Patch('profile')
-  async updateProfile(
+  async completeProfileSetup(
     @CurrentStudent('id') accountId: string,
     @Body()
     body: {
@@ -289,6 +386,96 @@ export class PortalController {
     if (student.accountId !== accountId) throw new ForbiddenException();
   }
 
+  private async assertPendingBookingOwnership(
+    accountId: string,
+    studentId: string,
+    bookingId: string,
+  ) {
+    const account = await this.prisma.studentAccount.findUnique({
+      where: { id: accountId },
+      select: { email: true, name: true },
+    });
+    if (!account) {
+      throw new ForbiddenException();
+    }
+
+    const booking = await this.prisma.bookingRequest.findUnique({
+      where: { id: bookingId },
+      select: {
+        id: true,
+        userId: true,
+        status: true,
+        clientEmail: true,
+        clientPhone: true,
+      },
+    });
+
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    if (booking.status !== 'PENDING') {
+      throw new BadRequestException('Заявка уже обработана');
+    }
+
+    const normalizedAccountEmail = account.email.trim().toLowerCase();
+    const normalizedBookingEmail = (booking.clientEmail || '').trim().toLowerCase();
+    const bookingMatchesAccount =
+      !!normalizedBookingEmail && normalizedBookingEmail === normalizedAccountEmail;
+
+    if (studentId.startsWith('pending:')) {
+      const expectedBookingId = studentId.slice('pending:'.length);
+      if (expectedBookingId !== booking.id || !bookingMatchesAccount) {
+        throw new ForbiddenException();
+      }
+
+      return {
+        bookingId: booking.id,
+        tutorId: booking.userId,
+        studentDisplayName: account.name || 'Ученик',
+      };
+    }
+
+    const student = await this.prisma.student.findUnique({
+      where: { id: studentId },
+      select: {
+        accountId: true,
+        userId: true,
+        phone: true,
+        email: true,
+      },
+    });
+
+    if (!student) {
+      throw new NotFoundException('Student not found');
+    }
+    if (student.accountId !== accountId) {
+      throw new ForbiddenException();
+    }
+    if (student.userId !== booking.userId) {
+      throw new ForbiddenException();
+    }
+
+    const normalizedStudentEmail = (student.email || '').trim().toLowerCase();
+    const normalizedStudentPhone = (student.phone || '').trim();
+    const normalizedBookingPhone = (booking.clientPhone || '').trim();
+
+    const bookingMatchesStudent =
+      bookingMatchesAccount ||
+      (!!normalizedStudentEmail && normalizedStudentEmail === normalizedBookingEmail) ||
+      (!!normalizedStudentPhone && normalizedStudentPhone === normalizedBookingPhone);
+
+    if (!bookingMatchesStudent) {
+      throw new ForbiddenException();
+    }
+
+    return {
+      bookingId: booking.id,
+      tutorId: booking.userId,
+      studentDisplayName: account.name || 'Ученик',
+    };
+  }
+
   private async buildPendingOnlyData(accountId: string, bookingId: string) {
     const account = await this.prisma.studentAccount.findUnique({
       where: { id: accountId },
@@ -311,6 +498,7 @@ export class PortalController {
       },
     });
     if (!booking) throw new NotFoundException('Booking not found');
+    if (booking.status !== 'PENDING') throw new NotFoundException('Booking not found');
     if (!booking.clientEmail || booking.clientEmail.toLowerCase() !== account.email.toLowerCase()) {
       throw new ForbiddenException();
     }
@@ -331,6 +519,8 @@ export class PortalController {
       tutorPhone: booking.user.phone || '',
       tutorWhatsapp: booking.user.whatsapp || undefined,
       tutorAvatarUrl: booking.user.avatarUrl || null,
+      tutorRating: null,
+      tutorReviewsCount: 0,
       balance: 0,
       ratePerLesson: 0,
       package: null,

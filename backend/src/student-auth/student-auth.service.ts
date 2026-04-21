@@ -499,7 +499,7 @@ export class StudentAuthService {
    */
   async sendAccountInviteEmail(email: string, tutorName: string) {
     const normalizedEmail = this.normalizeEmail(email);
-    const loginUrl = this.buildStudentLoginUrl();
+    const loginUrl = this.buildStudentLoginUrl(normalizedEmail);
 
     const subject = `${tutorName} пригласил(а) вас в Repeto`;
     const html = [
@@ -541,14 +541,15 @@ export class StudentAuthService {
     }
   }
 
-  private buildStudentLoginUrl() {
+  private buildStudentLoginUrl(email?: string) {
     const raw = process.env.FRONTEND_URL || 'http://localhost:3300';
     const primary =
       raw
         .split(',')
         .map((v) => v.trim())
         .find(Boolean) || 'http://localhost:3300';
-    return `${primary.replace(/\/+$/, '')}/auth?view=student`;
+    const base = `${primary.replace(/\/+$/, '')}/auth?view=student`;
+    return email ? `${base}&email=${encodeURIComponent(email)}` : base;
   }
 
   private async sendOtpEmail(email: string, code: string, purpose: OtpPurpose) {

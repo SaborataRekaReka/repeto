@@ -123,7 +123,14 @@ export class PublicService {
         rating: true,
         phone: true,
         whatsapp: true,
+        vk: true,
+        website: true,
         cancelPolicySettings: true,
+        education: true,
+        experience: true,
+        qualificationVerified: true,
+        qualificationLabel: true,
+        certificates: true,
         createdAt: true,
       },
     });
@@ -216,7 +223,30 @@ export class PublicService {
           date: note.createdAt,
         };
       })
-      .filter(Boolean);
+      .filter(
+        (
+          item,
+        ): item is {
+          studentName: string;
+          rating: number;
+          feedback: string | null;
+          date: Date;
+        } => !!item,
+      );
+
+    const reviewsCount = reviews.length;
+    const averageReviewRating =
+      reviewsCount > 0
+        ? Math.round(
+            (reviews.reduce((sum, review) => sum + review.rating, 0) / reviewsCount) *
+              10,
+          ) / 10
+        : null;
+    const persistedRating = Number(user.rating);
+    const normalizedPersistedRating = Number.isFinite(persistedRating)
+      ? persistedRating
+      : null;
+    const profileRating = averageReviewRating ?? normalizedPersistedRating;
 
     const cancelPolicySettings =
       user.cancelPolicySettings && typeof user.cancelPolicySettings === 'object'
@@ -243,17 +273,24 @@ export class PublicService {
       aboutText: user.aboutText,
       avatarUrl: user.avatarUrl,
       lessonsCount: user.lessonsCount,
-      rating: user.rating,
-      reviewsCount: reviews.length,
+      rating: profileRating,
+      reviewsCount,
       reviews,
       contacts: {
         phone: user.phone,
         whatsapp: user.whatsapp,
+        vk: user.vk,
+        website: user.website,
       },
       cancelPolicy: mapCancelPolicy(user.cancelPolicySettings),
       preferredPaymentMethod,
       memberSince: user.createdAt,
       hasWorkingDays: weeklySlotsCount > 0,
+      education: user.education,
+      experience: user.experience,
+      qualificationVerified: user.qualificationVerified,
+      qualificationLabel: user.qualificationLabel,
+      certificates: user.certificates,
     };
   }
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
     TextInput,
@@ -18,6 +18,7 @@ import StyledDateInput from "@/components/StyledDateInput";
 import { Lp2Field, Lp2Row } from "@/components/Lp2Field";
 import { codedErrorMessage } from "@/lib/errorCodes";
 import StudentNameWithBadge from "@/components/StudentNameWithBadge";
+import StudentAvatar from "@/components/StudentAvatar";
 import type { Payment } from "@/types/finance";
 
 const methodOptions = [
@@ -26,16 +27,6 @@ const methodOptions = [
     { value: "transfer", content: "Перевод" },
     { value: "yukassa", content: "ЮKassa" },
 ];
-
-const STUDENT_BADGE_COLORS = ["#7a98ff", "#9f7aea", "#e29a6a", "#6fb38b", "#5ca8a8"];
-
-function getStudentBadgeColor(name: string) {
-    let hash = 0;
-    for (let i = 0; i < name.length; i += 1) {
-        hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
-    }
-    return STUDENT_BADGE_COLORS[hash % STUDENT_BADGE_COLORS.length];
-}
 
 type CreatePaymentModalProps = {
     visible: boolean;
@@ -48,6 +39,7 @@ type CreatePaymentModalProps = {
         accountId?: string | null;
     } | null;
     paymentData?: Payment | null;
+    hideLesson?: boolean;
 };
 
 const MAX_PAYMENT_AMOUNT = 2147483647;
@@ -79,7 +71,7 @@ function toInputDate(value: string | undefined, fallback: string): string {
     return toDateInputValue(parsed);
 }
 
-const PANEL_Z = 135;
+const PANEL_Z = 960;
 
 const CreatePaymentModal = ({
     visible,
@@ -88,6 +80,7 @@ const CreatePaymentModal = ({
     onDeleted,
     defaultStudent,
     paymentData,
+    hideLesson,
 }: CreatePaymentModalProps) => {
     const panelRef = useRef<HTMLDivElement>(null);
     const [mounted, setMounted] = useState(false);
@@ -136,7 +129,10 @@ const CreatePaymentModal = ({
     const studentOptions = (studentsData?.data || []).map((s) => ({
         value: s.id,
         content: s.name,
-        data: { color: getStudentBadgeColor(s.name), accountId: s.accountId ?? null },
+        data: {
+            accountId: s.accountId ?? null,
+            avatarUrl: s.avatarUrl,
+        },
     }));
     const hasStudentLoadError = Boolean(studentsError);
     const hasNoActiveStudents =
@@ -213,7 +209,7 @@ const CreatePaymentModal = ({
     const studentPlaceholder = studentsLoading
         ? "Загружаем учеников..."
         : hasStudentLoadError
-          ? "Не удалось загрузить учеников"
+                    ? "Не удалось загрузить учеников"
           : hasNoActiveStudents
             ? "Нет активных учеников"
             : "Выберите ученика";
@@ -268,7 +264,7 @@ const CreatePaymentModal = ({
 
         if (!defaultStudent) {
             if (studentsLoading) {
-                setErrorText("Список учеников загружается. Повторите попытку через секунду.");
+                setErrorText("Список учеников загружается. Повторите попытку через секђндђ.");
                 return;
             }
             if (hasStudentLoadError) {
@@ -276,7 +272,7 @@ const CreatePaymentModal = ({
                 return;
             }
             if (hasNoActiveStudents) {
-                setErrorText("Нет активных учеников. Добавьте ученика перед записью оплаты.");
+                setErrorText("Нет активных учеников. Добавьте ученика пеѬед записью оплаты.");
                 return;
             }
         }
@@ -286,11 +282,11 @@ const CreatePaymentModal = ({
             return;
         }
         if (!Number.isFinite(normalizedAmount) || normalizedAmount < 1) {
-            setErrorText("Введите корректную сумму больше 0.");
+            setErrorText("Введите корректную сђммђ больше 0.");
             return;
         }
         if (normalizedAmount > MAX_PAYMENT_AMOUNT) {
-            setErrorText("Сумма слишком большая.");
+            setErrorText("Сђмма слишком большая.");
             return;
         }
         if (!method.length) {
@@ -367,31 +363,42 @@ const CreatePaymentModal = ({
                 : "Ученик";
 
         return (
-            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "4px 0" }}>
-                <div
-                    style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: "50%",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "#fff",
-                        fontWeight: 600,
-                        fontSize: 13,
-                        flexShrink: 0,
-                        background: option?.data?.color || getStudentBadgeColor(optionLabel),
-                    }}
-                >
-                    {optionLabel.charAt(0).toUpperCase()}
+            <div className="app-select-option-entity">
+                <StudentAvatar
+                    student={{ name: optionLabel, avatarUrl: option?.data?.avatarUrl }}
+                    size="s"
+                />
+                <div className="app-select-option-entity__meta">
+                    <span className="app-select-option-entity__title">
+                        <StudentNameWithBadge
+                            name={optionLabel}
+                            hasRepetoAccount={Boolean(option?.data?.accountId)}
+                        />
+                    </span>
                 </div>
-                <Text variant="body-1">
+            </div>
+        );
+    };
+
+    const renderStudentSelectedOption = (option: any) => {
+        const optionLabel =
+            typeof option?.content === "string" && option.content.trim().length
+                ? option.content
+                : "Ученик";
+
+        return (
+            <span className="app-select-selected-entity">
+                <StudentAvatar
+                    student={{ name: optionLabel, avatarUrl: option?.data?.avatarUrl }}
+                    size="xs"
+                />
+                <span className="app-select-selected-entity__text">
                     <StudentNameWithBadge
                         name={optionLabel}
                         hasRepetoAccount={Boolean(option?.data?.accountId)}
                     />
-                </Text>
-            </div>
+                </span>
+            </span>
         );
     };
 
@@ -435,6 +442,7 @@ const CreatePaymentModal = ({
                                 placeholder={studentPlaceholder}
                                 options={studentOptions}
                                 renderOption={renderStudentOption}
+                                renderSelectedOption={renderStudentSelectedOption}
                                 value={studentId}
                                 onUpdate={(value) => {
                                     setStudentId(value);
@@ -444,7 +452,7 @@ const CreatePaymentModal = ({
                                 disabled={isStudentSelectDisabled}
                                 popupWidth="fit"
                                 popupPlacement={["bottom-start", "top-start"]}
-                                popupClassName="lp2-popup"
+                                popupClassName="app-select-popup"
                             />
                             {studentsLoading && (
                                 <Text as="div" variant="caption-2" color="secondary" style={{ marginTop: 4 }}>
@@ -474,7 +482,7 @@ const CreatePaymentModal = ({
                         </Lp2Field>
                     )}
 
-                    <Lp2Field label="Сумма (₽) *" error={amountError} errorText="Введите корректную сумму больше 0">
+                    <Lp2Field label="Сђмма (₽) *" error={amountError} errorText="Введите корректную сђммђ больше 0">
                         <TextInput
                             size="l"
                             type="text"
@@ -500,11 +508,12 @@ const CreatePaymentModal = ({
                                 options={methodOptions}
                                 value={method}
                                 onUpdate={setMethod}
-                                popupClassName="lp2-popup"
+                                popupClassName="app-select-popup"
                             />
                         </Lp2Field>
                     </Lp2Row>
 
+                    {!hideLesson && (
                     <Lp2Field label="Привязать к занятию (опционально)">
                         <Select
                             size="l"
@@ -515,7 +524,7 @@ const CreatePaymentModal = ({
                                     : lessonsLoading
                                       ? "Загружаем занятия..."
                                       : completedLessonOptions.length > 0
-                                        ? "Выберите проведенное занятие"
+                                        ? "Выберите пѬоведенное занятие"
                                         : "Нет свободных проведенных занятий"
                             }
                             options={completedLessonOptions}
@@ -527,12 +536,13 @@ const CreatePaymentModal = ({
                                 lessonsLoading ||
                                 completedLessonOptions.length === 0
                             }
-                            popupClassName="lp2-popup"
+                            popupClassName="app-select-popup"
                         />
                         <Text as="div" variant="caption-2" color="secondary" style={{ marginTop: 4 }}>
-                            Занятия, уже связанные с оплатами, в список не попадают.
+                            Занятия, ђже связанные с оплатами, в список не попадают.
                         </Text>
                     </Lp2Field>
+                    )}
 
                     <Lp2Field label="Комментарий">
                         <TextArea

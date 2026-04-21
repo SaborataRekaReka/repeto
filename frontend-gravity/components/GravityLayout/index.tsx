@@ -7,6 +7,8 @@ import {
     Persons,
     Calendar,
     CirclePlus,
+    Thunderbolt,
+    Xmark,
     CreditCard,
     Receipt,
     ObjectAlignJustifyVertical,
@@ -17,6 +19,7 @@ import {
     Magnifier,
     ArrowLeft,
     ChevronDown,
+    ChevronRight,
     ArrowUpRightFromSquare,
     ArrowRightFromSquare,
     Sun,
@@ -34,6 +37,7 @@ import { onNotificationsChanged, useUnreadCount } from "@/hooks/useNotifications
 import { useAuth } from "@/contexts/AuthContext";
 import { useThemeMode, type ThemeMode } from "@/contexts/ThemeContext";
 import { getInitials } from "@/lib/formatters";
+import AnimatedSidebarIcon from "@/components/AnimatedSidebarIcon";
 
 const GTooltip = Tooltip as any;
 const GIcon = Icon as any;
@@ -59,6 +63,7 @@ type GravityLayoutProps = {
     title?: string;
     back?: boolean;
     hideSidebar?: boolean;
+    hideHeaderTitle?: boolean;
     children: React.ReactNode;
 };
 
@@ -67,20 +72,61 @@ type DropdownSwitcherHandlers = {
     onKeyDown: KeyboardEventHandler<HTMLElement>;
 };
 
-type MenuItem = { title: string; icon: IconData; url: string };
+type MenuItem = {
+    title: string;
+    icon: IconData;
+    url: string;
+    animatedIconPath?: string;
+};
+
+type SidebarQuickAction = {
+    id: string;
+    title: string;
+    icon: IconData;
+    action: () => void;
+    animatedIconPath?: string;
+};
+
+const sidebarAnimatedIconPaths = {
+    students: "/icons/sidebar-animated/people.json",
+    payments: "/icons/sidebar-animated/receipt.json",
+    packages: "/icons/sidebar-animated/archive.json",
+    files: "/icons/sidebar-animated/folder-open.json",
+    quickLesson: "/icons/sidebar-animated/book-open.json",
+    quickStudent: "/icons/sidebar-animated/user-add.json",
+    quickPayment: "/icons/sidebar-animated/receipt-add.json",
+    quickPublic: "/icons/sidebar-animated/global.json",
+    quickIntegrations: "/icons/sidebar-animated/folder-connection.json",
+} as const;
 
 const menuItems: MenuItem[] = [
     { title: "Дашборд", icon: House as IconData, url: "/dashboard" },
-    { title: "Ученики", icon: Persons as IconData, url: "/students" },
+    {
+        title: "Ученики",
+        icon: Persons as IconData,
+        url: "/students",
+        animatedIconPath: sidebarAnimatedIconPaths.students,
+    },
     { title: "Расписание", icon: Calendar as IconData, url: "/schedule" },
     { title: "Финансы", icon: CreditCard as IconData, url: "/finance" },
-    { title: "Оплаты", icon: Receipt as IconData, url: "/payments" },
+    {
+        title: "Оплаты",
+        icon: Receipt as IconData,
+        url: "/payments",
+        animatedIconPath: sidebarAnimatedIconPaths.payments,
+    },
     {
         title: "Пакеты",
         icon: ObjectAlignJustifyVertical as IconData,
         url: "/packages",
+        animatedIconPath: sidebarAnimatedIconPaths.packages,
     },
-    { title: "Материалы", icon: FolderOpen as IconData, url: "/files" },
+    {
+        title: "Материалы",
+        icon: FolderOpen as IconData,
+        url: "/files",
+        animatedIconPath: sidebarAnimatedIconPaths.files,
+    },
 ];
 
 const topHeaderUrls = new Set(["/dashboard", "/schedule", "/finance"]);
@@ -105,7 +151,7 @@ const mobileNavItems: MenuItem[] = [
     { title: "Финансы", icon: CreditCard as IconData, url: "/finance" },
 ];
 
-const GravityLayout = ({ title, back, hideSidebar = false, children }: GravityLayoutProps) => {
+const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = false, children }: GravityLayoutProps) => {
     const useFlatLayout = true;
     const router = useRouter();
     const pathname = router.asPath.split("?")[0];
@@ -170,6 +216,8 @@ const GravityLayout = ({ title, back, hideSidebar = false, children }: GravityLa
     const [createStudentModalOpen, setCreateStudentModalOpen] = useState(false);
     const [createPaymentModalOpen, setCreatePaymentModalOpen] = useState(false);
     const [createLessonModalOpen, setCreateLessonModalOpen] = useState(false);
+    const [mobileQuickActionsOpen, setMobileQuickActionsOpen] = useState(false);
+    const [hoveredSidebarIconKey, setHoveredSidebarIconKey] = useState<string | null>(null);
     const searchRef = useRef<HTMLDivElement>(null);
     const useTopHeaderSearch = useFlatLayout && !isMobileViewport;
 
@@ -250,11 +298,12 @@ const GravityLayout = ({ title, back, hideSidebar = false, children }: GravityLa
         await router.push("/payments");
     }, [router]);
 
-    const quickActionItems: Array<{ id: string; title: string; icon: IconData; action: () => void }> = [
+    const quickActionItems: SidebarQuickAction[] = [
         {
             id: "quick-create-lesson",
             title: "Добавить занятие",
             icon: CirclePlus as IconData,
+            animatedIconPath: sidebarAnimatedIconPaths.quickLesson,
             action: () => {
                 openCreateLessonModal();
             },
@@ -263,6 +312,7 @@ const GravityLayout = ({ title, back, hideSidebar = false, children }: GravityLa
             id: "quick-create-student",
             title: "Добавить ученика",
             icon: Persons as IconData,
+            animatedIconPath: sidebarAnimatedIconPaths.quickStudent,
             action: () => {
                 openCreateStudentModal();
             },
@@ -271,6 +321,7 @@ const GravityLayout = ({ title, back, hideSidebar = false, children }: GravityLa
             id: "quick-create-payment",
             title: "Записать оплату",
             icon: Receipt as IconData,
+            animatedIconPath: sidebarAnimatedIconPaths.quickPayment,
             action: () => {
                 openCreatePaymentModal();
             },
@@ -279,12 +330,14 @@ const GravityLayout = ({ title, back, hideSidebar = false, children }: GravityLa
             id: "quick-public-page",
             title: "Публичная страница",
             icon: ArrowUpRightFromSquare as IconData,
+            animatedIconPath: sidebarAnimatedIconPaths.quickPublic,
             action: openPublicPage,
         },
         {
             id: "quick-integrations",
-            title: "Интеграции",
-            icon: Gear as IconData,
+            title: "Подключить диски",
+            icon: FolderOpen as IconData,
+            animatedIconPath: sidebarAnimatedIconPaths.quickIntegrations,
             action: openIntegrations,
         },
     ];
@@ -436,6 +489,32 @@ const GravityLayout = ({ title, back, hideSidebar = false, children }: GravityLa
                             )}
 
                             <Link
+                                href="/notifications"
+                                aria-label="Уведомления"
+                                className={`repeto-top-header__icon-btn ${
+                                    pathname === "/notifications" || pathname.startsWith("/notifications/")
+                                        ? "repeto-top-header__icon-btn--active"
+                                        : ""
+                                }`}
+                                style={{ position: "relative" }}
+                            >
+                                <GIcon data={Bell as IconData} size={24} />
+                                {unreadCount > 0 && (
+                                    <span
+                                        style={{
+                                            position: "absolute",
+                                            top: 2,
+                                            right: 2,
+                                            width: 8,
+                                            height: 8,
+                                            borderRadius: "50%",
+                                            background: "var(--g-color-text-danger)",
+                                        }}
+                                    />
+                                )}
+                            </Link>
+
+                            <Link
                                 href="/settings"
                                 aria-label="Настройки"
                                 className={`repeto-top-header__icon-btn ${
@@ -585,7 +664,7 @@ const GravityLayout = ({ title, back, hideSidebar = false, children }: GravityLa
                                     }`}
                                     aria-hidden="true"
                                 >
-                                    <GIcon data={ChevronDown as IconData} size={24} />
+                                    <GIcon data={ChevronRight as IconData} size={24} />
                                 </span>
                             </button>
                         </div>
@@ -596,19 +675,37 @@ const GravityLayout = ({ title, back, hideSidebar = false, children }: GravityLa
                                     pathname === item.url ||
                                     (item.url !== "/dashboard" &&
                                         pathname.startsWith(item.url + "/"));
+                                const iconKey = `nav:${item.url}`;
 
                                 const linkContent = (
                                     <Link
                                         key={item.url}
                                         href={item.url}
-                                        className={`repeto-sidebar__item ${
+                                        onMouseEnter={() => setHoveredSidebarIconKey(iconKey)}
+                                        onMouseLeave={() =>
+                                            setHoveredSidebarIconKey((prev) => (prev === iconKey ? null : prev))
+                                        }
+                                        onFocus={() => setHoveredSidebarIconKey(iconKey)}
+                                        onBlur={() =>
+                                            setHoveredSidebarIconKey((prev) => (prev === iconKey ? null : prev))
+                                        }
+                                        className={`repeto-sidebar__item repeto-sidebar__item--main ${
                                             isActive
                                                 ? "repeto-sidebar__item--active"
                                                 : ""
                                         }`}
                                     >
                                         <span className="repeto-sidebar__item-icon">
-                                            <GIcon data={item.icon} size={25} />
+                                            {item.animatedIconPath ? (
+                                                <AnimatedSidebarIcon
+                                                    src={item.animatedIconPath}
+                                                    fallbackIcon={item.icon}
+                                                    play={hoveredSidebarIconKey === iconKey}
+                                                    size={38}
+                                                />
+                                            ) : (
+                                                <GIcon data={item.icon} size={38} />
+                                            )}
                                         </span>
                                         <span className="repeto-sidebar__item-text">{item.title}</span>
                                     </Link>
@@ -634,15 +731,33 @@ const GravityLayout = ({ title, back, hideSidebar = false, children }: GravityLa
 
                         <div className="repeto-sidebar__section-list">
                             {quickActionItems.map((item) => {
+                                const iconKey = `quick:${item.id}`;
                                 const actionButton = (
                                     <button
                                         key={item.id}
                                         type="button"
-                                        className="repeto-sidebar__item repeto-sidebar__item--quick"
+                                        className="repeto-sidebar__item repeto-sidebar__item--main repeto-sidebar__item--quick"
                                         onClick={item.action}
+                                        onMouseEnter={() => setHoveredSidebarIconKey(iconKey)}
+                                        onMouseLeave={() =>
+                                            setHoveredSidebarIconKey((prev) => (prev === iconKey ? null : prev))
+                                        }
+                                        onFocus={() => setHoveredSidebarIconKey(iconKey)}
+                                        onBlur={() =>
+                                            setHoveredSidebarIconKey((prev) => (prev === iconKey ? null : prev))
+                                        }
                                     >
                                         <span className="repeto-sidebar__item-icon">
-                                            <GIcon data={item.icon} size={25} />
+                                            {item.animatedIconPath ? (
+                                                <AnimatedSidebarIcon
+                                                    src={item.animatedIconPath}
+                                                    fallbackIcon={item.icon}
+                                                    play={hoveredSidebarIconKey === iconKey}
+                                                    size={30}
+                                                />
+                                            ) : (
+                                                <GIcon data={item.icon} size={30} />
+                                            )}
                                         </span>
                                         <span className="repeto-sidebar__item-text">{item.title}</span>
                                     </button>
@@ -761,7 +876,7 @@ const GravityLayout = ({ title, back, hideSidebar = false, children }: GravityLa
                                 <GIcon data={ArrowLeft as IconData} size={18} />
                             </GButton>
                         )}
-                        {title && (
+                        {title && !hideHeaderTitle && (
                             <h1 className="repeto-page-title">{title}</h1>
                         )}
                     </div>
@@ -879,6 +994,64 @@ const GravityLayout = ({ title, back, hideSidebar = false, children }: GravityLa
 
                 {children}
             </main>
+
+            {isMobileViewport && (
+                <>
+                    {mobileQuickActionsOpen && (
+                        <button
+                            type="button"
+                            className="repeto-quick-actions-backdrop"
+                            aria-label="Закрыть быстрые действия"
+                            onClick={() => setMobileQuickActionsOpen(false)}
+                        />
+                    )}
+
+                    <div
+                        className={`repeto-mobile-fab-wrap${mobileQuickActionsOpen ? " repeto-mobile-fab-wrap--open" : ""}`}
+                        aria-label="Быстрые действия"
+                    >
+                    <GDropdownMenu
+                        open={mobileQuickActionsOpen}
+                        onOpenToggle={setMobileQuickActionsOpen}
+                        popupProps={{
+                            placement: "top",
+                            className: "repeto-mobile-fab__popup",
+                        }}
+                        renderSwitcher={(props: any) => (
+                            <button
+                                type="button"
+                                className="repeto-mobile-fab"
+                                aria-label={mobileQuickActionsOpen ? "Закрыть быстрые действия" : "Открыть быстрые действия"}
+                                {...props}
+                            >
+                                <GIcon data={(mobileQuickActionsOpen ? Xmark : Thunderbolt) as IconData} size={22} />
+                            </button>
+                        )}
+                    >
+                        <div className="repeto-quick-actions-menu">
+                            <div className="repeto-quick-actions-menu__list">
+                                {quickActionItems.map((item) => (
+                                    <button
+                                        key={item.id}
+                                        type="button"
+                                        className="repeto-quick-actions-menu__item"
+                                        onClick={() => {
+                                            setMobileQuickActionsOpen(false);
+                                            item.action();
+                                        }}
+                                    >
+                                        <span className="repeto-quick-actions-menu__item-icon" aria-hidden="true">
+                                            <GIcon data={item.icon} size={24} />
+                                        </span>
+                                        <span className="repeto-quick-actions-menu__item-text">{item.title}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </GDropdownMenu>
+                    </div>
+                </>
+            )}
 
             <nav className="repeto-mobile-nav" aria-label="Мобильная навигация">
                 {mobileNavItems.map((item) => {

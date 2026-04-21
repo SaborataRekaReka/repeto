@@ -21,6 +21,26 @@ export class UpdateAccountDto {
   @MaxLength(30)
   whatsapp?: string;
 
+  @ApiPropertyOptional({
+    example: 'СБП: +79991234567\nКарта: 2200 1234 5678 9567\nПолучатель: Иванов И.И.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(5000)
+  paymentRequisites?: string;
+
+  @ApiPropertyOptional({ example: '2200 1234 5678 9567' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  paymentCardNumber?: string;
+
+  @ApiPropertyOptional({ example: '+7 999 123-45-67' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  paymentSbpPhone?: string;
+
   @ApiPropertyOptional({ example: 'anna-ivanova' })
   @IsOptional()
   @IsString()
@@ -94,4 +114,29 @@ export class UpdateAccountDto {
   @IsOptional()
   @IsEnum(CloudProvider)
   homeworkDefaultCloud?: CloudProvider;
+
+  @ApiPropertyOptional({ description: 'Education entries (JSON array)' })
+  @IsOptional()
+  education?: any;
+
+  @ApiPropertyOptional({ description: 'Experience text' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(5000)
+  experience?: string;
+
+  @ApiPropertyOptional({ example: false })
+  @IsOptional()
+  @IsBoolean()
+  qualificationVerified?: boolean;
+
+  @ApiPropertyOptional({ example: 'Диплом с отличием' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  qualificationLabel?: string;
+
+  @ApiPropertyOptional({ description: 'Certificates (JSON array)' })
+  @IsOptional()
+  certificates?: any;
 }

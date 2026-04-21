@@ -9,16 +9,15 @@ import {
 import {
     Magnifier,
     ObjectAlignJustifyVertical,
-    ArrowUpRightFromSquare,
 } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import GravityLayout from "@/components/GravityLayout";
 import PageOverlay from "@/components/PageOverlay";
 import StudentNameWithBadge from "@/components/StudentNameWithBadge";
+import StudentAvatar from "@/components/StudentAvatar";
 import CreatePackageModal from "@/components/CreatePackageModal";
 import { usePackages } from "@/hooks/usePackages";
 import { getPackageStatusLabel } from "@/mocks/packages";
-import { getInitials } from "@/lib/formatters";
 import type { LessonPackage } from "@/types/package";
 
 const filterTabs: { value: string; label: string }[] = [
@@ -52,14 +51,13 @@ const PackagesPage = () => {
     const [search, setSearch] = useState<string>("");
     const [createModal, setCreateModal] = useState<boolean>(false);
     const [editingPackage, setEditingPackage] = useState<LessonPackage | null>(null);
-    const [createMode, setCreateMode] = useState<"private" | "public">("private");
 
     const { data: packagesData, loading, refetch } = usePackages({
         status: tab === "all" ? undefined : tab,
         limit: 50,
     });
 
-    const { data: allPackagesData } = usePackages({ limit: 1000 });
+    const { data: allPackagesData, refetch: refetchAllPackages } = usePackages({ limit: 1000 });
     const { packageTypeCounts, statusStats } = useMemo(() => {
         const all = allPackagesData?.data || [];
         const privatePackages = all.filter((p) => !p.isPublic);
@@ -98,24 +96,17 @@ const PackagesPage = () => {
         });
 
     const hasSearch = search.trim().length > 0;
+    const isPublicPackagesTab = packageType === "public";
 
     const openCreatePackage = () => {
         setEditingPackage(null);
-        setCreateMode("private");
         setCreateModal(true);
     };
 
-    const openCreatePublicPackage = () => {
-        setEditingPackage(null);
-        setCreateMode("public");
-        setCreateModal(true);
-    };
-
-    const handlePackageCreated = () => {
+    const handlePackageCreated = async () => {
         setEditingPackage(null);
         setCreateModal(false);
-        setCreateMode("private");
-        refetch();
+        await Promise.all([refetch(), refetchAllPackages()]);
     };
 
     const overlayNav = [
@@ -124,25 +115,16 @@ const PackagesPage = () => {
             label: "Новый пакет",
             icon: ObjectAlignJustifyVertical as IconData,
         },
-        {
-            key: "public",
-            label: "Публичный пакет",
-            icon: ArrowUpRightFromSquare as IconData,
-        },
     ];
 
     const handleOverlayNav = (key: string) => {
         if (key === "create") {
             openCreatePackage();
-            return;
-        }
-        if (key === "public") {
-            openCreatePublicPackage();
         }
     };
 
     return (
-        <GravityLayout title="Пакеты" hideSidebar>
+        <GravityLayout title="Пакеты" hideSidebar hideHeaderTitle>
             <PageOverlay
                 title="Пакеты"
                 breadcrumb="Дашборд"
@@ -241,12 +223,16 @@ const PackagesPage = () => {
                     </div>
                 ) : (
                     <div className="repeto-sl-table">
-                        <div className="repeto-sl-list-header repeto-sl-list-header--packages">
+                        <div
+                            className={`repeto-sl-list-header repeto-sl-list-header--packages${
+                                isPublicPackagesTab ? " repeto-sl-list-header--packages-public" : ""
+                            }`}
+                        >
                             <span className="repeto-sl-lh__col">Ученик</span>
-                            <span className="repeto-sl-lh__col">Прогресс</span>
+                            {!isPublicPackagesTab && <span className="repeto-sl-lh__col">Прогресс</span>}
                             <span className="repeto-sl-lh__col">Занятия</span>
                             <span className="repeto-sl-lh__col repeto-sl-lh__col--rate">Сумма</span>
-                            <span className="repeto-sl-lh__col">Действует до</span>
+                            {!isPublicPackagesTab && <span className="repeto-sl-lh__col">Действует до</span>}
                             <span className="repeto-sl-lh__col">Статус</span>
                             <span className="repeto-sl-lh__col">&nbsp;</span>
                         </div>
@@ -259,14 +245,19 @@ const PackagesPage = () => {
                                 return (
                                     <div
                                         key={pkg.id}
-                                        className="repeto-sl-row repeto-sl-row--packages"
+                                        className={`repeto-sl-row repeto-sl-row--packages${
+                                            isPublicPackagesTab ? " repeto-sl-row--packages-public" : ""
+                                        }`}
                                         onClick={() => {
-                                            setCreateMode(pkg.isPublic ? "public" : "private");
                                             setEditingPackage(pkg);
                                         }}
                                     >
                                         <div className="repeto-sl-row__cell repeto-sl-row__cell--name">
-                                            <div className="repeto-sl-initials">{getInitials(pkg.studentName)}</div>
+                                            <StudentAvatar
+                                                student={{ name: pkg.studentName, avatarUrl: undefined }}
+                                                size="s"
+                                                style={{ marginRight: 10, flexShrink: 0 }}
+                                            />
                                             <div className="repeto-sl-row__name-text">
                                                 <span className="repeto-sl-row__primary">
                                                     <StudentNameWithBadge
@@ -278,17 +269,19 @@ const PackagesPage = () => {
                                                 <span className="repeto-sl-row__secondary">{pkg.subject}</span>
                                             </div>
                                         </div>
-                                        <div className="repeto-sl-row__cell">
-                                            <div className="repeto-sl-progress">
-                                                <div
-                                                    className="repeto-sl-progress__bar"
-                                                    style={{
-                                                        width: `${pct}%`,
-                                                        background: progressColor(pkg.lessonsUsed, pkg.lessonsTotal),
-                                                    }}
-                                                />
+                                        {!isPublicPackagesTab && (
+                                            <div className="repeto-sl-row__cell">
+                                                <div className="repeto-sl-progress">
+                                                    <div
+                                                        className="repeto-sl-progress__bar"
+                                                        style={{
+                                                            width: `${pct}%`,
+                                                            background: progressColor(pkg.lessonsUsed, pkg.lessonsTotal),
+                                                        }}
+                                                    />
+                                                </div>
                                             </div>
-                                        </div>
+                                        )}
                                         <div className="repeto-sl-row__cell">
                                             <span className="repeto-sl-cell-money">
                                                 {pkg.lessonsUsed}/{pkg.lessonsTotal}
@@ -299,11 +292,13 @@ const PackagesPage = () => {
                                                 {pkg.totalPrice.toLocaleString("ru-RU")}&nbsp;₽
                                             </span>
                                         </div>
-                                        <div className="repeto-sl-row__cell">
-                                            <span className="repeto-sl-row__secondary">
-                                                {pkg.validUntil || "—"}
-                                            </span>
-                                        </div>
+                                        {!isPublicPackagesTab && (
+                                            <div className="repeto-sl-row__cell">
+                                                <span className="repeto-sl-row__secondary">
+                                                    {pkg.validUntil || "—"}
+                                                </span>
+                                            </div>
+                                        )}
                                         <div className="repeto-sl-row__cell">
                                             <span className={`repeto-sl-cell-chip ${statusChipClass(pkg.status)}`}>
                                                 {getPackageStatusLabel(pkg.status)}
@@ -324,11 +319,10 @@ const PackagesPage = () => {
                     onClose={() => {
                         setCreateModal(false);
                         setEditingPackage(null);
-                        setCreateMode("private");
                     }}
                     onCreated={handlePackageCreated}
                     packageData={editingPackage}
-                    defaultPublic={createMode === "public"}
+                    defaultPublic={false}
                 />
             </PageOverlay>
         </GravityLayout>

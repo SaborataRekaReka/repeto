@@ -1,8 +1,9 @@
 import { useCallback, useRef, useState } from "react";
-import { Text, TextInput, Select, Button, Icon, Label, DropdownMenu } from "@gravity-ui/uikit";
-import { Bell, Link, ChevronDown } from "@gravity-ui/icons";
+import { Text, TextInput, Select, Icon, Label, DropdownMenu } from "@gravity-ui/uikit";
+import { Bell, Link, ChevronDown, Lock } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import type { Student, StudentStatus } from "@/types/student";
+import PhoneInput from "@/components/PhoneInput";
 import StudentAvatar from "@/components/StudentAvatar";
 import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 import Lp2Field, { Lp2Row } from "@/components/Lp2Field";
@@ -40,7 +41,9 @@ type ProfileTabProps = {
     student: Student;
     onSave?: (data: Partial<Student>) => Promise<void>;
     onRemind?: () => void;
-    onActivateAccount?: () => void;
+    onPortalAction?: () => void;
+    portalActionLabel?: string;
+    portalActionBusy?: boolean;
     onStatusSelect?: (status: Student["status"]) => void;
     statusUpdating?: boolean;
     studentActionError?: string | null;
@@ -50,7 +53,9 @@ const ProfileTab = ({
     student,
     onSave,
     onRemind,
-    onActivateAccount,
+    onPortalAction,
+    portalActionLabel,
+    portalActionBusy,
     onStatusSelect,
     statusUpdating,
     studentActionError,
@@ -67,6 +72,13 @@ const ProfileTab = ({
     const [parentPhone, setParentPhone] = useState(student.parentPhone || "");
     const [parentEmail, setParentEmail] = useState(student.parentEmail || "");
     const hasRepetoAccount = Boolean(student.accountId);
+    const lockEndContent = hasRepetoAccount ? (
+        <Icon
+            data={Lock as IconData}
+            size={14}
+            style={{ color: "var(--g-color-text-secondary)", marginRight: 8 }}
+        />
+    ) : undefined;
 
     const persist = useCallback(
         async (patch: Partial<Student>) => {
@@ -195,15 +207,28 @@ const ProfileTab = ({
                         </Text>
                     </div>
 
-                    <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                        <Button view="outlined" size="s" onClick={onRemind}>
-                            <Icon data={Bell as IconData} size={14} />
+                    <div className="tab-section__actions" style={{ marginTop: 8, marginBottom: 0 }}>
+                        <button
+                            type="button"
+                            className="tab-action-btn tab-action-btn--compact tab-action-btn--primary"
+                            onClick={onRemind}
+                        >
+                            <span className="tab-action-btn__icon">
+                                <Icon data={Bell as IconData} size={20} />
+                            </span>
                             Напомнить
-                        </Button>
-                        <Button view="outlined" size="s" onClick={onActivateAccount}>
-                            <Icon data={Link as IconData} size={14} />
-                            {hasRepetoAccount ? "Переотправить приглашение" : "Пригласить в Repeto"}
-                        </Button>
+                        </button>
+                        <button
+                            type="button"
+                            className="tab-action-btn tab-action-btn--compact"
+                            onClick={onPortalAction}
+                            disabled={portalActionBusy}
+                        >
+                            <span className="tab-action-btn__icon">
+                                <Icon data={Link as IconData} size={20} />
+                            </span>
+                            {portalActionLabel || "Пригласить в Repeto"}
+                        </button>
                     </div>
 
                     {studentActionError && (
@@ -219,11 +244,7 @@ const ProfileTab = ({
             </div>
 
             <div className="lp2-section-title" style={{ marginTop: 28 }}>Основное</div>
-            {hasRepetoAccount && (
-                <Text as="div" variant="caption-2" color="secondary" className="profile-lock-note">
-                    Личные данные из профиля Repeto редактирует сам ученик. Вы можете менять CRM-поля: предмет, ставку, статус и заметки.
-                </Text>
-            )}
+
 
             <Lp2Field label="ФИО">
                 <TextInput
@@ -231,6 +252,7 @@ const ProfileTab = ({
                     onUpdate={setLocalName}
                     onBlur={() => handleBlurText("name", localName, student.name)}
                     disabled={hasRepetoAccount}
+                    endContent={lockEndContent}
                     size="l"
                 />
             </Lp2Field>
@@ -262,6 +284,7 @@ const ProfileTab = ({
                         onUpdate={setLocalGrade}
                         onBlur={() => handleBlurText("grade", localGrade, student.grade)}
                         disabled={hasRepetoAccount}
+                        endContent={lockEndContent}
                         placeholder="11 или Взрослый"
                         size="l"
                     />
@@ -272,6 +295,7 @@ const ProfileTab = ({
                         onUpdate={setLocalAge}
                         onBlur={() => handleBlurNumber("age" as any, localAge, student.age)}
                         disabled={hasRepetoAccount}
+                        endContent={lockEndContent}
                         placeholder="—"
                         size="l"
                     />
@@ -291,13 +315,12 @@ const ProfileTab = ({
             <div className="lp2-section-title" style={{ marginTop: 28 }}>Контакты</div>
 
             <Lp2Field label="Телефон">
-                <TextInput
+                <PhoneInput
                     value={phone}
                     onUpdate={setPhone}
                     onBlur={() => handleBlurText("phone" as any, phone, student.phone)}
                     disabled={hasRepetoAccount}
-                    placeholder="+7 900 123-45-67"
-                    size="l"
+                    endContent={lockEndContent}
                 />
             </Lp2Field>
 
@@ -307,6 +330,7 @@ const ProfileTab = ({
                     onUpdate={setStudentEmail}
                     onBlur={() => handleBlurText("email" as any, studentEmail, student.email)}
                     disabled={hasRepetoAccount}
+                    endContent={lockEndContent}
                     placeholder="student@email.com"
                     size="l"
                     type="email"
@@ -319,6 +343,7 @@ const ProfileTab = ({
                     onUpdate={setParentName}
                     onBlur={() => handleBlurText("parentName" as any, parentName, student.parentName)}
                     disabled={hasRepetoAccount}
+                    endContent={lockEndContent}
                     placeholder="Иванова Мария Петровна"
                     size="l"
                 />
@@ -326,13 +351,12 @@ const ProfileTab = ({
 
             <Lp2Row>
                 <Lp2Field label="Телефон родителя" half>
-                    <TextInput
+                    <PhoneInput
                         value={parentPhone}
                         onUpdate={setParentPhone}
                         onBlur={() => handleBlurText("parentPhone" as any, parentPhone, student.parentPhone)}
                         disabled={hasRepetoAccount}
-                        placeholder="+7 900 765-43-21"
-                        size="l"
+                        endContent={lockEndContent}
                     />
                 </Lp2Field>
                 <Lp2Field label="Email родителя" half>
@@ -341,6 +365,7 @@ const ProfileTab = ({
                         onUpdate={setParentEmail}
                         onBlur={() => handleBlurText("parentEmail" as any, parentEmail, student.parentEmail)}
                         disabled={hasRepetoAccount}
+                        endContent={lockEndContent}
                         placeholder="parent@email.com"
                         size="l"
                     />

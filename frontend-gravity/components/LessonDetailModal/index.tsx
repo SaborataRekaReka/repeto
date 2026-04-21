@@ -151,7 +151,7 @@ const LessonDetailModal = ({
     return (
         <>
             <AppDialog
-                open={visible}
+                open={visible && !editOpen}
                 onClose={onClose}
                 size="s"
                 caption={lesson.subject}

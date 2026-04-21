@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+﻿import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import {
     Text,
@@ -48,7 +48,7 @@ const typeOptions = [
     { value: "homework", content: "О домашке" },
 ];
 
-const PANEL_Z = 135;
+const PANEL_Z = 960;
 
 const RemindModal = ({
     visible,
@@ -238,7 +238,7 @@ const RemindModal = ({
 
     const formatHomeworkLabel = (hw: HomeworkItem) => {
         const taskPreview =
-            hw.task.length > 60 ? hw.task.slice(0, 60) + "…" : hw.task;
+            hw.task.length > 60 ? hw.task.slice(0, 60) + "⬦" : hw.task;
         if (hw.dueAt) {
             const d = new Date(hw.dueAt);
             const dateStr = d.toLocaleDateString("ru-RU", {
@@ -290,7 +290,7 @@ const RemindModal = ({
                 }, 1200);
             } else {
                 setErrorText(
-                    "Не удалось отправить — у ученика нет подключённых каналов (Telegram / Max). Подключите через портал."
+                    "Не удалось отправить — ђ ученика нет подключённых каналов (Telegram / Max). Подключите через портал."
                 );
                 setSaving(false);
             }
@@ -313,7 +313,7 @@ const RemindModal = ({
                     setSelectedHomeworkIds([]);
                     setErrorText(null);
                 }}
-                popupClassName="lp2-popup"
+                popupClassName="app-select-popup"
             />
         </Lp2Field>
     );
@@ -328,7 +328,7 @@ const RemindModal = ({
                 }}
             >
                 <Text variant="body-2" color="secondary">
-                    Ученику будет отправлено напоминание об оплате с указанием текущей задолженности.
+                    Ученику будет отправлено напоминание об оплате с ђказанием текущей задолженности.
                 </Text>
             </div>
 
@@ -615,9 +615,11 @@ const RemindModal = ({
 
                     {renderTypeSelection()}
 
-                    {reminderType === "payment" && renderPaymentSection()}
-                    {reminderType === "lesson" && renderLessonSection()}
-                    {reminderType === "homework" && renderHomeworkSection()}
+                    <div style={{ marginBottom: 12 }}>
+                        {reminderType === "payment" && renderPaymentSection()}
+                        {reminderType === "lesson" && renderLessonSection()}
+                        {reminderType === "homework" && renderHomeworkSection()}
+                    </div>
 
                     <Lp2Field label="Сообщение">
                         <TextArea

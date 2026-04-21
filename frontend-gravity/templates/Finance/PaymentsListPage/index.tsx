@@ -102,7 +102,7 @@ const PaymentsListPage = () => {
     };
 
     return (
-        <GravityLayout title="Оплаты" hideSidebar>
+        <GravityLayout title="Оплаты" hideSidebar hideHeaderTitle>
             <PageOverlay
                 title="Оплаты"
                 breadcrumb="Дашборд"
@@ -280,20 +280,20 @@ const PaymentsListPage = () => {
                 </AppDialog>
 
                 <CreatePaymentModal
-                    visible={createModal}
-                    onClose={() => setCreateModal(false)}
-                    onCreated={refetchPayments}
-                />
-
-                <CreatePaymentModal
-                    visible={!!selected}
-                    onClose={() => setSelected(null)}
+                    visible={createModal || !!selected}
+                    onClose={() => {
+                        setCreateModal(false);
+                        setSelected(null);
+                    }}
                     paymentData={selected}
                     onCreated={async () => {
                         await refetchPayments();
+                        setCreateModal(false);
+                        setSelected(null);
                     }}
                     onDeleted={async () => {
                         setSelected(null);
+                        await refetchPayments();
                     }}
                 />
             </PageOverlay>

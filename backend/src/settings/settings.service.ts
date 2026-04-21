@@ -15,6 +15,15 @@ import { PrismaService } from '../prisma/prisma.service';
 import { FilesService } from '../files/files.service';
 import { getPrimaryFrontendUrl } from '../common/utils/frontend-url';
 import {
+  extractTutorPaymentCardNumber,
+  extractTutorPaymentRequisites,
+  extractTutorPaymentSbpPhone,
+  mergeTutorPaymentRequisites,
+  normalizeTutorPaymentCardNumber,
+  normalizeTutorPaymentRequisites,
+  normalizeTutorPaymentSbpPhone,
+} from '../common/utils/payment-requisites';
+import {
   UpdateAccountDto,
   ChangePasswordDto,
   UpdateNotificationsDto,
@@ -25,7 +34,7 @@ import {
 export class SettingsService {
   private static readonly SLUG_FALLBACK = 'tutor';
   private static readonly MAX_SLUG_LENGTH = 100;
-  private static readonly YANDEX_DEFAULT_ROOT_PATH = 'disk:/Материалы учеников Repeto';
+  private static readonly YANDEX_DEFAULT_ROOT_PATH = 'disk:/';
   private static readonly CYRILLIC_TO_LATIN: Record<string, string> = {
     а: 'a',
     б: 'b',
@@ -394,6 +403,11 @@ export class SettingsService {
         googleCalendarEmail: true,
         yandexCalendarToken: true,
         yandexCalendarEmail: true,
+        education: true,
+        experience: true,
+        qualificationVerified: true,
+        qualificationLabel: true,
+        certificates: true,
         createdAt: true,
       },
     });
@@ -402,8 +416,15 @@ export class SettingsService {
       throw new NotFoundException('User not found');
     }
 
+    const paymentRequisites = extractTutorPaymentRequisites(user.paymentSettings);
+    const paymentCardNumber = extractTutorPaymentCardNumber(user.paymentSettings);
+    const paymentSbpPhone = extractTutorPaymentSbpPhone(user.paymentSettings);
+
     return {
       ...user,
+      paymentRequisites,
+      paymentCardNumber,
+      paymentSbpPhone,
       hasYukassa: !!user.yukassaShopId,
       hasYandexDisk: !!user.yandexDiskToken,
       hasGoogleDrive: !!user.googleDriveToken,
@@ -670,6 +691,7 @@ export class SettingsService {
   }
 
   async updateAccount(userId: string, dto: UpdateAccountDto) {
+    const { paymentRequisites, paymentCardNumber, paymentSbpPhone, ...restDto } = dto;
     const currentUser = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -677,6 +699,7 @@ export class SettingsService {
         slug: true,
         published: true,
         showPublicPackages: true,
+        paymentSettings: true,
       },
     });
 
@@ -700,7 +723,31 @@ export class SettingsService {
       throw new BadRequestException('Такой адрес уже занят.');
     }
 
-    const data: any = { ...dto };
+    const data: any = { ...restDto };
+
+    if (
+      dto.paymentRequisites !== undefined ||
+      dto.paymentCardNumber !== undefined ||
+      dto.paymentSbpPhone !== undefined
+    ) {
+      data.paymentSettings = mergeTutorPaymentRequisites(
+        currentUser.paymentSettings,
+        {
+          requisites:
+            dto.paymentRequisites !== undefined
+              ? normalizeTutorPaymentRequisites(paymentRequisites)
+              : undefined,
+          cardNumber:
+            dto.paymentCardNumber !== undefined
+              ? normalizeTutorPaymentCardNumber(paymentCardNumber)
+              : undefined,
+          sbpPhone:
+            dto.paymentSbpPhone !== undefined
+              ? normalizeTutorPaymentSbpPhone(paymentSbpPhone)
+              : undefined,
+        },
+      ) as Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput;
+    }
 
     if (hasSlugInPayload) {
       data.slug = nextSlug;
@@ -710,7 +757,7 @@ export class SettingsService {
       data.published = nextPublished;
     }
 
-    return this.prisma.user.update({
+    const updatedUser = await this.prisma.user.update({
       where: { id: userId },
       data,
       select: {
@@ -732,8 +779,21 @@ export class SettingsService {
         format: true,
         offlineAddress: true,
         homeworkDefaultCloud: true,
+        education: true,
+        experience: true,
+        qualificationVerified: true,
+        qualificationLabel: true,
+        certificates: true,
+        paymentSettings: true,
       },
     });
+
+    return {
+      ...updatedUser,
+      paymentRequisites: extractTutorPaymentRequisites(updatedUser.paymentSettings),
+      paymentCardNumber: extractTutorPaymentCardNumber(updatedUser.paymentSettings),
+      paymentSbpPhone: extractTutorPaymentSbpPhone(updatedUser.paymentSettings),
+    };
   }
 
   private static readonly ALLOWED_AVATAR_EXT = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
@@ -757,6 +817,76 @@ export class SettingsService {
     });
 
     return { avatarUrl };
+  }
+
+  private static readonly ALLOWED_CERT_EXT = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.pdf'];
+
+  async uploadCertificate(userId: string, file: Express.Multer.File, title?: string) {
+    const uploadsDir = path.join(process.cwd(), 'uploads', 'certificates');
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    const rawExt = path.extname(file.originalname).toLowerCase();
+    const ext = SettingsService.ALLOWED_CERT_EXT.includes(rawExt) ? rawExt : '.jpg';
+    const filename = `${userId}_${Date.now()}_${crypto.randomUUID().slice(0, 8)}${ext}`;
+    const filepath = path.join(uploadsDir, filename);
+    fs.writeFileSync(filepath, file.buffer);
+
+    const fileUrl = `/uploads/certificates/${filename}`;
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { certificates: true },
+    });
+
+    const existing = Array.isArray(user?.certificates) ? (user.certificates as any[]) : [];
+    const newCert = {
+      id: crypto.randomUUID(),
+      title: (title || file.originalname || '').slice(0, 200),
+      fileUrl,
+      uploadedAt: new Date().toISOString(),
+    };
+
+    const updated = [...existing, newCert];
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { certificates: updated as any },
+    });
+
+    return newCert;
+  }
+
+  async deleteCertificate(userId: string, certId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { certificates: true },
+    });
+
+    const existing = Array.isArray(user?.certificates) ? (user.certificates as any[]) : [];
+    const cert = existing.find((c: any) => c.id === certId);
+
+    if (!cert) {
+      throw new NotFoundException('Сертификат не найден');
+    }
+
+    // Delete file from disk
+    if (cert.fileUrl) {
+      const filepath = path.join(process.cwd(), cert.fileUrl);
+      if (fs.existsSync(filepath)) {
+        fs.unlinkSync(filepath);
+      }
+    }
+
+    const updated = existing.filter((c: any) => c.id !== certId);
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { certificates: updated.length > 0 ? (updated as any) : Prisma.DbNull },
+    });
+
+    return { deleted: true };
   }
 
   async changePassword(userId: string, dto: ChangePasswordDto) {

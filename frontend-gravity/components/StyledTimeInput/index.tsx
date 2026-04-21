@@ -10,11 +10,14 @@ type StyledTimeInputProps = {
     disabled?: boolean;
     width?: number | string;
     className?: string;
+    popupClassName?: string;
     style?: CSSProperties;
     stepMinutes?: number;
     min?: string;
     max?: string;
     showClockIcon?: boolean;
+    popupMaxHeight?: number;
+    popupZIndex?: number;
 };
 
 function parseTimeToMinutes(value: string): number | null {
@@ -49,19 +52,21 @@ const StyledTimeInput = ({
     value,
     onUpdate,
     placeholder = "Выберите время",
-    disabled,
+    disabled = false,
     width = "100%",
     className,
+    popupClassName,
     style,
     stepMinutes = 30,
     min = "00:00",
     max = "23:30",
     showClockIcon = true,
+    popupMaxHeight = 300,
+    popupZIndex = 1760,
 }: StyledTimeInputProps) => {
     const anchorRef = useRef<HTMLButtonElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
     const [open, setOpen] = useState(false);
-    const [isHovered, setIsHovered] = useState(false);
     const [anchorWidth, setAnchorWidth] = useState<number>(0);
 
     const options = useMemo(
@@ -86,76 +91,63 @@ const StyledTimeInput = ({
         }
     }, [open, selectedValue]);
 
+    const triggerClassName = [
+        "repeto-time-input__trigger",
+        open ? "repeto-time-input__trigger--open" : "",
+        className || "",
+    ]
+        .filter(Boolean)
+        .join(" ");
+
+    const floatingClassName = [
+        "repeto-time-popup",
+        "repeto-dialog-time-popup",
+        popupClassName || "",
+    ]
+        .filter(Boolean)
+        .join(" ");
+
     return (
         <>
             <button
                 ref={anchorRef}
                 type="button"
-                className={className}
-                onClick={() => {
+                className={triggerClassName}
+                onMouseDown={(event) => {
+                    // Prevent document-level outside-click handlers from consuming trigger interaction.
+                    event.preventDefault();
+                    event.stopPropagation();
+                }}
+                onClick={(event) => {
                     if (disabled) return;
-                    setOpen((prev) => !prev);
+                    event.preventDefault();
+                    event.stopPropagation();
+                    window.setTimeout(() => {
+                        setOpen((prev) => !prev);
+                    }, 0);
                 }}
-                onMouseEnter={() => {
-                    if (!disabled) setIsHovered(true);
-                }}
-                onMouseLeave={() => setIsHovered(false)}
-                onFocus={() => {
-                    if (!disabled) setIsHovered(true);
-                }}
-                onBlur={() => setIsHovered(false)}
                 disabled={disabled}
                 style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
                     width,
-                    background:
-                        isHovered && !disabled
-                            ? "var(--g-color-base-simple-hover)"
-                            : "transparent",
-                    border: open
-                        ? "1px solid var(--g-color-line-brand)"
-                        : isHovered
-                          ? "1px solid var(--g-color-line-generic-hover)"
-                          : "1px solid var(--g-color-line-generic)",
-                    borderRadius: "var(--g-border-radius-m)",
-                    fontSize: 13,
-                    fontFamily: "inherit",
-                    color: "var(--g-color-text-primary)",
-                    cursor: disabled ? "default" : "pointer",
-                    opacity: disabled ? 0.5 : 1,
-                    boxSizing: "border-box",
-                    height: 36,
-                    padding: "0 12px",
-                    transition: "border-color 0.15s, background-color 0.15s",
                     ...style,
                 }}
             >
                 <span
-                    style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 6,
-                        color: selectedValue
-                            ? "var(--g-color-text-primary)"
-                            : "var(--g-color-text-hint)",
-                    }}
+                    className={`repeto-time-input__value${selectedValue ? "" : " repeto-time-input__value--placeholder"}`}
                 >
                     {showClockIcon && (
-                        <Icon data={Clock as IconData} size={14} style={{ opacity: 0.7 }} />
+                        <Icon
+                            data={Clock as IconData}
+                            size={14}
+                            className="repeto-time-input__value-icon"
+                        />
                     )}
                     {selectedValue || placeholder}
                 </span>
                 <Icon
                     data={ChevronDown as IconData}
-                    size={16}
-                    style={{
-                        color: "var(--g-color-text-secondary)",
-                        flexShrink: 0,
-                        transform: open ? "rotate(180deg)" : "none",
-                        transition: "transform 0.15s",
-                    }}
+                    size={18}
+                    className="repeto-time-input__icon"
                 />
             </button>
             <Popup
@@ -163,19 +155,15 @@ const StyledTimeInput = ({
                 anchorRef={anchorRef}
                 placement="bottom-start"
                 onClose={() => setOpen(false)}
+                floatingClassName={floatingClassName}
+                zIndex={popupZIndex}
             >
                 <div
                     ref={listRef}
+                    className="repeto-time-popup__list"
                     style={{
-                        background: "var(--g-color-base-background)",
-                        border: "1px solid var(--g-color-line-generic)",
-                        borderRadius: 10,
-                        padding: 6,
                         width: anchorWidth > 0 ? anchorWidth : undefined,
-                        minWidth: 120,
-                        maxHeight: 240,
-                        overflowY: "auto",
-                        boxSizing: "border-box",
+                        maxHeight: popupMaxHeight,
                     }}
                 >
                     {options.map((option) => {
@@ -186,35 +174,18 @@ const StyledTimeInput = ({
                                 key={option}
                                 type="button"
                                 data-selected={isSelected ? "true" : undefined}
+                                className={`repeto-time-popup__option${isSelected ? " repeto-time-popup__option--selected" : ""}`}
                                 onClick={() => {
                                     onUpdate(option);
                                     setOpen(false);
-                                }}
-                                style={{
-                                    width: "100%",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "space-between",
-                                    padding: "6px 8px",
-                                    borderRadius: 7,
-                                    border: "none",
-                                    background: isSelected
-                                        ? "var(--g-color-base-brand)"
-                                        : "transparent",
-                                    color: isSelected
-                                        ? "var(--g-color-text-light-primary)"
-                                        : "var(--g-color-text-primary)",
-                                    cursor: "pointer",
-                                    fontSize: 13,
-                                    fontWeight: isSelected ? 600 : 500,
                                 }}
                             >
                                 <span>{option}</span>
                                 {isSelected && (
                                     <Icon
                                         data={Clock as IconData}
-                                        size={12}
-                                        style={{ color: "inherit" }}
+                                        size={14}
+                                        className="repeto-time-popup__option-icon"
                                     />
                                 )}
                             </button>

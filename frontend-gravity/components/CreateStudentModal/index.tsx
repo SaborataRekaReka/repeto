@@ -3,28 +3,24 @@ import { createPortal } from "react-dom";
 import {
     TextInput,
     TextArea,
-    Select,
     Text,
     Button,
     Icon,
-    Checkbox,
+    Switch,
+    Tooltip,
 } from "@gravity-ui/uikit";
-import { ArrowLeft } from "@gravity-ui/icons";
+import { ArrowLeft, CircleQuestion } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
-import { createStudent } from "@/hooks/useStudents";
+import { createStudent, checkStudentEmail } from "@/hooks/useStudents";
+import { useSettings } from "@/hooks/useSettings";
 import { codedErrorMessage } from "@/lib/errorCodes";
 import { Lp2Field, Lp2Row } from "@/components/Lp2Field";
+import PhoneInput from "@/components/PhoneInput";
 import type { Student } from "@/types/student";
 
-const subjectOptions = [
-    { value: "Математика", content: "Математика" },
-    { value: "Английский", content: "Английский" },
-    { value: "Физика", content: "Физика" },
-    { value: "Русский язык", content: "Русский язык" },
-    { value: "Химия", content: "Химия" },
-    { value: "Биология", content: "Биология" },
-    { value: "История", content: "История" },
-    { value: "Другой", content: "Другой" },
+const DEFAULT_SUBJECTS = [
+    "Математика", "Английский", "Физика", "Русский язык",
+    "Химия", "Биология", "История",
 ];
 
 type CreateStudentModalProps = {
@@ -98,7 +94,8 @@ const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalP
     const [name, setName] = useState("");
     const [grade, setGrade] = useState("");
     const [age, setAge] = useState("");
-    const [subject, setSubject] = useState<string[]>([]);
+    const [subject, setSubject] = useState("");
+    const [subjectFocused, setSubjectFocused] = useState(false);
     const [phone, setPhone] = useState("");
     const [email, setEmail] = useState("");
     const [inviteToRepeto, setInviteToRepeto] = useState(false);
@@ -109,6 +106,9 @@ const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalP
     const [notes, setNotes] = useState("");
     const [saving, setSaving] = useState(false);
     const [formError, setFormError] = useState<string | null>(null);
+    const [emailCheckResult, setEmailCheckResult] = useState<{ exists: boolean; name?: string } | null>(null);
+    const [emailChecking, setEmailChecking] = useState(false);
+    const emailCheckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [touched, setTouched] = useState({
         name: false,
         subject: false,
@@ -121,14 +121,42 @@ const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalP
 
     useEffect(() => {
         if (visible) {
-            setName(""); setGrade(""); setAge(""); setSubject([]); setPhone("");
+            setName(""); setGrade(""); setAge(""); setSubject(""); setPhone("");
             setEmail(""); setInviteToRepeto(false);
             setParentName(""); setParentPhone(""); setParentEmail("");
             setRate(""); setNotes("");
             setTouched({ name: false, subject: false, rate: false });
             setFormError(null);
+            setEmailCheckResult(null);
+            setEmailChecking(false);
         }
     }, [visible]);
+
+    // Debounced email lookup
+    useEffect(() => {
+        if (emailCheckTimerRef.current) clearTimeout(emailCheckTimerRef.current);
+        const trimmed = email.trim().toLowerCase();
+        if (!trimmed || !isEmailLike(trimmed)) {
+            setEmailCheckResult(null);
+            setEmailChecking(false);
+            setInviteToRepeto(false);
+            return;
+        }
+        setEmailChecking(true);
+        setEmailCheckResult(null);
+        setInviteToRepeto(false);
+        emailCheckTimerRef.current = setTimeout(async () => {
+            try {
+                const result = await checkStudentEmail(trimmed);
+                setEmailCheckResult(result);
+            } catch {
+                setEmailCheckResult(null);
+            } finally {
+                setEmailChecking(false);
+            }
+        }, 500);
+        return () => { if (emailCheckTimerRef.current) clearTimeout(emailCheckTimerRef.current); };
+    }, [email]);
 
     const handleSubmit = async () => {
         const normalizedName = name.trim();
@@ -155,7 +183,7 @@ const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalP
             return;
         }
 
-        if (!subject.length) {
+        if (!subject.trim()) {
             setFormError("Выберите предмет.");
             return;
         }
@@ -210,7 +238,7 @@ const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalP
         try {
             const createdStudent = await createStudent({
                 name: normalizedName,
-                subject: subject[0],
+                subject: subject.trim(),
                 rate: normalizedRate,
                 grade: safeGrade,
                 age: safeAge,
@@ -232,8 +260,25 @@ const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalP
     };
 
     const nameError = touched.name && !name.trim();
-    const subjectError = touched.subject && !subject.length;
+    const subjectError = touched.subject && !subject.trim();
+
+    const { data: settingsData } = useSettings();
+    const userSubjects: string[] = settingsData?.subjects || [];
+    const allSuggestions = [...new Set([...userSubjects, ...DEFAULT_SUBJECTS])];
+    const filteredSuggestions = subject.trim()
+        ? allSuggestions.filter((s) => s.toLowerCase().includes(subject.trim().toLowerCase()))
+        : allSuggestions;
+    const showSuggestions = subjectFocused && filteredSuggestions.length > 0;
     const rateError = touched.rate && (!Number.isFinite(normalizeRate(rate)) || normalizeRate(rate) <= 0);
+    const normalizedEmail = email.trim().toLowerCase();
+    const showInviteControls = normalizedEmail.length > 0 && isEmailLike(normalizedEmail);
+    const studentExists = emailCheckResult?.exists === true;
+    const inviteToggleLabel = studentExists ? "Работать вместе" : "Пригласить";
+    const inviteStatusText = emailChecking
+        ? "Проверяем ученика в Repeto..."
+        : studentExists
+            ? "Ученик зарегистрирован в Repeto"
+            : "Ученик не зарегистрирован в Repeto";
 
     if (!mounted || (!shouldRender && !visible)) return null;
 
@@ -289,28 +334,40 @@ const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalP
                     </Lp2Row>
 
                     <Lp2Field label="Предмет *" error={subjectError} errorText="Обязательное поле">
-                        <Select
-                            options={subjectOptions}
-                            value={subject}
-                            onUpdate={(value) => {
-                                setSubject(value);
-                                markTouched("subject");
-                            }}
-                            placeholder="Выберите предмет"
-                            size="l"
-                            width="max"
-                            popupClassName="lp2-popup"
-                            popupWidth="fit"
-                            popupPlacement={["bottom-start", "top-start"]}
-                        />
+                        <div style={{ position: "relative" }}>
+                            <TextInput
+                                value={subject}
+                                onUpdate={(value) => {
+                                    setSubject(value);
+                                    markTouched("subject");
+                                }}
+                                onFocus={() => setSubjectFocused(true)}
+                                onBlur={() => { setTimeout(() => setSubjectFocused(false), 150); }}
+                                placeholder="Введите или выберите предмет"
+                                size="l"
+                                autoComplete="off"
+                            />
+                            {showSuggestions && (
+                                <div className="lp2-autocomplete-list">
+                                    {filteredSuggestions.map((s) => (
+                                        <button
+                                            key={s}
+                                            type="button"
+                                            className="lp2-autocomplete-item"
+                                            onMouseDown={(e) => { e.preventDefault(); setSubject(s); setSubjectFocused(false); markTouched("subject"); }}
+                                        >
+                                            {s}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </Lp2Field>
 
                     <Lp2Field label="Телефон ученика">
-                        <TextInput
+                        <PhoneInput
                             value={phone}
                             onUpdate={setPhone}
-                            placeholder="+7 900 123-45-67"
-                            size="l"
                         />
                     </Lp2Field>
 
@@ -324,26 +381,39 @@ const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalP
                         />
                     </Lp2Field>
 
-                    <div style={{ marginTop: 4, marginBottom: 8 }}>
-                        <Checkbox
-                            checked={inviteToRepeto}
-                            onUpdate={setInviteToRepeto}
-                            disabled={!email.trim() || !isEmailLike(email.trim())}
-                            size="l"
-                        >
-                            Выслать приглашение в Repeto
-                        </Checkbox>
-                        {inviteToRepeto && (
-                            <Text
-                                as="div"
-                                variant="caption-2"
-                                color="secondary"
-                                style={{ marginTop: 4, marginLeft: 28 }}
-                            >
-                                Ученику придёт письмо со ссылкой на вход в личный кабинет
-                            </Text>
-                        )}
-                    </div>
+                    {showInviteControls && (
+                        <div className="lp2-invite-card">
+                            <div className="lp2-invite-card__text">
+                                <div className="lp2-invite-card__title-row">
+                                    <Text variant="body-2" className="lp2-invite-card__title">
+                                        {inviteStatusText}
+                                    </Text>
+                                    <Tooltip
+                                        content="Ученик получит приглашение на почту"
+                                        placement="top"
+                                        openDelay={120}
+                                        closeDelay={0}
+                                    >
+                                        <span
+                                            className="lp2-invite-card__hint"
+                                            aria-label="Ученик получит приглашение на почту"
+                                        >
+                                            <Icon data={CircleQuestion as IconData} size={14} />
+                                        </span>
+                                    </Tooltip>
+                                </div>
+                                <Text variant="body-2" color="secondary" className="lp2-invite-card__subtitle">
+                                    {inviteToggleLabel}
+                                </Text>
+                            </div>
+                            <Switch
+                                checked={inviteToRepeto}
+                                onUpdate={setInviteToRepeto}
+                                size="l"
+                                disabled={emailChecking}
+                            />
+                        </div>
+                    )}
 
                     <div
                         style={{
@@ -376,11 +446,9 @@ const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalP
                         </Lp2Field>
 
                         <Lp2Field label="Телефон родителя">
-                            <TextInput
+                            <PhoneInput
                                 value={parentPhone}
                                 onUpdate={setParentPhone}
-                                placeholder="+7 900 765-43-21"
-                                size="l"
                             />
                         </Lp2Field>
 

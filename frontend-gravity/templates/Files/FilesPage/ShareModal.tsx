@@ -3,7 +3,7 @@ import { Alert, Text, TextInput, Button, Icon, Checkbox } from "@gravity-ui/uiki
 import { Magnifier, FolderOpen, File as FileIcon } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import AppDialog from "@/components/AppDialog";
-import { getInitials } from "@/lib/formatters";
+import StudentAvatar from "@/components/StudentAvatar";
 import { useStudents } from "@/hooks/useStudents";
 import { updateFileShare } from "@/hooks/useFiles";
 import type { FileItem } from "@/types/files";
@@ -150,15 +150,7 @@ const ShareModal = ({ visible, item, onClose, onSaved }: ShareModalProps) => {
                             onMouseEnter={(e) => (e.currentTarget.style.background = "var(--g-color-base-simple-hover)")}
                             onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                         >
-                            <div style={{
-                                width: 32, height: 32, borderRadius: "50%",
-                                background: "rgba(174,122,255,0.1)",
-                                display: "flex", alignItems: "center", justifyContent: "center",
-                                marginRight: 12, fontSize: 12, fontWeight: 700,
-                                color: "var(--g-color-text-brand)", flexShrink: 0,
-                            }}>
-                                {getInitials(s.name)}
-                            </div>
+                            <StudentAvatar student={s} size="s" style={{ marginRight: 12, flexShrink: 0 }} />
                             <div style={{ flex: 1, minWidth: 0, marginRight: 12 }}>
                                 <Text variant="body-1" style={{ fontWeight: 600 }}>{s.name}</Text>
                                 <Text variant="caption-2" color="secondary" style={{ display: "block" }}>{s.subject} · {s.grade} класс</Text>

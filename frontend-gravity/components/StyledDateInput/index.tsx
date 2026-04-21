@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { Button, Icon, Popup, Text } from "@gravity-ui/uikit";
-import { ChevronDown, ArrowChevronLeft, ArrowChevronRight } from "@gravity-ui/icons";
+import { Icon, Popup } from "@gravity-ui/uikit";
+import { Calendar, ArrowChevronLeft, ArrowChevronRight } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 
 const MONTH_NAMES_GEN = [
@@ -71,12 +71,11 @@ const StyledDateInput = ({
     width = "100%",
     className,
     popupClassName,
-    popupZIndex,
+    popupZIndex = 1760,
     style,
 }: StyledDateInputProps) => {
     const anchorRef = useRef<HTMLButtonElement>(null);
     const [calendarOpen, setCalendarOpen] = useState(false);
-    const [isHovered, setIsHovered] = useState(false);
     const [calendarMonth, setCalendarMonth] = useState<Date>(() => {
         const base = parseIsoDate(value) || new Date();
         return new Date(base.getFullYear(), base.getMonth(), 1);
@@ -95,70 +94,56 @@ const StyledDateInput = ({
         setCalendarMonth(new Date(base.getFullYear(), base.getMonth(), 1));
     }, [calendarOpen, value]);
 
+    const triggerClassName = [
+        "repeto-date-input__trigger",
+        calendarOpen ? "repeto-date-input__trigger--open" : "",
+        className || "",
+    ]
+        .filter(Boolean)
+        .join(" ");
+
+    const floatingClassName = [
+        "repeto-date-popup",
+        "repeto-dialog-date-popup",
+        popupClassName || "",
+    ]
+        .filter(Boolean)
+        .join(" ");
+
     return (
         <>
             <button
                 ref={anchorRef}
                 type="button"
-                className={className}
-                onClick={() => {
+                className={triggerClassName}
+                onMouseDown={(event) => {
+                    // Prevent document-level outside-click handlers from consuming trigger interaction.
+                    event.preventDefault();
+                    event.stopPropagation();
+                }}
+                onClick={(event) => {
                     if (disabled) return;
-                    setCalendarOpen((prev) => !prev);
+                    event.preventDefault();
+                    event.stopPropagation();
+                    window.setTimeout(() => {
+                        setCalendarOpen((prev) => !prev);
+                    }, 0);
                 }}
-                onMouseEnter={() => {
-                    if (!disabled) setIsHovered(true);
-                }}
-                onMouseLeave={() => setIsHovered(false)}
-                onFocus={() => {
-                    if (!disabled) setIsHovered(true);
-                }}
-                onBlur={() => setIsHovered(false)}
                 disabled={disabled}
                 style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
                     width,
-                    background:
-                        isHovered && !disabled
-                            ? "var(--g-color-base-simple-hover)"
-                            : "transparent",
-                    border: calendarOpen
-                        ? "1px solid var(--g-color-line-brand)"
-                        : isHovered
-                          ? "1px solid var(--g-color-line-generic-hover)"
-                          : "1px solid var(--g-color-line-generic)",
-                    borderRadius: "var(--g-border-radius-m)",
-                    fontSize: 13,
-                    fontFamily: "inherit",
-                    color: "var(--g-color-text-primary)",
-                    cursor: disabled ? "default" : "pointer",
-                    opacity: disabled ? 0.5 : 1,
-                    boxSizing: "border-box",
-                    height: 36,
-                    padding: "0 12px",
-                    transition: "border-color 0.15s, background-color 0.15s",
                     ...style,
                 }}
             >
                 <span
-                    style={{
-                        color: value
-                            ? "var(--g-color-text-primary)"
-                            : "var(--g-color-text-hint)",
-                    }}
+                    className={`repeto-date-input__value${value ? "" : " repeto-date-input__value--placeholder"}`}
                 >
                     {value ? formatRuDate(value) : placeholder}
                 </span>
                 <Icon
-                    data={ChevronDown as IconData}
-                    size={16}
-                    style={{
-                        color: "var(--g-color-text-secondary)",
-                        flexShrink: 0,
-                        transform: calendarOpen ? "rotate(180deg)" : "none",
-                        transition: "transform 0.15s",
-                    }}
+                    data={Calendar as IconData}
+                    size={18}
+                    className="repeto-date-input__icon"
                 />
             </button>
             <Popup
@@ -166,29 +151,15 @@ const StyledDateInput = ({
                 anchorRef={anchorRef}
                 placement="bottom-start"
                 onClose={() => setCalendarOpen(false)}
-                floatingClassName={popupClassName}
+                floatingClassName={floatingClassName}
                 zIndex={popupZIndex}
             >
-                <div
-                    style={{
-                        background: "var(--g-color-base-background)",
-                        border: "1px solid var(--g-color-line-generic)",
-                        borderRadius: 10,
-                        padding: 10,
-                        width: 248,
-                    }}
-                >
-                    <div
-                        style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            marginBottom: 8,
-                        }}
-                    >
-                        <Button
-                            view="flat"
-                            size="s"
+                <div className="repeto-date-popup__shell">
+                    <div className="repeto-date-popup__header">
+                        <button
+                            type="button"
+                            className="repeto-date-popup__nav"
+                            aria-label="Предыдущий месяц"
                             onClick={() =>
                                 setCalendarMonth((prev) =>
                                     new Date(
@@ -199,18 +170,16 @@ const StyledDateInput = ({
                                 )
                             }
                         >
-                            <Icon data={ArrowChevronLeft as IconData} size={14} />
-                        </Button>
-                        <Text
-                            variant="body-2"
-                            style={{ textTransform: "capitalize", fontWeight: 600 }}
-                        >
+                            <Icon data={ArrowChevronLeft as IconData} size={16} />
+                        </button>
+                        <div className="repeto-date-popup__title">
                             {MONTH_NAMES_GEN[calendarMonth.getMonth()]}{" "}
                             {calendarMonth.getFullYear()}
-                        </Text>
-                        <Button
-                            view="flat"
-                            size="s"
+                        </div>
+                        <button
+                            type="button"
+                            className="repeto-date-popup__nav"
+                            aria-label="Следующий месяц"
                             onClick={() =>
                                 setCalendarMonth((prev) =>
                                     new Date(
@@ -221,80 +190,46 @@ const StyledDateInput = ({
                                 )
                             }
                         >
-                            <Icon data={ArrowChevronRight as IconData} size={14} />
-                        </Button>
+                            <Icon data={ArrowChevronRight as IconData} size={16} />
+                        </button>
                     </div>
 
-                    <div
-                        style={{
-                            display: "grid",
-                            gridTemplateColumns: "repeat(7, 1fr)",
-                            gap: 4,
-                            marginBottom: 6,
-                        }}
-                    >
+                    <div className="repeto-date-popup__weekdays">
                         {WEEK_DAY_SHORT.map((dayName) => (
-                            <Text
-                                key={dayName}
-                                variant="caption-2"
-                                color="secondary"
-                                style={{ textAlign: "center" }}
-                            >
+                            <span key={dayName} className="repeto-date-popup__weekday">
                                 {dayName}
-                            </Text>
+                            </span>
                         ))}
                     </div>
 
-                    <div
-                        style={{
-                            display: "grid",
-                            gridTemplateColumns: "repeat(7, 1fr)",
-                            gap: 4,
-                        }}
-                    >
+                    <div className="repeto-date-popup__days">
                         {calendarCells.map((cellDate, idx) => {
                             if (!cellDate) {
-                                return (
-                                    <div
-                                        key={`empty-${idx}`}
-                                        style={{ height: 28 }}
-                                    />
-                                );
+                                return <div key={`empty-${idx}`} className="repeto-date-popup__day-empty" />;
                             }
 
                             const iso = toIsoDate(cellDate);
                             const isSelected = iso === value;
                             const isToday = iso === todayIso;
+                            const dayOfWeek = cellDate.getDay();
+                            const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+                            const dayClassName = [
+                                "repeto-date-popup__day",
+                                isWeekend ? "repeto-date-popup__day--weekend" : "",
+                                isToday ? "repeto-date-popup__day--today" : "",
+                                isSelected ? "repeto-date-popup__day--selected" : "",
+                            ]
+                                .filter(Boolean)
+                                .join(" ");
 
                             return (
                                 <button
                                     key={iso}
                                     type="button"
+                                    className={dayClassName}
                                     onClick={() => {
                                         onUpdate(iso);
                                         setCalendarOpen(false);
-                                    }}
-                                    style={{
-                                        height: 28,
-                                        borderRadius: 7,
-                                        border: isToday
-                                            ? "1px solid var(--g-color-line-positive)"
-                                            : isSelected
-                                              ? "1px solid var(--g-color-line-brand)"
-                                              : "1px solid transparent",
-                                        background: isToday
-                                            ? "var(--g-color-base-positive-heavy, #22c55e)"
-                                            : isSelected
-                                              ? "var(--g-color-base-brand)"
-                                              : "transparent",
-                                        color: isToday
-                                            ? "var(--g-color-text-light-primary)"
-                                            : isSelected
-                                              ? "var(--g-color-text-brand-contrast)"
-                                              : "var(--g-color-text-primary)",
-                                        cursor: "pointer",
-                                        fontSize: 12,
-                                        fontWeight: isSelected || isToday ? 600 : 500,
                                     }}
                                 >
                                     {cellDate.getDate()}

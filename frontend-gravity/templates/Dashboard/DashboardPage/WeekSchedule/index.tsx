@@ -1,22 +1,14 @@
 import Link from "next/link";
 import { useEffect, useRef } from "react";
-import { Card, Text, Loader, Avatar } from "@gravity-ui/uikit";
+import { Card, Text, Loader } from "@gravity-ui/uikit";
 import { useWeekLessons } from "@/hooks/useDashboard";
 import { shortName } from "@/lib/formatters";
-import { getInitials } from "@/lib/formatters";
-import { accent, brand } from "@/constants/brand";
 import { useThemeMode } from "@/contexts/ThemeContext";
 import type { Lesson } from "@/types/schedule";
 import StudentNameWithBadge from "@/components/StudentNameWithBadge";
+import StudentAvatar from "@/components/StudentAvatar";
 
 const dayNames = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
-
-const avatarColor = (subject: string) => {
-    const s = subject.toLowerCase();
-    if (s.includes("математ") || s.includes("русс")) return brand[400];
-    if (s.includes("физик") || s.includes("англ")) return accent[600];
-    return brand[400];
-};
 
 type Props = {
     onLessonClick: (lesson: Lesson) => void;
@@ -127,11 +119,9 @@ const WeekSchedule = ({ onLessonClick, refreshKey }: Props) => {
                                             transition: "background 0.15s",
                                         }}
                                     >
-                                        <Avatar
-                                            text={getInitials(lesson.studentName)}
+                                        <StudentAvatar
+                                            student={{ name: lesson.studentName, avatarUrl: undefined }}
                                             size="s"
-                                            theme="brand"
-                                            backgroundColor={avatarColor(lesson.subject)}
                                         />
                                         <div style={{ flex: 1, minWidth: 0 }}>
                                             <div

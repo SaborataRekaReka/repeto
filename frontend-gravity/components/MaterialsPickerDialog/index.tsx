@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
-import { Button, Checkbox, Icon, Text, TextInput } from "@gravity-ui/uikit";
-import { ChevronDown, ChevronRight, File, Folder } from "@gravity-ui/icons";
+import { Button, Checkbox, Icon, Loader, Text, TextInput } from "@gravity-ui/uikit";
+import { ArrowLeft, ChevronDown, ChevronRight, File, Folder } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import AppDialog from "@/components/AppDialog";
+import { syncGoogleDriveFolder, syncYandexDiskFolder } from "@/hooks/useFiles";
 import type { HomeworkFile } from "@/mocks/student-details";
 import type { CloudProvider } from "@/types/files";
 
@@ -15,6 +16,7 @@ type MaterialsPickerDialogProps = {
     connectedProviders?: CloudProvider[];
     defaultProvider?: CloudProvider;
     onApply: (files: HomeworkFile[]) => void;
+    onRefreshAvailableFiles?: () => Promise<void> | void;
     caption?: string;
 };
 
@@ -45,6 +47,7 @@ const MaterialsPickerDialog = ({
     connectedProviders = [],
     defaultProvider,
     onApply,
+    onRefreshAvailableFiles,
     caption = "Выбор материалов",
 }: MaterialsPickerDialogProps) => {
     const router = useRouter();
@@ -57,6 +60,30 @@ const MaterialsPickerDialog = ({
     const [currentFolderByProvider, setCurrentFolderByProvider] = useState<
         Partial<Record<CloudProvider, string | null>>
     >({});
+    const [syncingFolderKey, setSyncingFolderKey] = useState<string | null>(null);
+    const [syncInfo, setSyncInfo] = useState<string | null>(null);
+    const autoSyncedFolderKeysRef = useRef<Set<string>>(new Set());
+
+    const syncProviderFolder = useCallback(async (provider: CloudProvider, folderId: string) => {
+        const folderKey = makeSelectionKey(provider, folderId);
+        setSyncInfo(null);
+        setSyncingFolderKey(folderKey);
+
+        try {
+            if (provider === "google-drive") {
+                await syncGoogleDriveFolder(folderId);
+            } else {
+                await syncYandexDiskFolder(folderId);
+            }
+
+            await Promise.resolve(onRefreshAvailableFiles?.());
+        } catch {
+            autoSyncedFolderKeysRef.current.delete(folderKey);
+            setSyncInfo("Не удалось обновить содержимое папки. Попробуйте еще раз.");
+        } finally {
+            setSyncingFolderKey((current) => (current === folderKey ? null : current));
+        }
+    }, [onRefreshAvailableFiles]);
 
     const normalizedAvailableFiles = useMemo(() => {
         const deduped = new Map<string, HomeworkFile>();
@@ -73,23 +100,20 @@ const MaterialsPickerDialog = ({
     }, [availableFiles]);
 
     const pickerProviders = useMemo<CloudProvider[]>(() => {
-        if (connectedProviders.length > 0) {
-            const uniqueConnected = Array.from(new Set(connectedProviders));
-            if (defaultProvider && uniqueConnected.includes(defaultProvider)) {
-                return [
-                    defaultProvider,
-                    ...uniqueConnected.filter((provider) => provider !== defaultProvider),
-                ];
-            }
-
-            return uniqueConnected;
-        }
-
+        const uniqueConnected = Array.from(new Set(connectedProviders));
         const inferred = normalizedAvailableFiles
             .map((item) => item.provider)
             .filter((provider): provider is CloudProvider => !!provider);
+        const allProviders = Array.from(new Set([...uniqueConnected, ...inferred]));
 
-        return Array.from(new Set(inferred));
+        if (defaultProvider && allProviders.includes(defaultProvider)) {
+            return [
+                defaultProvider,
+                ...allProviders.filter((provider) => provider !== defaultProvider),
+            ];
+        }
+
+        return allProviders;
     }, [connectedProviders, normalizedAvailableFiles, defaultProvider]);
 
     const itemsByProvider = useMemo(() => {
@@ -187,91 +211,117 @@ const MaterialsPickerDialog = ({
         [draftSelectedKeys],
     );
 
-    const selectedAvailableItems = useMemo(() => {
+    // Cache of known items from both current picker data and the parent's
+    // `selectedFiles` prop. This lets us preserve a user's selection even
+    // when `/files` data hasn't loaded yet and avoids dropping previously
+    // chosen items during re-syncs.
+    const knownFileByKey = useMemo(() => {
+        const map = new Map<string, HomeworkFile>();
+        selectedFiles.forEach((file) => {
+            if (file.provider) {
+                map.set(makeSelectionKey(file.provider, file.id), file);
+            }
+        });
+        normalizedAvailableFiles.forEach((file) => {
+            if (file.provider) {
+                map.set(makeSelectionKey(file.provider, file.id), file);
+            }
+        });
+        return map;
+    }, [selectedFiles, normalizedAvailableFiles]);
+
+    const selectedDraftItems = useMemo(() => {
         return draftSelectedKeys
-            .map((key) => fileBySelectionKey.get(key))
+            .map((key) => knownFileByKey.get(key))
             .filter((item): item is HomeworkFile => !!item);
-    }, [draftSelectedKeys, fileBySelectionKey]);
+    }, [draftSelectedKeys, knownFileByKey]);
 
+    // Initialize local dialog state exactly once per "open" transition.
+    // Do NOT depend on files data — otherwise a refetch after folder sync
+    // would reset the current folder and in-progress selections.
+    const prevOpenRef = useRef(false);
     useEffect(() => {
-        if (!open) {
-            return;
+        const wasOpen = prevOpenRef.current;
+        prevOpenRef.current = open;
+
+        if (open && !wasOpen) {
+            autoSyncedFolderKeysRef.current.clear();
+            setSyncInfo(null);
+            setSyncingFolderKey(null);
+            setProviderSearch({});
+            setOpenAccordions([]);
+            setCurrentFolderByProvider({});
+            setDraftSelectedKeys(
+                selectedFiles
+                    .map((file) =>
+                        file.provider ? makeSelectionKey(file.provider, file.id) : null,
+                    )
+                    .filter((key): key is string => !!key),
+            );
         }
+    }, [open, selectedFiles]);
 
-        setDraftSelectedKeys(
-            selectedFiles
-                .map((file) => {
-                    if (file.provider) {
-                        const directKey = makeSelectionKey(file.provider, file.id);
-                        if (fileBySelectionKey.has(directKey)) {
-                            return directKey;
-                        }
-                    }
-
-                    const fallback = normalizedAvailableFiles.find(
-                        (available) => available.id === file.id,
-                    );
-
-                    if (fallback?.provider) {
-                        return makeSelectionKey(fallback.provider, fallback.id);
-                    }
-
-                    return null;
-                })
-                .filter((key): key is string => !!key),
-        );
-
-            setOpenAccordions(pickerProviders[0] ? [pickerProviders[0]] : []);
-        setProviderSearch({});
-        setCurrentFolderByProvider(
-            pickerProviders.reduce<Partial<Record<CloudProvider, string | null>>>(
-                (acc, provider) => {
-                    acc[provider] = providerRootFolderIdByProvider.get(provider) || null;
-                    return acc;
-                },
-                {},
-            ),
-        );
-    }, [
-        open,
-        selectedFiles,
-        fileBySelectionKey,
-        normalizedAvailableFiles,
-        pickerProviders,
-        providerRootFolderIdByProvider,
-    ]);
-
+    // Fill in defaults for providers that appeared after the first render
+    // (e.g. when `/files` finished loading). This purposefully does not
+    // overwrite the user's current folder/accordion state.
     useEffect(() => {
         if (!open || pickerProviders.length === 0) {
             return;
         }
 
         setOpenAccordions((prev) => {
-            const filtered = prev.filter((provider) =>
-                pickerProviders.includes(provider),
-            );
-
+            const filtered = prev.filter((provider) => pickerProviders.includes(provider));
             if (filtered.length > 0) {
                 return filtered;
             }
-
             return pickerProviders[0] ? [pickerProviders[0]] : [];
         });
 
         setCurrentFolderByProvider((prev) => {
             const next = { ...prev };
             let changed = false;
-
             pickerProviders.forEach((provider) => {
                 if (next[provider] === undefined) {
                     next[provider] = providerRootFolderIdByProvider.get(provider) || null;
                     changed = true;
                 }
             });
-
             return changed ? next : prev;
         });
     }, [open, pickerProviders, providerRootFolderIdByProvider]);
+
+    useEffect(() => {
+        if (!open) {
+            return;
+        }
+
+        pickerProviders.forEach((provider) => {
+            const rootFolderId = providerRootFolderIdByProvider.get(provider);
+            if (!rootFolderId) {
+                return;
+            }
+
+            const providerMeta = providerMetaByProvider.get(provider);
+            const children = providerMeta?.childrenByParent.get(rootFolderId) || [];
+            if (children.length > 0) {
+                return;
+            }
+
+            const folderKey = makeSelectionKey(provider, rootFolderId);
+            if (autoSyncedFolderKeysRef.current.has(folderKey)) {
+                return;
+            }
+
+            autoSyncedFolderKeysRef.current.add(folderKey);
+            void syncProviderFolder(provider, rootFolderId);
+        });
+    }, [
+        open,
+        pickerProviders,
+        providerMetaByProvider,
+        providerRootFolderIdByProvider,
+        syncProviderFolder,
+    ]);
 
     const toggleAccordion = (provider: CloudProvider) => {
         setOpenAccordions((prev) =>
@@ -380,6 +430,12 @@ const MaterialsPickerDialog = ({
             ...prev,
             [provider]: folderId,
         }));
+
+        const folderKey = makeSelectionKey(provider, folderId);
+        if (!autoSyncedFolderKeysRef.current.has(folderKey)) {
+            autoSyncedFolderKeysRef.current.add(folderKey);
+            void syncProviderFolder(provider, folderId);
+        }
     };
 
     const buildProviderBreadcrumbs = (provider: CloudProvider) => {
@@ -417,19 +473,29 @@ const MaterialsPickerDialog = ({
 
     const applyPickerSelection = () => {
         const selectedItems = draftSelectedKeys
-            .map((key) => fileBySelectionKey.get(key))
+            .map((key) => knownFileByKey.get(key))
             .filter((item): item is HomeworkFile => !!item);
 
         const manualFiles = selectedFiles.filter(
             (file) =>
-                !normalizedAvailableFiles.some(
-                    (available) =>
-                        available.id === file.id &&
-                        available.provider === file.provider,
-                ),
+                !file.provider ||
+                !knownFileByKey.has(makeSelectionKey(file.provider, file.id)),
         );
 
-        onApply([...manualFiles, ...selectedItems]);
+        // Deduplicate by selection key to protect against edge cases where
+        // the same file is present in both manual and cloud-resolved lists.
+        const seen = new Set<string>();
+        const merged: HomeworkFile[] = [];
+        [...manualFiles, ...selectedItems].forEach((file) => {
+            const key = file.provider
+                ? makeSelectionKey(file.provider, file.id)
+                : `manual:${file.id}`;
+            if (seen.has(key)) return;
+            seen.add(key);
+            merged.push(file);
+        });
+
+        onApply(merged);
         onClose();
     };
 
@@ -442,58 +508,60 @@ const MaterialsPickerDialog = ({
             footer={{
                 onClickButtonApply: applyPickerSelection,
                 textButtonApply:
-                    selectedAvailableItems.length > 0
-                        ? `Готово (${selectedAvailableItems.length})`
+                    selectedDraftItems.length > 0
+                        ? `Готово (${selectedDraftItems.length})`
                         : "Готово",
                 onClickButtonCancel: onClose,
                 textButtonCancel: "Отмена",
             }}
         >
-            {connectedProviders.length === 0 ? (
-                <div
-                    style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        textAlign: "center",
-                        padding: "24px 16px",
-                        gap: 14,
-                    }}
-                >
+            {pickerProviders.length === 0 ? (
+                connectedProviders.length === 0 ? (
                     <div
                         style={{
-                            width: 56,
-                            height: 56,
-                            borderRadius: 16,
-                            background: "var(--g-color-base-info-light)",
                             display: "flex",
+                            flexDirection: "column",
                             alignItems: "center",
-                            justifyContent: "center",
+                            textAlign: "center",
+                            padding: "24px 16px",
+                            gap: 14,
                         }}
                     >
-                        <Icon data={Folder as IconData} size={24} />
+                        <div
+                            style={{
+                                width: 56,
+                                height: 56,
+                                borderRadius: 16,
+                                background: "var(--g-color-base-info-light)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                            }}
+                        >
+                            <Icon data={Folder as IconData} size={24} />
+                        </div>
+                        <div>
+                            <Text variant="subheader-2" as="div" style={{ marginBottom: 6 }}>
+                                Облачные диски не подключены
+                            </Text>
+                            <Text variant="body-2" color="secondary" as="div">
+                                Подключите Яндекс Диск или Google Drive
+                                в настройках интеграций, чтобы прикреплять файлы.
+                            </Text>
+                        </div>
+                        <Button
+                            view="action"
+                            size="l"
+                            onClick={() => router.push("/settings?tab=integrations")}
+                        >
+                            Открыть настройки
+                        </Button>
                     </div>
-                    <div>
-                        <Text variant="subheader-2" as="div" style={{ marginBottom: 6 }}>
-                            Облачные диски не подключены
-                        </Text>
-                        <Text variant="body-2" color="secondary" as="div">
-                            Подключите Яндекс Диск или Google Drive
-                            в настройках интеграций, чтобы прикреплять файлы.
-                        </Text>
-                    </div>
-                    <Button
-                        view="action"
-                        size="l"
-                        onClick={() => router.push("/settings?tab=integrations")}
-                    >
-                        Открыть настройки
-                    </Button>
-                </div>
-            ) : pickerProviders.length === 0 ? (
-                <Text variant="body-2" color="secondary">
-                    Нет доступных источников материалов.
-                </Text>
+                ) : (
+                    <Text variant="body-2" color="secondary">
+                        Нет доступных источников материалов.
+                    </Text>
+                )
             ) : (
                 <div
                     style={{
@@ -506,6 +574,12 @@ const MaterialsPickerDialog = ({
                         overflowX: "hidden",
                     }}
                 >
+                    {syncInfo && (
+                        <Text variant="caption-2" color="danger">
+                            {syncInfo}
+                        </Text>
+                    )}
+
                     {pickerProviders.map((provider) => {
                         const providerItems = itemsByProvider.get(provider) || [];
                         const isOpen = openAccordions.includes(provider);
@@ -525,6 +599,15 @@ const MaterialsPickerDialog = ({
                             currentFolderId && currentFolderId !== providerRootFolderId,
                         );
                         const isEmpty = providerItems.length === 0;
+                        const providerRootKey = providerRootFolderId
+                            ? makeSelectionKey(provider, providerRootFolderId)
+                            : null;
+                        const isInitialSyncing = Boolean(
+                            isEmpty &&
+                                providerRootKey &&
+                                syncingFolderKey === providerRootKey,
+                        );
+                        const clickableHeader = !isEmpty || isInitialSyncing;
 
                         return (
                             <div
@@ -540,7 +623,7 @@ const MaterialsPickerDialog = ({
                                 <button
                                     type="button"
                                     onClick={() => {
-                                        if (!isEmpty) {
+                                        if (clickableHeader && !isInitialSyncing) {
                                             toggleAccordion(provider);
                                         }
                                     }}
@@ -552,13 +635,21 @@ const MaterialsPickerDialog = ({
                                         border: "none",
                                         background: "#fff",
                                         padding: "12px 14px",
-                                        cursor: isEmpty ? "default" : "pointer",
+                                        cursor: clickableHeader && !isInitialSyncing ? "pointer" : "default",
                                         textAlign: "left",
                                     }}
                                 >
-                                    <div style={{ minWidth: 0 }}>
+                                    <div
+                                        style={{
+                                            minWidth: 0,
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 10,
+                                        }}
+                                    >
                                         <Text variant="subheader-2">{providerLabel(provider)}</Text>
-                                        {isEmpty && (
+                                        {isInitialSyncing && <Loader size="s" />}
+                                        {isEmpty && !isInitialSyncing && (
                                             <Text variant="caption-2" color="secondary">
                                                 Пусто
                                             </Text>
@@ -578,7 +669,7 @@ const MaterialsPickerDialog = ({
                                     />
                                 </button>
 
-                                {!isEmpty && (
+                                {(!isEmpty || isInitialSyncing) && (
                                     <div
                                         aria-hidden={!isOpen}
                                         style={{
@@ -655,13 +746,35 @@ const MaterialsPickerDialog = ({
                                                     style={{
                                                         display: "flex",
                                                         alignItems: "center",
-                                                        gap: 4,
+                                                        gap: 6,
                                                         flexWrap: "wrap",
                                                         padding: "8px 14px 6px",
                                                         borderBottom:
                                                             "1px solid var(--g-color-line-generic)",
                                                     }}
                                                 >
+                                                    <Button
+                                                        view="flat"
+                                                        size="xs"
+                                                        onClick={() => {
+                                                            const parent =
+                                                                breadcrumbs.length > 1
+                                                                    ? breadcrumbs[
+                                                                          breadcrumbs.length - 2
+                                                                      ].id
+                                                                    : providerRootFolderId;
+                                                            setCurrentFolderByProvider((prev) => ({
+                                                                ...prev,
+                                                                [provider]: parent,
+                                                            }));
+                                                        }}
+                                                        title="Назад"
+                                                    >
+                                                        <Icon
+                                                            data={ArrowLeft as IconData}
+                                                            size={14}
+                                                        />
+                                                    </Button>
                                                     <button
                                                         type="button"
                                                         onClick={() =>
@@ -743,20 +856,85 @@ const MaterialsPickerDialog = ({
                                                     background: "#fff",
                                                 }}
                                             >
-                                                {visibleItems.length === 0 ? (
-                                                    <div
-                                                        style={{
-                                                            padding: 24,
-                                                            textAlign: "center",
-                                                            background: "#fff",
-                                                        }}
-                                                    >
-                                                        <Text variant="body-2" color="secondary">
-                                                            Ничего не найдено
-                                                        </Text>
-                                                    </div>
-                                                ) : (
-                                                    visibleItems.map((item, idx) => {
+                                                {(() => {
+                                                    const activeFolderId =
+                                                        currentFolderId || providerRootFolderId;
+                                                    const isSyncingCurrent =
+                                                        !!activeFolderId &&
+                                                        syncingFolderKey ===
+                                                            makeSelectionKey(provider, activeFolderId);
+                                                    const searchQuery = (
+                                                        providerSearch[provider] || ""
+                                                    ).trim();
+
+                                                    if (visibleItems.length === 0) {
+                                                        if (isSyncingCurrent) {
+                                                            return (
+                                                                <div
+                                                                    style={{
+                                                                        padding: 28,
+                                                                        display: "flex",
+                                                                        flexDirection: "column",
+                                                                        alignItems: "center",
+                                                                        gap: 10,
+                                                                    }}
+                                                                >
+                                                                    <Loader size="m" />
+                                                                    <Text
+                                                                        variant="body-2"
+                                                                        color="secondary"
+                                                                    >
+                                                                        Загружаем содержимое папки…
+                                                                    </Text>
+                                                                </div>
+                                                            );
+                                                        }
+
+                                                        return (
+                                                            <div
+                                                                style={{
+                                                                    padding: 24,
+                                                                    textAlign: "center",
+                                                                    background: "#fff",
+                                                                }}
+                                                            >
+                                                                <Text
+                                                                    variant="body-2"
+                                                                    color="secondary"
+                                                                >
+                                                                    {searchQuery
+                                                                        ? "Ничего не найдено"
+                                                                        : "Папка пуста"}
+                                                                </Text>
+                                                            </div>
+                                                        );
+                                                    }
+
+                                                    return (
+                                                        <>
+                                                            {isSyncingCurrent && (
+                                                                <div
+                                                                    style={{
+                                                                        display: "flex",
+                                                                        alignItems: "center",
+                                                                        gap: 8,
+                                                                        padding: "8px 14px",
+                                                                        borderBottom:
+                                                                            "1px solid var(--g-color-line-generic)",
+                                                                        background:
+                                                                            "var(--g-color-base-info-light)",
+                                                                    }}
+                                                                >
+                                                                    <Loader size="s" />
+                                                                    <Text
+                                                                        variant="caption-2"
+                                                                        color="secondary"
+                                                                    >
+                                                                        Обновляем содержимое папки…
+                                                                    </Text>
+                                                                </div>
+                                                            )}
+                                                            {visibleItems.map((item, idx) => {
                                                         const isFolder =
                                                             (item.type || "file") === "folder";
                                                         const selectionKey = makeSelectionKey(
@@ -874,8 +1052,10 @@ const MaterialsPickerDialog = ({
                                                                 )}
                                                             </label>
                                                         );
-                                                    })
-                                                )}
+                                                    })}
+                                                        </>
+                                                    );
+                                                })()}
                                             </div>
                                         </div>
                                     </div>
@@ -905,16 +1085,16 @@ const MaterialsPickerDialog = ({
                             }}
                         >
                             <Text variant="body-2" style={{ fontWeight: 600 }}>
-                                Выбрано: {selectedAvailableItems.length}
+                                Выбрано: {draftSelectedKeys.length}
                             </Text>
-                            {selectedAvailableItems.length > 0 && (
+                            {selectedDraftItems.length > 0 && (
                                 <Text variant="caption-2" color="secondary" ellipsis>
-                                    {selectedAvailableItems
+                                    {selectedDraftItems
                                         .slice(0, 3)
                                         .map((item) => item.name)
                                         .join(", ")}
-                                    {selectedAvailableItems.length > 3
-                                        ? ` и еще ${selectedAvailableItems.length - 3}`
+                                    {selectedDraftItems.length > 3
+                                        ? ` и еще ${selectedDraftItems.length - 3}`
                                         : ""}
                                 </Text>
                             )}
@@ -923,7 +1103,7 @@ const MaterialsPickerDialog = ({
                             view="flat"
                             size="xs"
                             onClick={clearAllSelection}
-                            disabled={selectedAvailableItems.length === 0}
+                            disabled={draftSelectedKeys.length === 0}
                         >
                             Очистить
                         </Button>

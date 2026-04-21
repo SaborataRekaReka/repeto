@@ -57,9 +57,20 @@ export type PortalFile = {
 };
 
 export type PortalPackage = {
+    subject?: string;
     used: number;
     total: number;
     validUntil: string;
+};
+
+export type PortalBalanceOperation = {
+    id: string;
+    kind: "payment" | "lesson";
+    direction: "credit" | "debit";
+    amount: number;
+    title: string;
+    subtitle: string;
+    occurredAt: string;
 };
 
 export type PortalCancelPolicy = {
@@ -104,21 +115,29 @@ export type StudentPortalData = {
     studentName: string;
     studentPhone?: string;
     studentEmail?: string;
+    studentAvatarUrl?: string | null;
     tutorName: string;
     tutorSlug: string;
     tutorPhone: string;
     tutorWhatsapp?: string;
     tutorAvatarUrl?: string;
+    tutorRating?: number | string | null;
+    tutorReviewsCount?: number;
 
     balance: number;
     ratePerLesson: number;
     package: PortalPackage | null;
     cancelPolicy: PortalCancelPolicy | null;
     preferredPaymentMethod?: string;
+    paymentRequisites?: string | null;
+    paymentRequisitesPreview?: string | null;
+    paymentCardNumber?: string | null;
+    paymentSbpPhone?: string | null;
 
     upcomingLessons: PortalLesson[];
     recentLessons: RecentLesson[];
     recentPayments: PortalPayment[];
+    balanceOperations?: PortalBalanceOperation[];
     homework: PortalHomework[];
     files: PortalFile[];
     pendingBookings?: PendingBooking[];

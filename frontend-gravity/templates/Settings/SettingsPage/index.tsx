@@ -16,6 +16,7 @@ import { useThemeMode } from "@/contexts/ThemeContext";
 import type { ThemeMode } from "@/contexts/ThemeContext";
 import { useSettings, updateAccount, uploadAvatar, checkAccountSlug } from "@/hooks/useSettings";
 import { resolveApiAssetUrl } from "@/lib/api";
+import AppField from "@/components/AppField";
 
 type SlugStatus = "idle" | "checking" | "available" | "taken" | "error";
 
@@ -319,36 +320,27 @@ const SettingsPage = () => {
 
     return (
         <GravityLayout title="Настройки">
-            <div className="repeto-settings-layout">
+            <div className="repeto-settings-layout repeto-settings-layout--v2">
                 {/* Sidebar */}
                 <div className="repeto-settings-sidebar">
                     {/* Profile card */}
-                    <Card className="repeto-settings-profile" view="outlined" style={{ padding: 24, background: "var(--g-color-base-float)", textAlign: "center" }}>
+                    <Card className="repeto-settings-side-card repeto-settings-profile" view="outlined">
                         <div
                             onClick={() => fileInputRef.current?.click()}
-                            style={{
-                                width: 88, height: 88, borderRadius: "50%", margin: "0 auto",
-                                cursor: "pointer", overflow: "hidden", transition: "box-shadow 0.2s",
-                                boxShadow: "0 0 0 3px rgba(174,122,255,0.15)",
-                            }}
-                            onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 0 0 4px rgba(174,122,255,0.3)")}
-                            onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "0 0 0 3px rgba(174,122,255,0.15)")}
+                            className="repeto-settings-avatar-trigger"
                         >
                             {avatarSrc ? (
                                 <img src={avatarSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                             ) : (
-                                <div style={{
-                                    width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center",
-                                    background: "rgba(174,122,255,0.08)", fontSize: 24, fontWeight: 700, color: "var(--g-color-text-brand)",
-                                }}>
+                                <div className="repeto-settings-avatar-fallback">
                                     {getInitials(user?.name || "")}
                                 </div>
                             )}
                         </div>
                         <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleAvatarChange} />
-                        <Text variant="subheader-2" style={{ display: "block", marginTop: 16 }}>{user?.name || ""}</Text>
-                        <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 4 }}>{user?.email || ""}</Text>
-                        <div style={{ marginTop: 16 }}>
+                        <Text variant="subheader-2" className="repeto-settings-profile-name">{user?.name || ""}</Text>
+                        <Text variant="caption-2" color="secondary" className="repeto-settings-profile-email">{user?.email || ""}</Text>
+                        <div className="repeto-settings-profile-action">
                             <Button view="outlined" size="s" onClick={() => fileInputRef.current?.click()}>
                                 Изменить фото
                             </Button>
@@ -356,64 +348,43 @@ const SettingsPage = () => {
                     </Card>
 
                     {/* Navigation */}
-                    <div className="repeto-settings-sections" style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 2 }}>
-                        {navItems.map((item) => (
-                            <button
-                                key={item.id}
-                                onClick={() => {
-                                    setType(item.id);
-                                    const query = item.id === "account" ? {} : { tab: item.id };
-                                    router.replace({ pathname: "/settings", query }, undefined, { shallow: true });
-                                }}
-                                style={{
-                                    display: "flex", alignItems: "center", gap: 12,
-                                    padding: "10px 16px", borderRadius: 10,
-                                    border: "none", cursor: "pointer", width: "100%", textAlign: "left",
-                                    background: type === item.id ? "rgba(174,122,255,0.08)" : "transparent",
-                                    color: type === item.id ? "var(--g-color-text-brand)" : "var(--g-color-text-primary)",
-                                    fontWeight: type === item.id ? 600 : 400, fontSize: 14,
-                                    transition: "all 0.15s",
-                                }}
-                                onMouseEnter={(e) => { if (type !== item.id) e.currentTarget.style.background = "var(--g-color-base-simple-hover)"; }}
-                                onMouseLeave={(e) => { if (type !== item.id) e.currentTarget.style.background = "transparent"; }}
-                            >
-                                <Icon data={item.icon as IconData} size={18} />
-                                {item.label}
-                            </button>
-                        ))}
-                    </div>
+                    <Card className="repeto-settings-side-card repeto-settings-nav-card" view="outlined">
+                        <div className="repeto-settings-sections">
+                            {navItems.map((item) => (
+                                <button
+                                    key={item.id}
+                                    onClick={() => {
+                                        setType(item.id);
+                                        const query = item.id === "account" ? {} : { tab: item.id };
+                                        router.replace({ pathname: "/settings", query }, undefined, { shallow: true });
+                                    }}
+                                    className={`repeto-settings-nav-btn${type === item.id ? " repeto-settings-nav-btn--active" : ""}`}
+                                >
+                                    <Icon data={item.icon as IconData} size={18} />
+                                    {item.label}
+                                </button>
+                            ))}
+                        </div>
 
-                    {/* Logout */}
-                    <div className="repeto-settings-logout" style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid var(--g-color-line-generic)" }}>
-                        <button
-                            onClick={() => { logout(); }}
-                            style={{
-                                display: "flex", alignItems: "center", gap: 12,
-                                padding: "10px 16px", borderRadius: 10,
-                                border: "none", cursor: "pointer", width: "100%", textAlign: "left",
-                                background: "transparent",
-                                color: "var(--g-color-text-danger)",
-                                fontWeight: 400, fontSize: 14,
-                                transition: "all 0.15s",
-                            }}
-                            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(209,107,143,0.08)"; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-                        >
-                            <Icon data={ArrowRightFromSquare as IconData} size={18} />
-                            Выйти из аккаунта
-                        </button>
-                    </div>
+                        <div className="repeto-settings-logout">
+                            <button
+                                onClick={() => { logout(); }}
+                                className="repeto-settings-logout-btn"
+                            >
+                                <Icon data={ArrowRightFromSquare as IconData} size={18} />
+                                Выйти из аккаунта
+                            </button>
+                        </div>
+                    </Card>
 
                     {/* Public page */}
-                    <Card className="repeto-settings-public" view="outlined" style={{ padding: 16, marginTop: 20, background: "var(--g-color-base-float)" }}>
+                    <Card className="repeto-settings-side-card repeto-settings-public" view="outlined">
                         {!published && (
                             <>
                                 <div style={{ marginTop: 12 }}>
-                                    <Text variant="caption-2" color="secondary" style={{ display: "block", marginBottom: 6 }}>
-                                        Персональная ссылка
-                                    </Text>
+                                    <AppField label="Персональная ссылка" className="repeto-settings-public-slug-field">
                                     <TextInput
-                                        size="s"
+                                        size="l"
                                         value={slug}
                                         onUpdate={(value) => {
                                             setSlug(sanitizeSlug(value));
@@ -445,6 +416,7 @@ const SettingsPage = () => {
                                             ) : null
                                         }
                                     />
+                                    </AppField>
                                 </div>
 
                                 {slugFocused && slugTyping && !!slugHint && (
@@ -484,20 +456,6 @@ const SettingsPage = () => {
                                 disabled={publishToggleDisabled}
                             />
                         </div>
-                        <div style={{ marginTop: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                            <Text variant="body-1" style={{ fontWeight: 600 }}>Показывать публичные пакеты</Text>
-                            <Switch
-                                checked={showPublicPackages}
-                                onUpdate={(value) => {
-                                    void handleShowPublicPackagesToggle(value);
-                                }}
-                                size="m"
-                                disabled={saving}
-                            />
-                        </div>
-                        <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 8 }}>
-                            Если выключено, раздел с пакетами не отображается на публичной странице и в записи.
-                        </Text>
                         {!published && !canEnablePublishing && (
                             <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 8 }}>
                                 Публикация доступна только после выбора свободного адреса.
@@ -525,16 +483,9 @@ const SettingsPage = () => {
                     </Card>
 
                     {/* Theme switcher */}
-                    <Card className="repeto-settings-theme" view="outlined" style={{ padding: 16, marginTop: 20, background: "var(--g-color-base-float)" }}>
-                        <Text variant="body-1" style={{ fontWeight: 600, display: "block", marginBottom: 12 }}>Тема интерфейса</Text>
-                        <div style={{
-                            display: "grid",
-                            gridTemplateColumns: "1fr 1fr 1fr",
-                            gap: 4,
-                            padding: 4,
-                            borderRadius: 12,
-                            background: "var(--g-color-base-generic)",
-                        }}>
+                    <Card className="repeto-settings-side-card repeto-settings-theme" view="outlined">
+                        <Text variant="body-1" className="repeto-settings-theme-title">Тема интерфейса</Text>
+                        <div className="repeto-settings-theme-grid">
                             {([
                                 { mode: "light", label: "Светлая", icon: Sun },
                                 { mode: "system", label: "Системная", icon: Display },
@@ -543,22 +494,7 @@ const SettingsPage = () => {
                                 <button
                                     key={opt.mode}
                                     onClick={() => setTheme(opt.mode)}
-                                    style={{
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        alignItems: "center",
-                                        gap: 6,
-                                        padding: "10px 8px",
-                                        borderRadius: 8,
-                                        border: "none",
-                                        cursor: "pointer",
-                                        background: themeMode === opt.mode ? "var(--g-color-base-float)" : "transparent",
-                                        boxShadow: themeMode === opt.mode ? "0 1px 4px rgba(0,0,0,0.12)" : "none",
-                                        color: themeMode === opt.mode ? "var(--g-color-text-brand)" : "var(--g-color-text-secondary)",
-                                        fontWeight: themeMode === opt.mode ? 600 : 400,
-                                        fontSize: 12,
-                                        transition: "all 0.15s",
-                                    }}
+                                    className={`repeto-settings-theme-btn${themeMode === opt.mode ? " repeto-settings-theme-btn--active" : ""}`}
                                 >
                                     <Icon data={opt.icon as any} size={18} />
                                     {opt.label}

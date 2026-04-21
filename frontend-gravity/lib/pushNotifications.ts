@@ -10,6 +10,82 @@ type PushEnableResult = {
   reason?: string;
 };
 
+function getErrorMessage(error: unknown) {
+  if (error instanceof DOMException && error.name === 'AbortError') {
+    return 'Service Worker еще активируется. Подождите пару секунд и повторите попытку.';
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return 'Не удалось включить Push-уведомления.';
+}
+
+function waitForServiceWorkerActivation(
+  worker: ServiceWorker,
+  timeoutMs = 10000,
+) {
+  if (worker.state === 'activated') {
+    return Promise.resolve();
+  }
+
+  return new Promise<void>((resolve, reject) => {
+    const onStateChange = () => {
+      if (worker.state === 'activated') {
+        cleanup();
+        resolve();
+      }
+
+      if (worker.state === 'redundant') {
+        cleanup();
+        reject(new Error('Service Worker не активировался.'));
+      }
+    };
+
+    const timer = window.setTimeout(() => {
+      cleanup();
+      reject(new Error('Service Worker не успел активироваться.'));
+    }, timeoutMs);
+
+    const cleanup = () => {
+      worker.removeEventListener('statechange', onStateChange);
+      window.clearTimeout(timer);
+    };
+
+    worker.addEventListener('statechange', onStateChange);
+  });
+}
+
+async function getActivePushRegistration() {
+  const registration = await navigator.serviceWorker.register('/push-sw.js', {
+    scope: '/',
+  });
+
+  if (registration.active?.state === 'activated') {
+    return registration;
+  }
+
+  const transitioningWorker =
+    registration.installing || registration.waiting || registration.active;
+
+  if (transitioningWorker) {
+    await waitForServiceWorkerActivation(transitioningWorker);
+  }
+
+  const readyRegistration = await navigator.serviceWorker.ready.catch(() => null);
+  const resolvedRegistration =
+    readyRegistration && readyRegistration.scope === registration.scope
+      ? readyRegistration
+      : registration;
+
+  if (!resolvedRegistration.active || resolvedRegistration.active.state !== 'activated') {
+    throw new Error('Service Worker не активирован. Обновите страницу и повторите попытку.');
+  }
+
+  return resolvedRegistration;
+}
+
 function base64UrlToUint8Array(base64Url: string) {
   const padding = '='.repeat((4 - (base64Url.length % 4)) % 4);
   const base64 = (base64Url + padding).replace(/-/g, '+').replace(/_/g, '/');
@@ -48,48 +124,55 @@ export async function enablePushNotifications(): Promise<PushEnableResult> {
     };
   }
 
-  const keyData = await api<PushPublicKeyResponse>('/notifications/push/public-key');
-  if (!keyData.configured || !keyData.publicKey) {
-    return {
-      enabled: false,
-      reason: 'Push не настроен на сервере.',
-    };
-  }
+  try {
+    const keyData = await api<PushPublicKeyResponse>('/notifications/push/public-key');
+    if (!keyData.configured || !keyData.publicKey) {
+      return {
+        enabled: false,
+        reason: 'Push не настроен на сервере.',
+      };
+    }
 
-  const permission = await Notification.requestPermission();
-  if (permission !== 'granted') {
-    return {
-      enabled: false,
-      reason: 'Разрешите уведомления в браузере, чтобы включить Push.',
-    };
-  }
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      return {
+        enabled: false,
+        reason: 'Разрешите уведомления в браузере, чтобы включить Push.',
+      };
+    }
 
-  const registration = await navigator.serviceWorker.register('/push-sw.js');
-  let subscription = await registration.pushManager.getSubscription();
+    const registration = await getActivePushRegistration();
+    let subscription = await registration.pushManager.getSubscription();
 
-  if (!subscription) {
-    subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: base64UrlToUint8Array(keyData.publicKey),
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: base64UrlToUint8Array(keyData.publicKey),
+      });
+    }
+
+    const serialized = subscription.toJSON();
+    if (!serialized.endpoint || !serialized.keys?.p256dh || !serialized.keys?.auth) {
+      return {
+        enabled: false,
+        reason: 'Не удалось сформировать подписку браузера.',
+      };
+    }
+
+    await api('/notifications/push/subscribe', {
+      method: 'POST',
+      body: {
+        subscription: serialized,
+      },
     });
-  }
 
-  const serialized = subscription.toJSON();
-  if (!serialized.endpoint || !serialized.keys?.p256dh || !serialized.keys?.auth) {
+    return { enabled: true };
+  } catch (error) {
     return {
       enabled: false,
-      reason: 'Не удалось сформировать подписку браузера.',
+      reason: getErrorMessage(error),
     };
   }
-
-  await api('/notifications/push/subscribe', {
-    method: 'POST',
-    body: {
-      subscription: serialized,
-    },
-  });
-
-  return { enabled: true };
 }
 
 export async function disablePushNotifications() {
@@ -98,7 +181,8 @@ export async function disablePushNotifications() {
   }
 
   const registration =
-    (await navigator.serviceWorker.getRegistration('/push-sw.js')) ||
+    (await navigator.serviceWorker.getRegistration('/')) ||
+    (await navigator.serviceWorker.getRegistration()) ||
     (await navigator.serviceWorker.ready.catch(() => null));
 
   if (!registration) return;

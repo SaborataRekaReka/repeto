@@ -513,7 +513,7 @@ export class AuthService {
     const frontendUrl =
       process.env.NODE_ENV === 'production'
         ? this.resolveFrontendUrl('')
-        : this.resolveFrontendUrl('http://localhost:3100');
+        : this.resolveFrontendUrl('http://localhost:3300');
     if (!frontendUrl) {
       this.logger.error('FRONTEND_URL is required in production for password reset links');
       return;
@@ -736,12 +736,12 @@ export class AuthService {
   }
 
   private getAuthPageUrl() {
-    const base = this.resolveFrontendUrl('http://localhost:3100');
+    const base = this.resolveFrontendUrl('http://localhost:3300');
     return `${base}/auth?view=signup&step=payment`;
   }
 
   private getDashboardRenewUrl() {
-    const base = this.resolveFrontendUrl('http://localhost:3100');
+    const base = this.resolveFrontendUrl('http://localhost:3300');
     return `${base}/dashboard?renew=1`;
   }
 

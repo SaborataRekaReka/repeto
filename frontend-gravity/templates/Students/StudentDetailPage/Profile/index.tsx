@@ -1,14 +1,12 @@
-import { useState } from "react";
 import Icon from "@/components/Icon";
 import StudentNameWithBadge from "@/components/StudentNameWithBadge";
+import StudentAvatar from "@/components/StudentAvatar";
 import type { Student } from "@/types/student";
 import {
     formatBalance,
     getBalanceColor,
     getStatusLabel,
     getStatusColor,
-    getInitials,
-    getSubjectBgColor,
 } from "@/mocks/students";
 
 type ProfileProps = {
@@ -43,13 +41,11 @@ const Profile = ({ student, onMessage, onEdit }: ProfileProps) => {
     return (
         <div className="lg:card">
             <div className="lg:hidden">
-                <div
-                    className={`flex items-center justify-center w-[5.25rem] h-[5.25rem] mb-2.5 rounded-full text-xl font-bold text-n-1 ${getSubjectBgColor(
-                        student.subject
-                    )}`}
-                >
-                    {getInitials(student.name)}
-                </div>
+                <StudentAvatar
+                    student={student}
+                    size="l"
+                    style={{ marginBottom: 10 }}
+                />
                 <div className="text-h4">
                     <StudentNameWithBadge
                         name={student.name}

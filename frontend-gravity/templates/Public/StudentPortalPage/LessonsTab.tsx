@@ -8,7 +8,12 @@ import {
     TextInput,
     Icon,
 } from "@gravity-ui/uikit";
-import { Calendar as CalendarIcon, ArrowsRotateRight, Xmark } from "@gravity-ui/icons";
+import {
+    Calendar as CalendarIcon,
+    ArrowsRotateRight,
+    Xmark,
+    TriangleExclamation,
+} from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import AppDialog from "@/components/AppDialog";
 import StyledDateInput from "@/components/StyledDateInput";
@@ -26,6 +31,14 @@ type LessonsTabProps = {
     studentId: string;
 };
 
+type PendingBookingItem = PendingBooking & {
+    rescheduleRequested?: boolean;
+};
+
+type PendingRescheduleResponse = {
+    booking?: PendingBooking;
+};
+
 const LESSONS_BATCH_SIZE = 5;
 
 const LessonsTab = ({ data, studentId }: LessonsTabProps) => {
@@ -33,11 +46,28 @@ const LessonsTab = ({ data, studentId }: LessonsTabProps) => {
     const [recentLessons, setRecentLessons] = useState<RecentLesson[]>(
         data.recentLessons
     );
-    const pendingBookings: PendingBooking[] = data.pendingBookings || [];
+    const [pendingBookings, setPendingBookings] = useState<PendingBookingItem[]>(
+        (data.pendingBookings || []).map((booking) => ({ ...booking }))
+    );
     const [cancelConfirm, setCancelConfirm] = useState<string | null>(null);
     const [rescheduleId, setRescheduleId] = useState<string | null>(null);
     const [rescheduleDate, setRescheduleDate] = useState("");
     const [rescheduleTime, setRescheduleTime] = useState("");
+    const [pendingCancelConfirm, setPendingCancelConfirm] = useState<string | null>(
+        null
+    );
+    const [pendingRescheduleId, setPendingRescheduleId] = useState<string | null>(
+        null
+    );
+    const [pendingRescheduleDate, setPendingRescheduleDate] = useState("");
+    const [pendingRescheduleTime, setPendingRescheduleTime] = useState("");
+    const [pendingRescheduleLoading, setPendingRescheduleLoading] = useState(false);
+    const [pendingCancelLoadingId, setPendingCancelLoadingId] = useState<string | null>(
+        null
+    );
+    const [pendingActionNotice, setPendingActionNotice] = useState<string | null>(
+        null
+    );
     const [feedbackIdx, setFeedbackIdx] = useState<number | null>(null);
     const [feedbackRating, setFeedbackRating] = useState(0);
     const [feedbackText, setFeedbackText] = useState("");
@@ -58,17 +88,23 @@ const LessonsTab = ({ data, studentId }: LessonsTabProps) => {
     useEffect(() => {
         setLessons(data.upcomingLessons);
         setRecentLessons(data.recentLessons);
+        setPendingBookings((data.pendingBookings || []).map((booking) => ({ ...booking })));
         setCancelConfirm(null);
         setRescheduleId(null);
         setRescheduleDate("");
         setRescheduleTime("");
+        setPendingCancelConfirm(null);
+        setPendingRescheduleId(null);
+        setPendingRescheduleDate("");
+        setPendingRescheduleTime("");
+        setPendingActionNotice(null);
         setFeedbackIdx(null);
         setFeedbackRating(0);
         setFeedbackText("");
         setUpcomingShown(LESSONS_BATCH_SIZE);
         setRecentShown(LESSONS_BATCH_SIZE);
         setActionError(null);
-    }, [data.recentLessons, data.upcomingLessons, studentId]);
+    }, [data.pendingBookings, data.recentLessons, data.upcomingLessons, studentId]);
 
     const cancelPolicy = data.cancelPolicy || {
         freeHours: 24,
@@ -138,6 +174,8 @@ const LessonsTab = ({ data, studentId }: LessonsTabProps) => {
           : `Поздняя отмена! Будет списано ${lateActionLabel}.`;
 
     const openCancelDialog = (lessonId: string) => {
+        setPendingCancelConfirm(null);
+        setPendingRescheduleId(null);
         setCancelConfirm(lessonId);
     };
 
@@ -205,10 +243,93 @@ const LessonsTab = ({ data, studentId }: LessonsTabProps) => {
             setRescheduleId(null);
             setRescheduleDate("");
             setRescheduleTime("");
+            setPendingActionNotice(
+                "Запрос на перенос отправлен. До ответа репетитора отображается новое время."
+            );
         } catch {
             setActionError("Не удалось отправить запрос на перенос. Попробуйте снова.");
         } finally {
             setRescheduleLoading(false);
+        }
+    };
+
+    const handlePendingCancelConfirm = async () => {
+        if (!pendingCancelConfirm) return;
+
+        setActionError(null);
+        setPendingActionNotice(null);
+        setPendingCancelLoadingId(pendingCancelConfirm);
+
+        try {
+            await studentApi(
+                `/student-portal/students/${encodedStudentId}/pending-bookings/${pendingCancelConfirm}/cancel`,
+                { method: "POST" }
+            );
+
+            setPendingBookings((prev) =>
+                prev.filter((booking) => booking.id !== pendingCancelConfirm)
+            );
+            setPendingCancelConfirm(null);
+            setPendingActionNotice(
+                "Неподтвержденное занятие отменено без дополнительного подтверждения преподавателя."
+            );
+        } catch {
+            setActionError(
+                "Не удалось отменить неподтвержденное занятие. Попробуйте снова."
+            );
+        } finally {
+            setPendingCancelLoadingId(null);
+        }
+    };
+
+    const handlePendingRescheduleSubmit = async () => {
+        if (!pendingRescheduleId || !pendingRescheduleDate || !pendingRescheduleTime) {
+            return;
+        }
+
+        setActionError(null);
+        setPendingActionNotice(null);
+        setPendingRescheduleLoading(true);
+
+        try {
+            const response = await studentApi<PendingRescheduleResponse>(
+                `/student-portal/students/${encodedStudentId}/pending-bookings/${pendingRescheduleId}/reschedule`,
+                {
+                    method: "POST",
+                    body: JSON.stringify({
+                        newDate: pendingRescheduleDate,
+                        newTime: pendingRescheduleTime,
+                    }),
+                }
+            );
+
+            setPendingBookings((prev) =>
+                prev.map((booking) =>
+                    booking.id === pendingRescheduleId
+                        ? {
+                              ...booking,
+                              ...(response?.booking || {
+                                  date: pendingRescheduleDate,
+                                  startTime: pendingRescheduleTime,
+                              }),
+                              rescheduleRequested: true,
+                          }
+                        : booking
+                )
+            );
+
+            setPendingRescheduleId(null);
+            setPendingRescheduleDate("");
+            setPendingRescheduleTime("");
+            setPendingActionNotice(
+                "Запрос на перенос отправлен. В карточке показано новое время до ответа преподавателя."
+            );
+        } catch {
+            setActionError(
+                "Не удалось отправить запрос на перенос неподтвержденного занятия. Попробуйте снова."
+            );
+        } finally {
+            setPendingRescheduleLoading(false);
         }
     };
 
@@ -261,6 +382,15 @@ const LessonsTab = ({ data, studentId }: LessonsTabProps) => {
     const visibleRecentLessons = recentLessons.slice(0, recentShown);
     const cancelLesson = cancelConfirm
         ? lessons.find((l) => l.id === cancelConfirm) || null
+        : null;
+    const rescheduleLesson = rescheduleId
+        ? lessons.find((l) => l.id === rescheduleId) || null
+        : null;
+    const pendingCancelBooking = pendingCancelConfirm
+        ? pendingBookings.find((booking) => booking.id === pendingCancelConfirm) || null
+        : null;
+    const pendingRescheduleBooking = pendingRescheduleId
+        ? pendingBookings.find((booking) => booking.id === pendingRescheduleId) || null
         : null;
 
     const loadMoreUpcomingLessons = useCallback(() => {
@@ -366,7 +496,7 @@ const LessonsTab = ({ data, studentId }: LessonsTabProps) => {
     const statusBadge = (lesson: PortalLesson) => {
         switch (lesson.status) {
             case "reschedule_pending":
-                return <Label theme="info" size="xs">Ожидает подтверждения</Label>;
+                return null;
             case "rescheduled":
                 return <Label theme="info" size="xs">Перенесено</Label>;
             case "cancelled":
@@ -390,47 +520,125 @@ const LessonsTab = ({ data, studentId }: LessonsTabProps) => {
                 />
             )}
 
+            {pendingActionNotice && (
+                <Alert
+                    theme="info"
+                    view="filled"
+                    corners="rounded"
+                    title="Действие отправлено"
+                    message={pendingActionNotice}
+                    onClose={() => setPendingActionNotice(null)}
+                    style={{ marginBottom: 12 }}
+                />
+            )}
+
             <div className="repeto-portal-section--spaced">
                 <Text variant="subheader-2" className="repeto-portal-plain-section-title">
                     Ближайшие занятия
                 </Text>
                 <div className="repeto-portal-stack repeto-portal-stack--md">
-                    {pendingBookings.map((booking) => (
-                        <Card
-                            key={booking.id}
-                            view="outlined"
-                            className="repeto-portal-item-card repeto-portal-item-card--upcoming"
-                        >
-                            <div className="repeto-portal-item-row repeto-portal-item-row--upcoming">
-                                <div className="repeto-portal-item-main repeto-portal-item-main--centered">
-                                    <div className="repeto-portal-item-mainline repeto-portal-item-mainline--centered">
-                                        <Icon data={CalendarIcon as IconData} size={16} />
-                                        <Text variant="body-2" style={{ fontWeight: 600 }}>
-                                            {booking.date}
-                                        </Text>
-                                        <span className="repeto-portal-sep-dot" aria-hidden="true">
-                                            •
-                                        </span>
-                                        <Text variant="body-2" style={{ fontWeight: 600 }}>
-                                            {booking.startTime}
-                                        </Text>
+                    {pendingBookings.map((booking) => {
+                        const showPendingHoverActions =
+                            pendingCancelConfirm !== booking.id &&
+                            pendingRescheduleId !== booking.id;
+
+                        return (
+                            <Card
+                                key={booking.id}
+                                view="outlined"
+                                className={`repeto-portal-item-card repeto-portal-item-card--upcoming${
+                                    showPendingHoverActions
+                                        ? " repeto-portal-item-card--with-actions"
+                                        : ""
+                                }`}
+                            >
+                                <div className="repeto-portal-item-row repeto-portal-item-row--upcoming">
+                                    <div className="repeto-portal-item-main repeto-portal-item-main--centered">
+                                        <div className="repeto-portal-item-mainline repeto-portal-item-mainline--centered">
+                                            <Icon data={CalendarIcon as IconData} size={16} />
+                                            <Text variant="body-2" style={{ fontWeight: 600 }}>
+                                                {booking.date}
+                                            </Text>
+                                            <span className="repeto-portal-sep-dot" aria-hidden="true">
+                                                •
+                                            </span>
+                                            <Text variant="body-2" style={{ fontWeight: 600 }}>
+                                                {booking.startTime}
+                                            </Text>
+                                            <span
+                                                className="repeto-portal-pending-indicator"
+                                                aria-label="Ожидает подтверждения преподавателя"
+                                                title="Ожидает подтверждения преподавателя"
+                                            >
+                                                <Icon
+                                                    data={TriangleExclamation as IconData}
+                                                    size={14}
+                                                />
+                                            </span>
+                                        </div>
+                                        <div className="repeto-portal-item-mainline repeto-portal-item-mainline--centered">
+                                            <Text variant="body-1" color="secondary">
+                                                {booking.subject}
+                                            </Text>
+                                        </div>
                                     </div>
-                                    <div className="repeto-portal-item-mainline repeto-portal-item-mainline--centered">
-                                        <Text variant="body-1" color="secondary">
-                                            {booking.subject}
-                                        </Text>
+                                    <div className="repeto-portal-item-side repeto-portal-item-side--upcoming">
+                                        <div className="repeto-portal-upcoming-meta">
+                                            <Text variant="caption-1" color="secondary">
+                                                Неподтверждено
+                                            </Text>
+                                        </div>
+
+                                        {showPendingHoverActions && (
+                                            <div className="repeto-portal-upcoming-actions">
+                                                <button
+                                                    type="button"
+                                                    className="repeto-portal-icon-action repeto-portal-icon-action--danger"
+                                                    onClick={() => {
+                                                        setPendingCancelConfirm(booking.id);
+                                                        setCancelConfirm(null);
+                                                    }}
+                                                    disabled={pendingCancelLoadingId === booking.id}
+                                                    aria-label="Отменить неподтвержденное занятие"
+                                                >
+                                                    <Icon data={Xmark as IconData} size={22} />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="repeto-portal-icon-action"
+                                                    onClick={() => {
+                                                        setPendingRescheduleId(booking.id);
+                                                        setPendingCancelConfirm(null);
+                                                        setRescheduleId(null);
+                                                    }}
+                                                    disabled={pendingCancelLoadingId === booking.id}
+                                                    aria-label="Попросить перенос неподтвержденного занятия"
+                                                >
+                                                    <Icon
+                                                        data={ArrowsRotateRight as IconData}
+                                                        size={22}
+                                                    />
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
-                                <div className="repeto-portal-item-side repeto-portal-item-side--upcoming">
-                                    <div className="repeto-portal-upcoming-meta">
-                                        <Label theme="info" size="xs">
-                                            Ожидает подтверждения
-                                        </Label>
-                                    </div>
-                                </div>
-                            </div>
-                        </Card>
-                    ))}
+
+                                {booking.rescheduleRequested && (
+                                    <Card
+                                        view="filled"
+                                        className="repeto-portal-note repeto-portal-note--info"
+                                        style={{ marginTop: 8 }}
+                                    >
+                                        <Text variant="caption-1" color="secondary">
+                                            Запрос на перенос отправлен. Новое время: {booking.date}, {" "}
+                                            {booking.startTime}. Ожидаем подтверждение от преподавателя.
+                                        </Text>
+                                    </Card>
+                                )}
+                            </Card>
+                        );
+                    })}
 
                     {activeLessons.length === 0 && (
                         <Text variant="body-1" color="secondary">
@@ -472,6 +680,18 @@ const LessonsTab = ({ data, studentId }: LessonsTabProps) => {
                                             <Text variant="body-2" style={{ fontWeight: 600 }}>
                                                 {lesson.time}
                                             </Text>
+                                            {lesson.status === "reschedule_pending" && (
+                                                <span
+                                                    className="repeto-portal-pending-indicator"
+                                                    aria-label="Ожидает подтверждения преподавателя"
+                                                    title="Ожидает подтверждения преподавателя"
+                                                >
+                                                    <Icon
+                                                        data={TriangleExclamation as IconData}
+                                                        size={14}
+                                                    />
+                                                </span>
+                                            )}
                                         </div>
                                         <div className="repeto-portal-item-mainline repeto-portal-item-mainline--centered">
                                             <Text variant="body-1" color="secondary">
@@ -504,6 +724,8 @@ const LessonsTab = ({ data, studentId }: LessonsTabProps) => {
                                                     onClick={() => {
                                                         setRescheduleId(lesson.id);
                                                         setCancelConfirm(null);
+                                                        setPendingCancelConfirm(null);
+                                                        setPendingRescheduleId(null);
                                                     }}
                                                     aria-label="Перенести занятие"
                                                 >
@@ -775,6 +997,130 @@ const LessonsTab = ({ data, studentId }: LessonsTabProps) => {
             </AppDialog>
 
             <AppDialog
+                open={!!pendingCancelBooking}
+                onClose={() => setPendingCancelConfirm(null)}
+                size="s"
+                caption="Отменить неподтвержденное занятие"
+                footer={{
+                    onClickButtonApply: handlePendingCancelConfirm,
+                    onClickButtonCancel: () => setPendingCancelConfirm(null),
+                    textButtonApply:
+                        pendingCancelLoadingId === pendingCancelBooking?.id
+                            ? "Отменяем..."
+                            : "Да, отменить",
+                    textButtonCancel: "Нет",
+                    propsButtonApply: {
+                        view: "outlined-danger",
+                        disabled:
+                            !pendingCancelBooking ||
+                            pendingCancelLoadingId === pendingCancelBooking?.id,
+                    },
+                    propsButtonCancel: {
+                        disabled: pendingCancelLoadingId === pendingCancelBooking?.id,
+                    },
+                }}
+            >
+                <div className="repeto-portal-stack">
+                    {pendingCancelBooking && (
+                        <>
+                            <Text variant="body-1" style={{ fontWeight: 600 }}>
+                                {pendingCancelBooking.date}
+                                <span
+                                    className="repeto-portal-sep-dot"
+                                    aria-hidden="true"
+                                    style={{ margin: "0 8px" }}
+                                >
+                                    •
+                                </span>
+                                {pendingCancelBooking.startTime}
+                            </Text>
+                            <Text variant="body-2" color="secondary">
+                                {pendingCancelBooking.subject}
+                            </Text>
+                            <Text variant="body-2" color="secondary">
+                                Отмена будет применена сразу, без дополнительного подтверждения
+                                преподавателя.
+                            </Text>
+                        </>
+                    )}
+                </div>
+            </AppDialog>
+
+            <AppDialog
+                open={!!pendingRescheduleId}
+                onClose={() => {
+                    setPendingRescheduleId(null);
+                    setPendingRescheduleDate("");
+                    setPendingRescheduleTime("");
+                }}
+                size="s"
+                caption="Попросить о переносе"
+                footer={{
+                    onClickButtonApply: handlePendingRescheduleSubmit,
+                    onClickButtonCancel: () => {
+                        setPendingRescheduleId(null);
+                        setPendingRescheduleDate("");
+                        setPendingRescheduleTime("");
+                    },
+                    textButtonApply: pendingRescheduleLoading
+                        ? "Отправляем..."
+                        : "Отправить запрос",
+                    textButtonCancel: "Отмена",
+                    propsButtonApply: {
+                        disabled:
+                            pendingRescheduleLoading ||
+                            !pendingRescheduleDate ||
+                            !pendingRescheduleTime,
+                    },
+                    propsButtonCancel: {
+                        disabled: pendingRescheduleLoading,
+                    },
+                }}
+            >
+                <div className="repeto-portal-stack">
+                    <Text variant="body-1" color="secondary">
+                        Выберите новую дату и время. До решения преподавателя в карточке
+                        будет показано время переноса.
+                    </Text>
+                    {pendingRescheduleBooking && (
+                        <Text variant="body-2" color="secondary">
+                            Текущий слот: {pendingRescheduleBooking.date} • {" "}
+                            {pendingRescheduleBooking.startTime}
+                        </Text>
+                    )}
+                    <div>
+                        <Text
+                            variant="caption-1"
+                            color="secondary"
+                            as="label"
+                            style={{ display: "block", marginBottom: 6, fontWeight: 600 }}
+                        >
+                            Новая дата
+                        </Text>
+                        <StyledDateInput
+                            value={pendingRescheduleDate}
+                            onUpdate={setPendingRescheduleDate}
+                        />
+                    </div>
+                    <div>
+                        <Text
+                            variant="caption-1"
+                            color="secondary"
+                            as="label"
+                            style={{ display: "block", marginBottom: 6, fontWeight: 600 }}
+                        >
+                            Новое время
+                        </Text>
+                        <StyledTimeInput
+                            value={pendingRescheduleTime}
+                            onUpdate={setPendingRescheduleTime}
+                            showClockIcon={false}
+                        />
+                    </div>
+                </div>
+            </AppDialog>
+
+            <AppDialog
                 open={!!rescheduleId}
                 onClose={() => {
                     setRescheduleId(null);
@@ -803,6 +1149,12 @@ const LessonsTab = ({ data, studentId }: LessonsTabProps) => {
                         Выберите желаемую дату и время. Репетитор получит уведомление и
                         подтвердит перенос.
                     </Text>
+                    {rescheduleLesson && !rescheduleLesson.canCancelFree && (
+                        <Alert
+                            theme="warning"
+                            message={`Поздний перенос! До занятия менее ${cancelPolicy.freeHours} ${formatHoursWord(cancelPolicy.freeHours)}. Может быть применено списание: ${lateActionLabel}.`}
+                        />
+                    )}
                     <div>
                         <Text
                             variant="caption-1"

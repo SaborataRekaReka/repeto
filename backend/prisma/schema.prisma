@@ -35,6 +35,13 @@ model User {
   lessonsCount Int      @default(0) @map("lessons_count")
   rating       Decimal? @db.Decimal(2, 1)
 
+  // Portfolio / credentials
+  education              Json?    @map("education")
+  experience             String?  @map("experience")
+  qualificationVerified  Boolean  @default(false) @map("qualification_verified")
+  qualificationLabel     String?  @map("qualification_label")
+  certificates           Json?    @map("certificates")
+
   // Tax / legal
   taxStatus TaxStatus @default(INDIVIDUAL) @map("tax_status")
 

@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { Card, Label, Text, TextInput } from "@gravity-ui/uikit";
+import PhoneInput from "@/components/PhoneInput";
 import type { Student } from "@/types/student";
 
 type ContactsTabProps = {
@@ -160,14 +161,12 @@ const ContactsTab = ({ student, onSave }: ContactsTabProps) => {
                 >
                     <div>
                         <FieldLabel>Телефон</FieldLabel>
-                        <TextInput
+                        <PhoneInput
                             value={phone}
                             onUpdate={setPhone}
                             onBlur={() =>
                                 handleBlur("phone", phone, student.phone)
                             }
-                            placeholder="+7 900 123-45-67"
-                            size="l"
                         />
                     </div>
                     <div style={{ gridColumn: "1 / -1" }}>
@@ -229,7 +228,7 @@ const ContactsTab = ({ student, onSave }: ContactsTabProps) => {
                     </div>
                     <div>
                         <FieldLabel>Телефон родителя</FieldLabel>
-                        <TextInput
+                        <PhoneInput
                             value={parentPhone}
                             onUpdate={setParentPhone}
                             onBlur={() =>
@@ -239,8 +238,6 @@ const ContactsTab = ({ student, onSave }: ContactsTabProps) => {
                                     student.parentPhone
                                 )
                             }
-                            placeholder="+7 900 765-43-21"
-                            size="l"
                         />
                     </div>
                     <div style={{ gridColumn: "1 / -1" }}>

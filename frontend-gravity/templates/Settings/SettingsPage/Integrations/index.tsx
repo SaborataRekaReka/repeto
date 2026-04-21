@@ -12,6 +12,8 @@ import {
     startYandexCalendarConnect, connectYandexCalendarToken,
 } from "@/hooks/useSettings";
 import { codedErrorMessage } from "@/lib/errorCodes";
+import AppSelect from "@/components/AppSelect";
+import AppField from "@/components/AppField";
 
 type IntegrationDef = { id: string; name: string; description: string; icon: unknown; iconBg: string; };
 type HomeworkDefaultCloud = "YANDEX_DISK" | "GOOGLE_DRIVE";
@@ -222,36 +224,33 @@ const Integrations = () => {
     };
 
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div className="repeto-settings-stack">
             {msg && (
-                <Card view="outlined" style={{ padding: "12px 20px", background: "var(--g-color-base-float)" }}>
-                    <Text variant="body-1" style={{ fontWeight: 600 }}>{msg}</Text>
+                <Card className="repeto-settings-section-card" view="outlined" style={{ padding: "12px 20px" }}>
+                    <Text variant="body-1" className="repeto-settings-status-message repeto-settings-status-message--neutral">{msg}</Text>
                 </Card>
             )}
 
-            <Card view="outlined" style={{ background: "var(--g-color-base-float)" }}>
+            <Card className="repeto-settings-section-card" view="outlined">
                 <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--g-color-line-generic)" }}>
                     <Text variant="subheader-2">Домашняя работа</Text>
                 </div>
                 <div style={{ padding: 24, display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
                     <div style={{ flex: "1 1 320px", minWidth: 280 }}>
-                        <Text variant="caption-2" color="secondary" style={{ display: "block", marginBottom: 6 }}>
-                            Диск по умолчанию для материалов домашки
-                        </Text>
-                        <div style={{ maxWidth: 320 }}>
-                            <Select
-                                options={homeworkDefaultCloudOptions}
-                                value={[homeworkDefaultCloud]}
-                                onUpdate={(value) => {
-                                    const next = value[0] as HomeworkDefaultCloud | undefined;
-                                    if (next) {
-                                        setHomeworkDefaultCloud(next);
-                                    }
-                                }}
-                                size="l"
-                                width="max"
-                            />
-                        </div>
+                        <AppSelect
+                            label="Диск по умолчанию для материалов домашки"
+                            options={homeworkDefaultCloudOptions}
+                            value={[homeworkDefaultCloud]}
+                            onUpdate={(value) => {
+                                const next = value[0] as HomeworkDefaultCloud | undefined;
+                                if (next) {
+                                    setHomeworkDefaultCloud(next);
+                                }
+                            }}
+                            size="l"
+                            width="max"
+                            style={{ maxWidth: 360 }}
+                        />
                         <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 8 }}>
                             Если выбранный диск не подключен, система автоматически использует доступный.
                         </Text>
@@ -271,7 +270,7 @@ const Integrations = () => {
                 const status = getStatus(def.id);
                 const isConnected = status === "connected";
                 return (
-                    <Card key={def.id} view="outlined" style={{ background: "var(--g-color-base-float)" }}>
+                    <Card key={def.id} className="repeto-settings-section-card" view="outlined">
                         <div style={{ padding: "20px 24px" }}>
                             <div style={{ display: "flex", alignItems: "center" }}>
                                 <div style={{ width: 48, height: 48, borderRadius: 12, background: def.iconBg, display: "flex", alignItems: "center", justifyContent: "center", marginRight: 16, flexShrink: 0 }}>
@@ -300,7 +299,9 @@ const Integrations = () => {
                                     <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(255,193,7,0.1)", marginBottom: 12 }}>
                                         <Text variant="caption-2">Автоподключение недоступно. Используйте ручное подключение по токену.</Text>
                                     </div>
-                                    <TextInput type="password" value={yandexCalToken} onUpdate={setYandexCalToken} placeholder="y0_AgAAAABk..." size="l" />
+                                    <AppField label="OAuth-токен Яндекса">
+                                        <TextInput type="password" value={yandexCalToken} onUpdate={setYandexCalToken} placeholder="y0_AgAAAABk..." size="l" />
+                                    </AppField>
                                     <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 8 }}>
                                         Создайте приложение на <a href="https://oauth.yandex.ru/client/new" target="_blank" rel="noopener noreferrer" style={{ color: "var(--g-color-text-brand)" }}>oauth.yandex.ru</a> и вставьте токен.
                                     </Text>
@@ -324,7 +325,9 @@ const Integrations = () => {
                                     <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(255,193,7,0.1)", marginBottom: 12 }}>
                                         <Text variant="caption-2">Автоподключение недоступно. Используйте ручное подключение по токену.</Text>
                                     </div>
-                                    <TextInput type="password" value={yandexToken} onUpdate={setYandexToken} placeholder="y0_AgAAAABk..." size="l" />
+                                    <AppField label="OAuth-токен Яндекс.Диска">
+                                        <TextInput type="password" value={yandexToken} onUpdate={setYandexToken} placeholder="y0_AgAAAABk..." size="l" />
+                                    </AppField>
                                     <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 8 }}>
                                         Создайте приложение на <a href="https://oauth.yandex.ru/client/new" target="_blank" rel="noopener noreferrer" style={{ color: "var(--g-color-text-brand)" }}>oauth.yandex.ru</a> и вставьте токен.
                                     </Text>
@@ -339,6 +342,9 @@ const Integrations = () => {
                             {def.id === "yandex-disk" && hasYandexDisk && (
                                 <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--g-color-line-generic)" }}>
                                     <Text variant="caption-2" color="secondary">Аккаунт: <span style={{ fontWeight: 600, color: "var(--g-color-text-primary)" }}>{settings?.yandexDiskEmail || "—"}</span></Text>
+                                    <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 4 }}>
+                                        Корневая папка: <span style={{ fontWeight: 600, color: "var(--g-color-text-primary)" }}>{settings?.yandexDiskRootPath || "/"}</span>
+                                    </Text>
                                 </div>
                             )}
 

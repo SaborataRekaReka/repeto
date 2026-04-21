@@ -1,15 +1,14 @@
 import { useState } from "react";
 import Link from "next/link";
-import { Card, Text, Button, Icon, Loader, Avatar } from "@gravity-ui/uikit";
+import { Card, Text, Button, Icon, Loader } from "@gravity-ui/uikit";
 import type { IconData } from "@gravity-ui/uikit";
 import { Envelope } from "@gravity-ui/icons";
 import RemindModal from "@/components/RemindModal";
 import StudentNameWithBadge from "@/components/StudentNameWithBadge";
+import StudentAvatar from "@/components/StudentAvatar";
 import { useDebts } from "@/hooks/useDashboard";
-import { accent, brand } from "@/constants/brand";
 import {
     formatBalance,
-    getInitials,
 } from "@/mocks/students";
 
 type DebtStudent = {
@@ -20,14 +19,6 @@ type DebtStudent = {
     balance: number;
     parentEmail?: string | null;
 };
-
-const avatarColors = [
-    brand[400],
-    accent[600],
-    brand[500],
-    accent[500],
-    brand[700],
-];
 
 const DEBT_COLOR = "#D16B8F";
 
@@ -61,7 +52,7 @@ const DebtList = () => {
                     </div>
                 ) : (
                     <div>
-                        {debtStudents.map((student, idx) => (
+                        {debtStudents.map((student) => (
                             <Link
                                 href={`/students/${student.id}`}
                                 key={student.id}
@@ -77,12 +68,7 @@ const DebtList = () => {
                                 }}
                                 className="repeto-week-lesson-row"
                             >
-                                <Avatar
-                                    text={getInitials(student.name)}
-                                    size="s"
-                                    theme="brand"
-                                    backgroundColor={avatarColors[idx % avatarColors.length]}
-                                />
+                                <StudentAvatar student={{ name: student.name, avatarUrl: undefined }} size="s" />
                                 <div
                                     style={{
                                         flex: 1,

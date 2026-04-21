@@ -10,6 +10,8 @@ type AppDialogProps = {
     children: ReactNode;
     bodyClassName?: string;
     bodyStyle?: CSSProperties;
+    className?: string;
+    modalClassName?: string;
     footer?: any;
 };
 
@@ -24,6 +26,8 @@ const AppDialog = ({
     children,
     bodyClassName,
     bodyStyle,
+    className,
+    modalClassName,
     footer,
 }: AppDialogProps) => {
     const footerProps = footer
@@ -98,6 +102,14 @@ const AppDialog = ({
         ? `repeto-dialog-body-scroll ${bodyClassName}`
         : "repeto-dialog-body-scroll";
 
+    const dialogClassName = className
+        ? `repeto-app-dialog ${className}`
+        : "repeto-app-dialog";
+
+    const dialogModalClassName = modalClassName
+        ? `repeto-app-dialog-modal ${modalClassName}`
+        : "repeto-app-dialog-modal";
+
     return (
         <GDialog
             open={open}
@@ -105,8 +117,8 @@ const AppDialog = ({
             size={size}
             hasCloseButton={hasCloseButton}
             contentOverflow="visible"
-            className="repeto-app-dialog"
-            modalClassName="repeto-app-dialog-modal"
+            className={dialogClassName}
+            modalClassName={dialogModalClassName}
         >
             {caption !== undefined && <GDialog.Header caption={caption} />}
             <GDialog.Body>

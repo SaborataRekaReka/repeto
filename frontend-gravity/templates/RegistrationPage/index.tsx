@@ -31,6 +31,8 @@ const RegistrationPage = () => {
         typeof router.query.billing === "string" ? router.query.billing.trim().toLowerCase() : undefined;
     const initialStep =
         typeof router.query.step === "string" ? router.query.step.trim().toLowerCase() : undefined;
+    const initialEmail =
+        typeof router.query.email === "string" ? router.query.email.trim() : undefined;
     const returnPaymentId =
         typeof router.query.paymentId === "string"
             ? router.query.paymentId.trim()
@@ -116,7 +118,7 @@ const RegistrationPage = () => {
                                 returnPaymentId={returnPaymentId}
                             />
                         ) : view === "student" ? (
-                            <StudentSignIn onBack={() => applyView("signin")} />
+                            <StudentSignIn onBack={() => applyView("signin")} initialEmail={initialEmail} />
                         ) : (
                             <SignIn onRecover={() => applyView("forgot")} />
                         )}

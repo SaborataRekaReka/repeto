@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Card, Text, Button, Select, Switch } from "@gravity-ui/uikit";
+import { Card, Text, Button, Switch } from "@gravity-ui/uikit";
 import { useSettings, updatePolicies } from "@/hooks/useSettings";
 import { codedErrorMessage } from "@/lib/errorCodes";
+import AppSelect from "@/components/AppSelect";
 
 const cancelHours = [
     { value: "2", content: "2 часа" }, { value: "4", content: "4 часа" },
@@ -57,47 +58,69 @@ const Policies = () => {
     };
 
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div className="repeto-settings-stack">
             {/* Cancel policy */}
-            <Card view="outlined" style={{ background: "var(--g-color-base-float)" }}>
+            <Card className="repeto-settings-section-card" view="outlined">
                 <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--g-color-line-generic)" }}>
                     <Text variant="subheader-2">Политика отмен</Text>
                 </div>
                 <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 20 }}>
-                    <div>
-                        <Text variant="caption-2" color="secondary" style={{ display: "block", marginBottom: 6 }}>Минимальное время для бесплатной отмены</Text>
-                        <div style={{ maxWidth: 260 }}><Select options={cancelHours} value={[cancelTime]} onUpdate={(v) => setCancelTime(v[0])} size="l" width="max" /></div>
-                    </div>
-                    <div>
-                        <Text variant="caption-2" color="secondary" style={{ display: "block", marginBottom: 6 }}>Действие при поздней отмене</Text>
-                        <div style={{ maxWidth: 260 }}><Select options={cancelActions} value={[lateCancel]} onUpdate={(v) => setLateCancel(v[0])} size="l" width="max" /></div>
-                    </div>
-                    <div>
-                        <Text variant="caption-2" color="secondary" style={{ display: "block", marginBottom: 6 }}>Действие при неявке (no-show)</Text>
-                        <div style={{ maxWidth: 260 }}><Select options={cancelActions} value={[noShow]} onUpdate={(v) => setNoShow(v[0])} size="l" width="max" /></div>
-                    </div>
+                    <AppSelect
+                        label="Минимальное время для бесплатной отмены"
+                        options={cancelHours}
+                        value={[cancelTime]}
+                        onUpdate={(v) => setCancelTime(v[0])}
+                        size="l"
+                        width="max"
+                        style={{ maxWidth: 340 }}
+                    />
+                    <AppSelect
+                        label="Действие при поздней отмене"
+                        options={cancelActions}
+                        value={[lateCancel]}
+                        onUpdate={(v) => setLateCancel(v[0])}
+                        size="l"
+                        width="max"
+                        style={{ maxWidth: 340 }}
+                    />
+                    <AppSelect
+                        label="Действие при неявке (no-show)"
+                        options={cancelActions}
+                        value={[noShow]}
+                        onUpdate={(v) => setNoShow(v[0])}
+                        size="l"
+                        width="max"
+                        style={{ maxWidth: 340 }}
+                    />
                 </div>
             </Card>
 
             {/* Payment defaults */}
-            <Card view="outlined" style={{ background: "var(--g-color-base-float)" }}>
+            <Card className="repeto-settings-section-card" view="outlined">
                 <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--g-color-line-generic)" }}>
                     <Text variant="subheader-2">Оплата по умолчанию</Text>
                 </div>
                 <div style={{ padding: 24 }}>
-                    <Text variant="caption-2" color="secondary" style={{ display: "block", marginBottom: 6 }}>Способ оплаты по умолчанию</Text>
-                    <div style={{ maxWidth: 260 }}><Select options={paymentMethods} value={[defaultMethod]} onUpdate={(v) => setDefaultMethod(v[0])} size="l" width="max" /></div>
+                    <AppSelect
+                        label="Способ оплаты по умолчанию"
+                        options={paymentMethods}
+                        value={[defaultMethod]}
+                        onUpdate={(v) => setDefaultMethod(v[0])}
+                        size="l"
+                        width="max"
+                        style={{ maxWidth: 340 }}
+                    />
                     <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 12 }}>Валюта: ₽ (Российский рубль)</Text>
                 </div>
             </Card>
 
             {/* Self-employed */}
-            <Card view="outlined" style={{ background: "var(--g-color-base-float)" }}>
+            <Card className="repeto-settings-section-card" view="outlined">
                 <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--g-color-line-generic)" }}>
                     <Text variant="subheader-2">Статус чека (НПД)</Text>
                 </div>
                 <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div className="repeto-settings-switch-row">
                         <div>
                             <Text variant="body-1" style={{ fontWeight: 600, display: "block" }}>Я — самозанятый</Text>
                             <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 4 }}>Для формирования чеков через «Мой налог»</Text>
@@ -105,7 +128,7 @@ const Policies = () => {
                         <Switch checked={isSelfEmployed} onUpdate={setIsSelfEmployed} size="l" />
                     </div>
                     {isSelfEmployed && (
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <div className="repeto-settings-switch-row">
                             <div>
                                 <Text variant="body-1" style={{ fontWeight: 600, display: "block" }}>Напоминать о формировании чека</Text>
                                 <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 4 }}>При каждой полученной оплате</Text>
@@ -117,11 +140,11 @@ const Policies = () => {
             </Card>
 
             {/* Buttons */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div className="repeto-settings-actions-row">
                 <Button view="outlined" size="l" onClick={handleReset}>Сбросить</Button>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div className="repeto-settings-savebar">
                     {saveMsg && (
-                        <Text variant="body-1" style={{ fontWeight: 600, color: saveMsg === "Сохранено" ? "var(--g-color-text-positive)" : "var(--g-color-text-danger)" }}>{saveMsg}</Text>
+                        <Text variant="body-1" className={`repeto-settings-savebar__message${saveMsg === "Сохранено" ? " repeto-settings-savebar__message--ok" : " repeto-settings-savebar__message--error"}`}>{saveMsg}</Text>
                     )}
                     <Button view="action" size="l" onClick={handleSave} disabled={saving}>
                         {saving ? "Сохраняем..." : "Сохранить"}

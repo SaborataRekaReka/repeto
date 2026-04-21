@@ -3,7 +3,6 @@ import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import {
-    Card,
     Alert,
     Button,
     Text,
@@ -18,6 +17,8 @@ import {
     GraduationCap,
 } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
+import PhoneInput from "@/components/PhoneInput";
+import AppField from "@/components/AppField";
 import { codedErrorMessage } from "@/lib/errorCodes";
 import { verifyBookingEmail } from "@/lib/studentAuth";
 
@@ -118,38 +119,7 @@ const WEEKDAYS_FULL = [
 
 const BOOKING_PREFILL_STORAGE_KEY = "repeto.booking-prefill.v1";
 
-const PANEL_STYLE = {
-    padding: 24,
-    borderRadius: 16,
-    background: "var(--g-color-base-float)",
-} as const;
-
-const ACTION_BUTTON_STYLE = {
-    width: "100%",
-    justifyContent: "center",
-    fontWeight: 600,
-    height: 48,
-    borderRadius: 12,
-} as const;
-
-const FIELD_LABEL_STYLE = {
-    display: "block",
-    marginBottom: 8,
-    fontSize: 13,
-    fontWeight: 600,
-    color: "var(--g-color-text-primary)",
-} as const;
-
-const ICON_BUTTON_STYLE = {
-    width: 36,
-    minWidth: 36,
-    height: 36,
-    padding: 0,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    lineHeight: 0,
-} as const;
+/* inline style constants removed — now using CSS classes */
 
 const REMINDER_METHODS: Array<{ id: ReminderMethod; label: string }> = [
     { id: "telegram", label: "Telegram" },
@@ -665,325 +635,133 @@ const BookingPage = ({ slug }: { slug: string }) => {
             <Head>
                 <title>{`Запись — ${t.name || slug} — Repeto`}</title>
             </Head>
-            <div
-                style={{
-                    minHeight: "100vh",
-                    background: "var(--g-color-base-background)",
-                    display: "flex",
-                    flexDirection: "column",
-                }}
-            >
+            <div className="repeto-portal-page repeto-booking-page">
                 {loading && (
-                    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div className="repeto-tp-loading">
                         <Text variant="body-2" color="secondary">Загрузка...</Text>
                     </div>
                 )}
                 {!loading && loadError && (
-                    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-                        <div style={{ textAlign: "center", maxWidth: 420 }}>
-                            <Text variant="header-2" style={{ display: "block", marginBottom: 8 }}>Не удалось открыть запись</Text>
-                            <Text variant="body-2" color="secondary" style={{ display: "block", marginBottom: 16 }}>
-                                {loadError}
-                            </Text>
-                            <div style={{ display: "flex", justifyContent: "center", gap: 12, flexWrap: "wrap" }}>
-                                <Button size="l" onClick={() => window.location.reload()}>
-                                    Обновить страницу
-                                </Button>
-                                <Link href={`/t/${slug}`} style={{ textDecoration: "none" }}>
-                                    <Button view="flat" size="l">К странице преподавателя</Button>
-                                </Link>
-                            </div>
+                    <div className="repeto-tp-loading">
+                        <Text variant="header-2" style={{ display: "block", marginBottom: 8 }}>Не удалось открыть запись</Text>
+                        <Text variant="body-2" color="secondary" style={{ display: "block", marginBottom: 16 }}>
+                            {loadError}
+                        </Text>
+                        <div className="repeto-bk-error-actions">
+                            <Button size="l" onClick={() => window.location.reload()}>
+                                Обновить страницу
+                            </Button>
+                            <Link href={`/t/${slug}`} style={{ textDecoration: "none" }}>
+                                <Button view="flat" size="l">К странице преподавателя</Button>
+                            </Link>
                         </div>
                     </div>
                 )}
                 {!loading && !loadError && !profile && (
-                    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <div style={{ textAlign: "center" }}>
-                            <Text variant="header-2" style={{ display: "block", marginBottom: 8 }}>Репетитор не найден</Text>
-                            <Link href="/" style={{ color: "var(--g-color-text-brand)", fontSize: 14, textDecoration: "none" }}>На главную</Link>
-                        </div>
+                    <div className="repeto-tp-loading">
+                        <Text variant="header-2" style={{ display: "block", marginBottom: 8 }}>Репетитор не найден</Text>
+                        <Link href="/" style={{ color: "var(--g-color-text-brand)", fontSize: 14, textDecoration: "none" }}>На главную</Link>
                     </div>
                 )}
                 {!loading && !loadError && profile && (
                 <>
                 {/* Header bar */}
-                <div
-                    style={{
-                        borderBottom: "1px solid var(--g-color-line-generic)",
-                        background: "var(--g-color-base-float)",
-                    }}
-                >
-                    <div
-                        style={{
-                            maxWidth: 768,
-                            margin: "0 auto",
-                            padding: "16px 24px",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 12,
-                        }}
-                    >
+                <div className="repeto-portal-header">
+                    <div className="repeto-portal-container repeto-portal-header__inner">
                         {step > 0 && step <= 3 ? (
-                            <Button
-                                view="flat"
-                                size="l"
-                                onClick={goBack}
-                                style={ICON_BUTTON_STYLE}
-                            >
-                                <Icon data={ArrowLeft as IconData} size={16} style={{ display: "block" }} />
+                            <Button view="flat" size="m" onClick={goBack} className="repeto-bk-back-btn">
+                                <Icon data={ArrowLeft as IconData} size={20} />
                             </Button>
                         ) : step === 0 ? (
                             <Link href={`/t/${slug}`} style={{ textDecoration: "none" }}>
-                                <Button
-                                    view="flat"
-                                    size="l"
-                                    style={ICON_BUTTON_STYLE}
-                                >
-                                    <Icon data={ArrowLeft as IconData} size={16} style={{ display: "block" }} />
+                                <Button view="flat" size="m" className="repeto-bk-back-btn">
+                                    <Icon data={ArrowLeft as IconData} size={20} />
                                 </Button>
                             </Link>
                         ) : null}
-                        <div style={{ minWidth: 0 }}>
-                            <div
-                                style={{
-                                    fontSize: 14,
-                                    fontWeight: 700,
-                                    whiteSpace: "nowrap",
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                }}
-                            >
-                                {t.name}
-                            </div>
-                            <div
-                                style={{
-                                    fontSize: 12,
-                                    color: "var(--g-color-text-secondary)",
-                                    whiteSpace: "nowrap",
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                }}
-                            >
-                                {t.tagline}
-                            </div>
+                        <div className="repeto-bk-header-info">
+                            <Text variant="body-2" className="repeto-bk-header-info__name">{t.name}</Text>
+                            {t.tagline && <Text variant="body-1" color="secondary">{t.tagline}</Text>}
                         </div>
                     </div>
                 </div>
 
                 {/* Content */}
-                <div
-                    style={{
-                        flex: 1,
-                        maxWidth: 768,
-                        width: "100%",
-                        margin: "0 auto",
-                        padding: "24px",
-                    }}
-                >
+                <div className="repeto-portal-container repeto-portal-main">
                     {/* ── Step 0: Select subject ── */}
                     {step === 0 && (
-                        <Card view="outlined" style={PANEL_STYLE}>
-                            <Text variant="header-2" style={{ display: "block", marginBottom: 20 }}>
+                        <div className="repeto-bk-step">
+                            <Text variant="header-2" as="div" className="repeto-portal-plain-section-title">
                                 Выберите предмет
                             </Text>
-                            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                            <div className="repeto-bk-options">
                                 {t.subjects.map((s, i) => {
-                                    const active =
-                                        !selectedPackage && selectedSubject?.name === s.name;
+                                    const active = !selectedPackage && selectedSubject?.name === s.name;
                                     return (
                                         <button
                                             key={i}
-                                            style={{
-                                                width: "100%",
-                                                display: "flex",
-                                                alignItems: "center",
-                                                justifyContent: "space-between",
-                                                padding: "16px 18px",
-                                                textAlign: "left",
-                                                borderRadius: 12,
-                                                border: `1px solid ${active ? "var(--g-color-text-brand)" : "var(--g-color-line-generic)"}`,
-                                                background: "var(--g-color-base-float)",
-                                                cursor: "pointer",
-                                                transition: "border-color 0.15s, background 0.15s",
-                                            }}
-                                            onClick={() =>
-                                                {
-                                                    setSelectedPackage(null);
-                                                    setSelectedSubject(s);
-                                                }
-                                            }
+                                            className={`repeto-bk-option${active ? " repeto-bk-option--active" : ""}`}
+                                            onClick={() => { setSelectedPackage(null); setSelectedSubject(s); }}
                                         >
-                                            <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
-                                                <div
-                                                    style={{
-                                                        width: 40,
-                                                        height: 40,
-                                                        borderRadius: 10,
-                                                        display: "flex",
-                                                        alignItems: "center",
-                                                        justifyContent: "center",
-                                                        background: "rgba(174,122,255,0.1)",
-                                                        flexShrink: 0,
-                                                    }}
-                                                >
-                                                    <Icon
-                                                        data={GraduationCap as IconData}
-                                                        size={20}
-                                                        style={{ color: "var(--g-color-text-brand)" }}
-                                                    />
-                                                </div>
-                                                <div style={{ minWidth: 0 }}>
-                                                    <div style={{ fontSize: 14, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                                        {s.name}
-                                                    </div>
-                                                    <div style={{ fontSize: 12, color: "var(--g-color-text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                            <div className="repeto-bk-option__left">
+                                                <span className="repeto-tp-item-icon">
+                                                    <Icon data={GraduationCap as IconData} size={18} />
+                                                </span>
+                                                <div className="repeto-bk-option__text">
+                                                    <Text variant="body-2" className="repeto-bk-option__title">{s.name}</Text>
+                                                    <Text variant="body-1" color="secondary">
                                                         {s.duration || 60} мин{s.price ? <> · от {s.price.toLocaleString("ru-RU")} ₽</> : null}
-                                                    </div>
+                                                    </Text>
                                                 </div>
                                             </div>
-                                            {/* Radio indicator */}
-                                            <div
-                                                style={{
-                                                    width: 20,
-                                                    height: 20,
-                                                    borderRadius: "50%",
-                                                    border: `1px solid ${active ? "var(--g-color-base-brand)" : "var(--g-color-line-generic)"}`,
-                                                    background: active ? "var(--g-color-base-brand)" : "transparent",
-                                                    display: "flex",
-                                                    alignItems: "center",
-                                                    justifyContent: "center",
-                                                    flexShrink: 0,
-                                                }}
-                                            >
-                                                {active && (
-                                                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--g-color-text-light-primary)" }} />
-                                                )}
-                                            </div>
+                                            <span className={`repeto-bk-radio${active ? " repeto-bk-radio--active" : ""}`}>
+                                                {active && <span className="repeto-bk-radio__dot" />}
+                                            </span>
                                         </button>
                                     );
                                 })}
 
                                 {(t.publicPackages || []).length > 0 && (
                                     <>
-                                        <div
-                                            style={{
-                                                marginTop: 4,
-                                                marginBottom: 2,
-                                                fontSize: 12,
-                                                fontWeight: 700,
-                                                color: "var(--g-color-text-secondary)",
-                                                letterSpacing: 0.2,
-                                                textTransform: "uppercase",
-                                            }}
-                                        >
+                                        <Text variant="caption-1" color="secondary" as="div" className="repeto-bk-group-label">
                                             Пакеты занятий
-                                        </div>
+                                        </Text>
                                         {(t.publicPackages || []).map((pkg) => {
                                             const active = selectedPackage?.id === pkg.id;
                                             const hasDiscount = Number(pkg.discountAmount || 0) > 0;
                                             return (
                                                 <button
                                                     key={pkg.id}
-                                                    style={{
-                                                        width: "100%",
-                                                        display: "flex",
-                                                        alignItems: "center",
-                                                        justifyContent: "space-between",
-                                                        padding: "16px 18px",
-                                                        textAlign: "left",
-                                                        borderRadius: 12,
-                                                        border: `1px solid ${active ? "var(--g-color-text-brand)" : "var(--g-color-line-generic)"}`,
-                                                        background: "var(--g-color-base-float)",
-                                                        cursor: "pointer",
-                                                        transition: "border-color 0.15s, background 0.15s",
-                                                    }}
+                                                    className={`repeto-bk-option${active ? " repeto-bk-option--active" : ""}`}
                                                     onClick={() => {
                                                         setSelectedPackage(pkg);
-
-                                                        const match = t.subjects.find(
-                                                            (subject) => subject.name === pkg.subject
-                                                        );
-                                                        if (match) {
-                                                            setSelectedSubject(match);
-                                                        }
+                                                        const match = t.subjects.find((subject) => subject.name === pkg.subject);
+                                                        if (match) setSelectedSubject(match);
                                                     }}
                                                 >
-                                                    <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
-                                                        <div
-                                                            style={{
-                                                                width: 40,
-                                                                height: 40,
-                                                                borderRadius: 10,
-                                                                display: "flex",
-                                                                alignItems: "center",
-                                                                justifyContent: "center",
-                                                                background: "rgba(174,122,255,0.1)",
-                                                                flexShrink: 0,
-                                                            }}
-                                                        >
-                                                            <Icon
-                                                                data={GraduationCap as IconData}
-                                                                size={20}
-                                                                style={{ color: "var(--g-color-text-brand)" }}
-                                                            />
-                                                        </div>
-                                                        <div style={{ minWidth: 0 }}>
-                                                            <div style={{ fontSize: 14, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                                                {pkg.subject}
-                                                            </div>
-                                                            <div style={{ fontSize: 12, color: "var(--g-color-text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                                    <div className="repeto-bk-option__left">
+                                                        <span className="repeto-tp-item-icon">
+                                                            <Icon data={GraduationCap as IconData} size={18} />
+                                                        </span>
+                                                        <div className="repeto-bk-option__text">
+                                                            <Text variant="body-2" className="repeto-bk-option__title">{pkg.subject}</Text>
+                                                            <Text variant="body-1" color="secondary">
                                                                 {pkg.lessonsTotal} занятий · {pkg.totalPrice.toLocaleString("ru-RU")} ₽
-                                                            </div>
-                                                            {hasDiscount ? (
-                                                                <div
-                                                                    style={{
-                                                                        marginTop: 4,
-                                                                        fontSize: 12,
-                                                                        color: "var(--g-color-text-positive)",
-                                                                        overflow: "hidden",
-                                                                        textOverflow: "ellipsis",
-                                                                        whiteSpace: "nowrap",
-                                                                    }}
-                                                                >
+                                                            </Text>
+                                                            {hasDiscount && (
+                                                                <Text variant="body-1" color="positive" as="div">
                                                                     Скидка {Number(pkg.discountAmount || 0).toLocaleString("ru-RU")} ₽
-                                                                    {Number(pkg.discountPercent || 0) > 0
-                                                                        ? ` (${pkg.discountPercent}%)`
-                                                                        : ""}
-                                                                </div>
-                                                            ) : null}
-                                                            {pkg.comment ? (
-                                                                <div
-                                                                    style={{
-                                                                        marginTop: 4,
-                                                                        fontSize: 12,
-                                                                        color: "var(--g-color-text-secondary)",
-                                                                        overflow: "hidden",
-                                                                        textOverflow: "ellipsis",
-                                                                        whiteSpace: "nowrap",
-                                                                    }}
-                                                                >
-                                                                    {pkg.comment}
-                                                                </div>
-                                                            ) : null}
+                                                                    {Number(pkg.discountPercent || 0) > 0 ? ` (${pkg.discountPercent}%)` : ""}
+                                                                </Text>
+                                                            )}
+                                                            {pkg.comment && (
+                                                                <Text variant="body-1" color="secondary" as="div">{pkg.comment}</Text>
+                                                            )}
                                                         </div>
                                                     </div>
-                                                    <div
-                                                        style={{
-                                                            width: 20,
-                                                            height: 20,
-                                                            borderRadius: "50%",
-                                                            border: `1px solid ${active ? "var(--g-color-base-brand)" : "var(--g-color-line-generic)"}`,
-                                                            background: active ? "var(--g-color-base-brand)" : "transparent",
-                                                            display: "flex",
-                                                            alignItems: "center",
-                                                            justifyContent: "center",
-                                                            flexShrink: 0,
-                                                        }}
-                                                    >
-                                                        {active && (
-                                                            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--g-color-text-light-primary)" }} />
-                                                        )}
-                                                    </div>
+                                                    <span className={`repeto-bk-radio${active ? " repeto-bk-radio--active" : ""}`}>
+                                                        {active && <span className="repeto-bk-radio__dot" />}
+                                                    </span>
                                                 </button>
                                             );
                                         })}
@@ -993,107 +771,74 @@ const BookingPage = ({ slug }: { slug: string }) => {
                             <Button
                                 view="action"
                                 size="xl"
-                                style={{ ...ACTION_BUTTON_STYLE, marginTop: 24 }}
+                                className="repeto-bk-action-btn"
                                 disabled={!selectedSubject && !selectedPackage}
                                 onClick={() => setStep(1)}
                             >
                                 Продолжить
                             </Button>
-                        </Card>
+                        </div>
                     )}
 
                     {/* ── Step 1: Calendar + time slots ── */}
                     {step === 1 && (
-                        <Card view="outlined" style={PANEL_STYLE}>
+                        <div className="repeto-bk-step">
                             {/* Month nav */}
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+                            <div className="repeto-bk-cal-header">
                                 <Text variant="header-2">
                                     {MONTHS_NOM[viewMonth.getMonth()]}
-                                    {viewMonth.getFullYear() !==
-                                    new Date().getFullYear()
-                                        ? ` ${viewMonth.getFullYear()}`
-                                        : ""}
+                                    {viewMonth.getFullYear() !== new Date().getFullYear() ? ` ${viewMonth.getFullYear()}` : ""}
                                 </Text>
-                                <div style={{ display: "flex", gap: 8 }}>
+                                <div className="repeto-bk-cal-nav">
                                     <Button
                                         view="outlined"
-                                        size="l"
-                                        style={ICON_BUTTON_STYLE}
+                                        size="m"
+                                        className="repeto-bk-icon-btn"
                                         onClick={() => {
                                             const d = new Date(viewMonth);
                                             d.setMonth(d.getMonth() - 1);
                                             setViewMonth(d);
                                         }}
                                     >
-                                        <Icon data={ArrowLeft as IconData} size={16} style={{ display: "block" }} />
+                                        <Icon data={ArrowLeft as IconData} size={16} />
                                     </Button>
                                     <Button
                                         view="outlined"
-                                        size="l"
-                                        style={ICON_BUTTON_STYLE}
+                                        size="m"
+                                        className="repeto-bk-icon-btn"
                                         onClick={() => {
                                             const d = new Date(viewMonth);
                                             d.setMonth(d.getMonth() + 1);
                                             setViewMonth(d);
                                         }}
                                     >
-                                        <Icon data={ArrowRight as IconData} size={16} style={{ display: "block" }} />
+                                        <Icon data={ArrowRight as IconData} size={16} />
                                     </Button>
                                 </div>
                             </div>
 
                             {/* Weekday headers */}
-                            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", textAlign: "center", marginBottom: 4 }}>
+                            <div className="repeto-bk-cal-grid">
                                 {DAYS_RU.map((d) => (
-                                    <div
-                                        key={d}
-                                        style={{ padding: "8px 4px", fontSize: 12, fontWeight: 700, color: "var(--g-color-text-secondary)" }}
-                                    >
-                                        {d}
-                                    </div>
+                                    <div key={d} className="repeto-bk-cal-weekday">{d}</div>
                                 ))}
                             </div>
 
                             {/* Day grid */}
-                            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", textAlign: "center" }}>
+                            <div className="repeto-bk-cal-grid">
                                 {calendarDays.map((day, i) => {
-                                    if (day === null)
-                                        return <div key={i} />;
+                                    if (day === null) return <div key={i} />;
                                     const dateStr = toDateStr(day);
-                                    const isAvailable =
-                                        availableDates.has(dateStr);
+                                    const isAvailable = availableDates.has(dateStr);
                                     const isPast = dateStr < today;
-                                    const isSelected =
-                                        selectedDate === dateStr;
+                                    const isSelected = selectedDate === dateStr;
                                     const isToday = dateStr === today;
                                     return (
                                         <button
                                             key={i}
                                             disabled={!isAvailable || isPast}
-                                            style={{
-                                                padding: "10px 4px",
-                                                fontSize: 16,
-                                                fontWeight: 700,
-                                                border: "none",
-                                                borderRadius: 8,
-                                                background: isSelected
-                                                    ? "var(--g-color-base-brand)"
-                                                    : "transparent",
-                                                color: isSelected
-                                                    ? "var(--g-color-text-light-primary)"
-                                                    : isAvailable && !isPast
-                                                    ? isToday
-                                                        ? "var(--g-color-text-brand)"
-                                                        : "var(--g-color-text-primary)"
-                                                    : "var(--g-color-text-hint)",
-                                                cursor: !isAvailable || isPast ? "default" : "pointer",
-                                                opacity: !isAvailable || isPast ? 0.5 : 1,
-                                                transition: "background 0.15s, color 0.15s, opacity 0.15s",
-                                            }}
-                                            onClick={() => {
-                                                setSelectedDate(dateStr);
-                                                setSelectedTime(null);
-                                            }}
+                                            className={`repeto-bk-cal-day${isSelected ? " repeto-bk-cal-day--selected" : ""}${isToday && !isSelected ? " repeto-bk-cal-day--today" : ""}${!isAvailable || isPast ? " repeto-bk-cal-day--disabled" : ""}`}
+                                            onClick={() => { setSelectedDate(dateStr); setSelectedTime(null); }}
                                         >
                                             {day}
                                         </button>
@@ -1101,44 +846,20 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                 })}
                             </div>
 
-                            {/* Time slots grouped by period */}
+                            {/* Time slots */}
                             {selectedDate && groupedSlots.length > 0 && (
-                                <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 20 }}>
+                                <div className="repeto-bk-time-groups">
                                     {groupedSlots.map((group) => (
-                                        <div key={group.label}>
-                                            <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>
-                                                {group.label}
-                                            </div>
-                                            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                                        <div key={group.label} className="repeto-bk-time-group">
+                                            <Text variant="subheader-2" as="div" style={{ marginBottom: 10 }}>{group.label}</Text>
+                                            <div className="repeto-bk-time-slots">
                                                 {group.slots.map((slot) => {
-                                                    const active =
-                                                        selectedTime ===
-                                                        slot.time;
+                                                    const active = selectedTime === slot.time;
                                                     return (
                                                         <button
                                                             key={slot.time}
-                                                            style={{
-                                                                height: 40,
-                                                                minWidth: 88,
-                                                                padding: "0 20px",
-                                                                borderRadius: 10,
-                                                                border: `1px solid ${active ? "var(--g-color-base-brand)" : "var(--g-color-line-generic)"}`,
-                                                                background: active
-                                                                    ? "var(--g-color-base-brand)"
-                                                                    : "var(--g-color-base-float)",
-                                                                color: active
-                                                                    ? "var(--g-color-text-light-primary)"
-                                                                    : "var(--g-color-text-primary)",
-                                                                fontSize: 14,
-                                                                fontWeight: 700,
-                                                                cursor: "pointer",
-                                                                transition: "all 0.15s",
-                                                            }}
-                                                            onClick={() =>
-                                                                setSelectedTime(
-                                                                    slot.time
-                                                                )
-                                                            }
+                                                            className={`repeto-bk-time-slot${active ? " repeto-bk-time-slot--active" : ""}`}
+                                                            onClick={() => setSelectedTime(slot.time)}
                                                         >
                                                             {slot.time}
                                                         </button>
@@ -1154,119 +875,60 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                 <Button
                                     view="action"
                                     size="xl"
-                                    style={{ ...ACTION_BUTTON_STYLE, marginTop: 24 }}
+                                    className="repeto-bk-action-btn"
                                     onClick={() => setStep(2)}
                                 >
                                     Продолжить
                                 </Button>
                             )}
-                        </Card>
+                        </div>
                     )}
 
                     {/* ── Step 2: Contact form ── */}
                     {step === 2 && (
-                        <Card view="outlined" style={PANEL_STYLE}>
-                            <Text variant="header-2" style={{ display: "block", marginBottom: 20 }}>Ваши данные</Text>
+                        <div className="repeto-bk-step">
+                            <Text variant="header-2" as="div" className="repeto-portal-plain-section-title">
+                                Ваши данные
+                            </Text>
                             {submitError && (
                                 <div style={{ marginBottom: 16 }}>
-                                    <Alert
-                                        theme="danger"
-                                        title="Не удалось отправить заявку"
-                                        message={submitError}
-                                    />
+                                    <Alert theme="danger" title="Не удалось отправить заявку" message={submitError} />
                                 </div>
                             )}
                             {autofillHint && (
-                                <div
-                                    style={{
-                                        marginBottom: 16,
-                                        padding: "12px",
-                                        fontSize: 12,
-                                        fontWeight: 700,
-                                        border: "1px dashed var(--g-color-line-generic)",
-                                        borderRadius: 8,
-                                        background: "var(--g-color-base-simple-hover)",
-                                    }}
-                                >
-                                    {autofillHint}
-                                </div>
+                                <div className="repeto-bk-autofill-hint">{autofillHint}</div>
                             )}
-                            <label style={{ display: "block", marginBottom: 16 }}>
-                                <span style={FIELD_LABEL_STYLE}>Имя *</span>
-                                <TextInput
-                                    size="l"
-                                    value={name}
-                                    onUpdate={setName}
-                                    placeholder="Иван Иванов"
-                                />
-                            </label>
-                            <label style={{ display: "block", marginBottom: 16 }}>
-                                <span style={FIELD_LABEL_STYLE}>Телефон *</span>
-                                <TextInput
-                                    size="l"
-                                    type="tel"
-                                    value={phone}
-                                    onUpdate={setPhone}
-                                    placeholder="+7 900 123-45-67"
-                                />
-                            </label>
-                            <label style={{ display: "block", marginBottom: 16 }}>
-                                <span style={FIELD_LABEL_STYLE}>E-mail *</span>
-                                <TextInput
-                                    size="l"
-                                    type="email"
-                                    value={email}
-                                    onUpdate={setEmail}
-                                    placeholder="email@example.com"
-                                />
-                            </label>
-                            <label style={{ display: "block", marginBottom: 20 }}>
-                                <span style={FIELD_LABEL_STYLE}>Комментарий</span>
-                                <TextArea
-                                    size="l"
-                                    rows={4}
-                                    value={comment}
-                                    onUpdate={setComment}
-                                    placeholder="Комментарий к записи"
-                                />
-                            </label>
+                            <div className="repeto-bk-form">
+                                <AppField label="Имя" required className="repeto-bk-app-field">
+                                    <TextInput size="l" value={name} onUpdate={setName} placeholder="Иван Иванов" />
+                                </AppField>
+                                <AppField label="Телефон" required className="repeto-bk-app-field">
+                                    <PhoneInput value={phone} onUpdate={setPhone} />
+                                </AppField>
+                                <AppField label="E-mail" required className="repeto-bk-app-field">
+                                    <TextInput size="l" type="email" value={email} onUpdate={setEmail} placeholder="email@example.com" />
+                                </AppField>
+                                <AppField label="Комментарий" className="repeto-bk-app-field repeto-bk-app-field--last">
+                                    <TextArea size="l" rows={4} value={comment} onUpdate={setComment} placeholder="Комментарий к записи" />
+                                </AppField>
+                            </div>
 
-                            {/* Reminder methods and timing */}
-                            <div style={{ marginBottom: 20 }}>
-                                <Text variant="body-2" style={{ fontWeight: 700, display: "block", marginBottom: 6 }}>
+                            {/* Reminder methods */}
+                            <div className="repeto-bk-reminders">
+                                <Text variant="body-2" className="repeto-bk-reminders__title">
                                     Отправить напоминание
                                 </Text>
-                                <Text variant="body-1" color="secondary" style={{ display: "block", marginBottom: 12, fontSize: 13 }}>
+                                <Text variant="body-1" color="secondary" className="repeto-bk-reminders__hint">
                                     Можно выбрать несколько способов уведомления
                                 </Text>
-
-                                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
+                                <div className="repeto-bk-chips">
                                     {REMINDER_METHODS.map((method) => {
                                         const active = selectedReminderMethods.includes(method.id);
-
                                         return (
                                             <button
                                                 key={method.id}
                                                 type="button"
-                                                style={{
-                                                    height: 40,
-                                                    padding: "0 14px",
-                                                    display: "inline-flex",
-                                                    alignItems: "center",
-                                                    justifyContent: "center",
-                                                    border: `1px solid ${active ? "var(--g-color-base-brand)" : "var(--g-color-line-generic)"}`,
-                                                    borderRadius: 10,
-                                                    fontSize: 14,
-                                                    fontWeight: 700,
-                                                    lineHeight: 1,
-                                                    background: active
-                                                        ? "var(--g-color-base-brand)"
-                                                        : "transparent",
-                                                    color: active
-                                                        ? "var(--g-color-text-light-primary)"
-                                                        : "var(--g-color-text-primary)",
-                                                    cursor: "pointer",
-                                                }}
+                                                className={`repeto-bk-chip${active ? " repeto-bk-chip--active" : ""}`}
                                                 onClick={() => toggleReminderMethod(method.id)}
                                             >
                                                 {method.label}
@@ -1274,38 +936,13 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                         );
                                     })}
                                 </div>
-
                                 {selectedReminderMethods.length > 0 && (
-                                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                                    <div className="repeto-bk-chips" style={{ marginTop: 8 }}>
                                         {REMINDER_TIME_OPTIONS.map((option) => (
                                             <button
                                                 key={option.minutes}
                                                 type="button"
-                                                style={{
-                                                    height: 40,
-                                                    padding: "0 14px",
-                                                    display: "inline-flex",
-                                                    alignItems: "center",
-                                                    justifyContent: "center",
-                                                    border: `1px solid ${
-                                                        reminderMinutesBefore === option.minutes
-                                                            ? "var(--g-color-base-brand)"
-                                                            : "var(--g-color-line-generic)"
-                                                    }`,
-                                                    borderRadius: 10,
-                                                    fontSize: 12,
-                                                    fontWeight: 700,
-                                                    lineHeight: 1,
-                                                    background:
-                                                        reminderMinutesBefore === option.minutes
-                                                            ? "var(--g-color-base-brand)"
-                                                            : "transparent",
-                                                    color:
-                                                        reminderMinutesBefore === option.minutes
-                                                            ? "var(--g-color-text-light-primary)"
-                                                            : "var(--g-color-text-primary)",
-                                                    cursor: "pointer",
-                                                }}
+                                                className={`repeto-bk-chip repeto-bk-chip--sm${reminderMinutesBefore === option.minutes ? " repeto-bk-chip--active" : ""}`}
                                                 onClick={() => setReminderMinutesBefore(option.minutes)}
                                             >
                                                 {option.label}
@@ -1313,9 +950,8 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                         ))}
                                     </div>
                                 )}
-
                                 {(needsTelegramConnect || needsMaxConnect || needsEmailAddress) && (
-                                    <Text variant="body-1" color="danger" style={{ display: "block", marginTop: 10, fontSize: 12 }}>
+                                    <Text variant="body-1" color="danger" style={{ display: "block", marginTop: 10 }}>
                                         {needsTelegramConnect && "Подключите Telegram для выбранного канала. "}
                                         {needsMaxConnect && "Подключите Макс для выбранного канала. "}
                                         {needsEmailAddress && "Укажите email для уведомлений по почте."}
@@ -1330,75 +966,55 @@ const BookingPage = ({ slug }: { slug: string }) => {
                             </div>
 
                             {/* Summary */}
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 0", borderTop: "1px solid var(--g-color-line-generic)", marginBottom: 20 }}>
-                                <span style={{ fontSize: 14, fontWeight: 700 }}>Итого</span>
+                            <div className="repeto-bk-summary">
+                                <span className="repeto-bk-summary__label">Итого</span>
                                 {selectedPackage ? (
-                                    <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 700 }}>
+                                    <span className="repeto-bk-summary__price">
                                         {Number(selectedPackage.discountAmount || 0) > 0 && Number(selectedPackage.originalTotalPrice || 0) > selectedPackage.totalPrice ? (
-                                            <span
-                                                style={{
-                                                    fontSize: 12,
-                                                    fontWeight: 500,
-                                                    color: "var(--g-color-text-secondary)",
-                                                    textDecoration: "line-through",
-                                                }}
-                                            >
+                                            <span className="repeto-bk-summary__old-price">
                                                 {Number(selectedPackage.originalTotalPrice || 0).toLocaleString("ru-RU")} ₽
                                             </span>
                                         ) : null}
                                         <span>{selectedPackage.totalPrice.toLocaleString("ru-RU")} ₽</span>
                                     </span>
                                 ) : (
-                                    <span style={{ fontSize: 14, fontWeight: 700 }}>
-                                        {selectedSubject
-                                            ? `${selectedSubject.price.toLocaleString("ru-RU")} ₽`
-                                            : "—"}
+                                    <span className="repeto-bk-summary__label">
+                                        {selectedSubject ? `${selectedSubject.price.toLocaleString("ru-RU")} ₽` : "—"}
                                     </span>
                                 )}
                             </div>
 
-                            {selectedPackage && Number(selectedPackage.discountAmount || 0) > 0 ? (
-                                <Text variant="body-1" color="positive" style={{ display: "block", marginBottom: 16, fontSize: 13 }}>
+                            {selectedPackage && Number(selectedPackage.discountAmount || 0) > 0 && (
+                                <Text variant="body-1" color="positive" style={{ display: "block", marginBottom: 16 }}>
                                     Вы экономите {Number(selectedPackage.discountAmount || 0).toLocaleString("ru-RU")} ₽
-                                    {Number(selectedPackage.discountPercent || 0) > 0
-                                        ? ` (${selectedPackage.discountPercent}%)`
-                                        : ""}
+                                    {Number(selectedPackage.discountPercent || 0) > 0 ? ` (${selectedPackage.discountPercent}%)` : ""}
                                 </Text>
-                            ) : null}
+                            )}
 
                             <Button
                                 view="action"
                                 size="xl"
-                                style={ACTION_BUTTON_STYLE}
+                                className="repeto-bk-action-btn"
                                 loading={submitting}
-                                disabled={
-                                    !name.trim() ||
-                                    !phone.trim() ||
-                                    !email.trim() ||
-                                    !consent ||
-                                    needsTelegramConnect ||
-                                    needsMaxConnect ||
-                                    needsEmailAddress
-                                }
+                                disabled={!name.trim() || !phone.trim() || !email.trim() || !consent || needsTelegramConnect || needsMaxConnect || needsEmailAddress}
                                 onClick={handleSubmit}
                             >
                                 Подтвердить почту
                             </Button>
-                        </Card>
+                        </div>
                     )}
 
                     {/* ── Step 3: OTP verification ── */}
                     {step === 3 && (
-                        <Card view="outlined" style={PANEL_STYLE}>
-                            <Text variant="header-2" style={{ display: "block", marginBottom: 8 }}>
+                        <div className="repeto-bk-step repeto-bk-step--otp">
+                            <Text variant="header-2" as="div" className="repeto-portal-plain-section-title">
                                 Введите код из письма
                             </Text>
-                            <Text variant="body-1" color="secondary" style={{ display: "block", marginBottom: 20 }}>
+                            <Text variant="body-1" color="secondary" className="repeto-bk-otp-hint">
                                 Мы отправили 6-значный код на {email.trim()}. Он войдёт в ваш кабинет и покажет эту заявку.
                             </Text>
 
-                            <label style={{ display: "block", marginBottom: 16 }}>
-                                <span style={FIELD_LABEL_STYLE}>Код</span>
+                            <AppField label="Код" required className="repeto-bk-app-field repeto-bk-app-field--otp">
                                 <TextInput
                                     size="l"
                                     placeholder="000000"
@@ -1407,7 +1023,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                     autoComplete="one-time-code"
                                     autoFocus
                                 />
-                            </label>
+                            </AppField>
 
                             {otpError && (
                                 <div style={{ marginBottom: 16 }}>
@@ -1418,7 +1034,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
                             <Button
                                 view="action"
                                 size="xl"
-                                style={ACTION_BUTTON_STYLE}
+                                className="repeto-bk-action-btn"
                                 loading={verifying}
                                 disabled={otpCode.length !== 6}
                                 onClick={handleVerifyOtp}
@@ -1426,51 +1042,28 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                 Войти в кабинет
                             </Button>
 
-                            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 14 }}>
-                                <button
-                                    type="button"
-                                    onClick={() => setStep(2)}
-                                    style={{
-                                        background: "none",
-                                        border: "none",
-                                        color: "var(--g-color-text-brand)",
-                                        cursor: "pointer",
-                                        padding: 0,
-                                        fontSize: 13,
-                                    }}
-                                >
+                            <div className="repeto-bk-otp-links">
+                                <button type="button" className="repeto-bk-text-link" onClick={() => setStep(2)}>
                                     Изменить почту
                                 </button>
-                                <button
-                                    type="button"
-                                    onClick={handleResendOtp}
-                                    style={{
-                                        background: "none",
-                                        border: "none",
-                                        color: "var(--g-color-text-brand)",
-                                        cursor: "pointer",
-                                        padding: 0,
-                                        fontSize: 13,
-                                    }}
-                                >
+                                <button type="button" className="repeto-bk-text-link" onClick={handleResendOtp}>
                                     Прислать ещё раз
                                 </button>
                             </div>
-                        </Card>
+                        </div>
                     )}
                 </div>
                 </>
                 )}
 
                 {/* Footer */}
-                <div style={{ padding: "24px", textAlign: "center", fontSize: 12, color: "var(--g-color-text-secondary)" }}>
-                    Работает на{" "}
-                    <Link
-                        href="/"
-                        style={{ fontWeight: 700, color: "var(--g-color-text-brand)", textDecoration: "none" }}
-                    >
-                        Repeto
-                    </Link>
+                <div className="repeto-portal-footer" style={{ padding: 24 }}>
+                    <Text variant="caption-2" color="secondary">
+                        Работает на{" "}
+                        <Link href="/" style={{ fontWeight: 600, textDecoration: "none", color: "inherit" }}>
+                            Repeto
+                        </Link>
+                    </Text>
                 </div>
             </div>
         </>

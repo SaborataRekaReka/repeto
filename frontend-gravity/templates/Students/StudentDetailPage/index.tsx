@@ -22,6 +22,8 @@ import { usePayments } from "@/hooks/usePayments";
 import { useSettings } from "@/hooks/useSettings";
 import { codedErrorMessage } from "@/lib/errorCodes";
 import {
+    checkStudentEmail,
+    unlinkStudentAccount,
     updateStudent,
     useStudentNotes,
     useStudentHomework,
@@ -51,6 +53,11 @@ type StudentDetailPageProps = {
     onRefresh?: () => void;
 };
 
+const isEmailLike = (value?: string) => {
+    const email = (value || "").trim();
+    return email.includes("@") && email.includes(".");
+};
+
 const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
     const router = useRouter();
     const { data: settings } = useSettings();
@@ -73,18 +80,53 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
     const [editLesson, setEditLesson] = useState<Lesson | null>(null);
     const [paymentModal, setPaymentModal] = useState(false);
     const [activateAccountModal, setActivateAccountModal] = useState(false);
+    const [unlinkConfirmOpen, setUnlinkConfirmOpen] = useState(false);
+    const [unlinkLoading, setUnlinkLoading] = useState(false);
     const [remindModal, setRemindModal] = useState(false);
     const [optimisticRemovedLessonIds, setOptimisticRemovedLessonIds] = useState<string[]>([]);
     const [lessonActionError, setLessonActionError] = useState<string | null>(null);
     const [statusUpdating, setStatusUpdating] = useState(false);
     const [archiveConfirmOpen, setArchiveConfirmOpen] = useState(false);
     const [studentActionError, setStudentActionError] = useState<string | null>(null);
+    const [portalAccountExists, setPortalAccountExists] = useState(false);
 
     useEffect(() => {
         const nextTab = getTabFromQuery();
         setTab((prev) => (prev === nextTab ? prev : nextTab));
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [router.query.tab]);
+
+    useEffect(() => {
+        if (local.accountId) {
+            setPortalAccountExists(true);
+            return;
+        }
+
+        const email = (local.email || "").trim().toLowerCase();
+        if (!isEmailLike(email)) {
+            setPortalAccountExists(false);
+            return;
+        }
+
+        let cancelled = false;
+        const timer = setTimeout(async () => {
+            try {
+                const result = await checkStudentEmail(email);
+                if (!cancelled) {
+                    setPortalAccountExists(result.exists);
+                }
+            } catch {
+                if (!cancelled) {
+                    setPortalAccountExists(false);
+                }
+            }
+        }, 350);
+
+        return () => {
+            cancelled = true;
+            clearTimeout(timer);
+        };
+    }, [local.accountId, local.email]);
 
     const handleTabChange = (nextTab: string) => {
         setTab(nextTab);
@@ -216,6 +258,41 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
         void applyStudentStatus("archived");
     };
 
+    const handlePortalAction = () => {
+        setStudentActionError(null);
+        if (local.accountId) {
+            setUnlinkConfirmOpen(true);
+            return;
+        }
+        setActivateAccountModal(true);
+    };
+
+    const confirmUnlinkAccount = async () => {
+        if (unlinkLoading) return;
+        setUnlinkLoading(true);
+        setStudentActionError(null);
+        try {
+            const result = await unlinkStudentAccount(student.id);
+            setLocal((prev) => ({
+                ...prev,
+                accountId: result.accountId,
+                email: result.email || prev.email,
+            }));
+            setUnlinkConfirmOpen(false);
+            onRefresh?.();
+        } catch (error: any) {
+            setStudentActionError(codedErrorMessage("UNLINK-ACCOUNT", error));
+        } finally {
+            setUnlinkLoading(false);
+        }
+    };
+
+    const portalActionLabel = local.accountId
+        ? "Разорвать связь"
+        : portalAccountExists
+          ? "Работать вместе"
+          : "Пригласить в Repeto";
+
     const { data: paymentsData, refetch: refetchPayments } = usePayments({
         studentId: student.id,
         limit: 100,
@@ -264,7 +341,9 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
                     student={local}
                     onSave={handleInlineSave}
                     onRemind={() => setRemindModal(true)}
-                    onActivateAccount={() => setActivateAccountModal(true)}
+                    onPortalAction={handlePortalAction}
+                    portalActionLabel={portalActionLabel}
+                    portalActionBusy={unlinkLoading}
                     onStatusSelect={handleStatusSelect}
                     statusUpdating={statusUpdating}
                     studentActionError={studentActionError}
@@ -472,7 +551,7 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
                 studentId={student.id}
                 studentName={student.name}
                 studentEmail={local.email}
-                hasAccount={!!local.accountId}
+                hasAccount={!!local.accountId || portalAccountExists}
             />
             <RemindModal
                 visible={remindModal}
@@ -515,6 +594,47 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
                                     disabled={statusUpdating}
                                 >
                                     Перенести
+                                </Button>
+                            </div>
+                        </div>
+                    }
+                />
+            </AppDialog>
+            <AppDialog
+                size="s"
+                open={unlinkConfirmOpen}
+                onClose={() => {
+                    if (!unlinkLoading) setUnlinkConfirmOpen(false);
+                }}
+                caption="Разорвать связь с профилем"
+            >
+                <Alert
+                    theme="warning"
+                    view="filled"
+                    corners="rounded"
+                    title="Подтвердите разрыв связи"
+                    message={
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                            <div>
+                                Ученик станет обычной записью CRM, и вы снова сможете редактировать его личные данные.
+                            </div>
+                            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
+                                <Button
+                                    view="outlined"
+                                    size="m"
+                                    onClick={() => setUnlinkConfirmOpen(false)}
+                                    disabled={unlinkLoading}
+                                >
+                                    Отмена
+                                </Button>
+                                <Button
+                                    view="flat-danger"
+                                    size="m"
+                                    onClick={confirmUnlinkAccount}
+                                    loading={unlinkLoading}
+                                    disabled={unlinkLoading}
+                                >
+                                    Разорвать связь
                                 </Button>
                             </div>
                         </div>

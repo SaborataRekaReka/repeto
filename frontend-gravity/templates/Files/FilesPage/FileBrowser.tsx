@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMediaQuery } from "react-responsive";
-import { Card, Text, Button, Icon, Checkbox } from "@gravity-ui/uikit";
+import { Card, Text, Button, Icon, Checkbox, Loader } from "@gravity-ui/uikit";
 import { FolderOpen, PersonPlus, Ellipsis, ArrowUpRightFromSquare, ArrowsRotateRight } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import { useStudents } from "@/hooks/useStudents";
@@ -36,6 +36,11 @@ const getBreadcrumbPath = (allFiles: FileItem[], itemId: string | null) => {
 
 const countChildren = (allFiles: FileItem[], folderId: string) =>
     allFiles.filter((f) => f.parentId === folderId).length;
+
+type FolderSubtitleState = {
+    text: string;
+    loading: boolean;
+};
 
 const getFileIcon = (ext?: string) => {
     switch ((ext || "").toLowerCase()) {
@@ -82,6 +87,7 @@ const FileBrowser = ({ files, cloudConnections, onUpdated }: FileBrowserProps) =
     const [syncingProvider, setSyncingProvider] = useState<"yandex-disk" | "google-drive" | null>(null);
     const [syncingFolderId, setSyncingFolderId] = useState<string | null>(null);
     const [syncingFolderProvider, setSyncingFolderProvider] = useState<"yandex-disk" | "google-drive" | null>(null);
+    const [openedFolderIds, setOpenedFolderIds] = useState<Set<string>>(new Set());
     const [syncMsg, setSyncMsg] = useState<string | null>(null);
     const [selectedProvider, setSelectedProvider] = useState<CloudProvider | null>(null);
     const [mounted, setMounted] = useState(false);
@@ -111,7 +117,7 @@ const FileBrowser = ({ files, cloudConnections, onUpdated }: FileBrowserProps) =
     }, [currentFolderId, files]);
 
     const items = useMemo(() => getChildItems(files, currentFolderId), [files, currentFolderId]);
-    const breadcrumbs = useMemo(() => getBreadcrumbPath(files, currentFolderId), [files, currentFolderId]);
+    const breadcrumbPath = useMemo(() => getBreadcrumbPath(files, currentFolderId), [files, currentFolderId]);
     const currentFolder = useMemo(
         () => files.find((f) => f.id === currentFolderId) || null,
         [files, currentFolderId],
@@ -124,6 +130,13 @@ const FileBrowser = ({ files, cloudConnections, onUpdated }: FileBrowserProps) =
         () => cloudConnections.filter((c) => c.connected),
         [cloudConnections],
     );
+    const cloudConnectionByProvider = useMemo(() => {
+        const map = new Map<CloudProvider, CloudConnection>();
+        cloudConnections.forEach((connection) => {
+            map.set(connection.provider, connection);
+        });
+        return map;
+    }, [cloudConnections]);
     const rootFolderByProvider = useMemo(() => {
         const byProvider = new Map<CloudProvider, string>();
         for (const item of files) {
@@ -135,6 +148,18 @@ const FileBrowser = ({ files, cloudConnections, onUpdated }: FileBrowserProps) =
         return byProvider;
     }, [files]);
     const activeProvider = currentFolder?.cloudProvider || selectedProvider || connectedClouds[0]?.provider || null;
+    const breadcrumbs = useMemo(() => {
+        if (!activeProvider) return breadcrumbPath;
+
+        return breadcrumbPath.filter((item, index) => {
+            const isProviderRootCrumb =
+                index === 0 &&
+                item.parentId === null &&
+                item.cloudProvider === activeProvider;
+
+            return !isProviderRootCrumb;
+        });
+    }, [breadcrumbPath, activeProvider]);
     const activeCloud = useMemo(
         () => connectedClouds.find((cloud) => cloud.provider === activeProvider) || null,
         [connectedClouds, activeProvider],
@@ -142,6 +167,70 @@ const FileBrowser = ({ files, cloudConnections, onUpdated }: FileBrowserProps) =
     const syncBusy = syncingProvider !== null || syncingFolderId !== null;
     const isProviderSyncing = (provider: "yandex-disk" | "google-drive") =>
         syncingProvider === provider || syncingFolderProvider === provider;
+    const currentFolderWasOpened = currentFolderId
+        ? (currentFolder?.parentId === null || openedFolderIds.has(currentFolderId))
+        : true;
+    const isCurrentFolderSyncing = Boolean(
+        currentFolderId &&
+        currentFolder &&
+        (
+            syncingFolderId === currentFolderId ||
+            (currentFolder.parentId === null && isProviderSyncing(currentFolder.cloudProvider))
+        ),
+    );
+
+    const markFolderAsOpened = (folderId: string) => {
+        setOpenedFolderIds((prev) => {
+            if (prev.has(folderId)) return prev;
+            const next = new Set(prev);
+            next.add(folderId);
+            return next;
+        });
+    };
+
+    const getFolderSubtitleState = (item: FileItem): FolderSubtitleState => {
+        const directChildren = countChildren(files, item.id);
+        const isRootFolder = item.parentId === null;
+        const wasFolderOpened = openedFolderIds.has(item.id);
+        const providerConnection = cloudConnectionByProvider.get(item.cloudProvider);
+        const wasProviderSynced = Boolean(providerConnection?.lastSynced);
+        const folderSyncInProgress =
+            syncingFolderId === item.id ||
+            (isRootFolder && isProviderSyncing(item.cloudProvider));
+
+        if (folderSyncInProgress) {
+            return {
+                text: "Синхронизация...",
+                loading: true,
+            };
+        }
+
+        if (directChildren > 0) {
+            return {
+                text: `${directChildren} файлов`,
+                loading: false,
+            };
+        }
+
+        if (isRootFolder && providerConnection?.connected && !wasProviderSynced) {
+            return {
+                text: "Ожидает синхронизацию",
+                loading: false,
+            };
+        }
+
+        if (!isRootFolder && !wasFolderOpened) {
+            return {
+                text: "Не синхронизировано",
+                loading: false,
+            };
+        }
+
+        return {
+            text: "Папка пуста",
+            loading: false,
+        };
+    };
 
     useEffect(() => {
         if (connectedClouds.length === 0) {
@@ -187,29 +276,39 @@ const FileBrowser = ({ files, cloudConnections, onUpdated }: FileBrowserProps) =
                 try {
                     const result = await syncYandexDiskFolder(item.id);
                     await onUpdated?.();
-                    setSyncMsg(`Папка синхронизирована: ${result.syncedItems} элементов`);
+                    markFolderAsOpened(item.id);
+                    setSyncMsg(
+                        result.syncedItems > 0
+                            ? `Папка синхронизирована: ${result.syncedItems} элементов`
+                            : "Папка синхронизирована",
+                    );
                 } catch (e: any) {
                     setSyncMsg(codedErrorMessage("FILES-YDISK-SYNC-FOLDER", e));
                 } finally {
                     setSyncingFolderId(null);
                     setSyncingFolderProvider(null);
                 }
-            }
-
-            if (item.cloudProvider === "google-drive" && connectedProviders.has("google-drive")) {
+            } else if (item.cloudProvider === "google-drive" && connectedProviders.has("google-drive")) {
                 setSyncingFolderId(item.id);
                 setSyncingFolderProvider("google-drive");
                 setSyncMsg(null);
                 try {
                     const result = await syncGoogleDriveFolder(item.id);
                     await onUpdated?.();
-                    setSyncMsg(`Папка синхронизирована: ${result.syncedItems} элементов`);
+                    markFolderAsOpened(item.id);
+                    setSyncMsg(
+                        result.syncedItems > 0
+                            ? `Папка синхронизирована: ${result.syncedItems} элементов`
+                            : "Папка синхронизирована",
+                    );
                 } catch (e: any) {
                     setSyncMsg(codedErrorMessage("FILES-GDRIVE-SYNC-FOLDER", e));
                 } finally {
                     setSyncingFolderId(null);
                     setSyncingFolderProvider(null);
                 }
+            } else {
+                markFolderAsOpened(item.id);
             }
 
             return;
@@ -229,7 +328,11 @@ const FileBrowser = ({ files, cloudConnections, onUpdated }: FileBrowserProps) =
         try {
             const result = await syncYandexDiskFiles();
             await onUpdated?.();
-            setSyncMsg(`Синхронизировано: ${result.syncedItems} элементов`);
+            setSyncMsg(
+                result.syncedItems > 0
+                    ? `Синхронизировано: ${result.syncedItems} элементов`
+                    : "Синхронизация завершена",
+            );
         } catch (e: any) {
             setSyncMsg(codedErrorMessage("FILES-YDISK-SYNC", e));
         } finally {
@@ -243,7 +346,11 @@ const FileBrowser = ({ files, cloudConnections, onUpdated }: FileBrowserProps) =
         try {
             const result = await syncGoogleDriveFiles();
             await onUpdated?.();
-            setSyncMsg(`Синхронизировано: ${result.syncedItems} элементов`);
+            setSyncMsg(
+                result.syncedItems > 0
+                    ? `Синхронизировано: ${result.syncedItems} элементов`
+                    : "Синхронизация завершена",
+            );
         } catch (e: any) {
             setSyncMsg(codedErrorMessage("FILES-GDRIVE-SYNC", e));
         } finally {
@@ -411,158 +518,199 @@ const FileBrowser = ({ files, cloudConnections, onUpdated }: FileBrowserProps) =
                 ))}
             </div>
 
+            {/* Sync button */}
+            {connectedClouds.length > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                    <button
+                        type="button"
+                        className="tab-action-btn"
+                        disabled={syncBusy}
+                        onClick={async () => {
+                            if (connectedProviders.has("yandex-disk")) await handleSyncYandexDisk();
+                            if (connectedProviders.has("google-drive")) await handleSyncGoogleDrive();
+                        }}
+                    >
+                        <span className="tab-action-btn__icon">
+                            <Icon data={ArrowsRotateRight as IconData} size={20} />
+                        </span>
+                        {syncBusy ? "Синхронизация…" : "Синхронизировать диски"}
+                    </button>
+                </div>
+            )}
+
             {/* Content */}
             {items.length === 0 ? (
-                <Card view="outlined" style={{ padding: "48px 20px", textAlign: "center", background: "var(--g-color-base-float)" }}>
-                    <div style={{ width: 64, height: 64, margin: "0 auto 16px", borderRadius: 16, background: "var(--g-color-base-generic)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <Icon data={FolderOpen as IconData} size={24} />
-                    </div>
-                    <Text variant="subheader-2" style={{ display: "block", marginBottom: 8 }}>Папка пуста</Text>
-                    <Text variant="body-1" color="secondary">
-                        В этой папке пока нет файлов. Добавьте файлы через облачное хранилище.
-                    </Text>
-                </Card>
+                isCurrentFolderSyncing ? (
+                    <Card view="outlined" style={{ padding: "48px 20px", textAlign: "center", background: "var(--g-color-base-float)" }}>
+                        <div style={{ margin: "0 auto 16px", display: "flex", justifyContent: "center" }}>
+                            <Loader size="l" />
+                        </div>
+                        <Text variant="subheader-2" style={{ display: "block", marginBottom: 8 }}>Синхронизируем папку...</Text>
+                        <Text variant="body-1" color="secondary">
+                            Файлы появятся сразу после обновления содержимого.
+                        </Text>
+                    </Card>
+                ) : (
+                    <Card view="outlined" style={{ padding: "48px 20px", textAlign: "center", background: "var(--g-color-base-float)" }}>
+                        <div style={{ width: 64, height: 64, margin: "0 auto 16px", borderRadius: 16, background: "var(--g-color-base-generic)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <Icon data={FolderOpen as IconData} size={24} />
+                        </div>
+                        <Text variant="subheader-2" style={{ display: "block", marginBottom: 8 }}>
+                            {currentFolderId && !currentFolderWasOpened ? "Содержимое папки пока не загружено" : "Папка пуста"}
+                        </Text>
+                        <Text variant="body-1" color="secondary">
+                            {currentFolderId && !currentFolderWasOpened
+                                ? "Откройте папку еще раз или запустите синхронизацию, чтобы загрузить содержимое."
+                                : "В этой папке пока нет файлов. Добавьте файлы через облачное хранилище."}
+                        </Text>
+                    </Card>
+                )
             ) : (
-                <Card view="outlined" style={{ background: "var(--g-color-base-float)", overflow: "visible" }}>
+                <div className="repeto-fl-table">
                     {mounted && !isMobile ? (
-                        <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
-                            <thead>
-                                <tr style={{ borderBottom: "1px solid var(--g-color-line-generic)" }}>
-                                    <th style={{ padding: "10px 12px", width: 32 }}></th>
-                                    <th style={{ padding: "10px 20px", textAlign: "left", fontWeight: 500, fontSize: 13, color: "var(--g-color-text-secondary)" }}>Название</th>
-                                    <th style={{ padding: "10px 20px", textAlign: "right", fontWeight: 500, fontSize: 13, color: "var(--g-color-text-secondary)", width: 80 }}>Размер</th>
-                                    <th style={{ padding: "10px 20px", textAlign: "left", fontWeight: 500, fontSize: 13, color: "var(--g-color-text-secondary)", width: 100 }}>Изменён</th>
-                                    <th style={{ padding: "10px 20px", textAlign: "left", fontWeight: 500, fontSize: 13, color: "var(--g-color-text-secondary)", width: 150 }}>Доступ</th>
-                                    <th style={{ padding: "10px 12px", width: 40 }}></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {items.map((item) => (
-                                    <tr
-                                        key={item.id}
-                                        style={{
-                                            borderBottom: "1px solid var(--g-color-line-generic)",
-                                            transition: "background 0.15s",
-                                        }}
-                                        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--g-color-base-simple-hover)")}
-                                        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                                    >
-                                        <td style={{ padding: "12px 12px" }}>
-                                            <Checkbox
-                                                checked={selectedItems.has(item.id)}
-                                                onUpdate={() => toggleSelect(item.id)}
-                                                size="m"
-                                            />
-                                        </td>
-                                        <td style={{ padding: "12px 20px" }}>
-                                            <button
-                                                onClick={() => { void handleNavigate(item); }}
-                                                style={{
-                                                    background: "none", border: "none", cursor: "pointer",
-                                                    width: "100%",
-                                                    minWidth: 0,
-                                                    display: "flex", alignItems: "center", gap: 12,
-                                                    fontWeight: 600, fontSize: 14, textAlign: "left",
-                                                    color: "var(--g-color-text-primary)",
-                                                }}
-                                            >
-                                                <div style={{ width: 32, height: 32, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <>
+                            <div className="repeto-fl-list-header">
+                                <span className="repeto-fl-lh__col repeto-fl-lh__col--check">&nbsp;</span>
+                                <span className="repeto-fl-lh__col repeto-fl-lh__col--name">Название</span>
+                                <span className="repeto-fl-lh__col repeto-fl-lh__col--size">Размер</span>
+                                <span className="repeto-fl-lh__col repeto-fl-lh__col--date">Изменён</span>
+                                <span className="repeto-fl-lh__col repeto-fl-lh__col--access">Доступ</span>
+                                <span className="repeto-fl-lh__col repeto-fl-lh__col--actions">&nbsp;</span>
+                            </div>
+                            <div className="repeto-fl-list">
+                                {items.map((item) => {
+                                    const folderSubtitle =
+                                        item.type === "folder"
+                                            ? getFolderSubtitleState(item)
+                                            : null;
+
+                                    return (
+                                        <div
+                                            key={item.id}
+                                            className="repeto-fl-row"
+                                            onClick={() => { void handleNavigate(item); }}
+                                        >
+                                            <div className="repeto-fl-row__cell repeto-fl-row__cell--check" onClick={(e) => e.stopPropagation()}>
+                                                <Checkbox
+                                                    checked={selectedItems.has(item.id)}
+                                                    onUpdate={() => toggleSelect(item.id)}
+                                                    size="m"
+                                                />
+                                            </div>
+                                            <div className="repeto-fl-row__cell repeto-fl-row__cell--name">
+                                                <div className="repeto-fl-row__icon">
                                                     {item.type === "folder" ? (
                                                         <Icon data={FolderOpen as IconData} size={24} style={{ color: "var(--g-color-text-brand)" }} />
                                                     ) : (
                                                         <img src={getFileIcon(item.extension)} width={20} height={20} alt="" className="repeto-file-icon" />
                                                     )}
                                                 </div>
-                                                <span style={{ flex: "1 1 auto", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                                    {getItemDisplayName(item)}
-                                                </span>
-                                                {item.type === "folder" && (
-                                                    <span style={{ flexShrink: 0, marginLeft: 4, fontSize: 12, fontWeight: 600, color: "var(--g-color-text-secondary)" }}>
-                                                        {countChildren(files, item.id)}
-                                                    </span>
+                                                <div className="repeto-fl-row__name-text">
+                                                    <span className="repeto-fl-row__primary">{getItemDisplayName(item)}</span>
+                                                    {item.type === "folder" && (
+                                                        <span
+                                                            className="repeto-fl-row__secondary"
+                                                            style={folderSubtitle?.loading ? { display: "inline-flex", alignItems: "center", gap: 6 } : undefined}
+                                                        >
+                                                            {folderSubtitle?.loading && <Loader size="s" />}
+                                                            {folderSubtitle?.text}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="repeto-fl-row__cell repeto-fl-row__cell--size">
+                                                <span className="repeto-fl-row__secondary">{item.size || "—"}</span>
+                                            </div>
+                                            <div className="repeto-fl-row__cell repeto-fl-row__cell--date">
+                                                <span className="repeto-fl-row__secondary">{item.modifiedAt}</span>
+                                            </div>
+                                            <div className="repeto-fl-row__cell repeto-fl-row__cell--access">
+                                                <SharedBadge item={item} students={activeStudents} />
+                                            </div>
+                                            <div className="repeto-fl-row__cell repeto-fl-row__cell--actions" onClick={(e) => e.stopPropagation()}>
+                                                <button
+                                                    className="repeto-fl-row__menu-btn"
+                                                    onClick={(e) => { e.stopPropagation(); setMenuOpenId(menuOpenId === item.id ? null : item.id); }}
+                                                >
+                                                    <Icon data={Ellipsis as IconData} size={16} />
+                                                </button>
+                                                {menuOpenId === item.id && (
+                                                    <ItemMenu
+                                                        item={item}
+                                                        onShare={() => { setShareTarget(item); setMenuOpenId(null); }}
+                                                        onClose={() => setMenuOpenId(null)}
+                                                    />
                                                 )}
-                                            </button>
-                                        </td>
-                                        <td style={{ padding: "12px 20px", textAlign: "right" }}>
-                                            <Text variant="caption-2" color="secondary">{item.size || "—"}</Text>
-                                        </td>
-                                        <td style={{ padding: "12px 20px" }}>
-                                            <Text variant="caption-2" color="secondary">{item.modifiedAt}</Text>
-                                        </td>
-                                        <td style={{ padding: "12px 20px" }}>
-                                            <SharedBadge item={item} students={activeStudents} />
-                                        </td>
-                                        <td style={{ padding: "12px 12px", position: "relative" }}>
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); setMenuOpenId(menuOpenId === item.id ? null : item.id); }}
-                                                style={{
-                                                    background: "none", border: "none", cursor: "pointer",
-                                                    padding: 6, borderRadius: 6, display: "flex",
-                                                    color: "var(--g-color-text-secondary)",
-                                                }}
-                                            >
-                                                <Icon data={Ellipsis as IconData} size={16} />
-                                            </button>
-                                            {menuOpenId === item.id && (
-                                                <ItemMenu
-                                                    item={item}
-                                                    onShare={() => { setShareTarget(item); setMenuOpenId(null); }}
-                                                    onClose={() => setMenuOpenId(null)}
-                                                />
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    ) : (
-                        items.map((item) => (
-                            <div
-                                key={item.id}
-                                style={{
-                                    display: "flex", alignItems: "center",
-                                    padding: "12px 16px",
-                                    borderTop: "1px solid var(--g-color-line-generic)",
-                                }}
-                            >
-                                <button
-                                    onClick={() => { void handleNavigate(item); }}
-                                    style={{
-                                        background: "none", border: "none", cursor: "pointer",
-                                        display: "flex", alignItems: "center", flex: 1, minWidth: 0, marginRight: 12, textAlign: "left",
-                                    }}
-                                >
-                                    <div style={{ width: 32, height: 32, marginRight: 12, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                        {item.type === "folder" ? (
-                                            <Icon data={FolderOpen as IconData} size={24} style={{ color: "var(--g-color-text-brand)" }} />
-                                        ) : (
-                                            <img src={getFileIcon(item.extension)} width={20} height={20} alt="" />
-                                        )}
-                                    </div>
-                                    <div style={{ minWidth: 0 }}>
-                                        <Text variant="body-1" style={{ fontWeight: 600, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getItemDisplayName(item)}</Text>
-                                        <Text variant="caption-2" color="secondary">
-                                            {item.type === "folder"
-                                                ? `${countChildren(files, item.id)} файлов`
-                                                : `${item.size || "—"} · ${item.modifiedAt}`}
-                                        </Text>
-                                    </div>
-                                </button>
-                                <SharedBadge item={item} compact students={activeStudents} />
-                                <button
-                                    onClick={() => setShareTarget(item)}
-                                    style={{
-                                        background: "none", border: "none", cursor: "pointer",
-                                        padding: 6, borderRadius: 6, display: "flex", marginLeft: 8, flexShrink: 0,
-                                        color: "var(--g-color-text-secondary)",
-                                    }}
-                                >
-                                    <Icon data={PersonPlus as IconData} size={16} />
-                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
-                        ))
+                        </>
+                    ) : (
+                        items.map((item) => {
+                            const folderSubtitle =
+                                item.type === "folder"
+                                    ? getFolderSubtitleState(item)
+                                    : null;
+
+                            return (
+                                <div
+                                    key={item.id}
+                                    style={{
+                                        display: "flex", alignItems: "center",
+                                        padding: "12px 16px",
+                                        borderTop: "1px solid var(--g-color-line-generic)",
+                                    }}
+                                >
+                                    <button
+                                        onClick={() => { void handleNavigate(item); }}
+                                        style={{
+                                            background: "none", border: "none", cursor: "pointer",
+                                            display: "flex", alignItems: "center", flex: 1, minWidth: 0, marginRight: 12, textAlign: "left",
+                                        }}
+                                    >
+                                        <div style={{ width: 32, height: 32, marginRight: 12, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                            {item.type === "folder" ? (
+                                                <Icon data={FolderOpen as IconData} size={24} style={{ color: "var(--g-color-text-brand)" }} />
+                                            ) : (
+                                                <img src={getFileIcon(item.extension)} width={20} height={20} alt="" />
+                                            )}
+                                        </div>
+                                        <div style={{ minWidth: 0 }}>
+                                            <Text variant="body-1" style={{ fontWeight: 600, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getItemDisplayName(item)}</Text>
+                                            <Text
+                                                variant="caption-2"
+                                                color="secondary"
+                                                style={folderSubtitle?.loading ? { display: "inline-flex", alignItems: "center", gap: 6 } : undefined}
+                                            >
+                                                {item.type === "folder" ? (
+                                                    <>
+                                                        {folderSubtitle?.loading && <Loader size="s" />}
+                                                        {folderSubtitle?.text}
+                                                    </>
+                                                ) : (
+                                                    `${item.size || "—"} · ${item.modifiedAt}`
+                                                )}
+                                            </Text>
+                                        </div>
+                                    </button>
+                                    <SharedBadge item={item} compact students={activeStudents} />
+                                    <button
+                                        onClick={() => setShareTarget(item)}
+                                        style={{
+                                            background: "none", border: "none", cursor: "pointer",
+                                            padding: 6, borderRadius: 6, display: "flex", marginLeft: 8, flexShrink: 0,
+                                            color: "var(--g-color-text-secondary)",
+                                        }}
+                                    >
+                                        <Icon data={PersonPlus as IconData} size={16} />
+                                    </button>
+                                </div>
+                            );
+                        })
                     )}
-                </Card>
+                </div>
             )}
 
             <ShareModal
@@ -580,7 +728,7 @@ const SharedBadge = ({
     item, compact, students,
 }: {
     item: FileItem; compact?: boolean;
-    students: Array<Pick<Student, "id" | "name" | "subject" | "avatarUrl" | "avatarEmoji" | "avatarBackground">>;
+    students: Array<Pick<Student, "id" | "name" | "subject" | "avatarUrl">>;
 }) => {
     if (item.sharedWith.length === 0) {
         return <Text variant="caption-2" color="secondary">{compact ? "" : "Только я"}</Text>;

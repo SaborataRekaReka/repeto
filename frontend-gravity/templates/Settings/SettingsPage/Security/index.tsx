@@ -4,6 +4,7 @@ import { Alert, Card, Text, Button, TextInput } from "@gravity-ui/uikit";
 import { changePassword, deleteAccount } from "@/hooks/useSettings";
 import { useAuth } from "@/contexts/AuthContext";
 import { codedErrorMessage } from "@/lib/errorCodes";
+import AppField from "@/components/AppField";
 
 const Security = () => {
     const router = useRouter();
@@ -42,29 +43,26 @@ const Security = () => {
     };
 
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div className="repeto-settings-stack">
             {/* Change password */}
-            <Card view="outlined" style={{ background: "var(--g-color-base-float)" }}>
+            <Card className="repeto-settings-section-card" view="outlined">
                 <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--g-color-line-generic)" }}>
                     <Text variant="subheader-2">Сменить пароль</Text>
                 </div>
                 <div style={{ padding: 24, maxWidth: 420 }}>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                        <div>
-                            <Text variant="caption-2" color="secondary" style={{ display: "block", marginBottom: 6 }}>Текущий пароль</Text>
+                    <div className="repeto-settings-stack">
+                        <AppField label="Текущий пароль">
                             <TextInput type="password" value={currentPassword} onUpdate={setCurrentPassword} placeholder="Введите текущий пароль" size="l" />
-                        </div>
-                        <div>
-                            <Text variant="caption-2" color="secondary" style={{ display: "block", marginBottom: 6 }}>Новый пароль</Text>
+                        </AppField>
+                        <AppField label="Новый пароль">
                             <TextInput type="password" value={newPassword} onUpdate={setNewPassword} placeholder="Введите новый пароль" size="l" />
-                        </div>
-                        <div>
-                            <Text variant="caption-2" color="secondary" style={{ display: "block", marginBottom: 6 }}>Подтверждение пароля</Text>
+                        </AppField>
+                        <AppField label="Подтверждение пароля">
                             <TextInput type="password" value={confirmPassword} onUpdate={setConfirmPassword} placeholder="Повторите новый пароль" size="l" />
-                        </div>
+                        </AppField>
                     </div>
                     {msg && (
-                        <Text variant="body-1" style={{ display: "block", marginTop: 12, fontWeight: 600, color: msgOk ? "var(--g-color-text-positive)" : "var(--g-color-text-danger)" }}>
+                        <Text variant="body-1" className={`repeto-settings-status-message ${msgOk ? "repeto-settings-status-message--ok" : "repeto-settings-status-message--error"}`}>
                             {msg}
                         </Text>
                     )}
@@ -77,7 +75,7 @@ const Security = () => {
             </Card>
 
             {/* Danger zone */}
-            <Card view="outlined" style={{ background: "var(--g-color-base-float)", borderColor: "var(--g-color-line-danger)", borderWidth: 2 }}>
+            <Card className="repeto-settings-section-card repeto-settings-section-card--danger" view="outlined">
                 <div style={{ padding: "20px 24px", borderBottom: "2px solid var(--g-color-line-danger)" }}>
                     <Text variant="subheader-2" style={{ color: "var(--g-color-text-danger)" }}>Опасная зона</Text>
                 </div>

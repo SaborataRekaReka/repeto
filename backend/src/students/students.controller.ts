@@ -47,6 +47,14 @@ export class StudentsController {
     });
   }
 
+  @Get('check-email')
+  @ApiQuery({ name: 'email', required: true })
+  checkEmail(
+    @Query('email') email: string,
+  ) {
+    return this.studentsService.checkEmail(email);
+  }
+
   @Get(':id')
   findOne(
     @Param('id', ParseUUIDPipe) id: string,
@@ -187,5 +195,13 @@ export class StudentsController {
     @CurrentUser('id') userId: string,
   ) {
     return this.studentsService.activateAccount(id, userId);
+  }
+
+  @Post(':id/unlink-account')
+  unlinkAccount(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.studentsService.unlinkAccount(id, userId);
   }
 }
