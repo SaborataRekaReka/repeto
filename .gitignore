@@ -17,3 +17,6 @@ pnpm-debug.log*
 
 .DS_Store
 Thumbs.db
+
+# Local source icon pack (licensed asset bundle)
+3000 + premium animated icons/
