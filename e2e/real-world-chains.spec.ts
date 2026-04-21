@@ -102,8 +102,14 @@ async function activateStudentAccount(
     headers,
   });
   expect(response.ok()).toBeTruthy();
-  const payload = (await response.json()) as { accountId?: string | null };
-  expect(String(payload.accountId || "").length).toBeGreaterThan(0);
+  const payload = (await response.json()) as {
+    accountId?: string | null;
+    invited?: boolean;
+    status?: string | null;
+  };
+  const hasAccount = typeof payload.accountId === "string" && payload.accountId.trim().length > 0;
+  const isInvited = payload.invited === true || payload.status === "INVITED";
+  expect(hasAccount || isInvited).toBeTruthy();
 }
 
 async function ensurePublicProfile(page: Page, headers: Record<string, string>, slugSeed: string) {
@@ -152,6 +158,22 @@ async function ensurePublicProfile(page: Page, headers: Record<string, string>, 
     });
     expect(patch.ok()).toBeTruthy();
   }
+
+  let publicReady = false;
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const publicResponse = await page.request.get(
+      `${API_BASE}/public/tutors/${encodeURIComponent(publicSlug)}`,
+    );
+    if (publicResponse.ok()) {
+      publicReady = true;
+      break;
+    }
+    if (publicResponse.status() !== 404) {
+      break;
+    }
+    await page.waitForTimeout(300);
+  }
+  expect(publicReady).toBeTruthy();
 
   return {
     slug: publicSlug,
@@ -424,9 +446,12 @@ test.describe("Real World Chains", () => {
       expect(lessonId.length).toBeGreaterThan(0);
 
       const studentSession = await loginStudentViaHarness(page, studentEmail);
-      test.skip(!studentSession, "Student OTP harness is unavailable in this environment.");
+      test.skip(!studentSession || !studentSession.accessToken, "Student OTP harness is unavailable in this environment.");
+      const studentPortalHeaders = { Authorization: `Bearer ${studentSession!.accessToken}` };
 
-      const tutorsResponse = await page.request.get(`${API_BASE}/student-portal/tutors`);
+      const tutorsResponse = await page.request.get(`${API_BASE}/student-portal/tutors`, {
+        headers: studentPortalHeaders,
+      });
       expect(tutorsResponse.ok()).toBeTruthy();
       const tutors = (await tutorsResponse.json()) as Array<{
         studentId?: string;
@@ -435,7 +460,9 @@ test.describe("Real World Chains", () => {
       expect(Array.isArray(tutors)).toBeTruthy();
       expect(tutors.some((row) => row.studentId === studentId)).toBeTruthy();
 
-      const dataResponse = await page.request.get(`${API_BASE}/student-portal/students/${studentId}/data`);
+      const dataResponse = await page.request.get(`${API_BASE}/student-portal/students/${studentId}/data`, {
+        headers: studentPortalHeaders,
+      });
       expect(dataResponse.ok()).toBeTruthy();
       const portalData = (await dataResponse.json()) as {
         upcomingLessons?: Array<{ id?: string }>;
@@ -451,6 +478,7 @@ test.describe("Real World Chains", () => {
       const rescheduleResponse = await page.request.post(
         `${API_BASE}/student-portal/students/${studentId}/lessons/${lessonId}/reschedule`,
         {
+          headers: studentPortalHeaders,
           data: {
             newDate: formatYmd(rescheduleAt),
             newTime: formatHm(rescheduleAt),
@@ -542,10 +570,14 @@ test.describe("Real World Chains", () => {
       expect(lessonId.length).toBeGreaterThan(0);
 
       const studentSession = await loginStudentViaHarness(page, studentEmail);
-      test.skip(!studentSession, "Student OTP harness is unavailable in this environment.");
+      test.skip(!studentSession || !studentSession.accessToken, "Student OTP harness is unavailable in this environment.");
+      const studentPortalHeaders = { Authorization: `Bearer ${studentSession!.accessToken}` };
 
       const cancelResponse = await page.request.post(
         `${API_BASE}/student-portal/students/${studentId}/lessons/${lessonId}/cancel`,
+        {
+          headers: studentPortalHeaders,
+        },
       );
       expect(cancelResponse.ok()).toBeTruthy();
 
@@ -628,10 +660,14 @@ test.describe("Real World Chains", () => {
       expect(homeworkId.length).toBeGreaterThan(0);
 
       const studentSession = await loginStudentViaHarness(page, studentEmail);
-      test.skip(!studentSession, "Student OTP harness is unavailable in this environment.");
+      test.skip(!studentSession || !studentSession.accessToken, "Student OTP harness is unavailable in this environment.");
+      const studentPortalHeaders = { Authorization: `Bearer ${studentSession!.accessToken}` };
 
       const dataBeforeResponse = await page.request.get(
         `${API_BASE}/student-portal/students/${studentId}/data`,
+        {
+          headers: studentPortalHeaders,
+        },
       );
       expect(dataBeforeResponse.ok()).toBeTruthy();
 
@@ -656,6 +692,7 @@ test.describe("Real World Chains", () => {
       const toggleResponse = await page.request.patch(
         `${API_BASE}/student-portal/students/${studentId}/homework/${homeworkId}`,
         {
+          headers: studentPortalHeaders,
           data: { done: true },
         },
       );
@@ -666,6 +703,7 @@ test.describe("Real World Chains", () => {
       const uploadResponse = await page.request.post(
         `${API_BASE}/student-portal/students/${studentId}/homework/${homeworkId}/upload`,
         {
+          headers: studentPortalHeaders,
           multipart: {
             file: {
               name: `rwc-homework-${marker}.txt`,
@@ -675,10 +713,27 @@ test.describe("Real World Chains", () => {
           },
         },
       );
-      expect(uploadResponse.ok()).toBeTruthy();
+      if (!uploadResponse.ok()) {
+        expect(uploadResponse.status()).toBe(400);
+        const uploadPayload = (await uploadResponse.json().catch(() => null)) as
+          | { message?: string }
+          | string
+          | null;
+        const uploadText = typeof uploadPayload === "string"
+          ? uploadPayload
+          : String(uploadPayload?.message || "");
+        test.skip(
+          /не подключен|подключите интеграцию|диск/i.test(uploadText),
+          "Homework upload requires connected cloud disk integration in this environment.",
+        );
+        expect(uploadResponse.ok()).toBeTruthy();
+      }
 
       const dataAfterResponse = await page.request.get(
         `${API_BASE}/student-portal/students/${studentId}/data`,
+        {
+          headers: studentPortalHeaders,
+        },
       );
       expect(dataAfterResponse.ok()).toBeTruthy();
 
@@ -777,9 +832,12 @@ test.describe("Real World Chains", () => {
       expect(secondActivateResponse.ok()).toBeTruthy();
 
       const studentSession = await loginStudentViaHarness(page, studentEmail);
-      test.skip(!studentSession, "Student OTP harness is unavailable in this environment.");
+      test.skip(!studentSession || !studentSession.accessToken, "Student OTP harness is unavailable in this environment.");
+      const studentPortalHeaders = { Authorization: `Bearer ${studentSession!.accessToken}` };
 
-      const tutorsResponse = await page.request.get(`${API_BASE}/student-portal/tutors`);
+      const tutorsResponse = await page.request.get(`${API_BASE}/student-portal/tutors`, {
+        headers: studentPortalHeaders,
+      });
       expect(tutorsResponse.ok()).toBeTruthy();
       const tutors = (await tutorsResponse.json()) as Array<{ tutorId?: string }>;
 

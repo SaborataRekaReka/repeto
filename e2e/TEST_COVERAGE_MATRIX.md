@@ -8,6 +8,7 @@
 ## Coverage Rules
 - `SMK-*`: Fast critical path checks. Must pass on every PR.
 - `JRN-*`: User journeys and interaction mechanics. Run on PR and nightly.
+- `INT80-*`: Weighted interaction scenarios targeting >=80% business interaction score.
 - `EXT-*`: Deep scenarios for edge cases, negative paths, integrations, policy behavior, and portal guardrails.
 - `CTRL-*`: Per-control contract checks: every visible button/checkbox must produce observable UI effect.
 - `SYNC-*`: Cross-account tutor<->student state propagation checks.
@@ -62,6 +63,16 @@ See also: `e2e/REAL_WORLD_SCENARIOS_100.md` for full user-lifecycle chain covera
 - `JRN-SET-001`: Settings section navigation and theme controls work.
 - `JRN-SUP-001`: Support search to results and article navigation works.
 - `JRN-PUBLIC-001`: Public tutor to booking transition works.
+
+## Interaction Coverage 80 Scenarios (`e2e/interaction-coverage-80.spec.ts`)
+- `INT80-CHAIN-001`: Auth gateway story (tutor/student switch + protected route guards).
+- `INT80-CHAIN-002`: Tutor workday story (dashboard -> students -> student card -> schedule).
+- `INT80-CHAIN-003`: Finance story (overview -> payments -> packages with create dialogs).
+- `INT80-CHAIN-004`: Operations story (files -> notifications -> settings).
+- `INT80-CHAIN-005`: Support story (search -> results/article -> return to dashboard).
+- `INT80-CHAIN-006`: Public funnel story (public profile -> booking route branch).
+- `INT80-CHAIN-007`: Quick actions story (dashboard add menu -> student/schedule flows).
+- `INT80-CHAIN-008`: Session recovery story (cookie drop -> re-login -> continue work).
 
 ## Extended Scenarios (`e2e/ext.spec.ts`)
 - `EXT-AUTH-001`: Auth negative/recovery paths, student OTP negative, invalid platform-payment completion.
@@ -138,6 +149,9 @@ See also: `e2e/REAL_WORLD_SCENARIOS_100.md` for full user-lifecycle chain covera
 ## Execution Commands
 - Smoke: `npm run test:e2e:smoke`
 - Journeys: `npm run test:e2e:journeys`
+- Interaction 80: `npm run test:e2e:interaction80`
+- Interaction 80 headed: `npm run test:e2e:interaction80:headed`
+- Interaction 80 UI mode: `npm run test:e2e:interaction80:ui`
 - Extended: `npm run test:e2e:ext`
 - Controls contract: `npm run test:e2e:controls`
 - Cross-account sync: `npm run test:e2e:sync`

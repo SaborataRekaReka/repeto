@@ -45,6 +45,10 @@
 - File: e2e/journeys.spec.ts
 - Purpose: main user workflows across all modules.
 
+2.1 Interaction Coverage 80 Layer
+- File: e2e/interaction-coverage-80.spec.ts
+- Purpose: weighted interaction matrix for broad UI behavior coverage target (>=80% by risk-weight score).
+
 3. Domain Deep Layer (EXT)
 - File: e2e/ext.spec.ts
 - Purpose: edge cases, negative paths, and business guardrails.
@@ -103,16 +107,17 @@
 ## Run Order
 1. npm run test:e2e:smoke
 2. npm run test:e2e:journeys
-3. npm run test:e2e:ext
-4. npm run test:e2e:controls
-5. npm run test:e2e:sync
-6. npm run test:e2e:persistence
-7. npm run test:e2e:visual
-8. npm run test:e2e:realworld
-9. Single strict gate command: npm run test:e2e:100
-10. Full gate with real-world chains: npm run test:e2e:100:full
-11. Optional core-only gate: npm run test:e2e:100:core
-12. Visual baseline initialization (first run only): npm run test:e2e:visual:update
+3. npm run test:e2e:interaction80
+4. npm run test:e2e:ext
+5. npm run test:e2e:controls
+6. npm run test:e2e:sync
+7. npm run test:e2e:persistence
+8. npm run test:e2e:visual
+9. npm run test:e2e:realworld
+10. Single strict gate command: npm run test:e2e:100
+11. Full gate with real-world chains: npm run test:e2e:100:full
+12. Optional core-only gate: npm run test:e2e:100:core
+13. Visual baseline initialization (first run only): npm run test:e2e:visual:update
 
 ## Harness Environment (for real-world layer)
 - `MESSENGER_TEST_MODE=record` (recommended for deterministic outbox assertions).
