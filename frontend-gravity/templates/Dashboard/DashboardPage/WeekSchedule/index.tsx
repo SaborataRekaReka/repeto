@@ -4,6 +4,7 @@ import { Card, Text, Loader } from "@gravity-ui/uikit";
 import { useWeekLessons } from "@/hooks/useDashboard";
 import { shortName } from "@/lib/formatters";
 import { useThemeMode } from "@/contexts/ThemeContext";
+import { accent } from "@/constants/brand";
 import type { Lesson } from "@/types/schedule";
 import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 import StudentAvatar from "@/components/StudentAvatar";

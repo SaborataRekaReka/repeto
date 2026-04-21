@@ -6,9 +6,18 @@ import type { IconData } from "@gravity-ui/uikit";
 import StyledDateInput from "@/components/StyledDateInput";
 import AppField from "@/components/AppField";
 import MaterialsPickerDialog from "@/components/MaterialsPickerDialog";
-import type { HomeworkFile, StudentUploadFile } from "@/mocks/student-details";
+import type { HomeworkFile } from "@/mocks/student-details";
 import type { CloudProvider } from "@/types/files";
 import type { Lesson } from "@/types/schedule";
+
+type HomeworkStudentUpload = {
+    id: string;
+    name: string;
+    url: string;
+    size?: string;
+    uploadedAt?: string;
+    expiresAt?: string;
+};
 
 type Homework = {
     id: string;
@@ -18,7 +27,7 @@ type Homework = {
     status: "not_done" | "done" | "overdue";
     lessonId?: string;
     linkedFiles?: HomeworkFile[];
-    studentUploads?: StudentUploadFile[];
+    studentUploads?: HomeworkStudentUpload[];
 };
 
 type HomeworkModalProps = {

@@ -1,3 +1,4 @@
+import * as React from "react";
 import { Avatar, Icon, Text } from "@gravity-ui/uikit";
 import type { IconData } from "@gravity-ui/uikit";
 import {
@@ -8,6 +9,7 @@ import {
     ShieldCheck,
     Smartphone,
 } from "@gravity-ui/icons";
+import type { IconType } from "react-icons";
 import { SiMax, SiTelegram, SiVk, SiWhatsapp } from "react-icons/si";
 
 export type PublicTutorWidgetContactKey =
@@ -60,36 +62,36 @@ const CONTACT_META: Record<PublicTutorWidgetContactKey, { icon?: IconData }> = {
 };
 
 function renderContactGlyph(key: PublicTutorWidgetContactKey): React.ReactNode {
-    if (key === "whatsapp") {
+    const renderBrandIcon = (BrandIcon: IconType) => {
+        const CompatibleBrandIcon = BrandIcon as unknown as React.ComponentType<{
+            "aria-hidden"?: boolean;
+            focusable?: boolean;
+            className?: string;
+        }>;
+
         return (
-            <SiWhatsapp
-                aria-hidden="true"
-                focusable="false"
+            <CompatibleBrandIcon
+                aria-hidden={true}
+                focusable={false}
                 className="repeto-tp-contact-chip__icon"
             />
         );
+    };
+
+    if (key === "whatsapp") {
+        return renderBrandIcon(SiWhatsapp);
     }
 
     if (key === "vk") {
-        return (
-            <SiVk aria-hidden="true" focusable="false" className="repeto-tp-contact-chip__icon" />
-        );
+        return renderBrandIcon(SiVk);
     }
 
     if (key === "telegram") {
-        return (
-            <SiTelegram
-                aria-hidden="true"
-                focusable="false"
-                className="repeto-tp-contact-chip__icon"
-            />
-        );
+        return renderBrandIcon(SiTelegram);
     }
 
     if (key === "max") {
-        return (
-            <SiMax aria-hidden="true" focusable="false" className="repeto-tp-contact-chip__icon" />
-        );
+        return renderBrandIcon(SiMax);
     }
 
     return null;
