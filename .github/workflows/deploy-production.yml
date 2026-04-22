@@ -404,6 +404,64 @@ jobs:
           git checkout main
           git reset --hard origin/main
 
+          if [ ! -s backend/.env ]; then
+            echo "::error::backend/.env is missing or empty on VPS"
+            exit 1
+          fi
+
+          db_url="$(grep '^DATABASE_URL=' backend/.env | head -n1 | cut -d= -f2- | tr -d '\r')"
+          if [ -z "$db_url" ]; then
+            echo "::error::DATABASE_URL is missing in backend/.env"
+            exit 1
+          fi
+
+          db_url_body="${db_url#*://}"
+          db_creds_host="${db_url_body%%/*}"
+          db_name_raw="${db_url_body#*/}"
+          db_name_raw="${db_name_raw%%\?*}"
+          db_creds_raw="${db_creds_host%@*}"
+          db_user_raw="${db_creds_raw%%:*}"
+          db_pass_raw="${db_creds_raw#*:}"
+
+          if [ "$db_user_raw" = "$db_creds_raw" ]; then
+            db_pass_raw=""
+          fi
+
+          url_decode() {
+            local data="${1//+/ }"
+            printf '%b' "${data//%/\\x}"
+          }
+
+          db_user="$(url_decode "$db_user_raw")"
+          db_pass="$(url_decode "$db_pass_raw")"
+          db_name="$(url_decode "$db_name_raw")"
+
+          if [ -z "$db_user" ] || [ -z "$db_pass" ] || [ -z "$db_name" ]; then
+            echo "::error::Failed to parse non-empty DB credentials from DATABASE_URL"
+            exit 1
+          fi
+
+          export POSTGRES_USER="$db_user"
+          export POSTGRES_PASSWORD="$db_pass"
+          export POSTGRES_DB="$db_name"
+
+          db_user_sql="$(printf '%s' "$db_user" | sed 's/"/""/g')"
+          db_pass_sql="$(printf '%s' "$db_pass" | sed "s/'/''/g")"
+
+          if ! docker compose -f docker-compose.prod.yml up -d postgres; then
+            echo "Failed to start postgres service before credential sync"
+            docker compose -f docker-compose.prod.yml ps || true
+            docker compose -f docker-compose.prod.yml logs --no-color --tail=120 postgres || true
+            exit 1
+          fi
+
+          if ! docker compose -f docker-compose.prod.yml exec -T postgres sh -lc "psql -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\" -v ON_ERROR_STOP=1 -c \"ALTER ROLE \\\"$db_user_sql\\\" WITH LOGIN PASSWORD '$db_pass_sql';\""; then
+            echo "Failed to sync postgres role password from DATABASE_URL"
+            docker compose -f docker-compose.prod.yml ps || true
+            docker compose -f docker-compose.prod.yml logs --no-color --tail=120 postgres || true
+            exit 1
+          fi
+
           if ! docker compose -f docker-compose.prod.yml up -d --build backend frontend nginx --remove-orphans; then
             echo "docker compose up failed. Dumping diagnostics..."
             docker compose -f docker-compose.prod.yml ps || true
@@ -423,6 +481,64 @@ jobs:
           GIT_TERMINAL_PROMPT=0 git fetch --depth=1 origin main
           git checkout main
           git reset --hard origin/main
+
+          if [ ! -s backend/.env ]; then
+            echo "::error::backend/.env is missing or empty on VPS"
+            exit 1
+          fi
+
+          db_url="$(grep '^DATABASE_URL=' backend/.env | head -n1 | cut -d= -f2- | tr -d '\r')"
+          if [ -z "$db_url" ]; then
+            echo "::error::DATABASE_URL is missing in backend/.env"
+            exit 1
+          fi
+
+          db_url_body="${db_url#*://}"
+          db_creds_host="${db_url_body%%/*}"
+          db_name_raw="${db_url_body#*/}"
+          db_name_raw="${db_name_raw%%\?*}"
+          db_creds_raw="${db_creds_host%@*}"
+          db_user_raw="${db_creds_raw%%:*}"
+          db_pass_raw="${db_creds_raw#*:}"
+
+          if [ "$db_user_raw" = "$db_creds_raw" ]; then
+            db_pass_raw=""
+          fi
+
+          url_decode() {
+            local data="${1//+/ }"
+            printf '%b' "${data//%/\\x}"
+          }
+
+          db_user="$(url_decode "$db_user_raw")"
+          db_pass="$(url_decode "$db_pass_raw")"
+          db_name="$(url_decode "$db_name_raw")"
+
+          if [ -z "$db_user" ] || [ -z "$db_pass" ] || [ -z "$db_name" ]; then
+            echo "::error::Failed to parse non-empty DB credentials from DATABASE_URL"
+            exit 1
+          fi
+
+          export POSTGRES_USER="$db_user"
+          export POSTGRES_PASSWORD="$db_pass"
+          export POSTGRES_DB="$db_name"
+
+          db_user_sql="$(printf '%s' "$db_user" | sed 's/"/""/g')"
+          db_pass_sql="$(printf '%s' "$db_pass" | sed "s/'/''/g")"
+
+          if ! docker compose -f docker-compose.prod.yml up -d postgres; then
+            echo "Failed to start postgres service before credential sync"
+            docker compose -f docker-compose.prod.yml ps || true
+            docker compose -f docker-compose.prod.yml logs --no-color --tail=120 postgres || true
+            exit 1
+          fi
+
+          if ! docker compose -f docker-compose.prod.yml exec -T postgres sh -lc "psql -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\" -v ON_ERROR_STOP=1 -c \"ALTER ROLE \\\"$db_user_sql\\\" WITH LOGIN PASSWORD '$db_pass_sql';\""; then
+            echo "Failed to sync postgres role password from DATABASE_URL"
+            docker compose -f docker-compose.prod.yml ps || true
+            docker compose -f docker-compose.prod.yml logs --no-color --tail=120 postgres || true
+            exit 1
+          fi
 
           if ! docker compose -f docker-compose.prod.yml up -d --build backend frontend nginx --remove-orphans; then
             echo "docker compose up failed. Dumping diagnostics..."
