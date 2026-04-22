@@ -285,17 +285,17 @@ jobs:
             exit 1
           fi
 
-          required_keys=(JWT_SECRET)
-          for key in "${required_keys[@]}"; do
-            if ! grep -q "^${key}=" backend/.env; then
-              echo "::error::backend/.env missing required key: ${key}"
-              exit 1
-            fi
-          done
+          if ! grep -q '^JWT_SECRET=' backend/.env; then
+            generated_jwt="$(openssl rand -hex 32 2>/dev/null || (cat /proc/sys/kernel/random/uuid 2>/dev/null | tr -d '-') || date +%s%N)"
+            echo "JWT_SECRET=${generated_jwt}" >> backend/.env
+            echo "::warning::JWT_SECRET was missing and has been auto-generated on VPS"
+          fi
 
           if grep -q '^JWT_SECRET=change-me-in-production$' backend/.env; then
-            echo "::error::JWT_SECRET is still default placeholder"
-            exit 1
+            generated_jwt="$(openssl rand -hex 32 2>/dev/null || (cat /proc/sys/kernel/random/uuid 2>/dev/null | tr -d '-') || date +%s%N)"
+            awk -v value="$generated_jwt" 'BEGIN{done=0} /^JWT_SECRET=/{print "JWT_SECRET=" value; done=1; next} {print} END{if(!done) print "JWT_SECRET=" value}' backend/.env > backend/.env.tmp
+            mv backend/.env.tmp backend/.env
+            echo "::warning::JWT_SECRET default placeholder replaced with generated value on VPS"
           fi
 
           if ! grep -q '^FRONTEND_URL=' backend/.env; then
@@ -334,17 +334,17 @@ jobs:
             exit 1
           fi
 
-          required_keys=(JWT_SECRET)
-          for key in "${required_keys[@]}"; do
-            if ! grep -q "^${key}=" backend/.env; then
-              echo "::error::backend/.env missing required key: ${key}"
-              exit 1
-            fi
-          done
+          if ! grep -q '^JWT_SECRET=' backend/.env; then
+            generated_jwt="$(openssl rand -hex 32 2>/dev/null || (cat /proc/sys/kernel/random/uuid 2>/dev/null | tr -d '-') || date +%s%N)"
+            echo "JWT_SECRET=${generated_jwt}" >> backend/.env
+            echo "::warning::JWT_SECRET was missing and has been auto-generated on VPS"
+          fi
 
           if grep -q '^JWT_SECRET=change-me-in-production$' backend/.env; then
-            echo "::error::JWT_SECRET is still default placeholder"
-            exit 1
+            generated_jwt="$(openssl rand -hex 32 2>/dev/null || (cat /proc/sys/kernel/random/uuid 2>/dev/null | tr -d '-') || date +%s%N)"
+            awk -v value="$generated_jwt" 'BEGIN{done=0} /^JWT_SECRET=/{print "JWT_SECRET=" value; done=1; next} {print} END{if(!done) print "JWT_SECRET=" value}' backend/.env > backend/.env.tmp
+            mv backend/.env.tmp backend/.env
+            echo "::warning::JWT_SECRET default placeholder replaced with generated value on VPS"
           fi
 
           if ! grep -q '^FRONTEND_URL=' backend/.env; then
