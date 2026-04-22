@@ -470,7 +470,6 @@ jobs:
           fi
 
       - name: Check backend health on VPS
-        if: ${{ false }}
         shell: bash
         env:
           PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
