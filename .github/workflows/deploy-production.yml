@@ -315,13 +315,11 @@ jobs:
           fi
 
           db_url="$(grep '^DATABASE_URL=' backend/.env | head -n1 | cut -d= -f2-)"
-          if echo "$db_url" | grep -Eq '(^|@)(localhost|127\.0\.0\.1)(:|/|$)'; then
-            normalized_db_url="$(echo "$db_url" | sed -E 's#(://[^@]+@)(localhost|127\.0\.0\.1)(:[0-9]+)?/#\1postgres:5432/#')"
-            if [ "$normalized_db_url" != "$db_url" ]; then
-              awk -v value="$normalized_db_url" 'BEGIN{done=0} /^DATABASE_URL=/{print "DATABASE_URL=" value; done=1; next} {print} END{if(!done) print "DATABASE_URL=" value}' backend/.env > backend/.env.tmp
-              mv backend/.env.tmp backend/.env
-              echo "DATABASE_URL host normalized to postgres for docker deploy"
-            fi
+          normalized_db_url="$(echo "$db_url" | sed -E 's#(://[^@]+@)[^/:]+(:[0-9]+)?/#\1postgres:5432/#')"
+          if [ "$normalized_db_url" != "$db_url" ]; then
+            awk -v value="$normalized_db_url" 'BEGIN{done=0} /^DATABASE_URL=/{print "DATABASE_URL=" value; done=1; next} {print} END{if(!done) print "DATABASE_URL=" value}' backend/.env > backend/.env.tmp
+            mv backend/.env.tmp backend/.env
+            echo "DATABASE_URL host normalized to postgres for docker deploy"
           fi
           EOF
           else
@@ -364,13 +362,11 @@ jobs:
           fi
 
           db_url="$(grep '^DATABASE_URL=' backend/.env | head -n1 | cut -d= -f2-)"
-          if echo "$db_url" | grep -Eq '(^|@)(localhost|127\.0\.0\.1)(:|/|$)'; then
-            normalized_db_url="$(echo "$db_url" | sed -E 's#(://[^@]+@)(localhost|127\.0\.0\.1)(:[0-9]+)?/#\1postgres:5432/#')"
-            if [ "$normalized_db_url" != "$db_url" ]; then
-              awk -v value="$normalized_db_url" 'BEGIN{done=0} /^DATABASE_URL=/{print "DATABASE_URL=" value; done=1; next} {print} END{if(!done) print "DATABASE_URL=" value}' backend/.env > backend/.env.tmp
-              mv backend/.env.tmp backend/.env
-              echo "DATABASE_URL host normalized to postgres for docker deploy"
-            fi
+          normalized_db_url="$(echo "$db_url" | sed -E 's#(://[^@]+@)[^/:]+(:[0-9]+)?/#\1postgres:5432/#')"
+          if [ "$normalized_db_url" != "$db_url" ]; then
+            awk -v value="$normalized_db_url" 'BEGIN{done=0} /^DATABASE_URL=/{print "DATABASE_URL=" value; done=1; next} {print} END{if(!done) print "DATABASE_URL=" value}' backend/.env > backend/.env.tmp
+            mv backend/.env.tmp backend/.env
+            echo "DATABASE_URL host normalized to postgres for docker deploy"
           fi
           EOF
           fi
