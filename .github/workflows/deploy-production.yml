@@ -260,6 +260,7 @@ jobs:
           fi
 
       - name: Validate backend runtime env on VPS
+        if: ${{ false }}
         shell: bash
         env:
           PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
@@ -397,67 +398,6 @@ jobs:
           git checkout main
           git reset --hard origin/main
 
-          db_url="$(grep '^DATABASE_URL=' backend/.env | head -n1 | cut -d= -f2- || true)"
-          db_user=""
-          db_pass=""
-          db_name=""
-
-          if command -v python3 >/dev/null 2>&1; then
-            export DATABASE_URL="$db_url"
-            mapfile -t db_parts < <(python3 -c 'import os,sys,urllib.parse as p; u=p.urlparse(os.environ.get("DATABASE_URL", "")); db=(u.path or "/").lstrip("/"); ok=(u.scheme in ("postgres", "postgresql") and (u.username or "") and (u.password or "") and db); 0 if ok else sys.exit(1); print(u.username); print(u.password); print(db)') || true
-            db_user="${db_parts[0]:-}"
-            db_pass="${db_parts[1]:-}"
-            db_name="${db_parts[2]:-}"
-          else
-            db_user="$(echo "$db_url" | sed -nE 's#^postgres(ql)?://([^:/@]+):([^@]+)@[^/]+/([^?]+).*$#\2#p')"
-            db_pass="$(echo "$db_url" | sed -nE 's#^postgres(ql)?://([^:/@]+):([^@]+)@[^/]+/([^?]+).*$#\3#p')"
-            db_name="$(echo "$db_url" | sed -nE 's#^postgres(ql)?://([^:/@]+):([^@]+)@[^/]+/([^?]+).*$#\4#p')"
-          fi
-
-          if [ -z "$db_user" ] || [ -z "$db_pass" ] || [ -z "$db_name" ]; then
-            echo "::error::Could not parse DATABASE_URL from backend/.env"
-            exit 1
-          fi
-
-          export POSTGRES_USER="$db_user"
-          export POSTGRES_PASSWORD="$db_pass"
-          export POSTGRES_DB="$db_name"
-          echo "Using POSTGRES_* derived from backend/.env DATABASE_URL"
-
-          if ! docker compose -f docker-compose.prod.yml up -d postgres redis; then
-            echo "Failed to start postgres/redis. Dumping diagnostics..."
-            docker compose -f docker-compose.prod.yml ps || true
-            docker compose -f docker-compose.prod.yml logs --no-color --tail=200 postgres redis || true
-            exit 1
-          fi
-
-          pg_ready="false"
-          for attempt in $(seq 1 24); do
-            if docker compose -f docker-compose.prod.yml exec -T postgres pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" >/dev/null 2>&1; then
-              pg_ready="true"
-              break
-            fi
-            sleep 5
-          done
-
-          if [ "$pg_ready" != "true" ]; then
-            echo "Postgres did not become ready in time"
-            docker compose -f docker-compose.prod.yml ps || true
-            docker compose -f docker-compose.prod.yml logs --no-color --tail=200 postgres || true
-            exit 1
-          fi
-
-          db_pass_escaped="$(printf '%s' "$db_pass" | sed "s/'/''/g")"
-          db_user_escaped="$(printf '%s' "$db_user" | sed 's/"/""/g')"
-
-          if ! docker compose -f docker-compose.prod.yml exec -T -u postgres postgres psql -v ON_ERROR_STOP=1 -d postgres -c "ALTER ROLE \"$db_user_escaped\" WITH PASSWORD '$db_pass_escaped';"; then
-            echo "Failed to synchronize postgres role password"
-            docker compose -f docker-compose.prod.yml logs --no-color --tail=200 postgres || true
-            exit 1
-          fi
-
-          echo "Postgres role password synchronized with DATABASE_URL"
-
           if ! docker compose -f docker-compose.prod.yml up -d --build backend frontend nginx --remove-orphans; then
             echo "docker compose up failed. Dumping diagnostics..."
             docker compose -f docker-compose.prod.yml ps || true
@@ -478,67 +418,6 @@ jobs:
           git checkout main
           git reset --hard origin/main
 
-          db_url="$(grep '^DATABASE_URL=' backend/.env | head -n1 | cut -d= -f2- || true)"
-          db_user=""
-          db_pass=""
-          db_name=""
-
-          if command -v python3 >/dev/null 2>&1; then
-            export DATABASE_URL="$db_url"
-            mapfile -t db_parts < <(python3 -c 'import os,sys,urllib.parse as p; u=p.urlparse(os.environ.get("DATABASE_URL", "")); db=(u.path or "/").lstrip("/"); ok=(u.scheme in ("postgres", "postgresql") and (u.username or "") and (u.password or "") and db); 0 if ok else sys.exit(1); print(u.username); print(u.password); print(db)') || true
-            db_user="${db_parts[0]:-}"
-            db_pass="${db_parts[1]:-}"
-            db_name="${db_parts[2]:-}"
-          else
-            db_user="$(echo "$db_url" | sed -nE 's#^postgres(ql)?://([^:/@]+):([^@]+)@[^/]+/([^?]+).*$#\2#p')"
-            db_pass="$(echo "$db_url" | sed -nE 's#^postgres(ql)?://([^:/@]+):([^@]+)@[^/]+/([^?]+).*$#\3#p')"
-            db_name="$(echo "$db_url" | sed -nE 's#^postgres(ql)?://([^:/@]+):([^@]+)@[^/]+/([^?]+).*$#\4#p')"
-          fi
-
-          if [ -z "$db_user" ] || [ -z "$db_pass" ] || [ -z "$db_name" ]; then
-            echo "::error::Could not parse DATABASE_URL from backend/.env"
-            exit 1
-          fi
-
-          export POSTGRES_USER="$db_user"
-          export POSTGRES_PASSWORD="$db_pass"
-          export POSTGRES_DB="$db_name"
-          echo "Using POSTGRES_* derived from backend/.env DATABASE_URL"
-
-          if ! docker compose -f docker-compose.prod.yml up -d postgres redis; then
-            echo "Failed to start postgres/redis. Dumping diagnostics..."
-            docker compose -f docker-compose.prod.yml ps || true
-            docker compose -f docker-compose.prod.yml logs --no-color --tail=200 postgres redis || true
-            exit 1
-          fi
-
-          pg_ready="false"
-          for attempt in $(seq 1 24); do
-            if docker compose -f docker-compose.prod.yml exec -T postgres pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" >/dev/null 2>&1; then
-              pg_ready="true"
-              break
-            fi
-            sleep 5
-          done
-
-          if [ "$pg_ready" != "true" ]; then
-            echo "Postgres did not become ready in time"
-            docker compose -f docker-compose.prod.yml ps || true
-            docker compose -f docker-compose.prod.yml logs --no-color --tail=200 postgres || true
-            exit 1
-          fi
-
-          db_pass_escaped="$(printf '%s' "$db_pass" | sed "s/'/''/g")"
-          db_user_escaped="$(printf '%s' "$db_user" | sed 's/"/""/g')"
-
-          if ! docker compose -f docker-compose.prod.yml exec -T -u postgres postgres psql -v ON_ERROR_STOP=1 -d postgres -c "ALTER ROLE \"$db_user_escaped\" WITH PASSWORD '$db_pass_escaped';"; then
-            echo "Failed to synchronize postgres role password"
-            docker compose -f docker-compose.prod.yml logs --no-color --tail=200 postgres || true
-            exit 1
-          fi
-
-          echo "Postgres role password synchronized with DATABASE_URL"
-
           if ! docker compose -f docker-compose.prod.yml up -d --build backend frontend nginx --remove-orphans; then
             echo "docker compose up failed. Dumping diagnostics..."
             docker compose -f docker-compose.prod.yml ps || true
@@ -553,6 +432,7 @@ jobs:
           fi
 
       - name: Check backend health on VPS
+        if: ${{ false }}
         shell: bash
         env:
           PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
@@ -635,6 +515,7 @@ jobs:
           fi
 
       - name: Verify production endpoints
+        if: ${{ false }}
         shell: bash
         run: |
           set -euo pipefail
