@@ -11,6 +11,12 @@ on:
       - docker-compose.prod.yml
       - docker-compose.yml
   workflow_dispatch:
+    inputs:
+      seed_demo_data:
+        description: "Create or update 2 demo tutors and 7 demo students on production"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -428,6 +434,38 @@ jobs:
           docker compose -f docker-compose.prod.yml exec -T nginx nginx -t
           docker compose -f docker-compose.prod.yml exec -T nginx nginx -s reload
           docker compose -f docker-compose.prod.yml ps
+          EOF
+          fi
+
+      - name: Seed demo tutors and students on VPS
+        if: ${{ github.event_name == 'workflow_dispatch' && (inputs.seed_demo_data == true || inputs.seed_demo_data == 'true') }}
+        timeout-minutes: 8
+        shell: bash
+        env:
+          PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+          PROD_SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
+          PROD_SSH_PASSWORD: ${{ secrets.PROD_SSH_PASSWORD }}
+          SELECTED_USER: ${{ steps.resolve_ssh.outputs.selected_user }}
+          AUTH_MODE: ${{ steps.resolve_ssh.outputs.auth_mode }}
+          APP_PATH: ${{ steps.resolve_path.outputs.app_path }}
+        run: |
+          set -euo pipefail
+
+          ssh_host="${PROD_SSH_HOST:-repeto.ru}"
+          ssh_port="${PROD_SSH_PORT:-22}"
+          target="$SELECTED_USER@$ssh_host"
+
+          if [ "$AUTH_MODE" = "key" ]; then
+            ssh -i ~/.ssh/id_ed25519 -p "$ssh_port" -o BatchMode=yes -o ConnectTimeout=10 "$target" "APP_PATH='$APP_PATH' bash -se" <<'EOF'
+          set -euo pipefail
+          cd "$APP_PATH"
+          docker compose -f docker-compose.prod.yml exec -T backend sh -lc 'ALLOW_PRODUCTION_DEMO_SEED=true npm run prisma:seed:demo:prod'
+          EOF
+          else
+            sshpass -p "$PROD_SSH_PASSWORD" ssh -p "$ssh_port" -o PreferredAuthentications=password -o PubkeyAuthentication=no -o NumberOfPasswordPrompts=1 -o BatchMode=no -o ConnectTimeout=10 "$target" "APP_PATH='$APP_PATH' bash -se" <<'EOF'
+          set -euo pipefail
+          cd "$APP_PATH"
+          docker compose -f docker-compose.prod.yml exec -T backend sh -lc 'ALLOW_PRODUCTION_DEMO_SEED=true npm run prisma:seed:demo:prod'
           EOF
           fi
 

@@ -21,6 +21,7 @@
     "lint:frontend": "npm --prefix ./frontend-gravity run lint",
     "prisma:migrate": "npm --prefix ./backend run prisma:migrate",
     "prisma:seed": "npm --prefix ./backend run prisma:seed",
+    "prisma:seed:demo:prod": "npm --prefix ./backend run prisma:seed:demo:prod",
     "prisma:studio": "npm --prefix ./backend run prisma:studio",
     "test:e2e": "npx playwright test",
     "test:ui-sim": "npx playwright test e2e/ui-simulation.spec.ts e2e/ui-simulation-expanded.spec.ts",
