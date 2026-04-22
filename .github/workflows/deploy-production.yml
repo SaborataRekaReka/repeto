@@ -404,7 +404,7 @@ jobs:
 
           if command -v python3 >/dev/null 2>&1; then
             export DATABASE_URL="$db_url"
-            mapfile -t db_parts < <(python3 -c 'import os,sys,urllib.parse as p; u=p.urlparse(os.environ.get("DATABASE_URL", "")); db=(u.path or "/").lstrip("/"); ok=(u.scheme in ("postgres", "postgresql") and (u.username or "") and (u.password or "") and db); 0 if ok else sys.exit(1); print(p.unquote(u.username)); print(p.unquote(u.password)); print(db)') || true
+            mapfile -t db_parts < <(python3 -c 'import os,sys,urllib.parse as p; u=p.urlparse(os.environ.get("DATABASE_URL", "")); db=(u.path or "/").lstrip("/"); ok=(u.scheme in ("postgres", "postgresql") and (u.username or "") and (u.password or "") and db); 0 if ok else sys.exit(1); print(u.username); print(u.password); print(db)') || true
             db_user="${db_parts[0]:-}"
             db_pass="${db_parts[1]:-}"
             db_name="${db_parts[2]:-}"
@@ -485,7 +485,7 @@ jobs:
 
           if command -v python3 >/dev/null 2>&1; then
             export DATABASE_URL="$db_url"
-            mapfile -t db_parts < <(python3 -c 'import os,sys,urllib.parse as p; u=p.urlparse(os.environ.get("DATABASE_URL", "")); db=(u.path or "/").lstrip("/"); ok=(u.scheme in ("postgres", "postgresql") and (u.username or "") and (u.password or "") and db); 0 if ok else sys.exit(1); print(p.unquote(u.username)); print(p.unquote(u.password)); print(db)') || true
+            mapfile -t db_parts < <(python3 -c 'import os,sys,urllib.parse as p; u=p.urlparse(os.environ.get("DATABASE_URL", "")); db=(u.path or "/").lstrip("/"); ok=(u.scheme in ("postgres", "postgresql") and (u.username or "") and (u.password or "") and db); 0 if ok else sys.exit(1); print(u.username); print(u.password); print(db)') || true
             db_user="${db_parts[0]:-}"
             db_pass="${db_parts[1]:-}"
             db_name="${db_parts[2]:-}"
@@ -590,6 +590,7 @@ jobs:
             echo "Backend healthcheck failed. Dumping diagnostics..."
             docker compose -f docker-compose.prod.yml ps
             docker compose -f docker-compose.prod.yml logs --no-color --tail=200 backend || true
+            docker compose -f docker-compose.prod.yml logs --no-color --tail=120 postgres || true
 
             backend_cid="$(docker compose -f docker-compose.prod.yml ps -q backend || true)"
             if [ -n "$backend_cid" ]; then
@@ -621,6 +622,7 @@ jobs:
             echo "Backend healthcheck failed. Dumping diagnostics..."
             docker compose -f docker-compose.prod.yml ps
             docker compose -f docker-compose.prod.yml logs --no-color --tail=200 backend || true
+            docker compose -f docker-compose.prod.yml logs --no-color --tail=120 postgres || true
 
             backend_cid="$(docker compose -f docker-compose.prod.yml ps -q backend || true)"
             if [ -n "$backend_cid" ]; then
