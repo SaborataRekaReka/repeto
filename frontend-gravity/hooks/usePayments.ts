@@ -55,10 +55,12 @@ export function usePayments(params?: {
   limit?: number;
   sort?: string;
   order?: string;
-}) {
+}, options?: { skip?: boolean }) {
+  const studentId = params?.studentId;
+  const hasInvalidStudent = studentId === '__no-student__' || studentId === '';
   const result = useApi<PaymentsResponse>('/payments', {
     status: params?.status?.toUpperCase(),
-    studentId: params?.studentId,
+    studentId: hasInvalidStudent ? undefined : studentId,
     from: params?.from,
     to: params?.to,
     method: params?.method?.toUpperCase(),
@@ -66,7 +68,7 @@ export function usePayments(params?: {
     limit: params?.limit,
     sort: params?.sort,
     order: params?.order,
-  });
+  }, { skip: options?.skip || hasInvalidStudent });
 
   return {
     ...result,

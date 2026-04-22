@@ -164,12 +164,12 @@ const CreatePaymentModal = ({
 
     const { data: studentLessons = [], loading: lessonsLoading } = useLessons({
         studentId: selectedStudentValue,
-    });
+    }, { skip: !visible });
 
     const { data: studentPaymentsData } = usePayments({
         studentId: selectedStudentValue,
         limit: 300,
-    });
+    }, { skip: !visible });
 
     const linkedLessonIds = useMemo(() => {
         const ids = new Set<string>();

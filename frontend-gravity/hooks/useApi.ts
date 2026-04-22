@@ -26,14 +26,18 @@ export function useApi<T>(
   const [error, setError] = useState<ApiError | Error | null>(null);
   const [loading, setLoading] = useState(!skip && !!endpoint);
   const mountedRef = useRef(true);
+  const dataRef = useRef<T | undefined>(undefined);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (isBackground = false) => {
     if (!endpoint || skip) return;
-    setLoading(true);
+    if (!isBackground || dataRef.current === undefined) {
+      setLoading(true);
+    }
     setError(null);
     try {
       const result = await api<T>(endpoint, { params });
       if (mountedRef.current) {
+        dataRef.current = result;
         setData(result);
         setError(null);
       }
@@ -61,15 +65,17 @@ export function useApi<T>(
     if (!refreshInterval || skip || !endpoint) return;
     const id = setInterval(() => {
       if (typeof document !== 'undefined' && document.hidden) return;
-      fetchData();
+      fetchData(true);
     }, refreshInterval);
     return () => clearInterval(id);
   }, [refreshInterval, skip, endpoint, fetchData]);
 
   const mutate = useCallback((newData?: T) => {
-    if (newData !== undefined) setData(newData);
-    else fetchData();
+    if (newData !== undefined) {
+      dataRef.current = newData;
+      setData(newData);
+    } else fetchData();
   }, [fetchData]);
 
-  return { data, error, loading, mutate, refetch: fetchData };
+  return { data, error, loading, mutate, refetch: () => fetchData() };
 }

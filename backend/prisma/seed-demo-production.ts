@@ -662,7 +662,7 @@ async function main(): Promise<void> {
       published: true,
       showPublicPackages: true,
       timezone: 'Europe/Moscow',
-      avatarUrl: '/uploads/avatars/demo-alpha.png',
+      avatarUrl: null, // '/uploads/avatars/demo-alpha.png' — file not deployed
       subjects: ['Math', 'Physics', 'English', 'Computer Science'],
       subjectDetails: [
         { name: 'Math', duration: 60, price: 2300 },
@@ -741,7 +741,7 @@ async function main(): Promise<void> {
       published: true,
       showPublicPackages: true,
       timezone: 'Europe/Moscow',
-      avatarUrl: '/uploads/avatars/demo-beta.png',
+      avatarUrl: null, // '/uploads/avatars/demo-beta.png' — file not deployed
       subjects: ['English', 'Speaking Club'],
       subjectDetails: [
         { name: 'English', duration: 45, price: 1700 },
@@ -815,7 +815,7 @@ async function main(): Promise<void> {
       key: 'shared-alina',
       email: 'demo.student.orlova@repeto.ru',
       name: 'Alina Orlova',
-      avatarUrl: '/uploads/avatars/demo-student-alina.png',
+      avatarUrl: null,
       status: StudentAccountStatus.ACTIVE,
       emailVerifiedAt: addDays(now, -390),
       lastLoginAt: addDays(now, -1),
@@ -824,7 +824,7 @@ async function main(): Promise<void> {
       key: 'timur',
       email: 'demo.student.mironov@repeto.ru',
       name: 'Timur Mironov',
-      avatarUrl: '/uploads/avatars/demo-student-timur.png',
+      avatarUrl: null,
       status: StudentAccountStatus.ACTIVE,
       emailVerifiedAt: addDays(now, -180),
       lastLoginAt: addDays(now, -4),
@@ -833,7 +833,7 @@ async function main(): Promise<void> {
       key: 'sofia',
       email: 'demo.student.sofia@repeto.ru',
       name: 'Sofia Gorina',
-      avatarUrl: '/uploads/avatars/demo-student-sofia.png',
+      avatarUrl: null,
       status: StudentAccountStatus.PAUSED,
       emailVerifiedAt: addDays(now, -700),
       lastLoginAt: addDays(now, -120),

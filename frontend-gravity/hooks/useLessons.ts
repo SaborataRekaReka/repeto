@@ -120,12 +120,14 @@ export function useLessons(params?: {
   from?: string;
   to?: string;
   studentId?: string;
-}) {
+}, options?: { skip?: boolean }) {
+  const studentId = params?.studentId;
+  const hasInvalidStudent = studentId === '__no-student__' || studentId === '';
   const result = useApi<any[]>('/lessons', {
     from: params?.from,
     to: params?.to,
-    studentId: params?.studentId,
-  });
+    studentId: hasInvalidStudent ? undefined : studentId,
+  }, { skip: options?.skip || hasInvalidStudent });
 
   return {
     ...result,

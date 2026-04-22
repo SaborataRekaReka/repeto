@@ -28,7 +28,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     ThrottlerModule.forRoot(
       process.env.NODE_ENV === 'production'
         ? [
-            { name: 'global', ttl: 60000, limit: 300 },
+            { name: 'global', ttl: 60000, limit: 600 },
             { name: 'auth', ttl: 60000, limit: 10 },
             { name: 'portal', ttl: 60000, limit: 15 },
           ]
