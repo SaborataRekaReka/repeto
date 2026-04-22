@@ -10,6 +10,7 @@ import {
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags, ApiQuery } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 import { CurrentUser } from '../common/decorators';
 import { LessonsService } from './lessons.service';
 import { CreateLessonDto, UpdateLessonDto, UpdateLessonStatusDto } from './dto';
@@ -20,6 +21,9 @@ import { CreateLessonDto, UpdateLessonDto, UpdateLessonStatusDto } from './dto';
 export class LessonsController {
   constructor(private readonly lessonsService: LessonsService) {}
 
+  // Read-only, already auth-gated; rapid calendar navigation must not hit
+  // the global throttler with bursts of range queries.
+  @SkipThrottle()
   @Get()
   @ApiQuery({ name: 'from', required: false, description: 'ISO date start' })
   @ApiQuery({ name: 'to', required: false, description: 'ISO date end' })
@@ -33,6 +37,7 @@ export class LessonsController {
     return this.lessonsService.findAll(userId, { from, to, studentId });
   }
 
+  @SkipThrottle()
   @Get(':id')
   findOne(
     @Param('id', ParseUUIDPipe) id: string,
