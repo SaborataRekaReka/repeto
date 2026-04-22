@@ -591,13 +591,13 @@ jobs:
             ssh -i ~/.ssh/id_ed25519 -p "$ssh_port" -o BatchMode=yes -o ConnectTimeout=10 "$target" "APP_PATH='$APP_PATH' bash -se" <<'EOF'
           set -euo pipefail
           cd "$APP_PATH"
-          docker compose -f docker-compose.prod.yml exec -T backend sh -lc 'ALLOW_PRODUCTION_DEMO_SEED=true NODE_OPTIONS=--max-old-space-size=192 npm run prisma:seed:demo:prod'
+          docker compose -f docker-compose.prod.yml exec -T backend sh -lc "ALLOW_PRODUCTION_DEMO_SEED=true NODE_OPTIONS=--max-old-space-size=192 npx ts-node --transpile-only -O '{\"module\":\"CommonJS\",\"moduleResolution\":\"Node\"}' prisma/seed-demo-production.ts"
           EOF
           else
             sshpass -p "$PROD_SSH_PASSWORD" ssh -p "$ssh_port" -o PreferredAuthentications=password -o PubkeyAuthentication=no -o NumberOfPasswordPrompts=1 -o BatchMode=no -o ConnectTimeout=10 "$target" "APP_PATH='$APP_PATH' bash -se" <<'EOF'
           set -euo pipefail
           cd "$APP_PATH"
-          docker compose -f docker-compose.prod.yml exec -T backend sh -lc 'ALLOW_PRODUCTION_DEMO_SEED=true NODE_OPTIONS=--max-old-space-size=192 npm run prisma:seed:demo:prod'
+          docker compose -f docker-compose.prod.yml exec -T backend sh -lc "ALLOW_PRODUCTION_DEMO_SEED=true NODE_OPTIONS=--max-old-space-size=192 npx ts-node --transpile-only -O '{\"module\":\"CommonJS\",\"moduleResolution\":\"Node\"}' prisma/seed-demo-production.ts"
           EOF
           fi
 
