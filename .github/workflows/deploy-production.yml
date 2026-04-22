@@ -68,16 +68,19 @@ jobs:
             ssh-keyscan -H -p "$ssh_port" "$ssh_host" >> ~/.ssh/known_hosts
           fi
 
-      - name: Install sshpass when password is set
+      - name: Install sshpass when password-only auth is needed
         shell: bash
         env:
+          PROD_SSH_PRIVATE_KEY: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
           PROD_SSH_PASSWORD: ${{ secrets.PROD_SSH_PASSWORD }}
         run: |
           set -euo pipefail
 
-          if [ -n "${PROD_SSH_PASSWORD:-}" ]; then
+          if [ -n "${PROD_SSH_PASSWORD:-}" ] && [ -z "${PROD_SSH_PRIVATE_KEY:-}" ]; then
             sudo apt-get update
             sudo apt-get install -y sshpass
+          else
+            echo "Skipping sshpass installation (key auth available or password not set)."
           fi
 
       - name: Resolve SSH access
