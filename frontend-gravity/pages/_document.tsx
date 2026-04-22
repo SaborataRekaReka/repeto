@@ -28,8 +28,6 @@ export default function Document() {
                 <meta name="apple-mobile-web-app-capable" content="yes" />
                 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
                 <meta name="mobile-web-app-capable" content="yes" />
-                <link rel="preconnect" href="https://fonts.yandexapis.com" />
-                <link rel="stylesheet" href="https://fonts.yandexapis.com/css2?family=YS+Text:wght@400;500;600;700&display=swap" />
                 <link rel="icon" href="/brand/icon.svg" type="image/svg+xml" />
                 <link rel="shortcut icon" href="/brand/icon.svg" />
                 <link rel="apple-touch-icon" href="/brand/icon.svg" />

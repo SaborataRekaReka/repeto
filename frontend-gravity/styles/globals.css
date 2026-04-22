@@ -1,4 +1,4 @@
-@import url("https://fonts.yandexapis.com/css2?family=YS+Text:wght@400;500;600;700&display=swap");
+/* YS Text font removed — fonts.yandexapis.com does not resolve; falling back to system fonts. */
 
 @tailwind base;
 @tailwind components;

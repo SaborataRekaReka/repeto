@@ -27,26 +27,34 @@ export function useApi<T>(
   const [loading, setLoading] = useState(!skip && !!endpoint);
   const mountedRef = useRef(true);
   const dataRef = useRef<T | undefined>(undefined);
+  const abortRef = useRef<AbortController | null>(null);
 
   const fetchData = useCallback(async (isBackground = false) => {
     if (!endpoint || skip) return;
-    if (!isBackground || dataRef.current === undefined) {
+    // Cancel any prior in-flight request so rapid param changes don't pile up.
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+
+    if (!isBackground && dataRef.current === undefined) {
       setLoading(true);
     }
     setError(null);
     try {
-      const result = await api<T>(endpoint, { params });
-      if (mountedRef.current) {
+      const result = await api<T>(endpoint, { params, signal: ctrl.signal });
+      if (mountedRef.current && !ctrl.signal.aborted) {
         dataRef.current = result;
         setData(result);
         setError(null);
       }
     } catch (err) {
+      if (ctrl.signal.aborted) return;
+      if ((err as any)?.name === 'AbortError') return;
       if (mountedRef.current) {
         setError(err as Error);
       }
     } finally {
-      if (mountedRef.current) {
+      if (mountedRef.current && !ctrl.signal.aborted) {
         setLoading(false);
       }
     }
@@ -58,6 +66,7 @@ export function useApi<T>(
     fetchData();
     return () => {
       mountedRef.current = false;
+      abortRef.current?.abort();
     };
   }, [fetchData]);
 
