@@ -3,9 +3,9 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: repeto
-      POSTGRES_PASSWORD: change-me
-      POSTGRES_DB: repeto
+      POSTGRES_USER: ${POSTGRES_USER:-repeto}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+      POSTGRES_DB: ${POSTGRES_DB:-repeto}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -35,9 +35,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3200
-      DATABASE_URL: postgresql://repeto:change-me@postgres:5432/repeto?schema=public
-      REDIS_URL: redis://redis:6379
-      FRONTEND_URL: https://repeto.ru,https://www.repeto.ru
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
     depends_on:
       postgres:
         condition: service_healthy
@@ -95,7 +93,7 @@ services:
       POSTGRES_HOST: postgres
       POSTGRES_DB: ${POSTGRES_DB:-repeto}
       POSTGRES_USER: ${POSTGRES_USER:-repeto}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
       SCHEDULE: "@daily"
       BACKUP_KEEP_DAYS: 7
       BACKUP_KEEP_WEEKS: 4

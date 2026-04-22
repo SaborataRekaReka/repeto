@@ -256,6 +256,92 @@ jobs:
           EOF
           fi
 
+      - name: Validate backend runtime env on VPS
+        shell: bash
+        env:
+          PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+          PROD_SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
+          PROD_SSH_PASSWORD: ${{ secrets.PROD_SSH_PASSWORD }}
+          SELECTED_USER: ${{ steps.resolve_ssh.outputs.selected_user }}
+          AUTH_MODE: ${{ steps.resolve_ssh.outputs.auth_mode }}
+          APP_PATH: ${{ steps.resolve_path.outputs.app_path }}
+        run: |
+          set -euo pipefail
+
+          ssh_host="${PROD_SSH_HOST:-repeto.ru}"
+          ssh_port="${PROD_SSH_PORT:-22}"
+          target="$SELECTED_USER@$ssh_host"
+
+          if [ "$AUTH_MODE" = "key" ]; then
+            ssh -i ~/.ssh/id_ed25519 -p "$ssh_port" -o BatchMode=yes -o ConnectTimeout=10 "$target" "APP_PATH='$APP_PATH' bash -se" <<'EOF'
+          set -euo pipefail
+          cd "$APP_PATH"
+
+          if [ ! -s backend/.env ]; then
+            echo "::error::backend/.env is missing or empty on VPS"
+            exit 1
+          fi
+
+          required_keys=(JWT_SECRET FRONTEND_URL DATABASE_URL)
+          for key in "${required_keys[@]}"; do
+            if ! grep -q "^${key}=" backend/.env; then
+              echo "::error::backend/.env missing required key: ${key}"
+              exit 1
+            fi
+          done
+
+          if grep -q '^JWT_SECRET=change-me-in-production$' backend/.env; then
+            echo "::error::JWT_SECRET is still default placeholder"
+            exit 1
+          fi
+
+          db_url="$(grep '^DATABASE_URL=' backend/.env | head -n1 | cut -d= -f2-)"
+          if echo "$db_url" | grep -Eq '(^|@)(localhost|127\.0\.0\.1)(:|/|$)'; then
+            echo "::error::DATABASE_URL points to localhost/127.0.0.1 in production"
+            exit 1
+          fi
+
+          if grep -q '^FRONTEND_URL=http://localhost:3300$' backend/.env; then
+            echo "::error::FRONTEND_URL points to localhost in production"
+            exit 1
+          fi
+          EOF
+          else
+            sshpass -p "$PROD_SSH_PASSWORD" ssh -p "$ssh_port" -o PreferredAuthentications=password -o PubkeyAuthentication=no -o NumberOfPasswordPrompts=1 -o BatchMode=no -o ConnectTimeout=10 "$target" "APP_PATH='$APP_PATH' bash -se" <<'EOF'
+          set -euo pipefail
+          cd "$APP_PATH"
+
+          if [ ! -s backend/.env ]; then
+            echo "::error::backend/.env is missing or empty on VPS"
+            exit 1
+          fi
+
+          required_keys=(JWT_SECRET FRONTEND_URL DATABASE_URL)
+          for key in "${required_keys[@]}"; do
+            if ! grep -q "^${key}=" backend/.env; then
+              echo "::error::backend/.env missing required key: ${key}"
+              exit 1
+            fi
+          done
+
+          if grep -q '^JWT_SECRET=change-me-in-production$' backend/.env; then
+            echo "::error::JWT_SECRET is still default placeholder"
+            exit 1
+          fi
+
+          db_url="$(grep '^DATABASE_URL=' backend/.env | head -n1 | cut -d= -f2-)"
+          if echo "$db_url" | grep -Eq '(^|@)(localhost|127\.0\.0\.1)(:|/|$)'; then
+            echo "::error::DATABASE_URL points to localhost/127.0.0.1 in production"
+            exit 1
+          fi
+
+          if grep -q '^FRONTEND_URL=http://localhost:3300$' backend/.env; then
+            echo "::error::FRONTEND_URL points to localhost in production"
+            exit 1
+          fi
+          EOF
+          fi
+
       - name: Deploy on VPS
         timeout-minutes: 12
         shell: bash
@@ -321,13 +407,55 @@ jobs:
             ssh -i ~/.ssh/id_ed25519 -p "$ssh_port" -o BatchMode=yes -o ConnectTimeout=10 "$target" "APP_PATH='$APP_PATH' bash -se" <<'EOF'
           set -euo pipefail
           cd "$APP_PATH"
-          docker compose -f docker-compose.prod.yml exec -T backend wget --spider -q http://localhost:3200/api/health
+
+          healthy="false"
+          for attempt in $(seq 1 24); do
+            if docker compose -f docker-compose.prod.yml exec -T backend wget --spider -q http://localhost:3200/api/health; then
+              healthy="true"
+              break
+            fi
+            sleep 5
+          done
+
+          if [ "$healthy" != "true" ]; then
+            echo "Backend healthcheck failed. Dumping diagnostics..."
+            docker compose -f docker-compose.prod.yml ps
+            docker compose -f docker-compose.prod.yml logs --no-color --tail=200 backend || true
+
+            backend_cid="$(docker compose -f docker-compose.prod.yml ps -q backend || true)"
+            if [ -n "$backend_cid" ]; then
+              docker inspect --format='{{json .State.Health}}' "$backend_cid" || true
+            fi
+
+            exit 1
+          fi
           EOF
           else
             sshpass -p "$PROD_SSH_PASSWORD" ssh -p "$ssh_port" -o PreferredAuthentications=password -o PubkeyAuthentication=no -o NumberOfPasswordPrompts=1 -o BatchMode=no -o ConnectTimeout=10 "$target" "APP_PATH='$APP_PATH' bash -se" <<'EOF'
           set -euo pipefail
           cd "$APP_PATH"
-          docker compose -f docker-compose.prod.yml exec -T backend wget --spider -q http://localhost:3200/api/health
+
+          healthy="false"
+          for attempt in $(seq 1 24); do
+            if docker compose -f docker-compose.prod.yml exec -T backend wget --spider -q http://localhost:3200/api/health; then
+              healthy="true"
+              break
+            fi
+            sleep 5
+          done
+
+          if [ "$healthy" != "true" ]; then
+            echo "Backend healthcheck failed. Dumping diagnostics..."
+            docker compose -f docker-compose.prod.yml ps
+            docker compose -f docker-compose.prod.yml logs --no-color --tail=200 backend || true
+
+            backend_cid="$(docker compose -f docker-compose.prod.yml ps -q backend || true)"
+            if [ -n "$backend_cid" ]; then
+              docker inspect --format='{{json .State.Health}}' "$backend_cid" || true
+            fi
+
+            exit 1
+          fi
           EOF
           fi
 
