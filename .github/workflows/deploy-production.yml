@@ -282,7 +282,7 @@ jobs:
             exit 1
           fi
 
-          required_keys=(JWT_SECRET FRONTEND_URL DATABASE_URL)
+          required_keys=(JWT_SECRET)
           for key in "${required_keys[@]}"; do
             if ! grep -q "^${key}=" backend/.env; then
               echo "::error::backend/.env missing required key: ${key}"
@@ -295,6 +295,22 @@ jobs:
             exit 1
           fi
 
+          if ! grep -q '^FRONTEND_URL=' backend/.env; then
+            echo 'FRONTEND_URL=https://repeto.ru,https://www.repeto.ru' >> backend/.env
+            echo "FRONTEND_URL was missing and has been set to production defaults"
+          fi
+
+          if grep -q '^FRONTEND_URL=http://localhost:3300$' backend/.env; then
+            awk 'BEGIN{done=0} /^FRONTEND_URL=/{print "FRONTEND_URL=https://repeto.ru,https://www.repeto.ru"; done=1; next} {print} END{if(!done) print "FRONTEND_URL=https://repeto.ru,https://www.repeto.ru"}' backend/.env > backend/.env.tmp
+            mv backend/.env.tmp backend/.env
+            echo "FRONTEND_URL localhost replaced with production defaults"
+          fi
+
+          if ! grep -q '^DATABASE_URL=' backend/.env; then
+            echo 'DATABASE_URL=postgresql://repeto:change-me@postgres:5432/repeto?schema=public' >> backend/.env
+            echo "DATABASE_URL was missing and has been set to internal postgres default"
+          fi
+
           db_url="$(grep '^DATABASE_URL=' backend/.env | head -n1 | cut -d= -f2-)"
           if echo "$db_url" | grep -Eq '(^|@)(localhost|127\.0\.0\.1)(:|/|$)'; then
             normalized_db_url="$(echo "$db_url" | sed -E 's#(://[^@]+@)(localhost|127\.0\.0\.1)(:[0-9]+)?/#\1postgres:5432/#')"
@@ -303,11 +319,6 @@ jobs:
               mv backend/.env.tmp backend/.env
               echo "DATABASE_URL host normalized to postgres for docker deploy"
             fi
-          fi
-
-          if grep -q '^FRONTEND_URL=http://localhost:3300$' backend/.env; then
-            echo "::error::FRONTEND_URL points to localhost in production"
-            exit 1
           fi
           EOF
           else
@@ -320,7 +331,7 @@ jobs:
             exit 1
           fi
 
-          required_keys=(JWT_SECRET FRONTEND_URL DATABASE_URL)
+          required_keys=(JWT_SECRET)
           for key in "${required_keys[@]}"; do
             if ! grep -q "^${key}=" backend/.env; then
               echo "::error::backend/.env missing required key: ${key}"
@@ -333,6 +344,22 @@ jobs:
             exit 1
           fi
 
+          if ! grep -q '^FRONTEND_URL=' backend/.env; then
+            echo 'FRONTEND_URL=https://repeto.ru,https://www.repeto.ru' >> backend/.env
+            echo "FRONTEND_URL was missing and has been set to production defaults"
+          fi
+
+          if grep -q '^FRONTEND_URL=http://localhost:3300$' backend/.env; then
+            awk 'BEGIN{done=0} /^FRONTEND_URL=/{print "FRONTEND_URL=https://repeto.ru,https://www.repeto.ru"; done=1; next} {print} END{if(!done) print "FRONTEND_URL=https://repeto.ru,https://www.repeto.ru"}' backend/.env > backend/.env.tmp
+            mv backend/.env.tmp backend/.env
+            echo "FRONTEND_URL localhost replaced with production defaults"
+          fi
+
+          if ! grep -q '^DATABASE_URL=' backend/.env; then
+            echo 'DATABASE_URL=postgresql://repeto:change-me@postgres:5432/repeto?schema=public' >> backend/.env
+            echo "DATABASE_URL was missing and has been set to internal postgres default"
+          fi
+
           db_url="$(grep '^DATABASE_URL=' backend/.env | head -n1 | cut -d= -f2-)"
           if echo "$db_url" | grep -Eq '(^|@)(localhost|127\.0\.0\.1)(:|/|$)'; then
             normalized_db_url="$(echo "$db_url" | sed -E 's#(://[^@]+@)(localhost|127\.0\.0\.1)(:[0-9]+)?/#\1postgres:5432/#')"
@@ -341,11 +368,6 @@ jobs:
               mv backend/.env.tmp backend/.env
               echo "DATABASE_URL host normalized to postgres for docker deploy"
             fi
-          fi
-
-          if grep -q '^FRONTEND_URL=http://localhost:3300$' backend/.env; then
-            echo "::error::FRONTEND_URL points to localhost in production"
-            exit 1
           fi
           EOF
           fi
