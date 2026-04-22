@@ -484,10 +484,14 @@ jobs:
           cd "$APP_PATH"
 
           healthy="false"
-          for attempt in $(seq 1 24); do
-            if docker compose -f docker-compose.prod.yml exec -T backend wget --spider -q -T 5 -t 1 http://localhost:3200/api/health; then
-              healthy="true"
-              break
+          for attempt in $(seq 1 36); do
+            backend_cid="$(docker compose -f docker-compose.prod.yml ps -q backend || true)"
+            if [ -n "$backend_cid" ]; then
+              health_status="$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$backend_cid" 2>/dev/null || true)"
+              if [ "$health_status" = "healthy" ]; then
+                healthy="true"
+                break
+              fi
             fi
             sleep 5
           done
@@ -511,10 +515,14 @@ jobs:
           cd "$APP_PATH"
 
           healthy="false"
-          for attempt in $(seq 1 24); do
-            if docker compose -f docker-compose.prod.yml exec -T backend wget --spider -q -T 5 -t 1 http://localhost:3200/api/health; then
-              healthy="true"
-              break
+          for attempt in $(seq 1 36); do
+            backend_cid="$(docker compose -f docker-compose.prod.yml ps -q backend || true)"
+            if [ -n "$backend_cid" ]; then
+              health_status="$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$backend_cid" 2>/dev/null || true)"
+              if [ "$health_status" = "healthy" ]; then
+                healthy="true"
+                break
+              fi
             fi
             sleep 5
           done
