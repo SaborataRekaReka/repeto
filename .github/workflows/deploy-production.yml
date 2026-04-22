@@ -485,7 +485,7 @@ jobs:
 
           healthy="false"
           for attempt in $(seq 1 24); do
-            if docker compose -f docker-compose.prod.yml exec -T backend wget --spider -q http://localhost:3200/api/health; then
+            if docker compose -f docker-compose.prod.yml exec -T backend wget --spider -q -T 5 -t 1 http://localhost:3200/api/health; then
               healthy="true"
               break
             fi
@@ -512,7 +512,7 @@ jobs:
 
           healthy="false"
           for attempt in $(seq 1 24); do
-            if docker compose -f docker-compose.prod.yml exec -T backend wget --spider -q http://localhost:3200/api/health; then
+            if docker compose -f docker-compose.prod.yml exec -T backend wget --spider -q -T 5 -t 1 http://localhost:3200/api/health; then
               healthy="true"
               break
             fi
