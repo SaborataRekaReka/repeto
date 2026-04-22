@@ -400,7 +400,28 @@ jobs:
           GIT_TERMINAL_PROMPT=0 git fetch --depth=1 origin main
           git checkout main
           git reset --hard origin/main
-          docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
+
+          db_url="$(grep '^DATABASE_URL=' backend/.env | head -n1 | cut -d= -f2- || true)"
+          db_user="$(echo "$db_url" | sed -nE 's#^postgres(ql)?://([^:/@]+):([^@]+)@[^/]+/([^?]+).*$#\2#p')"
+          db_pass="$(echo "$db_url" | sed -nE 's#^postgres(ql)?://([^:/@]+):([^@]+)@[^/]+/([^?]+).*$#\3#p')"
+          db_name="$(echo "$db_url" | sed -nE 's#^postgres(ql)?://([^:/@]+):([^@]+)@[^/]+/([^?]+).*$#\4#p')"
+
+          if [ -n "$db_user" ] && [ -n "$db_pass" ] && [ -n "$db_name" ]; then
+            export POSTGRES_USER="$db_user"
+            export POSTGRES_PASSWORD="$db_pass"
+            export POSTGRES_DB="$db_name"
+            echo "Using POSTGRES_* derived from backend/.env DATABASE_URL"
+          else
+            echo "Could not parse DATABASE_URL for POSTGRES_* override; using compose defaults."
+          fi
+
+          if ! docker compose -f docker-compose.prod.yml up -d --build --remove-orphans; then
+            echo "docker compose up failed. Dumping diagnostics..."
+            docker compose -f docker-compose.prod.yml ps || true
+            docker compose -f docker-compose.prod.yml logs --no-color --tail=200 backend postgres redis nginx || true
+            exit 1
+          fi
+
           docker compose -f docker-compose.prod.yml exec -T nginx nginx -t
           docker compose -f docker-compose.prod.yml exec -T nginx nginx -s reload
           docker compose -f docker-compose.prod.yml ps
@@ -413,7 +434,28 @@ jobs:
           GIT_TERMINAL_PROMPT=0 git fetch --depth=1 origin main
           git checkout main
           git reset --hard origin/main
-          docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
+
+          db_url="$(grep '^DATABASE_URL=' backend/.env | head -n1 | cut -d= -f2- || true)"
+          db_user="$(echo "$db_url" | sed -nE 's#^postgres(ql)?://([^:/@]+):([^@]+)@[^/]+/([^?]+).*$#\2#p')"
+          db_pass="$(echo "$db_url" | sed -nE 's#^postgres(ql)?://([^:/@]+):([^@]+)@[^/]+/([^?]+).*$#\3#p')"
+          db_name="$(echo "$db_url" | sed -nE 's#^postgres(ql)?://([^:/@]+):([^@]+)@[^/]+/([^?]+).*$#\4#p')"
+
+          if [ -n "$db_user" ] && [ -n "$db_pass" ] && [ -n "$db_name" ]; then
+            export POSTGRES_USER="$db_user"
+            export POSTGRES_PASSWORD="$db_pass"
+            export POSTGRES_DB="$db_name"
+            echo "Using POSTGRES_* derived from backend/.env DATABASE_URL"
+          else
+            echo "Could not parse DATABASE_URL for POSTGRES_* override; using compose defaults."
+          fi
+
+          if ! docker compose -f docker-compose.prod.yml up -d --build --remove-orphans; then
+            echo "docker compose up failed. Dumping diagnostics..."
+            docker compose -f docker-compose.prod.yml ps || true
+            docker compose -f docker-compose.prod.yml logs --no-color --tail=200 backend postgres redis nginx || true
+            exit 1
+          fi
+
           docker compose -f docker-compose.prod.yml exec -T nginx nginx -t
           docker compose -f docker-compose.prod.yml exec -T nginx nginx -s reload
           docker compose -f docker-compose.prod.yml ps

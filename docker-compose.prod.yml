@@ -1,4 +1,4 @@
-# Repeto production compose stack (workflow trigger marker v3)
+# Repeto production compose stack (workflow trigger marker v4)
 services:
   postgres:
     image: postgres:16-alpine
