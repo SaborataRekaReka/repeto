@@ -18,7 +18,7 @@ const StudentAvatar = ({ student, size, style }: StudentAvatarProps) => {
             text={initials}
             size={size}
             theme="brand"
-            backgroundColor="#8F77FF"
+            backgroundColor="#AE7AFF"
             style={style}
         />
     );

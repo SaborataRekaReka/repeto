@@ -466,7 +466,7 @@ const CreatePackageModal = ({
                                 onUpdate={setDiscount}
                             />
                         </Lp2Field>
-                        <Lp2Field label="Сђмма пакета (₽) *" half error={totalAmountError} errorText="Введите число больше 0">
+                        <Lp2Field label="Сумма пакета (₽) *" half error={totalAmountError} errorText="Введите число больше 0">
                             <TextInput
                                 size="l"
                                 type="number"

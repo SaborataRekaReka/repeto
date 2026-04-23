@@ -282,11 +282,11 @@ const CreatePaymentModal = ({
             return;
         }
         if (!Number.isFinite(normalizedAmount) || normalizedAmount < 1) {
-            setErrorText("Введите корректную сђммђ больше 0.");
+            setErrorText("Введите корректную сумму больше 0.");
             return;
         }
         if (normalizedAmount > MAX_PAYMENT_AMOUNT) {
-            setErrorText("Сђмма слишком большая.");
+            setErrorText("Сумма слишком большая.");
             return;
         }
         if (!method.length) {
@@ -482,7 +482,7 @@ const CreatePaymentModal = ({
                         </Lp2Field>
                     )}
 
-                    <Lp2Field label="Сђмма (₽) *" error={amountError} errorText="Введите корректную сђммђ больше 0">
+                    <Lp2Field label="Сумма (₽) *" error={amountError} errorText="Введите корректную сумму больше 0">
                         <TextInput
                             size="l"
                             type="text"

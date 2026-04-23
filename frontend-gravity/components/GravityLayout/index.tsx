@@ -364,30 +364,11 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                     <div className="repeto-top-header__inner">
                         <div className="repeto-top-header__left">
                             <Link href="/dashboard" className="repeto-top-header__logo" aria-label="Repeto">
-                                <span className="repeto-sidebar__logo-icon" aria-hidden="true">
-                                    <img
-                                        className="repeto-logo repeto-logo--icon repeto-logo--light"
-                                        src="/brand/icon.svg"
-                                        alt=""
-                                    />
-                                    <img
-                                        className="repeto-logo repeto-logo--icon repeto-logo--dark"
-                                        src="/brand/icon_white.svg"
-                                        alt=""
-                                    />
-                                </span>
-                                <span className="repeto-sidebar__logo-text" aria-hidden="true">
-                                    <img
-                                        className="repeto-logo repeto-logo--full repeto-logo--light"
-                                        src="/brand/logo_text.svg"
-                                        alt=""
-                                    />
-                                    <img
-                                        className="repeto-logo repeto-logo--full repeto-logo--dark"
-                                        src="/brand/logo_text_white.svg"
-                                        alt=""
-                                    />
-                                </span>
+                                <img
+                                    className="repeto-logo repeto-logo--full"
+                                    src="/brand/logo.svg"
+                                    alt="Repeto"
+                                />
                             </Link>
 
                             <nav className="repeto-top-header__nav" aria-label="Основная навигация">
@@ -621,30 +602,11 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
             {shouldShowSidebar && (
             <aside className={sidebarCls}>
                 <Link href="/dashboard" className="repeto-sidebar__logo">
-                    <span className="repeto-sidebar__logo-icon" aria-hidden="true">
-                        <img
-                            className="repeto-logo repeto-logo--icon repeto-logo--light"
-                            src="/brand/icon.svg"
-                            alt=""
-                        />
-                        <img
-                            className="repeto-logo repeto-logo--icon repeto-logo--dark"
-                            src="/brand/icon_white.svg"
-                            alt=""
-                        />
-                    </span>
-                    <span className="repeto-sidebar__logo-text" aria-hidden="true">
-                        <img
-                            className="repeto-logo repeto-logo--full repeto-logo--light"
-                            src="/brand/logo_text.svg"
-                            alt=""
-                        />
-                        <img
-                            className="repeto-logo repeto-logo--full repeto-logo--dark"
-                            src="/brand/logo_text_white.svg"
-                            alt=""
-                        />
-                    </span>
+                    <img
+                        className="repeto-logo repeto-logo--full"
+                        src="/brand/logo.svg"
+                        alt="Repeto"
+                    />
                     <span className="repeto-sr-only">Repeto</span>
                 </Link>
 

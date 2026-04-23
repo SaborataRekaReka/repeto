@@ -1,14 +1,15 @@
 import { useState } from "react";
-import { Card, Text, Loader, SegmentedRadioGroup } from "@gravity-ui/uikit";
+import { Card, Text, Loader } from "@gravity-ui/uikit";
 import { useConversion } from "@/hooks/useDashboard";
 import { accent, brand, semantic } from "@/constants/brand";
+import PillTabs from "@/components/PillTabs";
 
 type ConversionPeriod = "month" | "quarter" | "year";
 
-const periodOptions: Array<{ value: ConversionPeriod; content: string }> = [
-    { value: "month", content: "Месяц" },
-    { value: "quarter", content: "Квартал" },
-    { value: "year", content: "Год" },
+const periodOptions = [
+    { value: "month" as const, label: "Месяц" },
+    { value: "quarter" as const, label: "Квартал" },
+    { value: "year" as const, label: "Год" },
 ];
 
 const ConversionRate = () => {
@@ -28,10 +29,10 @@ const ConversionRate = () => {
         <Card view="outlined" style={{ overflow: "hidden", background: "var(--g-color-base-float)" }}>
             <div className="repeto-card-header repeto-conversion-card__header">
                 <Text variant="subheader-2">Конверсия в оплату</Text>
-                <SegmentedRadioGroup
+                <PillTabs
                     size="s"
                     value={period}
-                    onUpdate={(value) => setPeriod(value as ConversionPeriod)}
+                    onChange={(value) => setPeriod(value)}
                     options={periodOptions}
                 />
             </div>

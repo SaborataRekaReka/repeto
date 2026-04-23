@@ -246,8 +246,13 @@ const LessonsTab = ({ data, studentId }: LessonsTabProps) => {
             setPendingActionNotice(
                 "Запрос на перенос отправлен. До ответа репетитора отображается новое время."
             );
-        } catch {
-            setActionError("Не удалось отправить запрос на перенос. Попробуйте снова.");
+        } catch (err) {
+            const message =
+                err instanceof Error && err.message ? err.message : null;
+            setActionError(
+                message ||
+                    "Не удалось отправить запрос на перенос. Попробуйте снова."
+            );
         } finally {
             setRescheduleLoading(false);
         }

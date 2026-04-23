@@ -1,6 +1,6 @@
 import * as React from "react";
-import { Avatar, Icon, Text } from "@gravity-ui/uikit";
-import type { IconData } from "@gravity-ui/uikit";
+import { useState } from "react";
+import { Avatar, Icon, Text } from "@gravity-ui/uikit";import type { IconData } from "@gravity-ui/uikit";
 import {
     ChevronDown,
     CircleInfo,
@@ -142,13 +142,21 @@ const PublicTutorWidget = ({
         ? `repeto-tp-widget ${className}`
         : "repeto-tp-widget";
 
+    const [avatarLoadError, setAvatarLoadError] = useState(false);
+    const showAvatarImg = Boolean(avatarUrl) && !avatarLoadError;
+
     return (
         <div className={rootClassName}>
             <div className="repeto-tp-widget__head">
                 <div className="repeto-tp-widget__avatar">
-                    {avatarUrl ? (
+                    {showAvatarImg ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={avatarUrl} alt={name} className="repeto-tp-widget__avatar-img" />
+                        <img
+                            src={avatarUrl as string}
+                            alt={name}
+                            className="repeto-tp-widget__avatar-img"
+                            onError={() => setAvatarLoadError(true)}
+                        />
                     ) : (
                         <Avatar
                             text={getInitials(name)}

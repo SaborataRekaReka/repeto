@@ -670,12 +670,12 @@ const BookingPage = ({ slug }: { slug: string }) => {
                     <div className="repeto-portal-container repeto-portal-header__inner">
                         {step > 0 && step <= 3 ? (
                             <Button view="flat" size="m" onClick={goBack} className="repeto-bk-back-btn">
-                                <Icon data={ArrowLeft as IconData} size={20} />
+                                <Icon data={ArrowLeft as IconData} size={18} />
                             </Button>
                         ) : step === 0 ? (
                             <Link href={`/t/${slug}`} style={{ textDecoration: "none" }}>
                                 <Button view="flat" size="m" className="repeto-bk-back-btn">
-                                    <Icon data={ArrowLeft as IconData} size={20} />
+                                    <Icon data={ArrowLeft as IconData} size={18} />
                                 </Button>
                             </Link>
                         ) : null}

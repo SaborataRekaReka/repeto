@@ -1374,16 +1374,16 @@ export class PortalService {
 
     const [hours, minutes] = newTime.split(':').map(Number);
     if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
-      throw new BadRequestException('Invalid time format');
+      throw new BadRequestException('Неверный формат времени. Используйте ЧЧ:ММ.');
     }
     const rescheduleNewTime = new Date(newDate);
     if (isNaN(rescheduleNewTime.getTime())) {
-      throw new BadRequestException('Invalid date format');
+      throw new BadRequestException('Неверный формат даты.');
     }
     rescheduleNewTime.setHours(hours, minutes, 0, 0);
 
     if (rescheduleNewTime.getTime() <= Date.now()) {
-      throw new BadRequestException('Cannot reschedule to a past time');
+      throw new BadRequestException('Нельзя перенести занятие на прошедшее время. Выберите будущую дату.');
     }
 
     const updated = await this.prisma.lesson.update({

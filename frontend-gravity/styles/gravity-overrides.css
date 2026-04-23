@@ -135,7 +135,7 @@ html body.g-root_theme_dark {
     --repeto-control-text: #26232d;
     --repeto-control-text-muted: #8e8799;
     --repeto-control-icon: #90899d;
-    --repeto-control-accent: #8f77ff;
+    --repeto-control-accent: #AE7AFF;
     --repeto-control-danger: #d46c75;
     --repeto-control-line-soft: rgba(38, 35, 45, 0.08);
     --repeto-control-line-focus: rgba(143, 119, 255, 0.88);
@@ -273,6 +273,15 @@ body {
     max-width: 96px;
     height: auto;
     object-fit: contain;
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-top-header__logo .repeto-logo--full,
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-sidebar__logo .repeto-logo--full {
+    filter: invert(1) hue-rotate(180deg);
+}
+
+.repeto-sidebar--collapsed .repeto-sidebar__logo .repeto-logo--full {
+    display: none;
 }
 
 .repeto-logo--dark {
@@ -5333,11 +5342,13 @@ body {
     top: calc(100% + 8px);
     min-width: 250px;
     max-width: 320px;
-    border-radius: 12px;
-    border: 1px solid #eceff3;
-    background: #ffffff;
-    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: #1f1f23;
+    color: #ffffff;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
     padding: 10px 12px;
+    text-align: left;
     opacity: 0;
     visibility: hidden;
     transform: translateY(-4px);
@@ -5346,9 +5357,24 @@ body {
     z-index: 8;
 }
 
+.repeto-tp-policy-hint__tooltip::before {
+    content: "";
+    position: absolute;
+    top: -5px;
+    left: 16px;
+    width: 10px;
+    height: 10px;
+    background: #1f1f23;
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    transform: rotate(45deg);
+}
+
 .repeto-tp-policy-hint__tooltip-line {
     display: block;
-    line-height: 1.4;
+    line-height: 1.45;
+    color: #ffffff;
+    text-align: left;
 }
 
 .repeto-tp-policy-hint:hover .repeto-tp-policy-hint__tooltip,
@@ -5681,18 +5707,10 @@ body {
 /* ============ Booking page (redesigned) ============ */
 .repeto-bk-back-btn {
     flex-shrink: 0;
-    width: 44px;
-    height: 44px;
-    min-width: 44px;
-    border-radius: 14px !important;
-    border: 1px solid #e8e8e8 !important;
-    background: #ffffff !important;
-    color: #191919 !important;
 }
 
 .repeto-bk-back-btn:hover {
-    background: #1919190d !important;
-    border-color: #d8d8d8 !important;
+    background: var(--g-color-base-simple-hover) !important;
 }
 
 .repeto-bk-header-info {
@@ -7139,7 +7157,7 @@ body {
     border-radius: 12px;
     border: none;
     background: #f3f4f7;
-    color: #7967d9;
+    color: #7030D9;
     font-size: 15px;
     line-height: 1;
     font-weight: 600;
@@ -7148,7 +7166,7 @@ body {
 }
 
 .repeto-portal-balance-chip--primary {
-    background: linear-gradient(180deg, #7e63f4 0%, #6e52ec 100%);
+    background: #AE7AFF;
     color: #fff;
 }
 
@@ -7620,7 +7638,7 @@ body {
 }
 
 :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-portal-balance-chip--primary {
-    background: linear-gradient(180deg, #8e74ff 0%, #7658ec 100%);
+    background: #AE7AFF;
     color: #fff;
 }
 
@@ -8024,6 +8042,8 @@ body {
         opacity: 1;
         pointer-events: auto;
         transform: none;
+        justify-content: center;
+        width: 100%;
     }
 
     .repeto-portal-item-card--with-actions:hover .repeto-portal-upcoming-meta,
@@ -8031,6 +8051,16 @@ body {
         opacity: 1;
         pointer-events: auto;
         transform: none;
+    }
+
+    .repeto-portal-item-card--with-actions .repeto-portal-upcoming-meta {
+        opacity: 1;
+        pointer-events: auto;
+        transform: none;
+    }
+
+    .repeto-portal-item-row--upcoming {
+        flex-wrap: wrap;
     }
 
     .repeto-portal-file-row,

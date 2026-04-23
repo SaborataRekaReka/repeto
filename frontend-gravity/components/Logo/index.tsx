@@ -10,9 +10,9 @@ const Test = ({ className }: TestProps) => {
         <Link className={`flex w-[9.75rem] ${className}`} href="/">
             <Image
                 className="w-full h-auto"
-                src="/logo.svg"
-                width={1178}
-                height={174}
+                src="/brand/logo.svg"
+                width={1337}
+                height={189}
                 alt="Repeto"
                 priority
             />
