@@ -28,15 +28,22 @@ export class NotificationsController {
   findAll(
     @CurrentUser('id') userId: string,
     @Query('type') type?: string,
-    @Query('read') read?: boolean,
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
+    @Query('read') read?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
+    let readBool: boolean | undefined;
+    if (read === 'true' || read === '1') readBool = true;
+    else if (read === 'false' || read === '0') readBool = false;
+
+    const pageNum = page !== undefined ? Number(page) : undefined;
+    const limitNum = limit !== undefined ? Number(limit) : undefined;
+
     return this.notificationsService.findAll(userId, {
       type,
-      read,
-      page,
-      limit,
+      read: readBool,
+      page: Number.isFinite(pageNum) ? pageNum : undefined,
+      limit: Number.isFinite(limitNum) ? limitNum : undefined,
     });
   }
 

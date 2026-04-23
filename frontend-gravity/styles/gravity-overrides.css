@@ -1002,7 +1002,12 @@ body {
 }
 
 .repeto-top-header__logo .repeto-sidebar__logo-icon {
-    display: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
 }
 
 .repeto-top-header__logo .repeto-sidebar__logo-text {
@@ -11757,3 +11762,213 @@ body {
 .repeto-time-popup__option-icon {
     color: var(--repeto-control-icon);
 }
+
+/* ==========================================================================
+   Pill Tabs (Tochka-style) — unified mini-tab pattern.
+   Active: purple filled. Inactive: light grey chip. Rounded pills.
+   Used for: notifications tabs, schedule view switch (month/week/day),
+   finance widget period toggles, dashboard widget toggles, etc.
+   ========================================================================== */
+.repeto-pill-tabs {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.repeto-pill-tab {
+    all: unset;
+    cursor: pointer;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 14px;
+    min-height: 32px;
+    border-radius: 999px;
+    background: #f1f1f4;
+    color: #191919;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: 0;
+    white-space: nowrap;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.repeto-pill-tab:hover {
+    background: #e6e6ec;
+}
+
+.repeto-pill-tab--active,
+.repeto-pill-tab--active:hover {
+    background: var(--g-color-base-brand, #7e4bff);
+    color: #ffffff;
+}
+
+.repeto-pill-tab__count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: rgba(25, 25, 25, 0.08);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    height: 18px;
+}
+
+.repeto-pill-tab--active .repeto-pill-tab__count {
+    background: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
+}
+
+.repeto-pill-tabs--s .repeto-pill-tab {
+    padding: 4px 12px;
+    min-height: 28px;
+    font-size: 13px;
+}
+
+.repeto-pill-tabs--s .repeto-pill-tab__count {
+    height: 16px;
+    min-width: 16px;
+    font-size: 11px;
+}
+
+@media (max-width: 640px) {
+    .repeto-pill-tabs {
+        gap: 6px;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    .repeto-pill-tabs::-webkit-scrollbar {
+        display: none;
+    }
+    .repeto-pill-tab {
+        flex-shrink: 0;
+    }
+}
+
+/* ==========================================================================
+   Notification banner block (Tochka-style) — grey/yellow info box that
+   appears BELOW the notification text, not inside it.
+   ========================================================================== */
+.repeto-notif-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: 10px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: #f4f4f7;
+    color: #191919;
+    font-size: 13px;
+    line-height: 1.35;
+}
+
+.repeto-notif-banner--warning {
+    background: #fff8e1;
+}
+
+.repeto-notif-banner--danger {
+    background: #fdecec;
+}
+
+.repeto-notif-banner--success {
+    background: #eaf7ee;
+}
+
+.repeto-notif-banner__icon {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #c9a225;
+    margin-top: 1px;
+}
+
+.repeto-notif-banner--danger .repeto-notif-banner__icon {
+    color: #d14343;
+}
+
+.repeto-notif-banner--success .repeto-notif-banner__icon {
+    color: #2ca84a;
+}
+
+.repeto-notif-banner--info .repeto-notif-banner__icon {
+    color: #7a7a7a;
+}
+
+.repeto-notif-banner__text {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Top header logo: show icon alongside wordmark. */
+.repeto-top-header__logo .repeto-sidebar__logo-icon {
+    display: inline-flex;
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+}
+
+.repeto-top-header__logo .repeto-sidebar__logo-icon .repeto-logo--icon {
+    width: 28px;
+    height: 28px;
+}
+
+
+/* ==========================================================================
+   PublicTutorWidget switcher (Google-account-style chevron inside widget head)
+   ========================================================================== */
+.repeto-tp-widget__head {
+    position: relative;
+}
+
+.repeto-tp-widget__switcher {
+    all: unset;
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--g-color-text-secondary, #6b6b6b);
+    transition: background 0.15s ease, color 0.15s ease, transform 0.2s ease;
+}
+
+.repeto-tp-widget__switcher:hover {
+    background: rgba(25, 25, 25, 0.06);
+    color: var(--g-color-text-primary, #191919);
+}
+
+.repeto-tp-widget__switcher--open {
+    background: rgba(25, 25, 25, 0.06);
+    color: var(--g-color-text-primary, #191919);
+}
+
+.repeto-tp-widget__switcher--open .g-icon {
+    transform: rotate(180deg);
+    transition: transform 0.2s ease;
+}
+
+.repeto-tp-widget__switcher-panel {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--g-color-line-generic, #e6e6ec);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+

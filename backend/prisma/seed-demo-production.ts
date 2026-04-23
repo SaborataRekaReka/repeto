@@ -662,7 +662,7 @@ async function main(): Promise<void> {
       published: true,
       showPublicPackages: true,
       timezone: 'Europe/Moscow',
-      avatarUrl: null, // '/uploads/avatars/demo-alpha.png' — file not deployed
+      avatarUrl: 'https://api.dicebear.com/7.x/initials/svg?seed=Demo%20Tutor%20Alpha&backgroundColor=5B3FDB&fontFamily=Inter',
       subjects: ['Math', 'Physics', 'English', 'Computer Science'],
       subjectDetails: [
         { name: 'Math', duration: 60, price: 2300 },
@@ -741,7 +741,7 @@ async function main(): Promise<void> {
       published: true,
       showPublicPackages: true,
       timezone: 'Europe/Moscow',
-      avatarUrl: null, // '/uploads/avatars/demo-beta.png' — file not deployed
+      avatarUrl: 'https://api.dicebear.com/7.x/initials/svg?seed=Demo%20Tutor%20Beta&backgroundColor=2CA84A&fontFamily=Inter',
       subjects: ['English', 'Speaking Club'],
       subjectDetails: [
         { name: 'English', duration: 45, price: 1700 },
@@ -815,7 +815,7 @@ async function main(): Promise<void> {
       key: 'shared-alina',
       email: 'demo.student.orlova@repeto.ru',
       name: 'Alina Orlova',
-      avatarUrl: null,
+      avatarUrl: 'https://api.dicebear.com/7.x/initials/svg?seed=Alina%20Orlova&backgroundColor=8F77FF&fontFamily=Inter',
       status: StudentAccountStatus.ACTIVE,
       emailVerifiedAt: addDays(now, -390),
       lastLoginAt: addDays(now, -1),
@@ -824,7 +824,7 @@ async function main(): Promise<void> {
       key: 'timur',
       email: 'demo.student.mironov@repeto.ru',
       name: 'Timur Mironov',
-      avatarUrl: null,
+      avatarUrl: 'https://api.dicebear.com/7.x/initials/svg?seed=Timur%20Mironov&backgroundColor=4F9CFF&fontFamily=Inter',
       status: StudentAccountStatus.ACTIVE,
       emailVerifiedAt: addDays(now, -180),
       lastLoginAt: addDays(now, -4),
@@ -833,7 +833,7 @@ async function main(): Promise<void> {
       key: 'sofia',
       email: 'demo.student.sofia@repeto.ru',
       name: 'Sofia Gorina',
-      avatarUrl: null,
+      avatarUrl: 'https://api.dicebear.com/7.x/initials/svg?seed=Sofia%20Gorina&backgroundColor=FF77B5&fontFamily=Inter',
       status: StudentAccountStatus.PAUSED,
       emailVerifiedAt: addDays(now, -700),
       lastLoginAt: addDays(now, -120),
@@ -842,7 +842,7 @@ async function main(): Promise<void> {
       key: 'eva',
       email: 'demo.student.eva@repeto.ru',
       name: 'Eva Smirnova',
-      avatarUrl: null,
+      avatarUrl: 'https://api.dicebear.com/7.x/initials/svg?seed=Eva%20Smirnova&backgroundColor=F5B740&fontFamily=Inter',
       status: StudentAccountStatus.INVITED,
       emailVerifiedAt: null,
       lastLoginAt: null,

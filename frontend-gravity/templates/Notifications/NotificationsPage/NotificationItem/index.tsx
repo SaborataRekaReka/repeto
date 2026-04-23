@@ -40,6 +40,32 @@ const colorMap: Record<NotificationType, string> = {
     system: "rgba(128,128,128,0.12)",
 };
 
+const bannerThemeMap: Record<NotificationType, "info" | "warning" | "danger" | "success"> = {
+    payment_received: "success",
+    payment_overdue: "danger",
+    lesson_reminder: "warning",
+    lesson_cancelled: "danger",
+    reschedule_requested: "warning",
+    homework_submitted: "info",
+    booking_new: "info",
+    booking_confirmed: "success",
+    booking_rejected: "danger",
+    system: "info",
+};
+
+const bannerIconMap: Record<NotificationType, unknown> = {
+    payment_received: CircleCheck,
+    payment_overdue: TriangleExclamation,
+    lesson_reminder: TriangleExclamation,
+    lesson_cancelled: TriangleExclamation,
+    reschedule_requested: TriangleExclamation,
+    homework_submitted: CircleInfo,
+    booking_new: CircleInfo,
+    booking_confirmed: CircleCheck,
+    booking_rejected: TriangleExclamation,
+    system: CircleInfo,
+};
+
 function getEntityLink(item: Notification): { href: string; label: string } | null {
     if (item.title === "Оставлен отзыв на занятие") {
         const reviewHref =
@@ -127,9 +153,14 @@ const NotificationItem = ({
                     </div>
                 </div>
 
-                <Text variant="caption-2" color="secondary" style={{ display: "block" }}>
-                    {item.description}
-                </Text>
+                {item.description && (
+                    <div className={`repeto-notif-banner repeto-notif-banner--${bannerThemeMap[item.type]}`}>
+                        <span className="repeto-notif-banner__icon">
+                            <Icon data={bannerIconMap[item.type] as IconData} size={16} />
+                        </span>
+                        <span className="repeto-notif-banner__text">{item.description}</span>
+                    </div>
+                )}
 
                 {/* Booking action buttons */}
                 {isBookingNew && !item.read && (

@@ -2,6 +2,7 @@ import * as React from "react";
 import { Avatar, Icon, Text } from "@gravity-ui/uikit";
 import type { IconData } from "@gravity-ui/uikit";
 import {
+    ChevronDown,
     CircleInfo,
     Comment,
     Envelope,
@@ -49,6 +50,13 @@ type PublicTutorWidgetProps = {
     onOpenReviews?: () => void;
     onOpenPolicy?: () => void;
     className?: string;
+    /** When provided, renders a Google-style chevron switcher inside the widget head. */
+    switcher?: {
+        expanded: boolean;
+        onToggle: () => void;
+        label?: string;
+        panel?: React.ReactNode;
+    };
 };
 
 const CONTACT_META: Record<PublicTutorWidgetContactKey, { icon?: IconData }> = {
@@ -120,6 +128,7 @@ const PublicTutorWidget = ({
     onOpenReviews,
     onOpenPolicy,
     className,
+    switcher,
 }: PublicTutorWidgetProps) => {
     const normalizedReviewsCount = Number.isFinite(Number(reviewsCount))
         ? Math.max(0, Number(reviewsCount))
@@ -274,7 +283,25 @@ const PublicTutorWidget = ({
                         )}
                     </div>
                 </div>
+
+                {switcher && (
+                    <button
+                        type="button"
+                        className={`repeto-tp-widget__switcher${switcher.expanded ? " repeto-tp-widget__switcher--open" : ""}`}
+                        onClick={switcher.onToggle}
+                        aria-expanded={switcher.expanded}
+                        aria-label={switcher.label || "Переключить репетитора"}
+                    >
+                        <Icon data={ChevronDown as IconData} size={20} />
+                    </button>
+                )}
             </div>
+
+            {switcher?.expanded && switcher.panel && (
+                <div className="repeto-tp-widget__switcher-panel">
+                    {switcher.panel}
+                </div>
+            )}
         </div>
     );
 };

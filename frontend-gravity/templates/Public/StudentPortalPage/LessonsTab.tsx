@@ -986,11 +986,23 @@ const LessonsTab = ({ data, studentId }: LessonsTabProps) => {
                             <Text variant="body-2" color="secondary">
                                 {cancelLesson.subject}
                             </Text>
-                            <Text variant="body-2" color="secondary">
-                                {cancelLesson.canCancelFree
-                                    ? `Отмена бесплатная (до занятия > ${cancelPolicy.freeHours} ${formatHoursWord(cancelPolicy.freeHours)}).`
-                                    : lateCancelWarning}
-                            </Text>
+                            {cancelLesson.canCancelFree ? (
+                                <div className="repeto-notif-banner repeto-notif-banner--info">
+                                    <span className="repeto-notif-banner__icon">
+                                        <Icon data={TriangleExclamation as IconData} size={16} />
+                                    </span>
+                                    <span className="repeto-notif-banner__text">
+                                        Отмена бесплатная (до занятия &gt; {cancelPolicy.freeHours} {formatHoursWord(cancelPolicy.freeHours)}).
+                                    </span>
+                                </div>
+                            ) : (
+                                <div className="repeto-notif-banner repeto-notif-banner--warning">
+                                    <span className="repeto-notif-banner__icon">
+                                        <Icon data={TriangleExclamation as IconData} size={16} />
+                                    </span>
+                                    <span className="repeto-notif-banner__text">{lateCancelWarning}</span>
+                                </div>
+                            )}
                         </>
                     )}
                 </div>
@@ -1037,10 +1049,14 @@ const LessonsTab = ({ data, studentId }: LessonsTabProps) => {
                             <Text variant="body-2" color="secondary">
                                 {pendingCancelBooking.subject}
                             </Text>
-                            <Text variant="body-2" color="secondary">
-                                Отмена будет применена сразу, без дополнительного подтверждения
-                                преподавателя.
-                            </Text>
+                            <div className="repeto-notif-banner repeto-notif-banner--info">
+                                <span className="repeto-notif-banner__icon">
+                                    <Icon data={TriangleExclamation as IconData} size={16} />
+                                </span>
+                                <span className="repeto-notif-banner__text">
+                                    Отмена будет применена сразу, без дополнительного подтверждения преподавателя.
+                                </span>
+                            </div>
                         </>
                     )}
                 </div>
@@ -1150,10 +1166,14 @@ const LessonsTab = ({ data, studentId }: LessonsTabProps) => {
                         подтвердит перенос.
                     </Text>
                     {rescheduleLesson && !rescheduleLesson.canCancelFree && (
-                        <Alert
-                            theme="warning"
-                            message={`Поздний перенос! До занятия менее ${cancelPolicy.freeHours} ${formatHoursWord(cancelPolicy.freeHours)}. Может быть применено списание: ${lateActionLabel}.`}
-                        />
+                        <div className="repeto-notif-banner repeto-notif-banner--warning">
+                            <span className="repeto-notif-banner__icon">
+                                <Icon data={TriangleExclamation as IconData} size={16} />
+                            </span>
+                            <span className="repeto-notif-banner__text">
+                                Поздний перенос! До занятия менее {cancelPolicy.freeHours} {formatHoursWord(cancelPolicy.freeHours)}. Может быть применено списание: {lateActionLabel}.
+                            </span>
+                        </div>
                     )}
                     <div>
                         <Text

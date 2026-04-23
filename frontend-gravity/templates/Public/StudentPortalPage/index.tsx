@@ -279,6 +279,13 @@ const StudentPortalPage = ({
                     containerClassName="repeto-portal-container"
                     rightContent={
                         <>
+                            <StudentAvatar
+                                student={{
+                                    name: data.studentName || "Ученик",
+                                    avatarUrl: settingsAvatarSrc || undefined,
+                                }}
+                                size="s"
+                            />
                             <Text variant="body-1" style={{ fontWeight: 500 }}>
                                 {data.studentName}
                             </Text>
@@ -331,110 +338,89 @@ const StudentPortalPage = ({
                                   }
                                 : undefined
                         }
+                        switcher={
+                            uniqueTutors.length > 1
+                                ? {
+                                      expanded: tutorSwitcherExpanded,
+                                      onToggle: () => setTutorSwitcherExpanded((prev) => !prev),
+                                      label: tutorSwitcherExpanded
+                                          ? "Скрыть список репетиторов"
+                                          : "Показать список репетиторов",
+                                      panel: (
+                                          <>
+                                              <Text
+                                                  variant="caption-1"
+                                                  color="secondary"
+                                                  className="repeto-portal-tutor-switcher-title"
+                                              >
+                                                  Другие репетиторы
+                                              </Text>
+
+                                              {otherTutors.length > 0 ? (
+                                                  otherTutors.map((item) => {
+                                                      const itemInitials = item.tutorName
+                                                          .split(" ")
+                                                          .filter(Boolean)
+                                                          .slice(0, 2)
+                                                          .map((word) => word[0])
+                                                          .join("")
+                                                          .toUpperCase();
+
+                                                      return (
+                                                          <button
+                                                              key={item.studentId}
+                                                              type="button"
+                                                              className="repeto-portal-tutor-switcher-item"
+                                                              onClick={() => {
+                                                                  setTutorSwitcherExpanded(false);
+                                                                  onSelectStudent(item.studentId);
+                                                              }}
+                                                          >
+                                                              <span className="repeto-portal-tutor-switcher-item__avatar">
+                                                                  {item.tutorAvatarUrl ? (
+                                                                      <Image
+                                                                          style={{ objectFit: "cover" }}
+                                                                          src={
+                                                                              resolveApiAssetUrl(item.tutorAvatarUrl) ||
+                                                                              item.tutorAvatarUrl
+                                                                          }
+                                                                          fill
+                                                                          alt={item.tutorName}
+                                                                      />
+                                                                  ) : (
+                                                                      <Avatar
+                                                                          text={itemInitials || "Р"}
+                                                                          size="xs"
+                                                                          theme="brand"
+                                                                      />
+                                                                  )}
+                                                              </span>
+                                                              <span className="repeto-portal-tutor-switcher-item__meta">
+                                                                  <span className="repeto-portal-tutor-switcher-item__name">
+                                                                      {item.tutorName}
+                                                                  </span>
+                                                                  <span className="repeto-portal-tutor-switcher-item__subject">
+                                                                      {item.subject}
+                                                                  </span>
+                                                              </span>
+                                                          </button>
+                                                      );
+                                                  })
+                                              ) : (
+                                                  <Text
+                                                      variant="body-1"
+                                                      color="secondary"
+                                                      className="repeto-portal-tutor-switcher-empty"
+                                                  >
+                                                      Других репетиторов пока нет
+                                                  </Text>
+                                              )}
+                                          </>
+                                      ),
+                                  }
+                                : undefined
+                        }
                     />
-
-                    {uniqueTutors.length > 1 && (
-                        <div className="repeto-portal-tutor-simple repeto-portal-section--spaced">
-                            <div className="repeto-portal-tutor-simple__row">
-                                <Text variant="body-2" color="secondary">
-                                    Переключить репетитора
-                                </Text>
-                                <div className="repeto-portal-tutor-simple__switcher">
-                                    <button
-                                        type="button"
-                                        className={`repeto-portal-tutor-switcher-trigger${
-                                            tutorSwitcherExpanded
-                                                ? " repeto-portal-tutor-switcher-trigger--open"
-                                                : ""
-                                        }`}
-                                        onClick={() =>
-                                            setTutorSwitcherExpanded((prev) => !prev)
-                                        }
-                                        aria-expanded={tutorSwitcherExpanded}
-                                        aria-label={
-                                            tutorSwitcherExpanded
-                                                ? "Скрыть список репетиторов"
-                                                : "Показать список репетиторов"
-                                        }
-                                    >
-                                        <Icon data={ChevronDown as IconData} size={16} />
-                                    </button>
-                                </div>
-                            </div>
-
-                            {tutorSwitcherExpanded && (
-                                <div className="repeto-portal-tutor-switcher-panel">
-                                    <Text
-                                        variant="caption-1"
-                                        color="secondary"
-                                        className="repeto-portal-tutor-switcher-title"
-                                    >
-                                        Другие репетиторы
-                                    </Text>
-
-                                    {otherTutors.length > 0 ? (
-                                        otherTutors.map((item) => {
-                                            const itemInitials = item.tutorName
-                                                .split(" ")
-                                                .filter(Boolean)
-                                                .slice(0, 2)
-                                                .map((word) => word[0])
-                                                .join("")
-                                                .toUpperCase();
-
-                                            return (
-                                                <button
-                                                    key={item.studentId}
-                                                    type="button"
-                                                    className="repeto-portal-tutor-switcher-item"
-                                                    onClick={() => {
-                                                        setTutorSwitcherExpanded(false);
-                                                        onSelectStudent(item.studentId);
-                                                    }}
-                                                >
-                                                    <span className="repeto-portal-tutor-switcher-item__avatar">
-                                                        {item.tutorAvatarUrl ? (
-                                                            <Image
-                                                                style={{ objectFit: "cover" }}
-                                                                src={
-                                                                    resolveApiAssetUrl(item.tutorAvatarUrl) ||
-                                                                    item.tutorAvatarUrl
-                                                                }
-                                                                fill
-                                                                alt={item.tutorName}
-                                                            />
-                                                        ) : (
-                                                            <Avatar
-                                                                text={itemInitials || "Р"}
-                                                                size="xs"
-                                                                theme="brand"
-                                                            />
-                                                        )}
-                                                    </span>
-                                                    <span className="repeto-portal-tutor-switcher-item__meta">
-                                                        <span className="repeto-portal-tutor-switcher-item__name">
-                                                            {item.tutorName}
-                                                        </span>
-                                                        <span className="repeto-portal-tutor-switcher-item__subject">
-                                                            {item.subject}
-                                                        </span>
-                                                    </span>
-                                                </button>
-                                            );
-                                        })
-                                    ) : (
-                                        <Text
-                                            variant="body-1"
-                                            color="secondary"
-                                            className="repeto-portal-tutor-switcher-empty"
-                                        >
-                                            Других репетиторов пока нет
-                                        </Text>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    )}
 
                     <div className="repeto-scroll-x repeto-portal-tabs">
                         <div

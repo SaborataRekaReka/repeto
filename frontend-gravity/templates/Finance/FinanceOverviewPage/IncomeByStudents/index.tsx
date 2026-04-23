@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
 import { Text, Card } from "@gravity-ui/uikit";
-import { SegmentedRadioGroup } from "@gravity-ui/uikit";
+import PillTabs from "@/components/PillTabs";
 import { useIncomeByStudents } from "@/hooks/usePayments";
 import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 
 const periodOptions = [
-    { value: "month", content: "Месяц" },
-    { value: "quarter", content: "Квартал" },
-    { value: "year", content: "Год" },
+    { value: "month", label: "Месяц" },
+    { value: "quarter", label: "Квартал" },
+    { value: "year", label: "Год" },
 ];
 
 const VISIBLE_STUDENTS_COUNT = 3;
@@ -53,11 +53,12 @@ const IncomeByStudents = () => {
             >
                 <Text variant="subheader-2">Доход по ученикам</Text>
                 <div className="repeto-income-students-card__period">
-                    <SegmentedRadioGroup
+                    <PillTabs
                         size="s"
                         value={period}
-                        onUpdate={setPeriod}
+                        onChange={setPeriod}
                         options={periodOptions}
+                        ariaLabel="Период"
                     />
                 </div>
             </div>

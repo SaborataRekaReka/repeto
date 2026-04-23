@@ -1,12 +1,13 @@
 import { useState, useMemo } from "react";
-import { Card, Text, Loader, SegmentedRadioGroup } from "@gravity-ui/uikit";
+import { Card, Text, Loader } from "@gravity-ui/uikit";
+import PillTabs from "@/components/PillTabs";
 import { useIncomeChart } from "@/hooks/useDashboard";
 import { accent, brand } from "@/constants/brand";
 
 const periodOptions = [
-    { value: "month", content: "Месяц" },
-    { value: "quarter", content: "Квартал" },
-    { value: "year", content: "Год" },
+    { value: "month", label: "Месяц" },
+    { value: "quarter", label: "Квартал" },
+    { value: "year", label: "Год" },
 ] as const;
 
 type PeriodValue = (typeof periodOptions)[number]["value"];
@@ -31,11 +32,12 @@ const IncomeChart = () => {
         <Card className="repeto-income-card" view="outlined" style={{ background: "var(--g-color-base-float)" }}>
             <div className="repeto-card-header repeto-income-card__header">
                 <Text variant="subheader-2">Доход</Text>
-                <SegmentedRadioGroup
+                <PillTabs
                     size="s"
                     value={selectedPeriod}
-                    onUpdate={(value) => setSelectedPeriod(value as PeriodValue)}
-                    options={periodOptions as unknown as Array<{ value: string; content: string }>}
+                    onChange={(value) => setSelectedPeriod(value as PeriodValue)}
+                    options={periodOptions as unknown as Array<{ value: string; label: string }>}
+                    ariaLabel="Период"
                 />
             </div>
             <div className="repeto-card-body">

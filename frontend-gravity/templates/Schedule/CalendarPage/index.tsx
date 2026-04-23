@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/router";
 import GravityLayout from "@/components/GravityLayout";
-import { Text, Button, Icon, SegmentedRadioGroup, Select, DropdownMenu } from "@gravity-ui/uikit";
+import { Text, Button, Icon, Select, DropdownMenu } from "@gravity-ui/uikit";
+import PillTabs from "@/components/PillTabs";
 import {
     ArrowChevronLeft,
     ArrowChevronRight,
@@ -36,10 +37,10 @@ const MONTH_NAMES_GEN = [
     "июля", "августа", "сентября", "октября", "ноября", "декабря",
 ];
 
-const VIEW_OPTIONS: { value: ViewType; content: string }[] = [
-    { value: "month", content: "Месяц" },
-    { value: "week", content: "Неделя" },
-    { value: "day", content: "День" },
+const VIEW_OPTIONS: { value: ViewType; label: string }[] = [
+    { value: "month", label: "Месяц" },
+    { value: "week", label: "Неделя" },
+    { value: "day", label: "День" },
 ];
 
 const LESSON_STATUS_OPTIONS: { value: LessonStatusFilter; content: string }[] = [
@@ -287,11 +288,11 @@ const CalendarPage = () => {
 
                 {/* View toggle */}
                 <div className="repeto-schedule-toolbar__view">
-                    <SegmentedRadioGroup
-                        size="m"
+                    <PillTabs
                         value={view}
-                        onUpdate={(v) => setView(v as ViewType)}
+                        onChange={(v) => setView(v as ViewType)}
                         options={VIEW_OPTIONS}
+                        ariaLabel="Режим календаря"
                     />
                 </div>
 

@@ -536,43 +536,49 @@ const HomeworkTab = ({ homework: initial, studentId }: HomeworkTabProps) => {
                                         openedHomework.studentUploads.length > 0 && (
                                             <div className="repeto-portal-stack repeto-portal-homework-modal__uploads">
                                                 {openedHomework.studentUploads.map((upload) => (
-                                                    <Card
+                                                    <div
                                                         key={upload.id}
-                                                        view="outlined"
-                                                        className="repeto-portal-upload-card"
+                                                        className="repeto-portal-file-row repeto-portal-file-pill"
                                                     >
-                                                        <Icon data={FileIcon as IconData} size={16} />
-                                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                                            <Text
-                                                                variant="caption-1"
-                                                                ellipsis
-                                                                style={{
-                                                                    fontWeight: 600,
-                                                                    display: "block",
-                                                                }}
-                                                            >
-                                                                {upload.name}
-                                                            </Text>
-                                                            <Text variant="caption-1" color="secondary">
-                                                                {upload.size}
-                                                                {upload.expiresAt
-                                                                    ? ` · до ${upload.expiresAt}`
-                                                                    : ""}
-                                                            </Text>
+                                                        <div className="repeto-portal-file-row__left">
+                                                            <Icon data={FileIcon as IconData} size={18} />
+                                                            <div className="repeto-portal-file-row__meta">
+                                                                <Text
+                                                                    variant="body-1"
+                                                                    as="div"
+                                                                    ellipsis
+                                                                    className="repeto-portal-file-row__title"
+                                                                    style={{ fontWeight: 600 }}
+                                                                >
+                                                                    {upload.name}
+                                                                </Text>
+                                                                <Text
+                                                                    variant="caption-1"
+                                                                    color="secondary"
+                                                                    as="div"
+                                                                    className="repeto-portal-file-row__subtitle"
+                                                                >
+                                                                    {upload.size}
+                                                                    {upload.expiresAt
+                                                                        ? ` · до ${upload.expiresAt}`
+                                                                        : ""}
+                                                                </Text>
+                                                            </div>
                                                         </div>
                                                         <Button
                                                             view="flat-danger"
-                                                            size="xs"
+                                                            size="s"
                                                             onClick={() =>
                                                                 handleRemoveUpload(
                                                                     openedHomework.id,
                                                                     upload.id
                                                                 )
                                                             }
+                                                            aria-label="Удалить файл"
                                                         >
                                                             <Icon data={TrashBin as IconData} size={14} />
                                                         </Button>
-                                                    </Card>
+                                                    </div>
                                                 ))}
                                             </div>
                                         )}

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import GravityLayout from "@/components/GravityLayout";
-import { Alert, SegmentedRadioGroup, Card, Text, Button } from "@gravity-ui/uikit";
+import { Alert, Card, Text } from "@gravity-ui/uikit";
+import PillTabs from "@/components/PillTabs";
 import NotificationItem from "./NotificationItem";
 
 import {
@@ -16,10 +17,10 @@ import { getNotificationCategory } from "@/mocks/notifications";
 import { codedErrorMessage } from "@/lib/errorCodes";
 
 const tabOptions = [
-    { value: "all", content: "Все" },
-    { value: "unread", content: "Непрочитанные" },
-    { value: "payments", content: "Оплаты" },
-    { value: "schedule", content: "Расписание" },
+    { value: "all", label: "Все" },
+    { value: "unread", label: "Непрочитанные" },
+    { value: "payments", label: "Оплаты" },
+    { value: "schedule", label: "Расписание" },
 ];
 
 const NotificationsPage = () => {
@@ -66,12 +67,24 @@ const NotificationsPage = () => {
         <GravityLayout title="Уведомления">
             <div className="repeto-notifications-toolbar">
                 <div className="repeto-notifications-toolbar__tabs">
-                    <SegmentedRadioGroup size="m" value={tab} onUpdate={setTab} options={tabOptions} />
+                    <PillTabs
+                        value={tab}
+                        onChange={setTab}
+                        options={tabOptions}
+                        ariaLabel="Фильтр уведомлений"
+                    />
                 </div>
                 {unreadCount > 0 && (
-                    <Button view="outlined" size="s" onClick={handleMarkAllRead} disabled={actionBusy}>
-                        Прочитать все ({unreadCount})
-                    </Button>
+                    <button
+                        type="button"
+                        className="repeto-pill-tab repeto-pill-tab--ghost"
+                        onClick={handleMarkAllRead}
+                        disabled={actionBusy}
+                        style={{ opacity: actionBusy ? 0.6 : 1 }}
+                    >
+                        Прочитать все
+                        <span className="repeto-pill-tab__count">{unreadCount}</span>
+                    </button>
                 )}
             </div>
 

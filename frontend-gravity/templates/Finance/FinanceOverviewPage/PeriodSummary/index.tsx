@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Text, Card, SegmentedRadioGroup } from "@gravity-ui/uikit";
+import { Text, Card } from "@gravity-ui/uikit";
+import PillTabs from "@/components/PillTabs";
 import { useFinanceSummary } from "@/hooks/usePayments";
 
 const periodOptions = [
-    { value: "month", content: "Месяц" },
-    { value: "quarter", content: "Квартал" },
-    { value: "year", content: "Год" },
+    { value: "month", label: "Месяц" },
+    { value: "quarter", label: "Квартал" },
+    { value: "year", label: "Год" },
 ];
 
 type MetricItem = { label: string; value: string };
@@ -60,7 +61,7 @@ const PeriodSummary = () => {
             >
                 <Text variant="subheader-2">Сводка</Text>
                 <div className="repeto-finance-summary-period">
-                    <SegmentedRadioGroup size="s" value={period} onUpdate={setPeriod} options={periodOptions} />
+                    <PillTabs size="s" value={period} onChange={setPeriod} options={periodOptions} ariaLabel="Период" />
                 </div>
             </div>
 
