@@ -570,7 +570,7 @@ jobs:
           fi
 
       - name: Seed demo tutors and students on VPS
-        if: ${{ github.event_name == 'workflow_dispatch' && (inputs.seed_demo_data == true || inputs.seed_demo_data == 'true') }}
+        if: ${{ (github.event_name == 'workflow_dispatch' && (inputs.seed_demo_data == true || inputs.seed_demo_data == 'true')) || (github.event_name == 'push' && contains(toJson(github.event.commits), 'backend/prisma/seed-demo-production.ts')) }}
         timeout-minutes: 8
         shell: bash
         env:
