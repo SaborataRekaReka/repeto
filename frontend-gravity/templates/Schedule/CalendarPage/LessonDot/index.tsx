@@ -29,7 +29,7 @@ function getStatusDotClass(status: Lesson["status"]) {
 const LessonDot = ({ className, classTitle, lesson, time, onClick }: LessonDotProps) => {
     return (
         <button
-            className={`relative flex items-center w-full pl-2.5 pr-4 py-1 bg-background transition-colors text-xs outline-none hover:text-purple-2 last:mb-0 dark:bg-n-2 ${className}`}
+            className={`relative flex items-center w-full pl-2.5 pr-4 py-1 bg-surface-page transition-colors text-xs outline-none hover:text-purple-2 last:mb-0 ${className}`}
             onClick={() => onClick?.(lesson)}
         >
             <div
