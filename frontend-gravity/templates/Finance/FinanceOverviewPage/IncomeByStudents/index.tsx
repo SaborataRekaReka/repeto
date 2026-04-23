@@ -15,16 +15,11 @@ const VISIBLE_STUDENTS_COUNT = 3;
 const STUDENT_ROW_HEIGHT = 64;
 
 function getBarColor(index: number): string {
-    if (index === 0) {
-        return "rgba(174, 122, 255, 1)";
-    }
-    if (index === 1) {
-        return "rgba(174, 122, 255, 0.76)";
-    }
-    if (index === 2) {
-        return "rgba(174, 122, 255, 0.58)";
-    }
-    return "rgba(174, 122, 255, 0.42)";
+    // Градация по вкладу ученика — через прозрачность нейтрального текста,
+    // а не четырьмя оттенками фиолетового. На странице «Финансы» уже есть
+    // акцентный PillTabs и page-title; полоса — вторичный информатор.
+    const alpha = index === 0 ? 0.72 : index === 1 ? 0.54 : index === 2 ? 0.38 : 0.26;
+    return `rgba(20, 20, 20, ${alpha})`;
 }
 
 const IncomeByStudents = () => {

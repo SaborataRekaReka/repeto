@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { Text, Button, Icon, Label, Card, SegmentedRadioGroup } from "@gravity-ui/uikit";
+import { Text, Button, Icon, Card, SegmentedRadioGroup } from "@gravity-ui/uikit";
 import {
     ArrowChevronDown,
     Clock,
@@ -38,12 +38,13 @@ type CellKey = `${number}-${number}`; // "dayOfWeek-hour"
 const AvailabilityEditor = () => {
     const { theme } = useThemeMode();
     const isDarkTheme = theme === "dark";
+    // Рабочие часы — нейтральная сетка. Акцент (accent) оставлен только для
+    // header-иконки и активной «сегодня»-метки в календаре; сама карта занятости
+    // больше не перекрашивает половину экрана в зелёный.
     const workHoursActiveBg = isDarkTheme
-        ? "var(--g-color-base-positive-light)"
-        : accent[300];
-    const workHoursIdleBg = isDarkTheme
-        ? "var(--g-color-base-background)"
-        : accent[50];
+        ? "var(--g-color-base-generic)"
+        : "var(--g-color-base-generic)";
+    const workHoursIdleBg = "transparent";
     const headerIconBg = isDarkTheme
         ? "var(--g-color-base-brand-light)"
         : accent[100];
@@ -623,14 +624,17 @@ const AvailabilityEditor = () => {
                                                 {formatDate(ov.date)}
                                             </Text>
                                             {ov.isBlocked ? (
-                                                <Label theme="danger" size="s">
+                                                <Text
+                                                    variant="body-2"
+                                                    style={{ color: "var(--g-color-text-danger)" }}
+                                                >
                                                     Выходной
-                                                </Label>
+                                                </Text>
                                             ) : (
-                                                <Label theme="success" size="s">
+                                                <Text variant="body-2" color="secondary">
                                                     {ov.slots[0]?.startTime}–
                                                     {ov.slots[ov.slots.length - 1]?.endTime}
-                                                </Label>
+                                                </Text>
                                             )}
                                         </div>
                                         <div style={{ display: "flex", gap: 2 }}>

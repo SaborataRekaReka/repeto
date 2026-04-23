@@ -71,7 +71,7 @@ const PeriodSummary = () => {
                 </div>
             ) : (
                 <div className="repeto-finance-summary-metrics" style={{ flex: 1 }}>
-                    {items.map((item, index) => (
+                    {items.map((item) => (
                         <Card
                             key={item.label}
                             view="outlined"
@@ -83,15 +83,6 @@ const PeriodSummary = () => {
                                 flexDirection: "column",
                                 justifyContent: "space-between",
                                 background: "var(--g-color-base-float)",
-                                borderTop: `3px solid ${
-                                    index === 0
-                                        ? "#8E7BFF"
-                                        : index === 1
-                                        ? "#73D8A8"
-                                        : index === 2
-                                        ? "#C6A6FF"
-                                        : "#AE7AFF"
-                                }`,
                             }}
                         >
                             <Text

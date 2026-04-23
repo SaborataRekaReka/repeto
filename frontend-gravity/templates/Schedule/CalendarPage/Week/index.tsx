@@ -159,9 +159,10 @@ const Week = ({ currentDate, onLessonClick, onSlotClick, lessons = [] }: WeekPro
                                         alignItems: "center",
                                         justifyContent: "center",
                                         borderRadius: "50%",
-                                        background: day.isToday
-                                            ? "var(--g-color-base-brand)"
-                                            : "transparent",
+                                        background: "transparent",
+                                        border: day.isToday
+                                            ? "1.5px solid var(--g-color-base-brand)"
+                                            : "1.5px solid transparent",
                                         marginTop: 2,
                                     }}
                                 >
@@ -169,8 +170,9 @@ const Week = ({ currentDate, onLessonClick, onSlotClick, lessons = [] }: WeekPro
                                         variant="subheader-2"
                                         style={{
                                             color: day.isToday
-                                                ? "var(--g-color-text-brand-contrast)"
+                                                ? "var(--g-color-text-brand)"
                                                 : "var(--g-color-text-primary)",
+                                            fontWeight: day.isToday ? 600 : 400,
                                         }}
                                     >
                                         {day.dayNum}

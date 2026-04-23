@@ -2,7 +2,6 @@ import { useState, useMemo } from "react";
 import { Card, Text, Loader } from "@gravity-ui/uikit";
 import PillTabs from "@/components/PillTabs";
 import { useIncomeChart } from "@/hooks/useDashboard";
-import { accent, brand } from "@/constants/brand";
 
 const periodOptions = [
     { value: "month", label: "Месяц" },
@@ -54,8 +53,8 @@ const IncomeChart = () => {
                                     style={{
                                         width: 8,
                                         height: 8,
-                                        borderRadius: "50%",
-                                        background: accent[300],
+                                        borderRadius: 2,
+                                        background: "var(--g-color-text-primary)",
                                     }}
                                 />
                                 <Text variant="body-1" color="secondary">Получено</Text>
@@ -65,8 +64,9 @@ const IncomeChart = () => {
                                     style={{
                                         width: 8,
                                         height: 8,
-                                        borderRadius: "50%",
-                                        background: brand[400],
+                                        borderRadius: 2,
+                                        background: "var(--g-color-base-brand-light, #EEE9FF)",
+                                        border: "1px solid var(--g-color-line-generic)",
                                     }}
                                 />
                                 <Text variant="body-1" color="secondary">Запланировано</Text>

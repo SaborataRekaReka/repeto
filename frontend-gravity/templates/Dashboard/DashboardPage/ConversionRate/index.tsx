@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Card, Text, Loader } from "@gravity-ui/uikit";
 import { useConversion } from "@/hooks/useDashboard";
-import { accent, brand, semantic } from "@/constants/brand";
 import PillTabs from "@/components/PillTabs";
 
 type ConversionPeriod = "month" | "quarter" | "year";
@@ -23,7 +22,10 @@ const ConversionRate = () => {
     const lessons = data?.completedLessons ?? 0;
     const payments = data?.paymentsCount ?? 0;
 
-    const barColor = pct >= 80 ? accent[500] : pct >= 50 ? brand[400] : semantic.danger;
+    // Один цвет прогресс-бара вне зависимости от значения — светофор
+    // (зелёный/фиолетовый/розовый в зависимости от pct) создавал ощущение
+    // «меняющегося статуса» там, где цифра уже сама по себе всё рассказывает.
+    const barColor = "var(--g-color-text-primary)";
 
     return (
         <Card view="outlined" style={{ overflow: "hidden", background: "var(--g-color-base-float)" }}>
@@ -52,8 +54,11 @@ const ConversionRate = () => {
                                 <span
                                     className="repeto-conversion-card__delta"
                                     style={{
-                                        color: balance > 0 ? accent[600] : semantic.danger,
-                                        background: balance > 0 ? accent[100] : "rgba(209,107,143,0.12)",
+                                        color: balance > 0
+                                            ? "var(--g-color-text-positive)"
+                                            : "var(--g-color-text-danger)",
+                                        background: "transparent",
+                                        padding: 0,
                                     }}
                                 >
                                     {balance > 0 ? "+" : "−"}{Math.abs(balance).toLocaleString("ru-RU")} ₽
@@ -91,7 +96,7 @@ const ConversionRate = () => {
                         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                             <div className="repeto-conversion-card__stat-row">
                                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: brand[400], flexShrink: 0 }} />
+                                    <span style={{ width: 8, height: 8, borderRadius: 2, background: "var(--g-color-text-primary)", flexShrink: 0 }} />
                                     <Text variant="body-1" color="secondary">Проведено</Text>
                                 </div>
                                 <Text variant="body-1" className="repeto-conversion-card__stat-value repeto-dashboard-inline-value">
@@ -100,7 +105,7 @@ const ConversionRate = () => {
                             </div>
                             <div className="repeto-conversion-card__stat-row">
                                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: barColor, flexShrink: 0 }} />
+                                    <span style={{ width: 8, height: 8, borderRadius: 2, background: "var(--g-color-base-brand-light, #EEE9FF)", border: "1px solid var(--g-color-line-generic)", flexShrink: 0 }} />
                                     <Text variant="body-1" color="secondary">Оплачено</Text>
                                 </div>
                                 <Text variant="body-1" className="repeto-conversion-card__stat-value repeto-dashboard-inline-value">

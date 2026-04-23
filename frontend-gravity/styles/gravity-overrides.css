@@ -3791,6 +3791,13 @@ body {
     align-self: flex-start;
 }
 
+/* Text-only delta: цвет несёт смысл, плашки нет. */
+.repeto-stat-card__meta--text {
+    padding: 0;
+    background: transparent !important;
+    border-radius: 0;
+}
+
 /* Section card â€” replaces Card view="outlined" inside Dashboard/Finance */
 .repeto-section-card {
     background: var(--g-color-base-float);
@@ -3979,11 +3986,11 @@ body {
 }
 
 .repeto-income-card__bar-part--received {
-    background: linear-gradient(90deg, #98E9AB, #68D983);
+    background: var(--g-color-text-primary);
 }
 
 .repeto-income-card__bar-part--expected {
-    background: linear-gradient(90deg, #C6A6FF, #AE7AFF);
+    background: var(--g-color-base-brand-light, #EEE9FF);
 }
 
 .repeto-income-card__amounts {

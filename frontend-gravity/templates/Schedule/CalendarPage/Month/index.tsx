@@ -180,9 +180,10 @@ const Month = ({ currentDate, onLessonClick, lessons = [] }: MonthProps) => {
                                             alignItems: "center",
                                             justifyContent: "center",
                                             borderRadius: "50%",
-                                            background: isToday
-                                                ? "var(--g-color-base-brand)"
-                                                : "transparent",
+                                            background: "transparent",
+                                            border: isToday
+                                                ? "1.5px solid var(--g-color-base-brand)"
+                                                : "1.5px solid transparent",
                                         }}
                                     >
                                         <Text
@@ -191,7 +192,7 @@ const Month = ({ currentDate, onLessonClick, lessons = [] }: MonthProps) => {
                                                 fontSize: 13,
                                                 fontWeight: isToday ? 600 : 400,
                                                 color: isToday
-                                                    ? "var(--g-color-text-brand-contrast)"
+                                                    ? "var(--g-color-text-brand)"
                                                     : item.isCurrentMonth
                                                       ? "var(--g-color-text-primary)"
                                                       : "var(--g-color-text-hint)",
