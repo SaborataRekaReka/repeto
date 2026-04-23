@@ -13,7 +13,7 @@ type ItemProps = {
 
 const Item = ({ item, onClick }: ItemProps) => (
     <button
-        className="flex items-center w-full px-4 py-3.5 border-b border-n-1 last:border-none text-left transition-colors hover:bg-background dark:border-white dark:hover:bg-white/5"
+        className="flex items-center w-full px-4 py-3.5 border-b border-n-1 last:border-none text-left transition-colors hover:bg-surface-page dark:border-white dark:hover:bg-white/5"
         onClick={onClick}
     >
         <div className="w-[calc(100%-5rem)] mr-auto">

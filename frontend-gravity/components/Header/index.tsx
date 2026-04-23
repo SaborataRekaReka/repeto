@@ -61,7 +61,7 @@ const Header = ({ back, title }: HeaderProps) => {
         <header
             className={`fixed top-0 right-0 left-[18.75rem] z-20 border-b border-n-1 xl:left-20 md:left-0 md:relative dark:border-white ${
                 headerStyle
-                    ? "bg-background dark:bg-n-2 md:!bg-transparent"
+                    ? "bg-surface-page md:!bg-transparent"
                     : ""
             }`}
         >

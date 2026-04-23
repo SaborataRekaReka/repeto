@@ -38,7 +38,7 @@ const Menu = ({}: MenuProps) => {
     }, [router.pathname]);
 
     return (
-        <div className="fixed left-0 bottom-0 right-0 z-10 hidden justify-between items-center px-3 bg-background border-t border-n-1 md:flex dark:bg-n-2 dark:border-white">
+        <div className="fixed left-0 bottom-0 right-0 z-10 hidden justify-between items-center px-3 bg-surface-page border-t border-n-1 md:flex dark:border-white">
             {navigationMobile.map((link: any, index: number) =>
                 link.url ? (
                     <Link
