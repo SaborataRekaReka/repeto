@@ -54,21 +54,21 @@ html body.g-root_theme_light {
     --g-color-private-brand-100-solid: rgb(247 255 231);
     --g-color-private-brand-50-solid: rgb(250 255 239);
 
-    --g-color-text-brand: rgb(112 48 217);
-    --g-color-text-brand-heavy: rgb(112 48 217);
-    --g-color-text-link: rgb(136 64 245);
-    --g-color-text-link-hover: rgb(88 32 184);
+    --g-color-text-brand: var(--accent);
+    --g-color-text-brand-heavy: var(--accent);
+    --g-color-text-link: var(--accent-hover);
+    --g-color-text-link-hover: var(--accent-pressed);
     --g-color-text-link-visited: var(--g-color-private-purple-550-solid);
     --g-color-text-link-visited-hover: var(--g-color-private-purple-800-solid);
     --g-color-text-brand-contrast: var(--g-color-text-light-primary);
-    --g-color-base-background: rgb(242, 242, 242);
-    --g-color-base-float: rgb(255, 255, 255);
-    --g-color-base-brand: rgb(174 122 255);
-    --g-color-base-brand-hover: rgb(155 95 255);
-    --g-color-base-selection: rgb(174 122 255 / 0.2);
-    --g-color-base-selection-hover: rgb(174 122 255 / 0.3);
-    --g-color-line-brand: rgb(174 122 255);
-    --repeto-bg: rgb(242, 242, 242);
+    --g-color-base-background: var(--surface-page);
+    --g-color-base-float: var(--surface-card);
+    --g-color-base-brand: var(--accent);
+    --g-color-base-brand-hover: var(--accent-hover);
+    --g-color-base-selection: color-mix(in srgb, var(--accent) 20%, transparent);
+    --g-color-base-selection-hover: color-mix(in srgb, var(--accent) 30%, transparent);
+    --g-color-line-brand: var(--accent);
+    --repeto-bg: var(--surface-page);
 }
 
 .g-root_theme_dark,
@@ -107,39 +107,52 @@ html body.g-root_theme_dark {
     --g-color-private-brand-100-solid: rgb(59 63 43);
     --g-color-private-brand-50-solid: rgb(51 52 40);
 
-    --g-color-text-brand: rgb(196 165 255);
-    --g-color-text-brand-heavy: rgb(210 190 255);
+    --g-color-text-brand: var(--accent);
+    --g-color-text-brand-heavy: var(--accent-hover);
     --g-color-text-brand-contrast: var(--g-color-text-light-primary);
-    --g-color-text-link: rgb(196 165 255);
-    --g-color-text-link-hover: rgb(220 205 255);
+    --g-color-text-link: var(--accent);
+    --g-color-text-link-hover: var(--accent-hover);
     --g-color-text-link-visited: var(--g-color-private-purple-700-solid);
     --g-color-text-link-visited-hover: var(--g-color-private-purple-850-solid);
-    --g-color-base-background: rgb(34, 29, 34);
-    --g-color-base-brand: rgb(174 122 255);
-    --g-color-base-brand-hover: rgb(196 165 255);
-    --g-color-base-selection: rgb(174 122 255 / 0.25);
-    --g-color-base-selection-hover: rgb(174 122 255 / 0.35);
-    --g-color-line-brand: rgb(196 165 255);
-    --repeto-bg: rgb(34, 29, 34);
+    --g-color-base-background: var(--surface-page);
+    --g-color-base-brand: var(--accent);
+    --g-color-base-brand-hover: var(--accent-hover);
+    --g-color-base-selection: color-mix(in srgb, var(--accent) 25%, transparent);
+    --g-color-base-selection-hover: color-mix(in srgb, var(--accent) 35%, transparent);
+    --g-color-line-brand: var(--accent);
+    --repeto-bg: var(--surface-page);
 }
 
 :root {
-    --repeto-bg: rgb(242, 242, 242);
-    --repeto-card-radius: 16px;
-    --repeto-card-shadow: 0 1px 3px rgba(174, 122, 255, 0.06), 0 4px 16px rgba(174, 122, 255, 0.04);
+    --surface-page: #f7f7f5;
+    --surface-card: #ffffff;
+    --surface-subtle: #f2f2ee;
+    --surface-sunken: #edede8;
+    --border-subtle: #eaeae6;
+    --border-strong: #d6d6d1;
+    --text-primary: #141414;
+    --text-secondary: #6b6b66;
+    --text-tertiary: #9a9a93;
+    --accent: #7a5af8;
+    --accent-hover: #6a4ae8;
+    --accent-pressed: #553dc0;
+    --accent-soft: #eee9ff;
+    --repeto-bg: var(--surface-page);
+    --repeto-card-radius: 14px;
+    --repeto-card-shadow: none;
     --repeto-card-shadow-hover: 0 4px 24px rgba(174, 122, 255, 0.12);
-    --repeto-control-surface: #1919190d;
-    --repeto-control-surface-hover: #E8E8E8;
-    --repeto-control-surface-active: #E8E8E8;
-    --repeto-control-surface-plain: #E8E8E8;
+    --repeto-control-surface: var(--surface-subtle);
+    --repeto-control-surface-hover: var(--surface-sunken);
+    --repeto-control-surface-active: var(--surface-sunken);
+    --repeto-control-surface-plain: var(--surface-sunken);
     --repeto-control-text: #26232d;
     --repeto-control-text-muted: #8e8799;
     --repeto-control-icon: #90899d;
-    --repeto-control-accent: #AE7AFF;
+    --repeto-control-accent: var(--accent);
     --repeto-control-danger: #d46c75;
     --repeto-control-line-soft: rgba(38, 35, 45, 0.08);
     --repeto-control-line-focus: rgba(143, 119, 255, 0.88);
-    --repeto-control-radius: 18px;
+    --repeto-control-radius: 10px;
     --repeto-control-radius-lg: 22px;
     --repeto-popover-shadow: none;
     --repeto-popover-shadow-soft: none;
@@ -150,7 +163,20 @@ html body.g-root_theme_dark {
 }
 
 :where(html.dark, :root[data-theme="dark"], body.dark) {
-    --repeto-bg: rgb(34, 29, 34);
+    --surface-page: #221d22;
+    --surface-card: #2a252c;
+    --surface-subtle: #312b35;
+    --surface-sunken: #3a3340;
+    --border-subtle: #4a4250;
+    --border-strong: #5d5365;
+    --text-primary: #f4effa;
+    --text-secondary: #b9afca;
+    --text-tertiary: #9d90b2;
+    --accent: #c4a5ff;
+    --accent-hover: #dccdff;
+    --accent-pressed: #b190ff;
+    --accent-soft: rgba(196, 165, 255, 0.2);
+    --repeto-bg: var(--surface-page);
     --repeto-control-surface: rgba(255, 255, 255, 0.08);
     --repeto-control-surface-hover: rgba(255, 255, 255, 0.12);
     --repeto-control-surface-active: rgba(255, 255, 255, 0.15);
@@ -12008,4 +12034,3 @@ body {
     flex-direction: column;
     gap: 8px;
 }
-

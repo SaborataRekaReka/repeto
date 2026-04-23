@@ -82,7 +82,7 @@ module.exports = {
                     4: "#E7E8E9",
                 },
                 white: "#FFFFFF",
-                background: "#F9F5FF",
+                "surface-page": "var(--surface-page)",
             },
             zIndex: {
                 1: "1",
@@ -193,8 +193,7 @@ module.exports = {
                     "@apply text-[1rem]": {},
                 },
                 body: {
-                    "@apply bg-background text-base antialiased dark:bg-n-2":
-                        {},
+                    "@apply text-base antialiased": {},
                 },
             });
             addComponents({

@@ -15,7 +15,7 @@ type RowProps = {
 
 const Row = ({ item, onClick }: RowProps) => (
     <tr
-        className="cursor-pointer transition-colors hover:bg-background dark:hover:bg-white/5"
+        className="cursor-pointer transition-colors hover:bg-surface-page dark:hover:bg-white/5"
         onClick={onClick}
     >
         <td className="td-custom text-sm">{item.date}</td>
