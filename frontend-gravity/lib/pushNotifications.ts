@@ -60,7 +60,9 @@ function waitForServiceWorkerActivation(
 async function getActivePushRegistration() {
   const registration = await navigator.serviceWorker.register('/push-sw.js', {
     scope: '/',
+    updateViaCache: 'none',
   });
+  await registration.update().catch(() => null);
 
   if (registration.active?.state === 'activated') {
     return registration;
