@@ -3743,5 +3743,24 @@
     }
 }
 
+@media (max-width: 768px) {
+    /* Force mobile bottom-nav to horizontal flex layout in production bundle. */
+    .repeto-mobile-nav {
+        display: flex !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        scrollbar-width: none;
+    }
+
+    .repeto-mobile-nav::-webkit-scrollbar {
+        display: none;
+    }
+
+    .repeto-mobile-nav__item {
+        min-width: calc(20% - 0.4px) !important;
+        flex: 0 0 calc(20% - 0.4px) !important;
+    }
+}
+
 
 
