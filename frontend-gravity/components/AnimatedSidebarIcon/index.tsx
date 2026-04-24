@@ -22,7 +22,7 @@ const AnimatedSidebarIcon = ({
     const animationRef = useRef<AnimationItem | null>(null);
     const prefersReducedMotionRef = useRef(false);
     const [isReady, setIsReady] = useState(false);
-    const [showFallback, setShowFallback] = useState(false);
+    const [loadFailed, setLoadFailed] = useState(false);
 
     useEffect(() => {
         if (typeof window === "undefined") {
@@ -46,7 +46,7 @@ const AnimatedSidebarIcon = ({
                 return;
             }
             domLoaded = true;
-            setShowFallback(false);
+            setLoadFailed(false);
             setIsReady(true);
             loadedAnimation?.goToAndStop(0, true);
         };
@@ -55,7 +55,7 @@ const AnimatedSidebarIcon = ({
             if (cancelled) {
                 return;
             }
-            setShowFallback(true);
+            setLoadFailed(true);
         };
 
         const init = async () => {
@@ -84,18 +84,18 @@ const AnimatedSidebarIcon = ({
                 if (cancelled || domLoaded) {
                     return;
                 }
-                setShowFallback(true);
+                setLoadFailed(true);
             }, 1200);
         };
 
         setIsReady(false);
-        setShowFallback(false);
+        setLoadFailed(false);
         void init();
 
         return () => {
             cancelled = true;
             setIsReady(false);
-            setShowFallback(false);
+            setLoadFailed(false);
             if (fallbackTimer) {
                 clearTimeout(fallbackTimer);
             }
@@ -136,11 +136,13 @@ const AnimatedSidebarIcon = ({
                     isReady ? "repeto-animated-sidebar-icon__canvas--ready" : ""
                 }`}
             />
-            {showFallback && (
-                <span className="repeto-animated-sidebar-icon__fallback">
-                    <Icon data={fallbackIcon} size={size} />
-                </span>
-            )}
+            <span
+                className={`repeto-animated-sidebar-icon__fallback ${
+                    isReady && !loadFailed ? "repeto-animated-sidebar-icon__fallback--hidden" : ""
+                }`}
+            >
+                <Icon data={fallbackIcon} size={size} />
+            </span>
         </span>
     );
 };
