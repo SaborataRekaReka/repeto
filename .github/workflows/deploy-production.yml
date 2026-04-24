@@ -472,6 +472,9 @@ jobs:
             exit 1
           fi
 
+          echo "Clearing old images to ensure fresh build from latest source..."
+          docker rmi repeto-frontend repeto-backend 2>/dev/null || true
+
           if ! docker compose -f docker-compose.prod.yml up -d --build --force-recreate backend frontend nginx --remove-orphans; then
             echo "docker compose up failed. Dumping diagnostics..."
             docker compose -f docker-compose.prod.yml ps || true
@@ -563,6 +566,9 @@ jobs:
             docker compose -f docker-compose.prod.yml logs --no-color --tail=120 postgres || true
             exit 1
           fi
+
+          echo "Clearing old images to ensure fresh build from latest source..."
+          docker rmi repeto-frontend repeto-backend 2>/dev/null || true
 
           if ! docker compose -f docker-compose.prod.yml up -d --build --force-recreate backend frontend nginx --remove-orphans; then
             echo "docker compose up failed. Dumping diagnostics..."
