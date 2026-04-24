@@ -17,7 +17,6 @@ import { TelegramService } from '../messenger/telegram.service';
 import { MaxService } from '../messenger/max.service';
 import { mapCancelPolicy, calculatePenalty } from '../common/utils/cancel-policy';
 import {
-  PORTAL_REVIEW_PREFIX,
   buildPortalReviewNote,
   parsePortalReviewNote,
 } from '../common/utils/lesson-note';
@@ -554,7 +553,7 @@ export class PortalService {
             rescheduleNewTime: true,
             notes: {
               where: {
-                content: { startsWith: PORTAL_REVIEW_PREFIX },
+                noteType: 'PORTAL_REVIEW',
               },
               orderBy: { createdAt: 'desc' },
               take: 1,
@@ -662,7 +661,7 @@ export class PortalService {
 
     const tutorReviewNotes = await this.prisma.lessonNote.findMany({
       where: {
-        content: { startsWith: PORTAL_REVIEW_PREFIX },
+        noteType: 'PORTAL_REVIEW',
         lesson: { is: { userId: student.userId } },
       },
       select: { content: true },
@@ -1477,7 +1476,7 @@ export class PortalService {
       where: {
         lessonId,
         studentId: student.id,
-        content: { startsWith: PORTAL_REVIEW_PREFIX },
+        noteType: 'PORTAL_REVIEW',
       },
       select: { id: true },
       orderBy: { createdAt: 'desc' },
@@ -1494,6 +1493,7 @@ export class PortalService {
           studentId: student.id,
           lessonId,
           content: serializedReview,
+          noteType: 'PORTAL_REVIEW',
         },
       });
 
@@ -1515,7 +1515,7 @@ export class PortalService {
 
     const reviewNotes = await this.prisma.lessonNote.findMany({
       where: {
-        content: { startsWith: PORTAL_REVIEW_PREFIX },
+        noteType: 'PORTAL_REVIEW',
         lesson: { is: { userId: lesson.userId } },
       },
       select: { content: true },

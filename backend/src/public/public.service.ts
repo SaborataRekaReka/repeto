@@ -6,7 +6,6 @@ import { BotPollerService } from '../messenger/bot-poller.service';
 import { StudentAuthService } from '../student-auth/student-auth.service';
 import { mapCancelPolicy } from '../common/utils/cancel-policy';
 import {
-  PORTAL_REVIEW_PREFIX,
   parsePortalReviewNote,
 } from '../common/utils/lesson-note';
 import {
@@ -195,7 +194,7 @@ export class PublicService {
     // Fetch portal reviews for this tutor
     const reviewNotes = await this.prisma.lessonNote.findMany({
       where: {
-        content: { startsWith: PORTAL_REVIEW_PREFIX },
+        noteType: 'PORTAL_REVIEW',
         lesson: { is: { userId: user.id } },
       },
       select: {

@@ -24,6 +24,7 @@ import { MessengerModule } from './messenger/messenger.module';
 import { StudentAuthModule } from './student-auth/student-auth.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AdminModule } from './admin/admin.module';
+import { UploadsModule } from './uploads/uploads.module';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -44,9 +45,10 @@ const isProduction = process.env.NODE_ENV === 'production';
           ],
     ),
     ScheduleModule.forRoot(),
+    // Only avatars are public — certificates and other uploads require auth (see UploadsModule)
     ServeStaticModule.forRoot({
-      rootPath: join(process.cwd(), 'uploads'),
-      serveRoot: '/uploads',
+      rootPath: join(process.cwd(), 'uploads', 'avatars'),
+      serveRoot: '/uploads/avatars',
       serveStaticOptions: { index: false },
     }),
     PrismaModule,
@@ -68,6 +70,7 @@ const isProduction = process.env.NODE_ENV === 'production';
     AvailabilityModule,
     MessengerModule,
     AdminModule,
+    UploadsModule,
   ],
   providers: [
     {
