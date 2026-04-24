@@ -25,7 +25,8 @@ const AnimatedSidebarIcon = ({
     const containerRef = useRef<HTMLSpanElement>(null);
     const animationRef = useRef<AnimationItem | null>(null);
     const prefersReducedMotionRef = useRef(false);
-    const [isReady, setIsReady] = useState(false);
+    // If JSON data is already cached, start in ready state to skip fallback flash
+    const [isReady, setIsReady] = useState(() => lottieDataCache.has(src));
     const [loadFailed, setLoadFailed] = useState(false);
 
     useEffect(() => {
@@ -110,7 +111,10 @@ const AnimatedSidebarIcon = ({
             }, 1200);
         };
 
-        setIsReady(false);
+        // Only flash fallback if data not yet cached
+        if (!lottieDataCache.has(src)) {
+            setIsReady(false);
+        }
         setLoadFailed(false);
         void init();
         return () => {

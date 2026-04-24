@@ -358,6 +358,11 @@ body {
     padding: 8px 10px 12px;
     overflow-x: hidden;
     overflow-y: auto;
+    /* Hide scrollbar track visually to prevent dark stripe on sidebar collapse */
+    scrollbar-width: none;
+}
+.repeto-sidebar__nav::-webkit-scrollbar {
+    display: none;
 }
 
 .repeto-sidebar__nav--sections {
@@ -457,6 +462,7 @@ body {
 
 .repeto-sidebar--collapsed .repeto-sidebar__nav {
     padding: 8px 4px;
+    overflow: hidden;
 }
 
 .repeto-sidebar--collapsed .repeto-sidebar__section-title {
