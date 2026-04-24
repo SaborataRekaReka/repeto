@@ -56,6 +56,11 @@ import MaterialsPickerDialog from "@/components/MaterialsPickerDialog";
 import AppSelect from "@/components/AppSelect";
 import AppField from "@/components/AppField";
 import { codedErrorMessage } from "@/lib/errorCodes";
+import {
+    buildLessonMaterialsNote,
+    isLessonMaterialsNoteContent,
+    parseLessonMaterialsNote,
+} from "@/lib/lessonNotes";
 import { useRouter } from "next/router";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -93,8 +98,6 @@ const ADD_STUDENT_OPTION_VALUE = "__add_student__";
 const ADD_SUBJECT_OPTION_VALUE = "__add_subject__";
 const RECURRENCE_WEEKS_AHEAD = 52;
 const PANEL_Z = 960;
-const LESSON_MATERIALS_PREFIX = "LESSON_MATERIALS:";
-
 type EditableLessonStatus =
     | "planned"
     | "completed"
@@ -260,57 +263,6 @@ const mapHomeworkLinkedFiles = (files: any[]): HomeworkFile[] => {
             } as HomeworkFile;
         })
         .filter((file): file is HomeworkFile => !!file && !!file.id);
-};
-
-const normalizeMaterialFile = (raw: any): HomeworkFile | null => {
-    if (!raw || typeof raw !== "object") return null;
-    const id = String(raw.id || "").trim();
-    if (!id) return null;
-    const provider = raw.provider || raw.cloudProvider;
-    return {
-        id,
-        name: String(raw.name || "Файл"),
-        url: raw.url || raw.cloudUrl || "#",
-        provider:
-            provider === "google-drive" || provider === "yandex-disk"
-                ? provider
-                : undefined,
-        type: raw.type === "folder" ? "folder" : "file",
-        extension: raw.extension || undefined,
-        size: raw.size || undefined,
-    };
-};
-
-const parseLessonMaterialsNote = (content: unknown): HomeworkFile[] => {
-    if (typeof content !== "string" || !content.startsWith(LESSON_MATERIALS_PREFIX)) {
-        return [];
-    }
-
-    try {
-        const parsed = JSON.parse(content.slice(LESSON_MATERIALS_PREFIX.length));
-        if (!Array.isArray(parsed)) return [];
-        return parsed
-            .map((item) => normalizeMaterialFile(item))
-            .filter((item): item is HomeworkFile => !!item);
-    } catch {
-        return [];
-    }
-};
-
-const buildLessonMaterialsNote = (files: HomeworkFile[]): string => {
-    const payload = files
-        .map((file) => ({
-            id: file.id,
-            name: file.name,
-            url: file.url,
-            provider: file.provider,
-            type: file.type || "file",
-            extension: file.extension,
-            size: file.size,
-        }))
-        .filter((file) => file.id);
-
-    return `${LESSON_MATERIALS_PREFIX}${JSON.stringify(payload)}`;
 };
 
 const normalizeHomeworkForPanel = (raw: any): LessonPanelHomeworkItem | null => {
@@ -573,7 +525,7 @@ const LessonPanelV2 = ({
             (item: any) =>
                 item?.lessonId === lesson.id &&
                 typeof item?.content === "string" &&
-                item.content.startsWith(LESSON_MATERIALS_PREFIX),
+                isLessonMaterialsNoteContent(item.content),
         ) || null;
     }, [studentNotesData?.data, lesson?.id]);
 

@@ -5,6 +5,11 @@ node_modules/
 out/
 dist/
 coverage/
+playwright-report/
+runbook-logs/
+test-results/
+frontend-gravity/test-results/
+backend/uploads/
 
 .env
 .env.*
@@ -17,6 +22,10 @@ pnpm-debug.log*
 
 .DS_Store
 Thumbs.db
+*.tsbuildinfo
+tmp-*.png
+landing-yandex-closer-pass.png
+test-results.json
 
 # Local source icon pack (licensed asset bundle)
 3000 + premium animated icons/

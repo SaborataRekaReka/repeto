@@ -1,0 +1,3585 @@
+/* =====================================================================
+   DASHBOARD — Tochka-style pass (2026-04-23)
+   Everything below is scoped to `.repeto-tochka-dash` so it never leaks to
+   the rest of the app. Color/typography/radius tokens are isolated here in
+   a dedicated dashboard stylesheet.
+   ===================================================================== */
+.repeto-tochka-dash {
+    /* Tochka palette (flat, light) */
+    --t-surface: #FFFFFF;
+    --t-bg-neutral1: #F4F4F4;
+    --t-bg-neutral2: #EEEEEE;
+    --t-bg-neutral3: #E1E1E1;
+    --t-text-primary: #1C1C1E;
+    --t-text-secondary: #6E6E74;
+    --t-text-tertiary: #8A8A8E;
+    --t-brand: #835DE1;
+    --t-brand-hover: #7945EB;
+    --t-brand-soft: #EFEDF8;
+    --t-brand-soft-strong: #E2DDF6;
+    --t-success: #3F9180;
+    --t-success-bg: #DDF8EF;
+    --t-error: #D84D4D;
+    --t-error-bg: #F9EBEA;
+    --t-warning-bg: #FBEFD2;
+
+    --t-radius: 14px;
+    --t-radius-sm: 10px;
+    --t-radius-pill: 999px;
+    --t-border: 1px solid var(--t-bg-neutral2);
+    --t-gap: 12px;
+    --t-pad-card: 14px 16px;
+    --t-pad-card-lg: 16px 18px;
+
+    color: var(--t-text-primary);
+}
+
+/* Reset colors for text helpers within the dashboard so everything reads
+   from Tochka's muted greys, not Gravity defaults. */
+.repeto-tochka-dash .g-text_color_secondary,
+.repeto-tochka-dash .g-text_color_hint {
+    color: var(--t-text-secondary) !important;
+}
+
+/* --- Top-level layout tightness --- */
+.repeto-tochka-dash .repeto-stat-cards,
+.repeto-tochka-dash .repeto-task-tiles,
+.repeto-tochka-dash .repeto-insight-banner {
+    margin-bottom: var(--t-gap);
+}
+
+.repeto-tochka-dash .repeto-dashboard-grid {
+    gap: var(--t-gap);
+    grid-template-columns: minmax(0, 1fr) 300px;
+}
+
+.repeto-tochka-dash .repeto-dashboard-grid__main,
+.repeto-tochka-dash .repeto-dashboard-grid__aside {
+    gap: var(--t-gap);
+}
+
+.repeto-tochka-dash .repeto-two-col {
+    gap: var(--t-gap);
+}
+
+/* --- Flat cards --- */
+.repeto-tochka-dash .g-card,
+.repeto-tochka-dash .repeto-section-card,
+.repeto-tochka-dash .repeto-soft-card {
+    background: var(--t-surface) !important;
+    border: var(--t-border) !important;
+    border-radius: var(--t-radius) !important;
+    box-shadow: none !important;
+    transition: border-color 0.15s ease !important;
+}
+.repeto-tochka-dash .g-card:hover,
+.repeto-tochka-dash .repeto-section-card:hover,
+.repeto-tochka-dash .repeto-soft-card:hover {
+    border-color: var(--t-bg-neutral3) !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* --- Card header / body --- */
+.repeto-tochka-dash .repeto-card-header {
+    padding: 14px 16px 10px;
+    gap: 8px;
+}
+
+.repeto-tochka-dash .repeto-card-header .g-text {
+    font-size: 15px !important;
+    font-weight: 500 !important;
+    line-height: 20px !important;
+    letter-spacing: 0.01em !important;
+    color: var(--t-text-primary) !important;
+}
+
+.repeto-tochka-dash .repeto-card-body {
+    padding: 0 16px 16px;
+}
+
+.repeto-tochka-dash .repeto-card-link {
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--t-brand) !important;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+}
+.repeto-tochka-dash .repeto-card-link:hover {
+    background: transparent;
+    opacity: 0.7;
+}
+
+/* --- Stat cards (4 at the top) --- */
+.repeto-tochka-dash .repeto-stat-cards {
+    gap: var(--t-gap);
+}
+
+.repeto-tochka-dash .repeto-stat-card {
+    background: var(--t-surface);
+    border: var(--t-border);
+    border-radius: var(--t-radius);
+    box-shadow: none;
+    padding: 14px 16px;
+    gap: 6px;
+    transition: border-color 0.15s ease;
+}
+.repeto-tochka-dash .repeto-stat-card:hover {
+    transform: none;
+    box-shadow: none;
+    border-color: var(--t-bg-neutral3);
+}
+.repeto-tochka-dash .repeto-stat-card__head {
+    gap: 8px;
+}
+.repeto-tochka-dash .repeto-stat-card__title {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    color: var(--t-text-secondary);
+    max-width: none;
+}
+.repeto-tochka-dash .repeto-stat-card__value {
+    font-size: 24px;
+    line-height: 28px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    color: var(--t-text-primary);
+}
+
+/* --- Task tiles --- */
+.repeto-tochka-dash .repeto-task-tiles {
+    gap: var(--t-gap);
+}
+.repeto-tochka-dash .repeto-task-tile {
+    min-height: 88px;
+    padding: 14px 16px;
+    border-radius: var(--t-radius);
+    background: var(--t-brand-soft);
+    border: 1px solid transparent;
+    gap: 4px;
+}
+.repeto-tochka-dash .repeto-task-tile:hover {
+    background: var(--t-brand-soft-strong);
+}
+.repeto-tochka-dash .repeto-task-tile--urgent {
+    background: var(--t-brand-soft-strong);
+}
+.repeto-tochka-dash .repeto-task-tile--urgent:hover {
+    background: #D6CEF3;
+}
+.repeto-tochka-dash .repeto-task-tile__kicker {
+    color: var(--t-text-secondary);
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+}
+.repeto-tochka-dash .repeto-task-tile--urgent .repeto-task-tile__kicker {
+    color: var(--t-text-secondary);
+}
+.repeto-tochka-dash .repeto-task-tile__title {
+    font-size: 14px;
+    line-height: 18px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    color: var(--t-text-primary);
+}
+.repeto-tochka-dash .repeto-task-tile__meta {
+    font-size: 12px;
+    line-height: 15px;
+    color: var(--t-text-tertiary);
+    letter-spacing: 0.01em;
+}
+
+/* --- Insight banner --- */
+.repeto-tochka-dash .repeto-insight-banner {
+    padding: 14px 18px;
+    border-radius: var(--t-radius);
+    background: var(--t-brand-soft);
+    border: 1px solid transparent;
+    gap: 16px;
+}
+.repeto-tochka-dash .repeto-insight-banner__title {
+    font-size: 14px;
+    line-height: 18px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    color: var(--t-text-primary);
+}
+.repeto-tochka-dash .repeto-insight-banner__text {
+    font-size: 12px;
+    line-height: 16px;
+    letter-spacing: 0.01em;
+    color: var(--t-text-secondary);
+}
+.repeto-tochka-dash .repeto-insight-banner__cta {
+    height: 32px;
+    padding: 0 14px;
+    border-radius: var(--t-radius-sm);
+    background: var(--t-brand);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 16px;
+    letter-spacing: 0.01em;
+}
+.repeto-tochka-dash .repeto-insight-banner__cta:hover {
+    background: var(--t-brand-hover);
+}
+
+/* --- Aside title «Компания» --- */
+.repeto-tochka-dash .repeto-dashboard-aside-title {
+    font-size: 16px;
+    line-height: 22px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    text-transform: none;
+    color: var(--t-text-primary);
+    padding: 2px 2px 4px;
+    margin-bottom: 2px;
+}
+
+/* --- Lesson rows (Today, Week) and debt rows — compact Tochka list style --- */
+.repeto-tochka-dash .repeto-week-lesson-row {
+    padding: 10px 16px !important;
+    gap: 10px !important;
+    border-top: 1px solid var(--t-bg-neutral2) !important;
+    transition: background-color 0.15s ease !important;
+}
+.repeto-tochka-dash .repeto-week-lesson-row:hover {
+    background: var(--t-bg-neutral1);
+}
+
+/* Status label in lesson rows */
+.repeto-tochka-dash .g-label {
+    font-size: 11px !important;
+    font-weight: 400 !important;
+    padding: 0 8px !important;
+    height: 18px !important;
+    line-height: 18px !important;
+    border-radius: 6px !important;
+    letter-spacing: 0.01em !important;
+}
+
+/* --- Income / conversion card bars — flatter, compact --- */
+.repeto-tochka-dash .repeto-income-card__periods {
+    background: var(--t-bg-neutral1);
+    border-radius: var(--t-radius-sm);
+    padding: 2px;
+}
+.repeto-tochka-dash .repeto-income-card__period-tab {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 10px;
+    border-radius: 8px;
+    color: var(--t-text-secondary);
+    letter-spacing: 0.01em;
+}
+.repeto-tochka-dash .repeto-income-card__period-tab--active {
+    background: var(--t-surface);
+    color: var(--t-text-primary);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.repeto-tochka-dash .repeto-income-card__bar {
+    height: 8px;
+    background: var(--t-bg-neutral1);
+    border-radius: var(--t-radius-pill);
+}
+.repeto-tochka-dash .repeto-income-card__bar-part--received {
+    background: var(--t-brand);
+}
+.repeto-tochka-dash .repeto-income-card__bar-part--expected {
+    background: var(--t-brand-soft-strong);
+}
+.repeto-tochka-dash .repeto-income-card__amount-label {
+    font-size: 13px;
+    color: var(--t-text-secondary);
+    letter-spacing: 0.01em;
+}
+.repeto-tochka-dash .repeto-income-card__amount-value {
+    font-size: 13px;
+    color: var(--t-text-primary);
+    font-variant-numeric: tabular-nums;
+}
+.repeto-tochka-dash .repeto-income-card__total {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--t-bg-neutral2);
+}
+.repeto-tochka-dash .repeto-income-card__total-value {
+    font-size: 22px;
+    line-height: 26px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    color: var(--t-text-primary);
+}
+
+/* --- Conversion card — compact --- */
+.repeto-tochka-dash .repeto-conversion-card__pct {
+    font-size: 30px;
+    line-height: 34px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--t-text-primary);
+}
+.repeto-tochka-dash .repeto-conversion-card__delta {
+    height: 20px;
+    padding: 0;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+}
+
+/* --- Expiring packages — denser --- */
+.repeto-tochka-dash .repeto-expiring-packages__main-metric-value {
+    font-size: 26px;
+    line-height: 30px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+}
+.repeto-tochka-dash .repeto-expiring-packages__deadline,
+.repeto-tochka-dash .repeto-expiring-packages__metric {
+    background: var(--t-bg-neutral1);
+    color: var(--t-text-secondary);
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+}
+.repeto-tochka-dash .repeto-expiring-packages__deadline::before {
+    background: var(--t-brand);
+}
+.repeto-tochka-dash .repeto-expiring-packages__item--urgent .repeto-expiring-packages__deadline::before {
+    background: var(--t-error);
+}
+
+/* --- Recent payments feed — tighter --- */
+.repeto-tochka-dash .repeto-recent-payments-feed__item::after {
+    background: var(--t-brand);
+}
+.repeto-tochka-dash .repeto-recent-payments-feed__item::before {
+    background: var(--t-bg-neutral2);
+}
+
+/* --- Dashboard amount pills (positive/negative) --- */
+.repeto-tochka-dash .repeto-dashboard-amount-pill {
+    background: var(--t-success-bg);
+    color: var(--t-success);
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    font-size: 12px;
+    padding: 2px 10px;
+    border-radius: var(--t-radius-pill);
+}
+
+/* --- Section-level typography normalization --- */
+.repeto-tochka-dash .repeto-dashboard-primary-value--card {
+    font-size: 24px;
+    line-height: 28px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+}
+.repeto-tochka-dash .repeto-dashboard-primary-value--section {
+    font-size: 22px;
+    line-height: 26px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+}
+.repeto-tochka-dash .repeto-dashboard-primary-value--hero {
+    font-size: 30px;
+    line-height: 34px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+/* --- Page title (above everything inside GravityLayout content) --- */
+.repeto-tochka-dash .repeto-page-title {
+    font-size: 22px;
+    line-height: 28px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    color: var(--t-text-primary);
+    margin: 0 0 12px;
+}
+
+/* --- Buttons/flats inside dashboard stay subtle --- */
+.repeto-tochka-dash .g-button_view_flat {
+    color: var(--t-text-secondary) !important;
+}
+.repeto-tochka-dash .g-button_view_flat:hover {
+    background: var(--t-bg-neutral1) !important;
+    color: var(--t-text-primary) !important;
+}
+
+/* --- Responsive --- */
+@media (max-width: 1200px) {
+    .repeto-tochka-dash .repeto-stat-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 960px) {
+    .repeto-tochka-dash .repeto-dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+/* END DASHBOARD — Tochka-style pass */
+
+/* =====================================================================
+   DASHBOARD — Refinement pass (2026-04-23, v3)
+   Goals: reduce lavender overuse, introduce restrained mint ONLY for
+   enablement banners, tighten metric cards vertically, make aside denser,
+   simplify «Последние оплаты», reduce pill weight, unify paddings.
+   Everything still scoped to `.repeto-tochka-dash`.
+   ===================================================================== */
+.repeto-tochka-dash {
+    /* One spacing system for all card interior paddings */
+    --t-pad-x: 16px;
+    --t-pad-y: 12px;
+
+    /* Restrained mint (derived from Repeto brand green #98E9AB), used only
+       for enablement/positive states. */
+    --t-mint-soft: #EBF6EE;
+    --t-mint-soft-strong: #DBEFE1;
+    --t-mint-border: #CFE8D6;
+    --t-mint-text: #2B6B40;
+
+    /* Divider used everywhere inside the dashboard */
+    --t-divider: #EFEFEF;
+}
+
+/* --- Metric cards: tighter vertical rhythm (~13% shorter) --- */
+.repeto-tochka-dash .repeto-stat-card {
+    padding: 12px 16px;
+    gap: 4px;
+}
+.repeto-tochka-dash .repeto-stat-card__head {
+    gap: 6px;
+}
+.repeto-tochka-dash .repeto-stat-card__title {
+    font-size: 12px;
+    line-height: 15px;
+}
+.repeto-tochka-dash .repeto-stat-card__value {
+    font-size: 22px;
+    line-height: 26px;
+}
+.repeto-tochka-dash .repeto-stat-card__icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: var(--t-bg-neutral1) !important;
+    color: var(--t-text-secondary) !important;
+}
+.repeto-tochka-dash .repeto-stat-card__meta {
+    font-size: 11px;
+    line-height: 14px;
+    padding: 0;
+    background: transparent !important;
+}
+
+/* --- Aside: denser, flatter, list-like --- */
+.repeto-tochka-dash .repeto-dashboard-grid__aside .g-card,
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-section-card {
+    border-radius: 12px !important;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-card-header {
+    padding: 12px 14px 6px;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-card-header .g-text {
+    font-size: 13px !important;
+    line-height: 16px !important;
+    font-weight: 500 !important;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-card-body {
+    padding: 0 0 8px;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-week-lesson-row {
+    padding: 8px 14px !important;
+    gap: 8px !important;
+    border-top: 1px solid var(--t-divider) !important;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-card-body > *:first-child.repeto-week-lesson-row,
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-card-body > .repeto-week-lesson-row:first-child {
+    border-top: none !important;
+}
+.repeto-tochka-dash .repeto-dashboard-aside-title {
+    font-size: 14px;
+    line-height: 18px;
+    font-weight: 500;
+    color: var(--t-text-secondary);
+    letter-spacing: 0.01em;
+    padding: 2px 2px 2px;
+    margin: 2px 0 -2px;
+}
+
+/* --- «Последние оплаты»: operation-row layout (aligned with StudentPortal/PaymentTab) --- */
+.repeto-tochka-dash .repeto-recent-payments__body {
+    gap: 0;
+    padding: 0;
+}
+.repeto-tochka-dash .repeto-recent-payments-card .repeto-card-body {
+    padding: 0 var(--t-pad-x) 4px;
+}
+.repeto-tochka-dash .repeto-recent-payments-ops .repeto-portal-balance-operation-row {
+    gap: 12px;
+    padding: 10px 0;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+}
+.repeto-tochka-dash .repeto-recent-payments-ops .repeto-portal-balance-operation-row + .repeto-portal-balance-operation-row {
+    border-top: 1px solid var(--t-divider);
+}
+.repeto-tochka-dash .repeto-recent-payments-ops .repeto-portal-balance-operation-row__icon {
+    width: 36px;
+    height: 36px;
+}
+.repeto-tochka-dash .repeto-recent-payments-ops .repeto-portal-balance-operation-row__icon--payment {
+    background: #F0E9FB;
+    color: #6C44C7;
+}
+.repeto-tochka-dash .repeto-recent-payments-ops .repeto-portal-balance-operation-row__title {
+    font-size: 13px;
+    line-height: 16px;
+    font-weight: 500;
+    color: var(--t-text-primary);
+}
+.repeto-tochka-dash .repeto-recent-payments-ops .repeto-portal-balance-operation-row__subtitle {
+    font-size: 11px;
+    line-height: 14px;
+    color: var(--t-text-tertiary);
+}
+.repeto-tochka-dash .repeto-recent-payments-ops__pending {
+    color: var(--t-text-secondary);
+    font-weight: 500;
+}
+.repeto-tochka-dash .repeto-recent-payments-ops__balance {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    line-height: 14px;
+    color: var(--t-text-tertiary);
+}
+.repeto-tochka-dash .repeto-recent-payments-ops__balance-value {
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+}
+.repeto-tochka-dash .repeto-recent-payments-ops__balance-value--owed {
+    color: #D0342C;
+}
+.repeto-tochka-dash .repeto-recent-payments-ops__balance-value--credit {
+    color: #2E7D55;
+}
+.repeto-tochka-dash .repeto-recent-payments-ops .repeto-portal-balance-operation-row__amount {
+    font-size: 14px;
+    line-height: 16px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+}
+.repeto-tochka-dash .repeto-recent-payments-ops .repeto-portal-balance-operation-row__amount--credit {
+    color: var(--t-success);
+}
+.repeto-tochka-dash .repeto-recent-payments-ops .repeto-portal-balance-operation-row__amount--debit {
+    color: var(--t-text-secondary);
+}
+
+/* --- «Последние оплаты»: simplified list rows (no timeline rail) --- */
+.repeto-tochka-dash .repeto-recent-payments__body {
+    gap: 0;
+}
+.repeto-tochka-dash .repeto-recent-payments-feed {
+    gap: 0;
+}
+.repeto-tochka-dash .repeto-recent-payments-feed__item {
+    padding: 10px 16px;
+    margin: 0 -16px;
+    border-top: 1px solid var(--t-divider);
+}
+.repeto-tochka-dash .repeto-recent-payments-feed__item:first-child {
+    border-top: none;
+}
+.repeto-tochka-dash .repeto-recent-payments-feed__item:last-child {
+    padding-bottom: 10px;
+}
+.repeto-tochka-dash .repeto-recent-payments-feed__item::before,
+.repeto-tochka-dash .repeto-recent-payments-feed__item::after {
+    content: none !important;
+    display: none !important;
+}
+.repeto-tochka-dash .repeto-recent-payments-feed__head {
+    padding-bottom: 2px;
+    align-items: center;
+}
+.repeto-tochka-dash .repeto-recent-payments-feed__head .g-text {
+    font-size: 13px;
+    line-height: 18px;
+}
+.repeto-tochka-dash .repeto-recent-payments-feed__meta {
+    gap: 6px;
+}
+.repeto-tochka-dash .repeto-recent-payments-feed__meta .g-text {
+    font-size: 11px;
+    line-height: 14px;
+    color: var(--t-text-tertiary) !important;
+}
+.repeto-tochka-dash .repeto-recent-payments-feed__separator {
+    width: 3px;
+    height: 3px;
+    background: var(--t-bg-neutral3);
+}
+
+/* --- Reduce amount-pill visual weight: text-only, neutral dark --- */
+.repeto-tochka-dash .repeto-dashboard-amount-pill {
+    background: transparent;
+    color: var(--t-text-primary);
+    padding: 0;
+    border-radius: 0;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+}
+
+/* --- Reduce status label weight further; use role-based tints only --- */
+.repeto-tochka-dash .g-label {
+    background: var(--t-bg-neutral1) !important;
+    color: var(--t-text-secondary) !important;
+    font-size: 10px !important;
+    height: 16px !important;
+    line-height: 16px !important;
+    padding: 0 6px !important;
+    border-radius: 4px !important;
+    letter-spacing: 0.02em !important;
+    text-transform: uppercase;
+}
+.repeto-tochka-dash .g-label_theme_success {
+    background: var(--t-success-bg) !important;
+    color: var(--t-success) !important;
+}
+.repeto-tochka-dash .g-label_theme_danger,
+.repeto-tochka-dash .g-label_theme_warning {
+    background: var(--t-bg-neutral1) !important;
+    color: var(--t-text-secondary) !important;
+}
+
+/* --- Card internals: unify paddings to one spacing system --- */
+.repeto-tochka-dash .repeto-card-header {
+    padding: var(--t-pad-y) var(--t-pad-x) 8px;
+}
+.repeto-tochka-dash .repeto-card-body {
+    padding: 0 var(--t-pad-x) var(--t-pad-y);
+}
+
+/* --- Unify dividers across dashboard --- */
+.repeto-tochka-dash .repeto-week-lesson-row {
+    border-top-color: var(--t-divider) !important;
+}
+.repeto-tochka-dash .repeto-income-card__total {
+    border-top-color: var(--t-divider) !important;
+}
+
+/* --- Insight banner → soft mint (enablement variant) --- */
+/* The banner is a product-enablement notice (not a task), so it moves out
+   of the lavender family into a restrained mint. CTA stays in the main UI
+   accent (purple) to keep color roles consistent across the app. */
+.repeto-tochka-dash .repeto-insight-banner {
+    background: var(--t-mint-soft);
+    border: 1px solid var(--t-mint-border);
+    padding: 12px 16px;
+}
+.repeto-tochka-dash .repeto-insight-banner__title {
+    color: var(--t-text-primary);
+}
+.repeto-tochka-dash .repeto-insight-banner__text {
+    color: var(--t-text-secondary);
+}
+.repeto-tochka-dash .repeto-insight-banner__cta {
+    height: 30px;
+    padding: 0 12px;
+    background: var(--t-text-primary);
+    color: #FFFFFF !important;
+    font-size: 12px;
+    border-radius: 8px;
+}
+.repeto-tochka-dash .repeto-insight-banner__cta:hover {
+    background: #000000;
+}
+.repeto-tochka-dash .repeto-insight-banner__close {
+    color: var(--t-mint-text);
+}
+.repeto-tochka-dash .repeto-insight-banner__close:hover {
+    background: var(--t-mint-soft-strong);
+    color: var(--t-text-primary);
+}
+
+/* --- Keep task tiles lavender, but slightly calmer --- */
+.repeto-tochka-dash .repeto-task-tile {
+    background: #F3F1FA;
+}
+.repeto-tochka-dash .repeto-task-tile:hover {
+    background: #EAE6F5;
+}
+.repeto-tochka-dash .repeto-task-tile--urgent {
+    background: #E8E2F7;
+}
+.repeto-tochka-dash .repeto-task-tile--urgent:hover {
+    background: #DED5F2;
+}
+
+/* --- Replace brand-colored dots/rails with neutrals to reduce purple noise --- */
+.repeto-tochka-dash .repeto-recent-payments-feed__item::after {
+    background: var(--t-text-tertiary);
+}
+.repeto-tochka-dash .repeto-expiring-packages__deadline::before {
+    background: var(--t-text-tertiary);
+}
+
+/* --- Tighten income/conversion summaries slightly --- */
+.repeto-tochka-dash .repeto-income-card__total-value {
+    font-size: 20px;
+    line-height: 24px;
+}
+.repeto-tochka-dash .repeto-conversion-card__pct {
+    font-size: 28px;
+    line-height: 32px;
+}
+.repeto-tochka-dash .repeto-expiring-packages__main-metric-value {
+    font-size: 24px;
+    line-height: 28px;
+}
+/* END DASHBOARD — Refinement pass v3 */
+
+/* =====================================================================
+   DASHBOARD — Correction pass (2026-04-23, v4)
+   Targeted corrections on top of v3. No redesign. All scoped.
+   ===================================================================== */
+
+/* 1. Enablement banner: softer, no black CTA. CTA = light neutral pill with
+   purple text (aligned with main UI accent). */
+.repeto-tochka-dash .repeto-insight-banner {
+    background: #e7e2f5;
+    border-color: #E4EFE8;
+    padding: 12px 14px;
+}
+.repeto-tochka-dash .repeto-insight-banner__title {
+    font-size: 13px;
+    line-height: 18px;
+}
+.repeto-tochka-dash .repeto-insight-banner__text {
+    font-size: 12px;
+    line-height: 16px;
+}
+.repeto-tochka-dash .repeto-insight-banner__cta {
+    background: #FFFFFF !important;
+    color: var(--t-brand) !important;
+    border: 1px solid #E4EFE8;
+    height: 28px;
+    padding: 0 12px;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 8px;
+    box-shadow: none;
+}
+.repeto-tochka-dash .repeto-insight-banner__cta:hover {
+    background: #F6F6F6 !important;
+    border-color: #D9E6DE;
+}
+.repeto-tochka-dash .repeto-insight-banner__close {
+    color: var(--t-text-tertiary);
+}
+.repeto-tochka-dash .repeto-insight-banner__close:hover {
+    background: #E4EFE8;
+    color: var(--t-text-primary);
+}
+
+/* 2. «Сегодня» strip in weekly schedule — neutral header, no green. */
+.repeto-tochka-dash .repeto-week-day-header {
+    padding: 10px 16px 4px;
+}
+.repeto-tochka-dash .repeto-week-day-header--today {
+    padding: 8px 16px;
+    background: var(--t-bg-neutral1);
+    min-height: 0;
+    display: flex;
+    align-items: center;
+}
+.repeto-tochka-dash .repeto-week-day-header__label {
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    line-height: 14px !important;
+    color: var(--t-text-secondary) !important;
+}
+.repeto-tochka-dash .repeto-week-day-header--today .repeto-week-day-header__label {
+    color: var(--t-text-primary) !important;
+}
+
+/* 3. Status labels — even calmer. Keep success as muted sage, not vivid. */
+.repeto-tochka-dash .g-label {
+    text-transform: none;
+    letter-spacing: 0 !important;
+    font-size: 11px !important;
+    height: 18px !important;
+    line-height: 18px !important;
+    padding: 0 8px !important;
+    border-radius: 4px !important;
+    font-weight: 500 !important;
+}
+.repeto-tochka-dash .g-label_theme_success {
+    background: #EEF4F0 !important;
+    color: #4A7A63 !important;
+}
+.repeto-tochka-dash .g-label_theme_normal {
+    background: var(--t-bg-neutral1) !important;
+    color: var(--t-text-secondary) !important;
+}
+
+/* 4. Stat cards — another ~10% vertical tightening. */
+.repeto-tochka-dash .repeto-stat-card {
+    padding: 10px 14px;
+    gap: 2px;
+}
+.repeto-tochka-dash .repeto-stat-card__head {
+    gap: 4px;
+}
+.repeto-tochka-dash .repeto-stat-card__title {
+    font-size: 11px;
+    line-height: 14px;
+}
+.repeto-tochka-dash .repeto-stat-card__value {
+    font-size: 20px;
+    line-height: 24px;
+}
+.repeto-tochka-dash .repeto-stat-card__icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+}
+.repeto-tochka-dash .repeto-stat-card__meta {
+    font-size: 11px;
+    line-height: 13px;
+}
+
+/* 5. Income analytics block — calmer. Thinner bars, lighter fills, lighter
+   legend. Reduce heavy purple. */
+.repeto-tochka-dash .repeto-income-card__bar {
+    height: 6px;
+    background: var(--t-bg-neutral2);
+}
+.repeto-tochka-dash .repeto-income-card__bar-part--received {
+    background: #B39DF7; /* lighter purple-075 for lower saturation */
+}
+.repeto-tochka-dash .repeto-income-card__bar-part--expected {
+    background: var(--t-bg-neutral3);
+}
+.repeto-tochka-dash .repeto-income-card__amount-label {
+    font-size: 12px;
+    color: var(--t-text-tertiary);
+}
+.repeto-tochka-dash .repeto-income-card__amount-value {
+    font-size: 12px;
+}
+.repeto-tochka-dash .repeto-income-card__total {
+    margin-top: 10px;
+    padding-top: 10px;
+}
+.repeto-tochka-dash .repeto-income-card__total-value {
+    font-size: 20px;
+    line-height: 24px;
+}
+.repeto-tochka-dash .repeto-income-card__period-tab {
+    font-size: 11px;
+    padding: 5px 9px;
+}
+.repeto-tochka-dash .repeto-income-card__period-tab--active {
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+/* Legend dots/squares — neutral on expected, soft purple on received */
+.repeto-tochka-dash .repeto-income-card__legend-item-dot,
+.repeto-tochka-dash .repeto-income-card__legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+}
+
+/* 6. Right rail — denser, more list-like, subtler separators. */
+.repeto-tochka-dash .repeto-dashboard-grid__aside {
+    gap: 8px;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__aside .g-card,
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-section-card {
+    border-radius: 10px !important;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-card-header {
+    padding: 10px 12px 4px;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-card-header .g-text {
+    font-size: 12px !important;
+    line-height: 16px !important;
+    font-weight: 500 !important;
+    color: var(--t-text-secondary) !important;
+    text-transform: none;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-card-body {
+    padding: 0 0 4px;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-week-lesson-row {
+    padding: 7px 12px !important;
+    gap: 8px !important;
+    border-top: 1px solid var(--t-divider) !important;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-card-link {
+    font-size: 12px;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__aside .g-text {
+    font-size: 12px;
+    line-height: 16px;
+}
+.repeto-tochka-dash .repeto-dashboard-aside-title {
+    font-size: 13px;
+    line-height: 16px;
+    margin: 0 2px 0;
+    padding: 4px 2px;
+}
+
+/* 7. «Последние оплаты» — stricter bank-like rows. Align amount/date. */
+.repeto-tochka-dash .repeto-recent-payments-feed__item {
+    padding: 10px 16px;
+    display: block;
+}
+.repeto-tochka-dash .repeto-recent-payments-feed__head {
+    padding-bottom: 2px;
+    gap: 12px;
+    align-items: baseline;
+}
+.repeto-tochka-dash .repeto-recent-payments-feed__head .g-text {
+    font-size: 13px;
+    line-height: 16px;
+    font-weight: 500;
+    color: var(--t-text-primary) !important;
+}
+.repeto-tochka-dash .repeto-dashboard-amount-pill {
+    font-size: 13px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+    color: var(--t-text-primary);
+}
+.repeto-tochka-dash .repeto-recent-payments-feed__meta {
+    gap: 6px;
+    align-items: center;
+}
+.repeto-tochka-dash .repeto-recent-payments-feed__meta .g-text {
+    font-size: 11px;
+    line-height: 14px;
+    color: var(--t-text-tertiary) !important;
+    font-weight: 400;
+}
+.repeto-tochka-dash .repeto-recent-payments-feed__separator {
+    width: 2px;
+    height: 2px;
+    background: var(--t-text-tertiary);
+    opacity: 0.5;
+}
+
+/* Reduce decorative weight of badges inside payment rows. */
+.repeto-tochka-dash .repeto-recent-payments-feed__meta .g-label {
+    margin-left: auto;
+}
+
+/* 8. Softer divider between cards in aside; unified divider color. */
+.repeto-tochka-dash hr,
+.repeto-tochka-dash [style*="var(--g-color-line-generic)"] {
+    background: var(--t-divider) !important;
+}
+/* END DASHBOARD — Correction pass v4 */
+
+/* =====================================================================
+   DASHBOARD — Micro-polish pass (2026-04-23, v5)
+   No redesign. No recoloring. Density, rhythm, hierarchy only.
+   ===================================================================== */
+
+/* 1. Top metric cards — another ~9% vertical reduction. */
+.repeto-tochka-dash .repeto-stat-card {
+    padding: 8px 14px 10px;
+    gap: 2px;
+}
+.repeto-tochka-dash .repeto-stat-card__head {
+    gap: 4px;
+}
+.repeto-tochka-dash .repeto-stat-card__title {
+    font-size: 11px;
+    line-height: 14px;
+}
+.repeto-tochka-dash .repeto-stat-card__value {
+    font-size: 19px;
+    line-height: 22px;
+}
+.repeto-tochka-dash .repeto-stat-card__icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+}
+.repeto-tochka-dash .repeto-stat-card__meta {
+    font-size: 11px;
+    line-height: 13px;
+    margin-top: 0;
+}
+
+/* 2. Income card — compact, less empty space. */
+.repeto-tochka-dash .repeto-income-card .repeto-card-header {
+    padding: 10px 14px 6px;
+}
+.repeto-tochka-dash .repeto-income-card .repeto-card-body {
+    padding: 0 14px 12px;
+}
+.repeto-tochka-dash .repeto-income-card__amounts,
+.repeto-tochka-dash .repeto-income-card__amounts-row {
+    margin-top: 6px;
+}
+.repeto-tochka-dash .repeto-income-card__amount-row {
+    padding: 3px 0;
+}
+.repeto-tochka-dash .repeto-income-card__amount-label,
+.repeto-tochka-dash .repeto-income-card__amount-value {
+    font-size: 12px;
+    line-height: 16px;
+}
+.repeto-tochka-dash .repeto-income-card__total {
+    margin-top: 8px;
+    padding-top: 8px;
+}
+.repeto-tochka-dash .repeto-income-card__total-label {
+    font-size: 11px;
+    color: var(--t-text-tertiary);
+}
+.repeto-tochka-dash .repeto-income-card__total-value {
+    font-size: 18px;
+    line-height: 22px;
+}
+
+/* 3. Thinner accents — Income / Conversion bars and strokes. */
+.repeto-tochka-dash .repeto-income-card__bar {
+    height: 4px;
+    border-radius: 999px;
+    background: var(--t-bg-neutral2);
+}
+.repeto-tochka-dash .repeto-income-card__bar-part--received {
+    background: #CABEF3; /* purple-080 — softer */
+}
+.repeto-tochka-dash .repeto-income-card__bar-part--expected {
+    background: var(--t-bg-neutral3);
+}
+.repeto-tochka-dash .repeto-progress-track {
+    height: 4px !important;
+    background: var(--t-bg-neutral2) !important;
+}
+.repeto-tochka-dash .repeto-progress-fill {
+    background: #CABEF3 !important;
+}
+.repeto-tochka-dash .repeto-expiring-packages__item--urgent .repeto-progress-fill {
+    background: #F0B6B6 !important;
+}
+.repeto-tochka-dash .repeto-income-card__period-tab {
+    font-size: 11px;
+    padding: 4px 8px;
+}
+.repeto-tochka-dash .repeto-income-card__periods {
+    padding: 2px;
+    border-radius: 8px;
+}
+.repeto-tochka-dash .repeto-conversion-card .repeto-card-header {
+    padding: 10px 14px 6px;
+}
+.repeto-tochka-dash .repeto-conversion-card .repeto-card-body {
+    padding: 0 14px 12px;
+}
+.repeto-tochka-dash .repeto-conversion-card__pct {
+    font-size: 24px;
+    line-height: 28px;
+}
+.repeto-tochka-dash .repeto-conversion-card__delta {
+    font-size: 11px;
+    height: 16px;
+}
+
+/* 4. Expiring packages — stronger grouping, less empty space. */
+.repeto-tochka-dash .repeto-expiring-packages .repeto-card-header,
+.repeto-tochka-dash .repeto-expiring-packages-card .repeto-card-header {
+    padding: 10px 14px 6px;
+}
+.repeto-tochka-dash .repeto-expiring-packages {
+    padding: 0 14px 12px !important;
+}
+.repeto-tochka-dash .repeto-expiring-packages__item {
+    padding: 0;
+    gap: 8px;
+}
+.repeto-tochka-dash .repeto-expiring-packages__top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+.repeto-tochka-dash .repeto-expiring-packages__primary {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+.repeto-tochka-dash .repeto-expiring-packages__primary .repeto-dashboard-entity-name {
+    font-size: 13px !important;
+    line-height: 16px !important;
+    font-weight: 500 !important;
+    color: var(--t-text-primary) !important;
+}
+.repeto-tochka-dash .repeto-expiring-packages__subject {
+    font-size: 11px !important;
+    line-height: 14px !important;
+    color: var(--t-text-tertiary) !important;
+}
+.repeto-tochka-dash .repeto-expiring-packages__deadline {
+    background: transparent;
+    padding: 0;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--t-text-secondary);
+    letter-spacing: 0;
+    flex-shrink: 0;
+}
+.repeto-tochka-dash .repeto-expiring-packages__deadline::before {
+    display: none;
+}
+.repeto-tochka-dash .repeto-expiring-packages__summary {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 2px;
+}
+.repeto-tochka-dash .repeto-expiring-packages__main-metric {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+}
+.repeto-tochka-dash .repeto-expiring-packages__main-metric-value {
+    font-size: 20px;
+    line-height: 24px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    color: var(--t-text-primary);
+}
+.repeto-tochka-dash .repeto-expiring-packages__main-metric--urgent .repeto-expiring-packages__main-metric-value {
+    color: var(--t-error);
+}
+.repeto-tochka-dash .repeto-expiring-packages__main-metric-label {
+    font-size: 12px;
+    color: var(--t-text-secondary);
+    font-weight: 400;
+}
+.repeto-tochka-dash .repeto-expiring-packages__metric--count {
+    background: transparent;
+    padding: 0;
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--t-text-tertiary);
+    font-variant-numeric: tabular-nums;
+}
+.repeto-tochka-dash .repeto-expiring-packages__track {
+    margin-top: 4px;
+}
+
+/* 5. Recent payments — tighter, stricter, bank-like. */
+.repeto-tochka-dash .repeto-recent-payments-card .repeto-card-header {
+    padding: 10px 14px 6px;
+}
+.repeto-tochka-dash .repeto-recent-payments__body {
+    padding: 0;
+}
+.repeto-tochka-dash .repeto-recent-payments-feed__item {
+    padding: 8px 14px;
+    margin: 0;
+    display: flex !important;
+    align-items: center;
+    gap: 12px;
+    border-top: 1px solid var(--t-divider);
+}
+.repeto-tochka-dash .repeto-recent-payments-feed__item:first-child {
+    border-top: none;
+}
+.repeto-tochka-dash .repeto-recent-payments-feed__head {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding-bottom: 0;
+    align-items: stretch;
+}
+.repeto-tochka-dash .repeto-recent-payments-feed__head .g-text {
+    font-size: 13px;
+    line-height: 16px;
+    font-weight: 500;
+}
+.repeto-tochka-dash .repeto-recent-payments-feed__meta {
+    flex: 0 0 auto;
+    gap: 6px;
+    margin-left: auto;
+    align-items: center;
+}
+.repeto-tochka-dash .repeto-recent-payments-feed__meta .g-text {
+    font-size: 11px;
+    line-height: 14px;
+    color: var(--t-text-tertiary) !important;
+    white-space: nowrap;
+}
+/* Amount inline in head (date+method row below student name). */
+.repeto-tochka-dash .repeto-dashboard-amount-pill {
+    font-size: 13px;
+    line-height: 16px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: var(--t-text-primary);
+    margin-left: auto;
+    flex-shrink: 0;
+}
+.repeto-tochka-dash .repeto-recent-payments-feed__separator {
+    display: none;
+}
+
+/* 6. Right rail — denser and more operational. */
+.repeto-tochka-dash .repeto-dashboard-grid__aside {
+    gap: 6px;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__aside .g-card,
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-section-card {
+    border-radius: 10px !important;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-card-header {
+    padding: 8px 12px 2px;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-card-header .g-text {
+    font-size: 11px !important;
+    line-height: 14px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.04em !important;
+    color: var(--t-text-tertiary) !important;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-card-link {
+    font-size: 11px;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--t-brand) !important;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-card-body {
+    padding: 0 0 2px;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-week-lesson-row {
+    padding: 6px 12px !important;
+    gap: 8px !important;
+    border-top: 1px solid var(--t-divider) !important;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-week-lesson-row .g-text {
+    font-size: 12px !important;
+    line-height: 15px !important;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__aside .g-label {
+    font-size: 10px !important;
+    height: 16px !important;
+    line-height: 16px !important;
+    padding: 0 6px !important;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-week-day-header {
+    padding: 6px 12px 2px;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-week-day-header--today {
+    padding: 5px 12px;
+}
+.repeto-tochka-dash .repeto-dashboard-aside-title {
+    font-size: 11px;
+    line-height: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--t-text-tertiary);
+    margin: 0;
+    padding: 4px 2px 2px;
+}
+/* END DASHBOARD — Micro-polish pass v5 */
+
+/* =====================================================================
+   DASHBOARD — Restore pass (2026-04-23, v6)
+   User feedback: "всё мелко и слиплось". Точка на самом деле крупнее и
+   просторнее, чем Repeto стал после v4/v5. Здесь возвращаем нормальную
+   типографику и спейсинг, перекрывая предыдущие правила.
+
+   Ориентиры из скриншотов Точки:
+   • card padding 20–24px
+   • card header value 22–28/600
+   • body text 14–15
+   • list rows 14px, высота ~48–52px
+   • section titles 14–15/500–600 primary (не uppercase tertiary)
+   • spacing между карточками 12–16px
+   All scoped.
+   ===================================================================== */
+
+/* 0. Базовая типографика — возвращаем Точечные размеры, больше 12px */
+.repeto-tochka-dash {
+    font-size: 14px;
+    line-height: 20px;
+}
+
+/* 1. Top metric cards — generous, Tochka-sized */
+.repeto-tochka-dash .repeto-stat-cards {
+    gap: 14px;
+    margin-bottom: 14px;
+}
+.repeto-tochka-dash .repeto-stat-card {
+    padding: 16px 18px;
+    gap: 6px;
+    border-radius: 14px;
+}
+.repeto-tochka-dash .repeto-stat-card__head {
+    gap: 10px;
+}
+.repeto-tochka-dash .repeto-stat-card__title {
+    font-size: 13px;
+    line-height: 18px;
+    color: var(--t-text-secondary);
+    max-width: none;
+}
+.repeto-tochka-dash .repeto-stat-card__value {
+    font-size: 24px;
+    line-height: 30px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+}
+.repeto-tochka-dash .repeto-stat-card__icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--t-bg-neutral1) !important;
+    color: var(--t-text-secondary) !important;
+}
+.repeto-tochka-dash .repeto-stat-card__meta {
+    font-size: 13px;
+    line-height: 18px;
+    padding: 0;
+    background: transparent !important;
+    margin-top: 2px;
+}
+
+/* 2. Task tiles — larger, more breathing room */
+.repeto-tochka-dash .repeto-task-tiles {
+    gap: 14px;
+    margin-bottom: 14px;
+}
+.repeto-tochka-dash .repeto-task-tile {
+    min-height: 104px;
+    padding: 18px 20px;
+    border-radius: 14px;
+    gap: 6px;
+}
+.repeto-tochka-dash .repeto-task-tile__kicker {
+    font-size: 13px;
+    line-height: 18px;
+}
+.repeto-tochka-dash .repeto-task-tile__title {
+    font-size: 15px;
+    line-height: 20px;
+    font-weight: 500;
+}
+.repeto-tochka-dash .repeto-task-tile__meta {
+    font-size: 13px;
+    line-height: 18px;
+}
+
+/* 3. Insight banner — restore to Tochka offer-card size */
+.repeto-tochka-dash .repeto-insight-banner {
+    padding: 18px 20px;
+    margin-bottom: 14px;
+    gap: 20px;
+    border-radius: 14px;
+}
+.repeto-tochka-dash .repeto-insight-banner__title {
+    font-size: 15px;
+    line-height: 20px;
+    font-weight: 500;
+}
+.repeto-tochka-dash .repeto-insight-banner__text {
+    font-size: 13px;
+    line-height: 18px;
+}
+.repeto-tochka-dash .repeto-insight-banner__cta {
+    height: 36px;
+    padding: 0 16px;
+    font-size: 13px;
+    border-radius: 10px;
+}
+
+/* 4. Dashboard grid — space between main and aside */
+.repeto-tochka-dash .repeto-dashboard-grid {
+    gap: 16px;
+    grid-template-columns: minmax(0, 1fr) 320px;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__main,
+.repeto-tochka-dash .repeto-dashboard-grid__aside {
+    gap: 14px;
+}
+.repeto-tochka-dash .repeto-two-col {
+    gap: 14px;
+}
+
+/* 5. Cards — unified generous padding */
+.repeto-tochka-dash .g-card,
+.repeto-tochka-dash .repeto-section-card,
+.repeto-tochka-dash .repeto-soft-card {
+    border-radius: 14px !important;
+}
+.repeto-tochka-dash .repeto-card-header {
+    padding: 18px 20px 10px !important;
+    gap: 10px;
+}
+.repeto-tochka-dash .repeto-card-header .g-text {
+    font-size: 15px !important;
+    line-height: 20px !important;
+    font-weight: 500 !important;
+    color: var(--t-text-primary) !important;
+    text-transform: none !important;
+    letter-spacing: 0.01em !important;
+}
+.repeto-tochka-dash .repeto-card-body {
+    padding: 0 20px 18px !important;
+}
+.repeto-tochka-dash .repeto-card-link {
+    font-size: 13px !important;
+    line-height: 18px !important;
+    font-weight: 500 !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    color: var(--t-brand) !important;
+}
+
+/* 6. Income card — generous, calm accent */
+.repeto-tochka-dash .repeto-income-card .repeto-card-body {
+    padding: 4px 20px 18px !important;
+}
+.repeto-tochka-dash .repeto-income-card__amount-row {
+    padding: 6px 0;
+}
+.repeto-tochka-dash .repeto-income-card__amount-label,
+.repeto-tochka-dash .repeto-income-card__amount-value {
+    font-size: 14px;
+    line-height: 20px;
+}
+.repeto-tochka-dash .repeto-income-card__amount-label {
+    color: var(--t-text-secondary);
+}
+.repeto-tochka-dash .repeto-income-card__amount-value {
+    color: var(--t-text-primary);
+    font-variant-numeric: tabular-nums;
+}
+.repeto-tochka-dash .repeto-income-card__bar {
+    height: 6px;
+    border-radius: 999px;
+    background: var(--t-bg-neutral2);
+    margin-top: 6px;
+}
+.repeto-tochka-dash .repeto-income-card__bar-part--received {
+    background: #B39DF7;
+}
+.repeto-tochka-dash .repeto-income-card__bar-part--expected {
+    background: var(--t-bg-neutral3);
+}
+.repeto-tochka-dash .repeto-income-card__total {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--t-divider);
+}
+.repeto-tochka-dash .repeto-income-card__total-label {
+    font-size: 13px;
+    line-height: 18px;
+    color: var(--t-text-secondary);
+}
+.repeto-tochka-dash .repeto-income-card__total-value {
+    font-size: 22px;
+    line-height: 28px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+}
+.repeto-tochka-dash .repeto-income-card__periods {
+    background: var(--t-bg-neutral1);
+    border-radius: 10px;
+    padding: 3px;
+}
+.repeto-tochka-dash .repeto-income-card__period-tab {
+    font-size: 13px;
+    font-weight: 500;
+    padding: 7px 12px;
+    border-radius: 8px;
+    letter-spacing: 0;
+}
+
+/* 7. Conversion card */
+.repeto-tochka-dash .repeto-conversion-card__pct {
+    font-size: 30px;
+    line-height: 36px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+.repeto-tochka-dash .repeto-conversion-card__delta {
+    font-size: 13px;
+    height: 20px;
+    padding: 0;
+}
+
+/* 8. Progress tracks — back to 6px, soft purple */
+.repeto-tochka-dash .repeto-progress-track {
+    height: 6px !important;
+    background: var(--t-bg-neutral2) !important;
+    border-radius: 999px !important;
+}
+.repeto-tochka-dash .repeto-progress-fill {
+    background: #B39DF7 !important;
+}
+.repeto-tochka-dash .repeto-expiring-packages__item--urgent .repeto-progress-fill {
+    background: #F0B6B6 !important;
+}
+
+/* 9. Expiring packages — generous rhythm */
+.repeto-tochka-dash .repeto-expiring-packages {
+    padding: 4px 20px 18px !important;
+}
+.repeto-tochka-dash .repeto-expiring-packages__item {
+    gap: 10px;
+}
+.repeto-tochka-dash .repeto-expiring-packages__top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 14px;
+}
+.repeto-tochka-dash .repeto-expiring-packages__primary {
+    gap: 2px;
+}
+.repeto-tochka-dash .repeto-expiring-packages__primary .repeto-dashboard-entity-name {
+    font-size: 15px !important;
+    line-height: 20px !important;
+    font-weight: 500 !important;
+    color: var(--t-text-primary) !important;
+}
+.repeto-tochka-dash .repeto-expiring-packages__subject {
+    font-size: 13px !important;
+    line-height: 18px !important;
+    color: var(--t-text-secondary) !important;
+}
+.repeto-tochka-dash .repeto-expiring-packages__deadline {
+    background: transparent;
+    padding: 0;
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--t-text-secondary);
+}
+.repeto-tochka-dash .repeto-expiring-packages__summary {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 4px;
+}
+.repeto-tochka-dash .repeto-expiring-packages__main-metric {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+}
+.repeto-tochka-dash .repeto-expiring-packages__main-metric-value {
+    font-size: 26px;
+    line-height: 30px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    color: var(--t-text-primary);
+}
+.repeto-tochka-dash .repeto-expiring-packages__main-metric-label {
+    font-size: 13px;
+    color: var(--t-text-secondary);
+    font-weight: 400;
+}
+.repeto-tochka-dash .repeto-expiring-packages__metric--count {
+    background: transparent;
+    padding: 0;
+    font-size: 13px;
+    color: var(--t-text-secondary);
+}
+.repeto-tochka-dash .repeto-expiring-packages__track {
+    margin-top: 4px;
+}
+
+/* 10. Recent payments — generous list, bank rhythm */
+.repeto-tochka-dash .repeto-recent-payments__body {
+    padding: 0;
+}
+.repeto-tochka-dash .repeto-recent-payments-feed {
+    gap: 0;
+}
+.repeto-tochka-dash .repeto-recent-payments-feed__item {
+    padding: 14px 20px !important;
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center;
+    gap: 14px;
+    border-top: 1px solid var(--t-divider);
+}
+.repeto-tochka-dash .repeto-recent-payments-feed__item:first-child {
+    border-top: none;
+}
+.repeto-tochka-dash .repeto-recent-payments-feed__item::before,
+.repeto-tochka-dash .repeto-recent-payments-feed__item::after {
+    content: none !important;
+    display: none !important;
+}
+.repeto-tochka-dash .repeto-recent-payments-feed__head {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex !important;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0 !important;
+    align-items: stretch !important;
+}
+.repeto-tochka-dash .repeto-recent-payments-feed__head .g-text {
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 500;
+    color: var(--t-text-primary) !important;
+}
+.repeto-tochka-dash .repeto-recent-payments-feed__meta {
+    flex: 0 0 auto;
+    gap: 8px;
+    padding: 0;
+    margin-left: auto;
+    align-items: center;
+}
+.repeto-tochka-dash .repeto-recent-payments-feed__meta .g-text {
+    font-size: 13px;
+    line-height: 18px;
+    color: var(--t-text-tertiary) !important;
+    white-space: nowrap;
+}
+.repeto-tochka-dash .repeto-recent-payments-feed__separator {
+    display: none !important;
+}
+.repeto-tochka-dash .repeto-dashboard-amount-pill {
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: var(--t-text-primary);
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    letter-spacing: 0;
+    flex-shrink: 0;
+}
+
+/* 11. Status labels — Tochka size (not micro) */
+.repeto-tochka-dash .g-label {
+    font-size: 12px !important;
+    height: 22px !important;
+    line-height: 22px !important;
+    padding: 0 8px !important;
+    border-radius: 6px !important;
+    font-weight: 500 !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+}
+.repeto-tochka-dash .g-label_theme_success {
+    background: #EEF4F0 !important;
+    color: #4A7A63 !important;
+}
+.repeto-tochka-dash .g-label_theme_normal {
+    background: var(--t-bg-neutral1) !important;
+    color: var(--t-text-secondary) !important;
+}
+
+/* 12. Right rail — operational list-style, NOT micro. Tochka right rail
+      uses 14px text, ~48px rows, section titles 14–15/500 primary. */
+.repeto-tochka-dash .repeto-dashboard-grid__aside {
+    gap: 12px;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__aside .g-card,
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-section-card {
+    border-radius: 14px !important;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-card-header {
+    padding: 16px 18px 10px !important;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-card-header .g-text {
+    font-size: 15px !important;
+    line-height: 20px !important;
+    font-weight: 500 !important;
+    color: var(--t-text-primary) !important;
+    text-transform: none !important;
+    letter-spacing: 0.01em !important;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-card-link {
+    font-size: 13px !important;
+    color: var(--t-brand) !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-card-body {
+    padding: 0 0 8px !important;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-week-lesson-row {
+    padding: 12px 18px !important;
+    gap: 12px !important;
+    border-top: 1px solid var(--t-divider) !important;
+    min-height: 48px;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-week-lesson-row .g-text {
+    font-size: 14px !important;
+    line-height: 18px !important;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__aside .g-label {
+    font-size: 12px !important;
+    height: 22px !important;
+    line-height: 22px !important;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-week-day-header {
+    padding: 12px 18px 4px;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-week-day-header--today {
+    padding: 8px 18px;
+}
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-week-day-header__label {
+    font-size: 11px !important;
+    line-height: 14px !important;
+    letter-spacing: 0.06em !important;
+}
+
+/* 13. Aside title «Компания» — primary, 15/500, not uppercase tertiary */
+.repeto-tochka-dash .repeto-dashboard-aside-title {
+    font-size: 15px;
+    line-height: 20px;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0.01em;
+    color: var(--t-text-primary);
+    padding: 2px 2px 4px;
+    margin: 0 0 2px;
+}
+/* END DASHBOARD — Restore pass v6 */
+
+/* =====================================================================
+   TOCHKA SUMMARY CARD (2026-04-23, v7)
+   Pixel-matched layout of Tochka «Ручной учёт расходов» card.
+   Used for: ConversionRate (.repeto-conversion-card).
+   Scoped to .repeto-tochka-dash.
+   ===================================================================== */
+.repeto-tochka-dash .repeto-tochka-summary-card {
+    background: #FFFFFF !important;
+    border: 1px solid #EEEEEE !important;
+    border-radius: 20px !important;
+    box-shadow: none !important;
+    padding: 24px 28px 22px !important;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    overflow: hidden;
+}
+
+/* Header: title + subtitle on the left, info icon on the right */
+.repeto-tochka-dash .repeto-tochka-summary-card__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+.repeto-tochka-dash .repeto-tochka-summary-card__titles {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+.repeto-tochka-dash .repeto-tochka-summary-card__title {
+    font-size: 18px !important;
+    line-height: 24px !important;
+    font-weight: 500 !important;
+    color: #1C1C1E !important;
+    letter-spacing: 0 !important;
+}
+.repeto-tochka-dash .repeto-tochka-summary-card__subtitle {
+    font-size: 14px !important;
+    line-height: 20px !important;
+    font-weight: 400 !important;
+    color: #8A8A8E !important;
+    letter-spacing: 0 !important;
+}
+.repeto-tochka-dash .repeto-tochka-summary-card__info {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    border: 0;
+    background: transparent;
+    color: #AEAEAE;
+    cursor: pointer;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: color 0.15s ease, background 0.15s ease;
+}
+.repeto-tochka-dash .repeto-tochka-summary-card__info:hover {
+    color: #1C1C1E;
+    background: #F4F4F4;
+}
+
+/* Hero value row */
+.repeto-tochka-dash .repeto-tochka-summary-card__hero {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 2px;
+}
+.repeto-tochka-dash .repeto-tochka-summary-card__hero-value {
+    font-size: 28px;
+    line-height: 32px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: #1C1C1E;
+    font-variant-numeric: tabular-nums;
+}
+.repeto-tochka-dash .repeto-tochka-summary-card__hero-hint {
+    font-size: 14px;
+    line-height: 20px;
+    color: #8A8A8E;
+}
+
+/* Thin bar directly under hero */
+.repeto-tochka-dash .repeto-tochka-summary-card__bar {
+    height: 3px;
+    background: #EEEEEE;
+    border-radius: 999px;
+    overflow: hidden;
+    margin: -4px 0 4px;
+}
+.repeto-tochka-dash .repeto-tochka-summary-card__bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.4s ease;
+}
+
+/* Two-row list: label · value */
+.repeto-tochka-dash .repeto-tochka-summary-card__list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+}
+.repeto-tochka-dash .repeto-tochka-summary-card__list-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+.repeto-tochka-dash .repeto-tochka-summary-card__list-row dt {
+    font-size: 15px;
+    line-height: 22px;
+    font-weight: 400;
+    color: #1C1C1E;
+    margin: 0;
+}
+.repeto-tochka-dash .repeto-tochka-summary-card__list-row dd {
+    font-size: 15px;
+    line-height: 22px;
+    font-weight: 400;
+    color: #1C1C1E;
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+/* Footer: helper + CTA pill */
+.repeto-tochka-dash .repeto-tochka-summary-card__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-top: 6px;
+}
+.repeto-tochka-dash .repeto-tochka-summary-card__footer-hint {
+    font-size: 13px !important;
+    line-height: 18px !important;
+    color: #8A8A8E !important;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.repeto-tochka-dash .repeto-tochka-summary-card__cta {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 44px;
+    padding: 0 24px;
+    border-radius: 12px;
+    background: #EFEDF8;
+    color: #1C1C1E !important;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 20px;
+    text-decoration: none !important;
+    letter-spacing: 0;
+    transition: background 0.15s ease;
+    white-space: nowrap;
+}
+.repeto-tochka-dash .repeto-tochka-summary-card__cta:hover {
+    background: #E2DDF6;
+}
+
+.repeto-tochka-dash .repeto-tochka-summary-card__loader {
+    padding: 32px 0;
+    display: flex;
+    justify-content: center;
+}
+
+/* Responsive — stack footer on narrow widths */
+@media (max-width: 640px) {
+    .repeto-tochka-dash .repeto-tochka-summary-card {
+        padding: 20px 20px 18px !important;
+    }
+    .repeto-tochka-dash .repeto-tochka-summary-card__footer {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .repeto-tochka-dash .repeto-tochka-summary-card__cta {
+        width: 100%;
+    }
+}
+
+/* --- Override previous pass rules that targeted .repeto-conversion-card --- */
+.repeto-tochka-dash .repeto-conversion-card.repeto-tochka-summary-card .repeto-card-header,
+.repeto-tochka-dash .repeto-conversion-card.repeto-tochka-summary-card .repeto-card-body {
+    all: unset;
+}
+/* END TOCHKA SUMMARY CARD v7 */
+
+/* =====================================================================
+   TOCHKA SPEND CARD (2026-04-23, v8)
+   Pixel-matched layout of Tochka «Траты по карте» compact card.
+   Used for: IncomeChart (.repeto-income-card).
+   Scoped to .repeto-tochka-dash.
+   ===================================================================== */
+.repeto-tochka-dash .repeto-tochka-spend-card {
+    background: #FFFFFF !important;
+    border: 1px solid #EEEEEE !important;
+    border-radius: 20px !important;
+    box-shadow: none !important;
+    padding: 20px 22px 18px !important;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    column-gap: 16px;
+    row-gap: 10px;
+    align-items: baseline;
+    overflow: hidden;
+}
+
+/* Title row: «Доход ›»  +  meta «*5581» style */
+.repeto-tochka-dash .repeto-tochka-spend-card__title-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: #1C1C1E !important;
+    text-decoration: none !important;
+    min-width: 0;
+}
+.repeto-tochka-dash .repeto-tochka-spend-card__title-link:hover {
+    opacity: 0.8;
+}
+.repeto-tochka-dash .repeto-tochka-spend-card__title {
+    font-size: 20px;
+    line-height: 26px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: #1C1C1E;
+}
+.repeto-tochka-dash .repeto-tochka-spend-card__title-link .g-icon {
+    color: #1C1C1E;
+    flex-shrink: 0;
+}
+
+.repeto-tochka-dash .repeto-tochka-spend-card__meta {
+    justify-self: end;
+    font-size: 14px;
+    line-height: 20px;
+    color: #8A8A8E;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+}
+
+/* Month + amount row */
+.repeto-tochka-dash .repeto-tochka-spend-card__row {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 4px;
+}
+.repeto-tochka-dash .repeto-tochka-spend-card__row-label {
+    font-size: 18px;
+    line-height: 24px;
+    font-weight: 500;
+    color: #1C1C1E;
+}
+.repeto-tochka-dash .repeto-tochka-spend-card__row-value {
+    font-size: 18px;
+    line-height: 24px;
+    font-weight: 500;
+    color: #1C1C1E;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+}
+
+/* Two-color stacked bar */
+.repeto-tochka-dash .repeto-tochka-spend-card__bar {
+    grid-column: 1 / -1;
+    display: flex;
+    height: 8px !important;
+    border-radius: 999px;
+    background: #EEEEEE;
+    overflow: hidden;
+    margin-top: 2px;
+    gap: 0;
+}
+.repeto-tochka-dash .repeto-tochka-spend-card__bar-part {
+    height: 100%;
+    min-width: 2px;
+}
+.repeto-tochka-dash .repeto-tochka-spend-card__bar-part--a {
+    background: #A5D9C7; /* teal, like Tochka «Разные услуги» */
+    border-radius: 999px 0 0 999px;
+}
+.repeto-tochka-dash .repeto-tochka-spend-card__bar-part--b {
+    background: #CABEF3; /* lavender, like Tochka «Разные товары» */
+    border-radius: 0 999px 999px 0;
+}
+.repeto-tochka-dash .repeto-tochka-spend-card__bar-part--a:only-child,
+.repeto-tochka-dash .repeto-tochka-spend-card__bar-part--b:only-child {
+    border-radius: 999px;
+    flex-basis: 100% !important;
+}
+
+/* Legend */
+.repeto-tochka-dash .repeto-tochka-spend-card__legend {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-top: 2px;
+    flex-wrap: wrap;
+}
+.repeto-tochka-dash .repeto-tochka-spend-card__legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    line-height: 20px;
+    color: #6E6E74;
+}
+.repeto-tochka-dash .repeto-tochka-spend-card__legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    flex-shrink: 0;
+}
+.repeto-tochka-dash .repeto-tochka-spend-card__legend-dot--a {
+    background: #A5D9C7;
+}
+.repeto-tochka-dash .repeto-tochka-spend-card__legend-dot--b {
+    background: #CABEF3;
+}
+
+/* Override previous v6 rules that targeted .repeto-income-card internals */
+.repeto-tochka-dash .repeto-income-card.repeto-tochka-spend-card .repeto-card-header,
+.repeto-tochka-dash .repeto-income-card.repeto-tochka-spend-card .repeto-card-body {
+    all: unset;
+}
+
+@media (max-width: 640px) {
+    .repeto-tochka-dash .repeto-tochka-spend-card {
+        padding: 18px 18px 16px !important;
+    }
+}
+/* END TOCHKA SPEND CARD v8 */
+
+/* =====================================================================
+   TOCHKA INCOMING CARD (2026-04-23, v9)
+   Pixel-matched «Входящие 1 — 23 апреля» bar-chart card.
+   Used for: IncomeChart (.repeto-income-card.repeto-tochka-income).
+   Scoped to .repeto-tochka-dash.
+   ===================================================================== */
+.repeto-tochka-dash .repeto-tochka-income {
+    background: #FFFFFF !important;
+    border: 1px solid #EEEEEE !important;
+    border-radius: 20px !important;
+    box-shadow: none !important;
+    padding: 20px 22px 16px !important;
+    display: flex !important;
+    flex-direction: column;
+    gap: 8px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Reset earlier .repeto-income-card internals that no longer exist */
+.repeto-tochka-dash .repeto-income-card.repeto-tochka-income .repeto-card-header,
+.repeto-tochka-dash .repeto-income-card.repeto-tochka-income .repeto-card-body {
+    all: unset;
+}
+
+.repeto-tochka-dash .repeto-tochka-income__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.repeto-tochka-dash .repeto-tochka-income__title {
+    font-size: 15px;
+    line-height: 20px;
+    font-weight: 500;
+    color: #1C1C1E;
+    letter-spacing: -0.005em;
+}
+
+.repeto-tochka-dash .repeto-tochka-income__amount {
+    font-size: 28px;
+    line-height: 34px;
+    font-weight: 600;
+    color: #1C1C1E;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+    margin-top: 2px;
+}
+
+.repeto-tochka-dash .repeto-tochka-income__deltas {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 8px;
+    font-size: 13px;
+    line-height: 18px;
+    color: #6E6E74;
+    margin-top: 2px;
+}
+.repeto-tochka-dash .repeto-tochka-income__delta {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+.repeto-tochka-dash .repeto-tochka-income__delta-pct {
+    font-weight: 500;
+}
+.repeto-tochka-dash .repeto-tochka-income__delta--up,
+.repeto-tochka-dash .repeto-tochka-income__delta--up .repeto-tochka-income__delta-pct,
+.repeto-tochka-dash .repeto-tochka-income__delta--up .g-icon {
+    color: #2BA060;
+}
+.repeto-tochka-dash .repeto-tochka-income__delta--down,
+.repeto-tochka-dash .repeto-tochka-income__delta--down .repeto-tochka-income__delta-pct,
+.repeto-tochka-dash .repeto-tochka-income__delta--down .g-icon {
+    color: #E15656;
+}
+.repeto-tochka-dash .repeto-tochka-income__delta-range {
+    color: #6E6E74;
+    font-weight: 400;
+}
+.repeto-tochka-dash .repeto-tochka-income__delta-sep {
+    color: #C7C7CC;
+}
+
+.repeto-tochka-dash .repeto-tochka-income__loader {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 220px;
+}
+
+/* ---- Chart ---- */
+.repeto-tochka-dash .repeto-tochka-income__chart {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 10px;
+    margin-top: 14px;
+    height: 190px;
+}
+
+.repeto-tochka-dash .repeto-tochka-income__axis {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0 2px 18px 0; /* 18px = month-label row */
+    font-size: 12px;
+    line-height: 16px;
+    color: #8A8A8E;
+    font-variant-numeric: tabular-nums;
+}
+.repeto-tochka-dash .repeto-tochka-income__axis-tick {
+    transform: translateY(-50%);
+}
+.repeto-tochka-dash .repeto-tochka-income__axis-tick:first-child {
+    transform: translateY(-4px);
+}
+.repeto-tochka-dash .repeto-tochka-income__axis-tick:last-child {
+    transform: translateY(50%);
+}
+
+.repeto-tochka-dash .repeto-tochka-income__plot {
+    position: relative;
+    padding-bottom: 18px; /* reserve for month labels */
+}
+.repeto-tochka-dash .repeto-tochka-income__grid {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+    border-top: 1px dashed #E5E5EA;
+    pointer-events: none;
+}
+.repeto-tochka-dash .repeto-tochka-income__grid--top {
+    top: 0;
+}
+.repeto-tochka-dash .repeto-tochka-income__grid--mid {
+    top: 50%;
+}
+.repeto-tochka-dash .repeto-tochka-income__grid--bottom {
+    bottom: 18px;
+    border-top-style: solid;
+    border-top-color: #E5E5EA;
+}
+
+.repeto-tochka-dash .repeto-tochka-income__bars {
+    position: relative;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    align-items: end;
+    height: 100%;
+    gap: 3px;
+}
+
+.repeto-tochka-dash .repeto-tochka-income__col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    position: relative;
+}
+.repeto-tochka-dash .repeto-tochka-income__pair {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 4px;
+    height: 100%;
+    width: 100%;
+    padding-bottom: 18px; /* align with grid bottom = month-label row */
+}
+.repeto-tochka-dash .repeto-tochka-income__bar {
+    width: 100%;
+    max-width: 22px;
+    min-height: 4px;
+    border-radius: 8px 8px 0 0;
+    display: block;
+    background: #CABEF3; /* lavender (reference) */
+}
+.repeto-tochka-dash .repeto-tochka-income__col--current .repeto-tochka-income__bar {
+    background: #8F7BD8; /* darker indigo-lavender for current month */
+}
+
+.repeto-tochka-dash .repeto-tochka-income__col-label {
+    position: absolute;
+    bottom: 0;
+    font-size: 12px;
+    line-height: 16px;
+    color: #8A8A8E;
+    font-variant-numeric: tabular-nums;
+}
+.repeto-tochka-dash .repeto-tochka-income__col--current .repeto-tochka-income__col-label {
+    color: #1C1C1E;
+    font-weight: 500;
+}
+
+@media (max-width: 640px) {
+    .repeto-tochka-dash .repeto-tochka-income {
+        padding: 18px 18px 14px !important;
+    }
+    .repeto-tochka-dash .repeto-tochka-income__amount {
+        font-size: 24px;
+        line-height: 30px;
+    }
+    .repeto-tochka-dash .repeto-tochka-income__bar {
+        max-width: 14px;
+    }
+}
+/* END TOCHKA INCOMING CARD v9 */
+
+/* =====================================================================
+   PROFIT BREAKDOWN CARD (2026-04-23, v10)
+   Tochka «Аналитика по клиентам» segmented layout.
+   Shows: Получено / Запланировано for current month with a single
+   segmented bar and legend list (label · amount · %).
+   Scoped to .repeto-tochka-dash.
+   ===================================================================== */
+.repeto-tochka-dash .repeto-profit-breakdown {
+    background: #FFFFFF !important;
+    border: 1px solid #EEEEEE !important;
+    border-radius: 20px !important;
+    box-shadow: none !important;
+    padding: 20px 22px 18px !important;
+    display: flex !important;
+    flex-direction: column;
+    gap: 14px;
+}
+.repeto-tochka-dash .repeto-profit-breakdown__loader {
+    min-height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.repeto-tochka-dash .repeto-profit-breakdown__header {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.repeto-tochka-dash .repeto-profit-breakdown__title {
+    font-size: 16px;
+    line-height: 22px;
+    font-weight: 600;
+    color: #1C1C1E;
+    letter-spacing: -0.005em;
+}
+.repeto-tochka-dash .repeto-profit-breakdown__subtitle {
+    font-size: 13px;
+    line-height: 18px;
+    color: #6E6E74;
+}
+
+.repeto-tochka-dash .repeto-profit-breakdown__bar {
+    display: flex;
+    height: 10px;
+    border-radius: 999px;
+    background: #EEEEEE;
+    overflow: hidden;
+    margin-top: 2px;
+}
+.repeto-tochka-dash .repeto-profit-breakdown__bar-empty {
+    flex: 1;
+    background: #EEEEEE;
+}
+.repeto-tochka-dash .repeto-profit-breakdown__bar-part {
+    height: 100%;
+    min-width: 6px;
+}
+.repeto-tochka-dash .repeto-profit-breakdown__bar-part--received {
+    background: #8FC784; /* зелёный «Крупные» */
+}
+.repeto-tochka-dash .repeto-profit-breakdown__bar-part--expected {
+    background: #9DBCE0; /* голубой «Средние» */
+}
+
+.repeto-tochka-dash .repeto-profit-breakdown__list {
+    list-style: none;
+    margin: 2px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.repeto-tochka-dash .repeto-profit-breakdown__row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    column-gap: 16px;
+    align-items: baseline;
+    font-size: 14px;
+    line-height: 20px;
+    color: #1C1C1E;
+}
+.repeto-tochka-dash .repeto-profit-breakdown__row-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: #1C1C1E;
+    font-weight: 500;
+}
+.repeto-tochka-dash .repeto-profit-breakdown__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    flex-shrink: 0;
+}
+.repeto-tochka-dash .repeto-profit-breakdown__dot--received {
+    background: #8FC784;
+}
+.repeto-tochka-dash .repeto-profit-breakdown__dot--expected {
+    background: #9DBCE0;
+}
+.repeto-tochka-dash .repeto-profit-breakdown__row-amount {
+    font-variant-numeric: tabular-nums;
+    color: #1C1C1E;
+    font-weight: 500;
+    display: inline-flex;
+    gap: 4px;
+    align-items: baseline;
+}
+.repeto-tochka-dash .repeto-profit-breakdown__row-pct {
+    color: #8A8A8E;
+    font-weight: 400;
+}
+
+.repeto-tochka-dash .repeto-profit-breakdown__hint {
+    margin: 4px 0 0;
+    font-size: 13px;
+    line-height: 18px;
+    color: #8A8A8E;
+}
+
+@media (max-width: 640px) {
+    .repeto-tochka-dash .repeto-profit-breakdown {
+        padding: 18px 18px 16px !important;
+    }
+}
+/* END PROFIT BREAKDOWN CARD v10 */
+
+/* =====================================================================
+   DASHBOARD POLISH (2026-04-24, v11)
+   - ConversionRate info popover content
+   - ProfitBreakdown header link alignment
+   - IncomeChart header link alignment
+   ===================================================================== */
+
+/* IncomeChart: chevron link in header */
+.repeto-tochka-dash .repeto-tochka-income__header {
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+.repeto-tochka-dash .repeto-tochka-income__link {
+    color: #1C1C1E !important;
+    text-decoration: none !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    transition: background 120ms ease;
+}
+.repeto-tochka-dash .repeto-tochka-income__link:hover {
+    background: #F4F4F4;
+}
+
+/* ProfitBreakdown: rework header into row with link */
+.repeto-tochka-dash .repeto-profit-breakdown__header {
+    flex-direction: row !important;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+.repeto-tochka-dash .repeto-profit-breakdown__titles {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    flex: 1;
+}
+.repeto-tochka-dash .repeto-profit-breakdown__link {
+    color: #1C1C1E !important;
+    text-decoration: none !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    transition: background 120ms ease;
+}
+.repeto-tochka-dash .repeto-profit-breakdown__link:hover {
+    background: #F4F4F4;
+}
+
+/* ConversionRate: Popover content styling */
+.repeto-tochka-summary-card__info-tooltip .g-popover__content {
+    max-width: 320px;
+}
+.repeto-tochka-summary-card__info-pop {
+    max-width: 320px;
+    padding: 4px 2px;
+    font-size: 13px;
+    line-height: 18px;
+    color: #1C1C1E;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.repeto-tochka-summary-card__info-pop strong {
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 600;
+    color: #1C1C1E;
+}
+.repeto-tochka-summary-card__info-pop p {
+    margin: 0;
+    color: #4D4D52;
+}
+
+/* Make info button a proper clickable affordance */
+.repeto-tochka-dash .repeto-tochka-summary-card__info {
+    cursor: pointer;
+    transition: background 120ms ease;
+}
+.repeto-tochka-dash .repeto-tochka-summary-card__info:hover {
+    background: #F4F4F4;
+}
+/* END DASHBOARD POLISH v11 */
+
+/* =====================================================================
+   DASHBOARD HEADER CHEVRONS (2026-04-24, v12)
+   Unified top-right navigation: black chevron icon button on widget cards.
+   ===================================================================== */
+.repeto-tochka-dash .repeto-card-chevron {
+    color: #1C1C1E !important;
+    text-decoration: none !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    transition: background 120ms ease, color 120ms ease;
+}
+.repeto-tochka-dash .repeto-card-chevron:hover {
+    background: #F4F4F4;
+}
+.repeto-tochka-dash .repeto-card-chevron .g-icon {
+    color: #1C1C1E;
+}
+/* Hide any leftover text-arrow card links still rendered */
+.repeto-tochka-dash .repeto-card-link {
+    color: #1C1C1E !important;
+}
+
+/* IncomeChart: compact variant — shorter chart height, tighter spacing */
+.repeto-tochka-dash .repeto-tochka-income {
+    gap: 6px;
+}
+.repeto-tochka-dash .repeto-tochka-income__chart--compact {
+    height: 130px;
+    margin-top: 8px;
+}
+.repeto-tochka-dash .repeto-tochka-income__chart--compact .repeto-tochka-income__bar {
+    max-width: 28px;
+}
+/* END DASHBOARD HEADER CHEVRONS v12 */
+
+/* =====================================================================
+   FINANCE — Consistency pass (2026-04-24, v1)
+   Apply the dashboard Tochka look to the Finance overview page by
+   normalizing card chrome (paddings, borders, typography). Scoped to
+   `.repeto-tochka-finance` (also carries `.repeto-tochka-dash` so stat
+   cards inherit dashboard density automatically).
+   ===================================================================== */
+
+/* Stat cards — already picked up via .repeto-tochka-dash .repeto-stat-card rules.
+   Just tighten grid spacing and make cards link-friendly. */
+.repeto-tochka-finance .repeto-stat-cards {
+    gap: 12px !important;
+    margin-bottom: 12px !important;
+}
+.repeto-tochka-finance a.repeto-stat-card {
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 120ms ease, transform 120ms ease;
+}
+.repeto-tochka-finance a.repeto-stat-card:hover {
+    border-color: var(--t-divider);
+    transform: translateY(-1px);
+}
+
+/* Two-column row: unify gap */
+.repeto-tochka-finance .repeto-finance-overview-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+@media (max-width: 960px) {
+    .repeto-tochka-finance .repeto-finance-overview-row {
+        flex-direction: column;
+    }
+}
+
+/* Common card chrome: smaller radius, softer borders, white surface */
+.repeto-tochka-finance .repeto-income-students-card,
+.repeto-tochka-finance .repeto-balance-table-card {
+    border-color: var(--t-divider) !important;
+    background: #FFFFFF !important;
+    border-radius: 12px !important;
+    margin-top: 0 !important;
+    box-shadow: none !important;
+}
+
+/* Card headers: neutralize inline padding/border with unified system */
+.repeto-tochka-finance .repeto-income-students-card > div:first-child,
+.repeto-tochka-finance .repeto-income-students-card__header,
+.repeto-tochka-finance .repeto-balance-table-card > div:first-child {
+    padding: 12px 16px !important;
+    border-bottom-color: var(--t-divider) !important;
+}
+.repeto-tochka-finance .repeto-income-students-card__header .g-text_variant_subheader-2,
+.repeto-tochka-finance .repeto-balance-table-card > div:first-child .g-text_variant_subheader-2 {
+    font-size: 14px !important;
+    line-height: 18px !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.005em;
+}
+
+/* Replace bright brand "Все →" link with neutral chevron-like style */
+.repeto-tochka-finance .repeto-balance-table-card .g-text_color_brand,
+.repeto-tochka-finance .repeto-income-students-card .g-text_color_brand {
+    color: var(--t-text-secondary) !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+}
+.repeto-tochka-finance .repeto-balance-table-card a,
+.repeto-tochka-finance .repeto-income-students-card a {
+    text-decoration: none !important;
+}
+
+/* Balance table: tighter rows, neutral dividers, quieter numbers */
+.repeto-tochka-finance .repeto-balance-table thead th {
+    padding: 8px 16px !important;
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    color: var(--t-text-tertiary) !important;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border-bottom: 1px solid var(--t-divider) !important;
+}
+.repeto-tochka-finance .repeto-balance-table tbody tr {
+    border-bottom-color: var(--t-divider) !important;
+}
+.repeto-tochka-finance .repeto-balance-table tbody td {
+    padding: 10px 16px !important;
+    font-size: 13px !important;
+}
+.repeto-tochka-finance .repeto-balance-table tbody td .g-text_variant_body-1 {
+    font-size: 13px !important;
+    line-height: 16px !important;
+}
+.repeto-tochka-finance .repeto-balance-table tbody td .g-text_variant_caption-2 {
+    font-size: 11px !important;
+    line-height: 14px !important;
+}
+
+/* Period summary metrics: align with Tochka card density */
+.repeto-tochka-finance .repeto-finance-summary-header {
+    margin-bottom: 8px !important;
+}
+.repeto-tochka-finance .repeto-finance-summary-header .g-text_variant_subheader-2 {
+    font-size: 14px !important;
+    line-height: 18px !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.005em;
+}
+.repeto-tochka-finance .repeto-finance-summary-metric {
+    border-color: var(--t-divider) !important;
+    background: #FFFFFF !important;
+    border-radius: 10px !important;
+    box-shadow: none !important;
+}
+
+/* Income by students: quieter progress bars */
+.repeto-tochka-finance .repeto-income-students-card .g-text_variant_subheader-2 + * {
+    color: var(--t-text-secondary);
+}
+
+/* PillTabs inside finance cards: neutral active background to match dash */
+.repeto-tochka-finance .repeto-pill-tabs .repeto-pill-tabs__item--active {
+    background: var(--t-bg-neutral1) !important;
+    color: var(--t-text-primary) !important;
+}
+
+/* END FINANCE — Consistency pass v1 */
+
+
+
+/* =====================================================================
+   FINANCE — Tochka alignment pass v2 (2026-04-24)
+   Matches the refactored JSX that now reuses
+   `.repeto-card-header` / `.repeto-card-body` / `.repeto-card-chevron`
+   and a 2-col dashboard grid (`.repeto-two-col`).
+   Scope keeps everything inside `.repeto-tochka-dash .repeto-tochka-finance`
+   so the Dashboard itself stays unchanged.
+   ===================================================================== */
+.repeto-tochka-dash.repeto-tochka-finance,
+.repeto-tochka-dash .repeto-tochka-finance {
+    display: flex;
+    flex-direction: column;
+    gap: var(--t-gap, 12px);
+}
+
+/* Vertical rhythm is controlled by container gap; avoid doubled spacing. */
+.repeto-tochka-dash .repeto-tochka-finance .repeto-stat-cards {
+    margin-bottom: 0 !important;
+}
+
+/* Keep the pair as two equal-height widgets on desktop. */
+.repeto-tochka-dash .repeto-tochka-finance .repeto-two-col {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 14px;
+    align-items: stretch;
+    margin: 0;
+}
+
+/* Shared Finance cards: flat outlined surface (radius/borders aligned with Dashboard) */
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-students-card,
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-summary-card,
+.repeto-tochka-dash .repeto-tochka-finance .repeto-balance-table-card {
+    background: var(--t-surface, #FFFFFF) !important;
+    border: 1px solid var(--t-bg-neutral2, #EEEEEE) !important;
+    border-radius: var(--t-radius, 14px) !important;
+    box-shadow: none !important;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+/* Ensure the flex-children cards expand to the full column height */
+.repeto-tochka-dash .repeto-two-col > .repeto-income-students-card,
+.repeto-tochka-dash .repeto-two-col > .repeto-finance-summary-card {
+    align-self: stretch;
+    height: 100%;
+    margin: 0;
+}
+
+/* Discrete month summary should keep natural height like top stat cards. */
+.repeto-tochka-dash .repeto-two-col > .repeto-finance-summary-card--discrete {
+    align-self: flex-start;
+    height: auto;
+}
+
+/* Disable legacy sticky behavior inherited from old finance layout. */
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-students-card {
+    position: static;
+    top: auto;
+}
+
+/* --------- Income by students --------- */
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-students-card__state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 160px;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-students-card__body {
+    padding: 0 !important;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-students-card__scroll {
+    display: flex;
+    flex-direction: column;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-students-card__item {
+    all: unset;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    cursor: pointer;
+    border-top: 1px solid var(--t-divider, #EFEFEF);
+    transition: background 120ms ease;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-students-card__item:first-child {
+    border-top: none;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-students-card__item:hover {
+    background: var(--t-bg-neutral1, #F4F4F4);
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-students-card__rank {
+    flex: 0 0 24px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--t-bg-neutral1, #F4F4F4);
+    color: var(--t-text-secondary, #6E6E74);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-students-card__content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-students-card__row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-students-card__name {
+    flex: 1;
+    min-width: 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--t-text-primary, #1C1C1E);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-students-card__amount {
+    font-size: 14px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--t-text-primary, #1C1C1E);
+    white-space: nowrap;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-students-card__bar-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-students-card__bar-track {
+    flex: 1;
+    height: 4px;
+    background: var(--t-bg-neutral1, #F4F4F4);
+    border-radius: 999px;
+    overflow: hidden;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-students-card__bar-fill {
+    display: block;
+    height: 100%;
+    background: var(--t-brand, #835DE1);
+    border-radius: inherit;
+    transition: width 200ms ease;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-students-card__share {
+    flex: 0 0 auto;
+    font-size: 11px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: var(--t-text-secondary, #6E6E74);
+    min-width: 28px;
+    text-align: right;
+}
+
+/* --------- Period summary (4 discrete month widgets) --------- */
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-summary-card--discrete {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-summary-card__state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 160px;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-summary-card--discrete .repeto-finance-summary-card__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    padding: 0 !important;
+    align-content: start;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-summary-card--discrete .repeto-finance-summary-card__metric,
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-summary-card--discrete .repeto-finance-summary-card__metric:nth-child(-n+2),
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-summary-card--discrete .repeto-finance-summary-card__metric:nth-child(2n+1) {
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border: var(--t-border, 1px solid #EEEEEE);
+    border-radius: var(--t-radius, 14px);
+    background: var(--t-surface, #FFFFFF);
+    box-shadow: none;
+    transition: border-color 0.15s ease;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-summary-card--discrete .repeto-finance-summary-card__metric:hover {
+    border-color: var(--t-bg-neutral3, #D4D4D4);
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-summary-card__metric-label {
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 400;
+    color: var(--t-text-secondary, #6E6E74);
+    letter-spacing: 0.01em;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-summary-card__metric-value {
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 30px;
+    color: var(--t-text-primary, #1C1C1E);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.005em;
+}
+
+/* --------- Finance monthly segment chart --------- */
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments {
+    display: flex;
+    min-width: 0;
+    min-height: 164px;
+    background: #FFFFFF;
+    border: var(--t-border, 1px solid #EEEEEE);
+    border-radius: var(--t-radius, 14px);
+    padding: 10px;
+    gap: 1px;
+    overflow: hidden;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item {
+    min-width: 0;
+    padding: 0;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: 0;
+    background: #FFFFFF;
+    border-radius: 10px;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__meta {
+    display: flex;
+    align-items: flex-end;
+    align-self: flex-end;
+    gap: 6px;
+    padding: 0;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__marker {
+    width: 3px;
+    height: 22px;
+    border-radius: 999px;
+    background: var(--segment-marker, #A996EE);
+    flex: 0 0 3px;
+    margin: 0;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__meta-text {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    align-self: flex-end;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__name {
+    font-size: 12px;
+    line-height: 15px;
+    font-weight: 500;
+    color: var(--t-text-primary, #1C1C1E);
+    letter-spacing: -0.005em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 0;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__sum {
+    font-size: 11px;
+    line-height: 14px;
+    color: var(--t-text-secondary, #6E6E74);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    margin-bottom: 0;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__bar {
+    margin-top: 0;
+    height: 70px;
+    border-radius: 0 10px 10px 0;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--cancelled {
+    --segment-marker: #DA9A58;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--cancelled .repeto-finance-segments__bar {
+    background: repeating-linear-gradient(
+        135deg,
+        #EECEA8 0 7px,
+        #F3DDC4 7px 14px
+    );
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--received {
+    --segment-marker: #7A5FE4;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--received .repeto-finance-segments__bar {
+    background: repeating-linear-gradient(
+        135deg,
+        #7E61E8 0 7px,
+        #917AEE 7px 14px
+    );
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--planned {
+    --segment-marker: #A088EC;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--planned .repeto-finance-segments__bar {
+    background: repeating-linear-gradient(
+        135deg,
+        #A996EE 0 7px,
+        #BAABF2 7px 14px
+    );
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--debt {
+    --segment-marker: #C5B8F3;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--debt .repeto-finance-segments__bar {
+    background: repeating-linear-gradient(
+        135deg,
+        #CDC2F5 0 7px,
+        #DFD8F9 7px 14px
+    );
+}
+
+/* --------- Balance table --------- */
+.repeto-tochka-dash .repeto-tochka-finance .repeto-balance-table-card__body {
+    padding: 0 !important;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-balance-table-card__state {
+    padding: 28px 16px;
+    text-align: center;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-balance-table-scroll {
+    width: 100%;
+    overflow-x: auto;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-balance-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-balance-table__th {
+    padding: 10px 16px !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    color: var(--t-text-secondary, #6E6E74) !important;
+    text-align: right;
+    background: transparent !important;
+    border-bottom: 1px solid var(--t-divider, #EFEFEF) !important;
+    text-transform: none;
+    letter-spacing: 0;
+    white-space: nowrap;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-balance-table__th--left {
+    text-align: left;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-balance-table__row {
+    cursor: pointer;
+    transition: background 120ms ease;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-balance-table__row:hover {
+    background: var(--t-bg-neutral1, #F4F4F4);
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-balance-table__td {
+    padding: 12px 16px !important;
+    font-size: 14px !important;
+    color: var(--t-text-primary, #1C1C1E) !important;
+    border-top: 1px solid var(--t-divider, #EFEFEF);
+    vertical-align: middle;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-balance-table__row:first-child .repeto-balance-table__td {
+    border-top: none;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-balance-table__td--num {
+    text-align: right;
+    white-space: nowrap;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-balance-table__td--name {
+    min-width: 0;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-balance-table__name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--t-text-primary, #1C1C1E);
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-balance-table__subject {
+    font-size: 12px;
+    color: var(--t-text-secondary, #6E6E74);
+    margin-top: 2px;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-balance-table__debt {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-balance-table__debt--owed {
+    color: #D0342C;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-balance-table__debt--credit {
+    color: #2E7D55;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-balance-table__debt--none {
+    color: var(--t-text-tertiary, #A1A1A6);
+    font-weight: 500;
+}
+
+/* Override v1 inline-padding rules so the new clean header/body take over */
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-students-card > div:first-child,
+.repeto-tochka-dash .repeto-tochka-finance .repeto-balance-table-card > div:first-child,
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-summary-card:not(.repeto-finance-summary-card--discrete) > div:first-child {
+    padding: 14px 16px !important;
+    border-bottom: 1px solid var(--t-divider, #EFEFEF) !important;
+}
+
+@media (max-width: 960px) {
+    .repeto-tochka-dash .repeto-tochka-finance .repeto-two-col {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    .repeto-tochka-dash .repeto-two-col > .repeto-income-students-card,
+    .repeto-tochka-dash .repeto-two-col > .repeto-finance-summary-card {
+        height: auto;
+    }
+    .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-summary-card--discrete .repeto-finance-summary-card__grid {
+        gap: 8px;
+    }
+}
+
+@media (max-width: 640px) {
+    .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-summary-card--discrete .repeto-finance-summary-card__grid {
+        grid-template-columns: 1fr;
+    }
+    .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        min-height: 0;
+        gap: 4px;
+        padding: 8px;
+    }
+}
+
+/* END FINANCE — Tochka alignment pass v2 */
+
+/* =====================================================================
+   FINANCE — Income-by-students stacked bar chart (2026-04-24)
+   Replaces the list with a 3-month stacked bar chart.
+   Scope: .repeto-tochka-dash .repeto-tochka-finance .repeto-income-chart-card
+   ===================================================================== */
+
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-chart-card {
+    position: relative;
+    overflow: hidden;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-chart__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-chart__title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-chart__total {
+    font-size: 22px;
+    line-height: 28px;
+    font-weight: 600;
+    color: var(--t-text-primary, #1C1C1E);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+}
+
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-chart__body {
+    padding: 18px 20px 16px !important;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 260px;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-chart__columns {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    align-items: end;
+    height: 200px;
+    position: relative;
+    isolation: isolate;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-chart__links {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-chart__col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    height: 100%;
+    min-width: 0;
+    position: relative;
+    z-index: 2;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-chart__col-total {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--t-text-primary, #1C1C1E);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-chart__bar-wrap {
+    flex: 1;
+    width: 100%;
+    max-width: 72px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-chart__bar {
+    width: 100%;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 2px;
+    border-radius: 10px;
+    overflow: hidden;
+    min-height: 4px;
+    background: transparent;
+    transition: transform 160ms ease;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-chart__bar--placeholder {
+    background: #F1F1F3;
+    border: 1px solid #E5E5EA;
+    padding: 2px;
+    gap: 2px;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-chart__seg {
+    all: unset;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 6px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: filter 140ms ease, transform 140ms ease;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-chart__seg-placeholder {
+    display: block;
+    width: 100%;
+    border-radius: 4px;
+    background: #E4E4E8;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-chart__seg:hover {
+    filter: brightness(1.05) saturate(1.05);
+    transform: translateX(-1px);
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-chart__seg:focus-visible {
+    outline: 2px solid var(--t-brand, #835DE1);
+    outline-offset: 2px;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-income-chart__col-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--t-text-secondary, #6E6E74);
+    letter-spacing: -0.005em;
+}
+
+/* Tooltip — floats near cursor */
+.repeto-income-chart__tooltip {
+    position: fixed;
+    z-index: 9999;
+    pointer-events: none;
+    background: #1C1C1E;
+    color: #FFFFFF;
+    padding: 8px 10px;
+    border-radius: 8px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+    font-size: 12px;
+    line-height: 16px;
+    max-width: 240px;
+}
+.repeto-income-chart__tooltip-name {
+    font-weight: 600;
+    font-size: 12px;
+    line-height: 16px;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.repeto-income-chart__tooltip-amount {
+    font-variant-numeric: tabular-nums;
+    font-size: 12px;
+    color: #D9D9DE;
+}
+.repeto-income-chart__tooltip-month {
+    color: #A1A1A6;
+}
+
+@media (max-width: 720px) {
+    .repeto-tochka-dash .repeto-tochka-finance .repeto-income-chart__columns {
+        gap: 12px;
+    }
+    .repeto-tochka-dash .repeto-tochka-finance .repeto-income-chart__bar-wrap {
+        max-width: 56px;
+    }
+    .repeto-tochka-dash .repeto-tochka-finance .repeto-income-chart__col-total {
+        font-size: 12px;
+    }
+}
+
+/* END FINANCE — Income chart */
+
+/* =====================================================================
+   DASHBOARD — Week load widget (2026-04-24)
+   Visualises weekly load for the current month: filled dots = booked,
+   empty dots = working-hour slots with no lesson.
+   Scope: .repeto-tochka-dash .repeto-week-load-card
+   ===================================================================== */
+
+.repeto-tochka-dash .repeto-week-load-card {
+    background: var(--t-surface, #FFFFFF) !important;
+    border: 1px solid var(--t-bg-neutral2, #EEEEEE) !important;
+    border-radius: var(--t-radius, 14px) !important;
+    box-shadow: none !important;
+}
+.repeto-tochka-dash .repeto-week-load__title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.repeto-tochka-dash .repeto-week-load__state {
+    padding: 32px 20px !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    min-height: 180px;
+    justify-content: center;
+}
+
+.repeto-tochka-dash .repeto-week-load__body {
+    padding: 14px 18px 18px !important;
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 18px;
+    align-items: stretch;
+}
+
+.repeto-tochka-dash .repeto-week-load__aside {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    justify-content: space-between;
+}
+
+.repeto-tochka-dash .repeto-week-load__legend {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.repeto-tochka-dash .repeto-week-load__legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--t-text-primary, #1C1C1E);
+}
+
+.repeto-tochka-dash .repeto-week-load__summary {
+    background: var(--t-bg-neutral1, #F4F4F4);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.repeto-tochka-dash .repeto-week-load__summary-value {
+    font-size: 20px;
+    line-height: 24px;
+    font-weight: 600;
+    color: var(--t-text-primary, #1C1C1E);
+    font-variant-numeric: tabular-nums;
+}
+.repeto-tochka-dash .repeto-week-load__summary-label {
+    font-size: 12px;
+    color: var(--t-text-secondary, #6E6E74);
+}
+
+.repeto-tochka-dash .repeto-week-load__cta {
+    all: unset;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #FFFFFF;
+    background: linear-gradient(135deg, #835DE1 0%, #6F4DCA 100%);
+    cursor: pointer;
+    transition: filter 140ms ease, transform 140ms ease;
+    text-align: center;
+}
+.repeto-tochka-dash .repeto-week-load__cta:hover {
+    filter: brightness(1.04);
+    transform: translateY(-1px);
+}
+.repeto-tochka-dash .repeto-week-load__cta--sm {
+    padding: 8px 12px;
+    font-size: 13px;
+}
+
+.repeto-tochka-dash .repeto-week-load__matrix-wrap {
+    min-width: 0;
+    overflow: hidden;
+    min-height: 96px;
+    height: 100%;
+    display: flex;
+}
+
+.repeto-tochka-dash .repeto-week-load__matrix {
+    display: grid;
+    gap: var(--repeto-col-gap, 2px);
+    min-height: 88px;
+    height: 100%;
+    align-content: stretch;
+}
+
+.repeto-tochka-dash .repeto-week-load__day {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    align-items: stretch;
+    justify-items: center;
+    gap: 4px;
+    min-width: 0;
+    height: 100%;
+    padding: 1px;
+}
+
+.repeto-tochka-dash .repeto-week-load__day--side {
+    opacity: 0.62;
+}
+
+.repeto-tochka-dash .repeto-week-load__dots {
+    display: grid;
+    grid-template-rows: repeat(var(--repeto-dot-rows, 6), minmax(0, 1fr));
+    gap: var(--repeto-row-gap, 2px);
+    width: 100%;
+    height: 100%;
+    align-content: stretch;
+    align-self: stretch;
+}
+
+.repeto-tochka-dash .repeto-week-load__dot {
+    width: 100%;
+    height: 100%;
+    min-height: var(--repeto-dot-size, 8px);
+    border-radius: 2px;
+    display: inline-block;
+    box-sizing: border-box;
+}
+
+.repeto-tochka-dash .repeto-week-load__dot-cell {
+    cursor: pointer;
+    transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+}
+
+.repeto-tochka-dash .repeto-week-load__dot-cell:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 0 0 1px #BDA8F4;
+    filter: brightness(1.02);
+}
+
+.repeto-tochka-dash .repeto-week-load__dot-cell.repeto-week-load__dot--off:hover {
+    box-shadow: 0 0 0 1px #B9BBC2;
+}
+.repeto-tochka-dash .repeto-week-load__dot--booked {
+    background: var(--t-brand, #835DE1);
+}
+.repeto-tochka-dash .repeto-week-load__dot--free {
+    background: #EFEAFB;
+}
+.repeto-tochka-dash .repeto-week-load__dot--off {
+    background: #E4E4E8;
+    border: 1px solid #D3D3D9;
+}
+
+.repeto-tochka-dash .repeto-week-load__tick {
+    font-size: 10px;
+    line-height: 12px;
+    color: var(--t-text-secondary, #6E6E74);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    min-height: 12px;
+}
+
+.repeto-tochka-dash .repeto-week-load__legend .repeto-week-load__dot {
+    width: 12px;
+    height: 12px;
+    flex: 0 0 12px;
+    outline: none;
+    border-radius: 3px;
+}
+
+@media (max-width: 860px) {
+    .repeto-tochka-dash .repeto-week-load__body {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    .repeto-tochka-dash .repeto-week-load__aside {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+    .repeto-tochka-dash .repeto-week-load__legend {
+        flex-direction: row;
+        gap: 14px;
+    }
+    .repeto-tochka-dash .repeto-week-load__cta {
+        width: 100%;
+    }
+    .repeto-tochka-dash .repeto-week-load__matrix {
+        gap: 1px;
+    }
+    .repeto-tochka-dash .repeto-week-load__dot {
+        min-height: var(--repeto-dot-size, 6px);
+    }
+    .repeto-tochka-dash .repeto-week-load__tick {
+        font-size: 9px;
+    }
+}
+
+/* END DASHBOARD — Week load widget */
+
+
+

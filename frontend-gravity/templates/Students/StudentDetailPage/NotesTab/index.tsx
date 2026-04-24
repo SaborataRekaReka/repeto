@@ -5,6 +5,11 @@ import type { IconData } from "@gravity-ui/uikit";
 import AppDialog from "@/components/AppDialog";
 import { Lp2Field } from "@/components/Lp2Field";
 import { createNote, deleteNote, updateNote } from "@/hooks/useStudents";
+import {
+    isLessonMaterialsNoteContent,
+    isSystemLessonNoteContent,
+    parsePortalReviewNote,
+} from "@/lib/lessonNotes";
 
 const GIcon = Icon as any;
 const GButton = Button as any;
@@ -21,33 +26,6 @@ type NotesTabProps = {
     studentName: string;
     notes: Note[];
     onMutate?: () => void;
-};
-
-const parsePortalReview = (text: string) => {
-    if (!text.startsWith("PORTAL_REVIEW:")) {
-        return null;
-    }
-
-    const payload = text.slice("PORTAL_REVIEW:".length);
-    try {
-        const parsed = JSON.parse(payload);
-        if (!parsed || typeof parsed !== "object") {
-            return null;
-        }
-
-        const rating = Number((parsed as any).rating);
-        const feedback =
-            typeof (parsed as any).feedback === "string"
-                ? (parsed as any).feedback.trim()
-                : "";
-
-        return {
-            rating: Number.isFinite(rating) ? rating : null,
-            feedback,
-        };
-    } catch {
-        return null;
-    }
 };
 
 const NotesTab = ({
@@ -129,20 +107,26 @@ const NotesTab = ({
             {notes.length > 0 && (
                 <div className="lp2-hw-list">
                     {notes.map((note) => {
-                        const portalReview = parsePortalReview(note.text);
+                        const portalReview = parsePortalReviewNote(note.text);
+                        const isMaterialsNote = isLessonMaterialsNoteContent(note.text);
+                        const isSystemNote = isSystemLessonNoteContent(note.text);
 
                         return (
                             <div
                                 key={note.id}
                                 className="lp2-hw-item"
-                                style={{ cursor: portalReview ? "default" : "pointer" }}
-                                onClick={portalReview ? undefined : () => handleEdit(note)}
+                                style={{ cursor: isSystemNote ? "default" : "pointer" }}
+                                onClick={isSystemNote ? undefined : () => handleEdit(note)}
                             >
                                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                     <span style={{ fontWeight: 500, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                        {portalReview ? `Отзыв из портала — ${portalReview.rating ?? "—"}/5` : note.text}
+                                        {portalReview
+                                            ? `Отзыв из портала — ${portalReview.rating}/5`
+                                            : isMaterialsNote
+                                                ? "Материалы к занятию"
+                                                : note.text}
                                     </span>
-                                    {!portalReview && (
+                                    {!isSystemNote && (
                                         <>
                                             <GButton
                                                 view="flat"
@@ -171,7 +155,11 @@ const NotesTab = ({
                                 </div>
                                 <span style={{ fontSize: 12, color: "var(--g-color-text-secondary)" }}>
                                     {note.date}, {note.time}
-                                    {portalReview?.feedback ? ` — ${portalReview.feedback}` : ""}
+                                    {portalReview?.feedback
+                                        ? ` — ${portalReview.feedback}`
+                                        : isMaterialsNote
+                                            ? " — Привязано к материалам занятия"
+                                            : ""}
                                 </span>
                             </div>
                         );

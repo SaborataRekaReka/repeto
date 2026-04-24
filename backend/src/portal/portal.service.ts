@@ -16,13 +16,16 @@ import { TelegramService } from '../messenger/telegram.service';
 import { MaxService } from '../messenger/max.service';
 import { mapCancelPolicy, calculatePenalty } from '../common/utils/cancel-policy';
 import {
+  PORTAL_REVIEW_PREFIX,
+  buildPortalReviewNote,
+  parsePortalReviewNote,
+} from '../common/utils/lesson-note';
+import {
   buildTutorPaymentRequisitesPreview,
   extractTutorPaymentCardNumber,
   extractTutorPaymentRequisites,
   extractTutorPaymentSbpPhone,
 } from '../common/utils/payment-requisites';
-
-const PORTAL_REVIEW_PREFIX = 'PORTAL_REVIEW:';
 
 @Injectable()
 export class PortalService {
@@ -32,31 +35,6 @@ export class PortalService {
     private telegramService: TelegramService,
     private maxService: MaxService,
   ) {}
-
-  private parsePortalReview(content?: string | null): {
-    rating: number;
-    feedback?: string;
-  } | null {
-    if (!content || !content.startsWith(PORTAL_REVIEW_PREFIX)) return null;
-
-    const json = content.slice(PORTAL_REVIEW_PREFIX.length);
-    try {
-      const parsed = JSON.parse(json) as { rating?: unknown; feedback?: unknown };
-      const rating = Number(parsed.rating);
-      if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
-        return null;
-      }
-
-      const feedback =
-        typeof parsed.feedback === 'string' && parsed.feedback.trim().length > 0
-          ? parsed.feedback.trim()
-          : undefined;
-
-      return { rating, feedback };
-    } catch {
-      return null;
-    }
-  }
 
   private formatPortalDateLabel(value: Date) {
     const d = new Date(value);
@@ -689,7 +667,7 @@ export class PortalService {
     });
 
     const tutorRatings = tutorReviewNotes
-      .map((note) => this.parsePortalReview(note.content)?.rating)
+      .map((note) => parsePortalReviewNote(note.content)?.rating)
       .filter((value): value is number => Number.isFinite(value));
 
     const tutorReviewsCount = tutorRatings.length;
@@ -771,7 +749,7 @@ export class PortalService {
       .slice(0, 5)
       .map((l) => {
         const dt = new Date(l.scheduledAt);
-        const review = this.parsePortalReview(l.notes[0]?.content);
+        const review = parsePortalReviewNote(l.notes[0]?.content);
 
         return {
           id: l.id,
@@ -1488,10 +1466,10 @@ export class PortalService {
     }
 
     const trimmedFeedback = feedback?.trim();
-    const serializedReview = `${PORTAL_REVIEW_PREFIX}${JSON.stringify({
+    const serializedReview = buildPortalReviewNote({
       rating: normalizedRating,
       feedback: trimmedFeedback || null,
-    })}`;
+    });
 
     const existing = await this.prisma.lessonNote.findFirst({
       where: {
@@ -1542,7 +1520,7 @@ export class PortalService {
     });
 
     const ratings = reviewNotes
-      .map((note) => this.parsePortalReview(note.content)?.rating)
+      .map((note) => parsePortalReviewNote(note.content)?.rating)
       .filter((value): value is number => Number.isFinite(value));
 
     const average =

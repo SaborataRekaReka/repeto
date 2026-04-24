@@ -1,36 +1,11 @@
 import { useApi } from './useApi';
 import { api } from '@/lib/api';
 import { toLocalDateKey } from '@/lib/dates';
+import {
+  isSystemLessonNoteContent,
+  parsePortalReviewNote,
+} from '@/lib/lessonNotes';
 import type { Lesson } from '@/types/schedule';
-
-const PORTAL_REVIEW_PREFIX = 'PORTAL_REVIEW:';
-const LESSON_MATERIALS_PREFIX = 'LESSON_MATERIALS:';
-
-function parsePortalReview(content: unknown): { rating: number; feedback?: string } | null {
-  if (typeof content !== 'string' || !content.startsWith(PORTAL_REVIEW_PREFIX)) {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(content.slice(PORTAL_REVIEW_PREFIX.length)) as {
-      rating?: unknown;
-      feedback?: unknown;
-    };
-    const rating = Number(parsed.rating);
-    if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
-      return null;
-    }
-
-    const feedback =
-      typeof parsed.feedback === 'string' && parsed.feedback.trim().length > 0
-        ? parsed.feedback.trim()
-        : undefined;
-
-    return { rating, feedback };
-  } catch {
-    return null;
-  }
-}
 
 function extractLessonReview(raw: any): { rating: number; feedback?: string } | null {
   if (Array.isArray(raw?.notes)) {
@@ -41,7 +16,7 @@ function extractLessonReview(raw: any): { rating: number; feedback?: string } | 
     });
 
     for (const note of sorted) {
-      const review = parsePortalReview(note?.content);
+      const review = parsePortalReviewNote(note?.content);
       if (review) {
         return review;
       }
@@ -50,15 +25,12 @@ function extractLessonReview(raw: any): { rating: number; feedback?: string } | 
     return null;
   }
 
-  return parsePortalReview(raw?.notes);
+  return parsePortalReviewNote(raw?.notes);
 }
 
 function extractLessonNote(raw: any): string | undefined {
   if (typeof raw?.notes === 'string') {
-    if (
-      raw.notes.startsWith(PORTAL_REVIEW_PREFIX) ||
-      raw.notes.startsWith(LESSON_MATERIALS_PREFIX)
-    ) {
+    if (isSystemLessonNoteContent(raw.notes)) {
       return undefined;
     }
 
@@ -71,8 +43,7 @@ function extractLessonNote(raw: any): string | undefined {
       .filter(
         (item: any) =>
           typeof item?.content === 'string' &&
-          !item.content.startsWith(PORTAL_REVIEW_PREFIX) &&
-          !item.content.startsWith(LESSON_MATERIALS_PREFIX),
+          !isSystemLessonNoteContent(item.content),
       )
       .sort((a: any, b: any) => {
         const aTime = new Date(a?.updatedAt || a?.createdAt || 0).getTime();

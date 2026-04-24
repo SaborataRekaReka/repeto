@@ -12,6 +12,10 @@ import { YandexCalendarService } from '../yandex-calendar/yandex-calendar.servic
 import { MessengerDeliveryService } from '../messenger/messenger-delivery.service';
 import { CreateLessonDto, UpdateLessonDto, UpdateLessonStatusDto } from './dto';
 import { mapCancelPolicy, calculatePenalty } from '../common/utils/cancel-policy';
+import {
+  LESSON_MATERIALS_PREFIX,
+  PORTAL_REVIEW_PREFIX,
+} from '../common/utils/lesson-note';
 
 @Injectable()
 export class LessonsService {
@@ -62,9 +66,10 @@ export class LessonsService {
       where: {
         lessonId,
         NOT: {
-          content: {
-            startsWith: 'PORTAL_REVIEW:',
-          },
+          OR: [
+            { content: { startsWith: PORTAL_REVIEW_PREFIX } },
+            { content: { startsWith: LESSON_MATERIALS_PREFIX } },
+          ],
         },
       },
       orderBy: { updatedAt: 'desc' },

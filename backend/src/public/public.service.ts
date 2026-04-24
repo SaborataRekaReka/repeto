@@ -6,6 +6,10 @@ import { BotPollerService } from '../messenger/bot-poller.service';
 import { StudentAuthService } from '../student-auth/student-auth.service';
 import { mapCancelPolicy } from '../common/utils/cancel-policy';
 import {
+  PORTAL_REVIEW_PREFIX,
+  parsePortalReviewNote,
+} from '../common/utils/lesson-note';
+import {
   extractQualificationVerificationSets,
   normalizeCertificateEntries,
   normalizeEducationEntries,
@@ -14,8 +18,6 @@ import {
 } from '../common/utils/qualification-verification';
 
 type ReminderMethod = 'telegram' | 'max' | 'email' | 'push';
-
-const PORTAL_REVIEW_PREFIX = 'PORTAL_REVIEW:';
 
 @Injectable()
 export class PublicService {
@@ -29,22 +31,6 @@ export class PublicService {
 
   private normalizePhone(value?: string | null): string {
     return (value || '').replace(/\D/g, '');
-  }
-
-  private parsePortalReview(content: string): { rating: number; feedback?: string } | null {
-    if (!content.startsWith(PORTAL_REVIEW_PREFIX)) return null;
-    try {
-      const parsed = JSON.parse(content.slice(PORTAL_REVIEW_PREFIX.length));
-      const rating = Number(parsed.rating);
-      if (!Number.isFinite(rating) || rating < 1 || rating > 5) return null;
-      const feedback =
-        typeof parsed.feedback === 'string' && parsed.feedback.trim().length > 0
-          ? parsed.feedback.trim()
-          : undefined;
-      return { rating, feedback };
-    } catch {
-      return null;
-    }
   }
 
   async getBookingContactStatus(slug: string, phone?: string, email?: string) {
@@ -222,7 +208,7 @@ export class PublicService {
 
     const reviews = reviewNotes
       .map((note) => {
-        const parsed = this.parsePortalReview(note.content);
+        const parsed = parsePortalReviewNote(note.content);
         if (!parsed) return null;
         return {
           studentName: note.student.name,
