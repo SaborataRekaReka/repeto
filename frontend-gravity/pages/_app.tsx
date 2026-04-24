@@ -3,6 +3,13 @@ import "@gravity-ui/uikit/styles/styles.css";
 import "@/styles/gravity-overrides.css";
 import "@/styles/dashboard-tochka.css";
 import type { AppProps } from "next/app";
+import { Inter } from "next/font/google";
+
+const inter = Inter({
+    subsets: ["latin", "cyrillic"],
+    variable: "--font-inter",
+    display: "swap",
+});
 import Head from "next/head";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
@@ -90,7 +97,9 @@ export default function App({ Component, pageProps }: AppProps) {
     return (
         <ThemeModeProvider>
             <ErrorBoundary>
-                <AppContent Component={Component} pageProps={pageProps} />
+                <div className={inter.variable} style={{ display: "contents" }}>
+                    <AppContent Component={Component} pageProps={pageProps} />
+                </div>
             </ErrorBoundary>
         </ThemeModeProvider>
     );
