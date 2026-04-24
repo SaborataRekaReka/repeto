@@ -526,7 +526,7 @@ const LessonPanelV2 = ({
                 item?.lessonId === lesson.id &&
                 typeof item?.content === "string" &&
                 isLessonMaterialsNoteContent(item.content),
-        ) as { id: number; content: string } | undefined || null;
+        ) as { id: string; content: string } | undefined || null;
     }, [studentNotesData?.data, lesson?.id]);
 
     const persistedLessonMaterials = useMemo(
