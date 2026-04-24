@@ -12247,3 +12247,188 @@ body {
     gap: 8px;
 }
 
+/* =====================================================================
+   Admin verification moderation page
+   ===================================================================== */
+.repeto-admin-page {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.repeto-admin-head,
+.repeto-admin-list,
+.repeto-admin-detail {
+    border-radius: 14px;
+}
+
+.repeto-admin-head {
+    padding: 16px;
+}
+
+.repeto-admin-controls {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.repeto-admin-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.repeto-admin-grid {
+    display: grid;
+    grid-template-columns: minmax(300px, 0.95fr) minmax(0, 1.35fr);
+    gap: 14px;
+    align-items: start;
+}
+
+.repeto-admin-list,
+.repeto-admin-detail {
+    padding: 12px;
+}
+
+.repeto-admin-loader {
+    min-height: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.repeto-admin-list__rows {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.repeto-admin-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid var(--g-color-line-generic);
+    background: var(--g-color-base-float);
+    cursor: pointer;
+    transition: border-color 0.14s ease, background-color 0.14s ease;
+}
+
+.repeto-admin-row:hover {
+    background: var(--g-color-base-generic);
+}
+
+.repeto-admin-row--selected {
+    border-color: color-mix(in srgb, var(--g-color-base-brand) 45%, var(--g-color-line-generic));
+    background: color-mix(in srgb, var(--g-color-base-brand) 10%, var(--g-color-base-float));
+}
+
+.repeto-admin-row__main {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.repeto-admin-row__actions {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.repeto-admin-detail__content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.repeto-admin-detail__head {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.repeto-admin-detail__head-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.repeto-admin-detail__section {
+    padding: 12px;
+    border: 1px solid var(--g-color-line-generic);
+    border-radius: 12px;
+    background: var(--g-color-base-float);
+}
+
+.repeto-admin-atom-list {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.repeto-admin-atom-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px;
+    border-radius: 10px;
+    background: var(--g-color-base-generic);
+    border: 1px solid color-mix(in srgb, var(--g-color-line-generic) 88%, transparent);
+}
+
+.repeto-admin-atom-row__main {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.repeto-admin-file-link {
+    margin-top: 4px;
+    color: var(--g-color-text-link);
+    text-decoration: none;
+    font-size: 13px;
+    line-height: 18px;
+}
+
+.repeto-admin-file-link:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 1080px) {
+    .repeto-admin-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .repeto-admin-list,
+    .repeto-admin-detail {
+        padding: 10px;
+    }
+}
+
+@media (max-width: 720px) {
+    .repeto-admin-head {
+        padding: 12px;
+    }
+
+    .repeto-admin-row,
+    .repeto-admin-atom-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .repeto-admin-row__actions,
+    .repeto-admin-detail__head-toggle {
+        justify-content: space-between;
+        width: 100%;
+    }
+}
+
