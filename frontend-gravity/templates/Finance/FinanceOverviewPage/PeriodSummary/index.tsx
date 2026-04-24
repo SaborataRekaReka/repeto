@@ -112,6 +112,9 @@ const PeriodSummary = () => {
                         className={`repeto-finance-segments__item repeto-finance-segments__item--${segment.tone}`}
                         style={{ flex: `${getSegmentWeight(segment.amount)} 1 0` }}
                     >
+                        {segment.key === "cancelled" && (
+                            <div className="repeto-finance-segments__section-title">Сводка</div>
+                        )}
                         <div className="repeto-finance-segments__meta">
                             <span className="repeto-finance-segments__marker" aria-hidden="true" />
                             <div className="repeto-finance-segments__meta-text">

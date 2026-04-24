@@ -3097,6 +3097,16 @@
     justify-content: center;
     min-height: 160px;
 }
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-summary-card__title-row {
+    margin-bottom: 14px;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-summary-card__title {
+    font-size: 16px;
+    line-height: 22px;
+    font-weight: 600;
+    color: var(--t-text-primary, #1C1C1E);
+    letter-spacing: -0.01em;
+}
 .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-summary-card--discrete .repeto-finance-summary-card__grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3152,10 +3162,19 @@
     min-width: 0;
     padding: 0;
     display: grid;
-    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr) auto;
     gap: 0;
     background: #FFFFFF;
     border-radius: 10px;
+}
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__section-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #8b8b8b;
+    padding: 8px 10px 0;
+    line-height: 1.2;
 }
 .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__meta {
     display: flex;
@@ -3204,13 +3223,13 @@
     border-radius: 0 10px 10px 0;
 }
 .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--cancelled {
-    --segment-marker: #DA9A58;
+    --segment-marker: #d46c75;
 }
 .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--cancelled .repeto-finance-segments__bar {
     background: repeating-linear-gradient(
         135deg,
-        #EECEA8 0 7px,
-        #F3DDC4 7px 14px
+        #e9a7ad 0 7px,
+        #f3c8cb 7px 14px
     );
 }
 .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--received {
@@ -3398,6 +3417,7 @@
     padding: 18px 20px 16px !important;
     display: flex;
     flex-direction: column;
+    justify-content: flex-end;
     gap: 16px;
     min-height: 260px;
 }
@@ -3440,6 +3460,7 @@
     flex: 1;
     width: 100%;
     max-width: 72px;
+    min-height: 0;
     display: flex;
     align-items: flex-end;
     justify-content: center;
