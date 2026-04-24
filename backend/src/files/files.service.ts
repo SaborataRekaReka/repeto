@@ -587,6 +587,7 @@ export class FilesService {
     let offset = 0;
     const items: YandexResource[] = [];
 
+    // eslint-disable-next-line no-constant-condition
     while (true) {
       const resource = await this.fetchYandexResource(accessToken, providerPath, limit, offset);
       const batch = resource._embedded?.items || [];
@@ -1168,7 +1169,7 @@ export class FilesService {
 
     const rootPath = this.normalizeYandexPath(user.yandexDiskRootPath || 'disk:/');
     const accessToken = this.extractAccessToken(user.yandexDiskToken);
-    let effectiveRootPath = rootPath;
+    const effectiveRootPath = rootPath;
     let rootResource: YandexResource;
 
     try {
