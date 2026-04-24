@@ -6049,6 +6049,47 @@ body {
     min-width: 0;
 }
 
+.repeto-tp-edu-item__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.repeto-tp-verified-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    color: #16a34a;
+}
+
+.repeto-tp-experience-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.repeto-tp-experience-item {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--g-color-line-generic);
+}
+
+.repeto-tp-experience-item:last-child {
+    border-bottom: none;
+}
+
+.repeto-tp-experience-item > *:first-child {
+    flex: 1;
+    min-width: 0;
+}
+
 /* â”€â”€ Certificates grid â”€â”€ */
 .repeto-tp-certs-grid {
     display: grid;
@@ -6059,6 +6100,7 @@ body {
 .repeto-tp-cert-thumb {
     all: unset;
     cursor: pointer;
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -6094,6 +6136,17 @@ body {
     justify-content: center;
     gap: 4px;
     color: var(--g-color-text-secondary);
+}
+
+.repeto-tp-cert-thumb__verified {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 20px;
+    height: 20px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 1px 4px rgba(21, 27, 38, 0.2);
 }
 
 .repeto-tp-cert-preview {
