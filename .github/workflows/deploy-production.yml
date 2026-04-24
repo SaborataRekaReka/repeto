@@ -405,6 +405,12 @@ jobs:
           git reset --hard origin/main
           echo "Deploying commit: $(git rev-parse --short=12 HEAD)"
           git log -1 --pretty='format:%h %s (%ci)'
+          deploy_started_epoch="$(date -u +%s)"
+          echo "Deploy diagnostics: user=$(whoami) host=$(hostname) app_path=$(pwd) started_epoch=$deploy_started_epoch"
+          echo "Docker context: $(docker context show 2>/dev/null || echo unknown)"
+          docker compose version || true
+          echo "Compose state before deploy:"
+          docker compose -f docker-compose.prod.yml ps || true
 
           if [ ! -s backend/.env ]; then
             echo "::error::backend/.env is missing or empty on VPS"
@@ -482,9 +488,28 @@ jobs:
             exit 1
           fi
 
+          backend_cid="$(docker compose -f docker-compose.prod.yml ps -q backend || true)"
+          frontend_cid="$(docker compose -f docker-compose.prod.yml ps -q frontend || true)"
+          if [ -z "$backend_cid" ] || [ -z "$frontend_cid" ]; then
+            echo "::error::Cannot resolve backend/frontend container IDs after deploy"
+            docker compose -f docker-compose.prod.yml ps || true
+            exit 1
+          fi
+
+          backend_started_at="$(docker inspect -f '{{.State.StartedAt}}' "$backend_cid" 2>/dev/null || true)"
+          frontend_started_at="$(docker inspect -f '{{.State.StartedAt}}' "$frontend_cid" 2>/dev/null || true)"
+          backend_started_epoch="$(date -u -d "$backend_started_at" +%s 2>/dev/null || echo 0)"
+          frontend_started_epoch="$(date -u -d "$frontend_started_at" +%s 2>/dev/null || echo 0)"
+          echo "Container start check: backend=$backend_started_at ($backend_started_epoch), frontend=$frontend_started_at ($frontend_started_epoch), deploy_started=$deploy_started_epoch"
+
+          if [ "$backend_started_epoch" -lt "$deploy_started_epoch" ] || [ "$frontend_started_epoch" -lt "$deploy_started_epoch" ]; then
+            echo "::error::Deploy finished without recreating backend/frontend containers in current compose project"
+            docker compose -f docker-compose.prod.yml ps || true
+            exit 1
+          fi
+
           docker compose -f docker-compose.prod.yml exec -T nginx nginx -t
           docker compose -f docker-compose.prod.yml exec -T nginx nginx -s reload
-          frontend_cid="$(docker compose -f docker-compose.prod.yml ps -q frontend || true)"
           if [ -n "$frontend_cid" ]; then
             docker exec "$frontend_cid" sh -lc 'echo "Frontend BUILD_ID: $(cat /app/.next/BUILD_ID 2>/dev/null || echo n/a)"'
           fi
@@ -500,6 +525,12 @@ jobs:
           git reset --hard origin/main
           echo "Deploying commit: $(git rev-parse --short=12 HEAD)"
           git log -1 --pretty='format:%h %s (%ci)'
+          deploy_started_epoch="$(date -u +%s)"
+          echo "Deploy diagnostics: user=$(whoami) host=$(hostname) app_path=$(pwd) started_epoch=$deploy_started_epoch"
+          echo "Docker context: $(docker context show 2>/dev/null || echo unknown)"
+          docker compose version || true
+          echo "Compose state before deploy:"
+          docker compose -f docker-compose.prod.yml ps || true
 
           if [ ! -s backend/.env ]; then
             echo "::error::backend/.env is missing or empty on VPS"
@@ -577,9 +608,28 @@ jobs:
             exit 1
           fi
 
+          backend_cid="$(docker compose -f docker-compose.prod.yml ps -q backend || true)"
+          frontend_cid="$(docker compose -f docker-compose.prod.yml ps -q frontend || true)"
+          if [ -z "$backend_cid" ] || [ -z "$frontend_cid" ]; then
+            echo "::error::Cannot resolve backend/frontend container IDs after deploy"
+            docker compose -f docker-compose.prod.yml ps || true
+            exit 1
+          fi
+
+          backend_started_at="$(docker inspect -f '{{.State.StartedAt}}' "$backend_cid" 2>/dev/null || true)"
+          frontend_started_at="$(docker inspect -f '{{.State.StartedAt}}' "$frontend_cid" 2>/dev/null || true)"
+          backend_started_epoch="$(date -u -d "$backend_started_at" +%s 2>/dev/null || echo 0)"
+          frontend_started_epoch="$(date -u -d "$frontend_started_at" +%s 2>/dev/null || echo 0)"
+          echo "Container start check: backend=$backend_started_at ($backend_started_epoch), frontend=$frontend_started_at ($frontend_started_epoch), deploy_started=$deploy_started_epoch"
+
+          if [ "$backend_started_epoch" -lt "$deploy_started_epoch" ] || [ "$frontend_started_epoch" -lt "$deploy_started_epoch" ]; then
+            echo "::error::Deploy finished without recreating backend/frontend containers in current compose project"
+            docker compose -f docker-compose.prod.yml ps || true
+            exit 1
+          fi
+
           docker compose -f docker-compose.prod.yml exec -T nginx nginx -t
           docker compose -f docker-compose.prod.yml exec -T nginx nginx -s reload
-          frontend_cid="$(docker compose -f docker-compose.prod.yml ps -q frontend || true)"
           if [ -n "$frontend_cid" ]; then
             docker exec "$frontend_cid" sh -lc 'echo "Frontend BUILD_ID: $(cat /app/.next/BUILD_ID 2>/dev/null || echo n/a)"'
           fi
