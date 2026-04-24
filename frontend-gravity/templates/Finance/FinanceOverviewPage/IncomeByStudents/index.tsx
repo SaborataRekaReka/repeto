@@ -8,15 +8,15 @@ const MONTH_NAMES_SHORT = [
     "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек",
 ];
 
-// Tochka-friendly palette: brand purple cascading into softer tints.
+// Token-driven palette for finance chart segments.
 const PALETTE = [
-    "#835DE1",
-    "#A184E8",
-    "#BCA7EF",
-    "#D3C4F4",
-    "#E4DCF8",
+    "var(--chart-brand)",
+    "var(--chart-lavender)",
+    "var(--chart-info)",
+    "var(--chart-success)",
+    "var(--chart-warning)",
 ];
-const OTHERS_COLOR = "#CFCBE0";
+const OTHERS_COLOR = "var(--chart-brand-soft)";
 
 const TOP_N = 5;
 const MIN_VISIBLE_HEIGHT_PCT = 6;
@@ -79,20 +79,8 @@ const ribbonsEqual = (a: LinkRibbon[], b: LinkRibbon[]): boolean => {
     return true;
 };
 
-const toRgba = (hexColor: string, alpha: number): string => {
-    const clean = hexColor.replace("#", "");
-    const normalized =
-        clean.length === 3
-            ? clean
-                  .split("")
-                  .map((c) => `${c}${c}`)
-                  .join("")
-            : clean;
-    const r = Number.parseInt(normalized.slice(0, 2), 16);
-    const g = Number.parseInt(normalized.slice(2, 4), 16);
-    const b = Number.parseInt(normalized.slice(4, 6), 16);
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
+const withAlpha = (color: string, alpha: number): string =>
+    `color-mix(in srgb, ${color} ${Math.round(alpha * 100)}%, transparent)`;
 
 const IncomeByStudents = () => {
     const router = useRouter();
@@ -253,7 +241,7 @@ const IncomeByStudents = () => {
                 nextRibbons.push({
                     key: `${leftMonth.key}-${rightMonth.key}-${leftSeg.id}`,
                     d,
-                    fill: toRgba(leftSeg.color, 0.18),
+                    fill: withAlpha(leftSeg.color, 0.18),
                 });
             }
         }

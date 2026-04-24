@@ -124,7 +124,7 @@ const PackagesPage = () => {
     };
 
     return (
-        <GravityLayout title="Пакеты" hideSidebar hideHeaderTitle>
+        <GravityLayout title="Пакеты">
             <PageOverlay
                 title="Пакеты"
                 breadcrumb="Дашборд"

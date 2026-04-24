@@ -102,7 +102,7 @@ const PaymentsListPage = () => {
     };
 
     return (
-        <GravityLayout title="Оплаты" hideSidebar hideHeaderTitle>
+        <GravityLayout title="Оплаты">
             <PageOverlay
                 title="Оплаты"
                 breadcrumb="Дашборд"

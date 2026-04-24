@@ -322,11 +322,10 @@ enum LessonStatus {
 // ── Notes ──
 
 model LessonNote {
-  id        String   @id @default(uuid())
-  studentId String   @map("student_id")
-  lessonId  String?  @map("lesson_id")
+  id        String  @id @default(uuid())
+  studentId String  @map("student_id")
+  lessonId  String? @map("lesson_id")
   content   String
-  noteType  NoteType @default(TUTOR) @map("note_type")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -335,7 +334,6 @@ model LessonNote {
   lesson  Lesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
 
   @@index([studentId, createdAt])
-  @@index([studentId, noteType])
   @@map("lesson_notes")
 }
 
@@ -672,10 +670,4 @@ enum BookingStatus {
   CONFIRMED
   REJECTED
   CANCELLED
-}
-
-enum NoteType {
-  TUTOR
-  PORTAL_REVIEW
-  LESSON_MATERIALS
 }

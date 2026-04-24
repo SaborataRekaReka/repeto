@@ -115,107 +115,94 @@ export class DashboardService {
       'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря',
     ];
 
-    // ── 1. Chart data: single grouped SQL per table (2 queries instead of 24) ──
-    const windowStart = new Date(now.getFullYear(), now.getMonth() - 11, 1);
-    const windowEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-
-    type MonthRow = { year: number; month: number; total: bigint };
-
-    const [paidRows, plannedRows] = await Promise.all([
-      this.prisma.$queryRaw<MonthRow[]>`
-        SELECT
-          EXTRACT(YEAR  FROM date)::int AS year,
-          EXTRACT(MONTH FROM date)::int AS month,
-          COALESCE(SUM(amount), 0)      AS total
-        FROM payments
-        WHERE user_id = ${userId}
-          AND status = 'PAID'
-          AND date >= ${windowStart}
-          AND date <= ${windowEnd}
-        GROUP BY 1, 2
-      `,
-      this.prisma.$queryRaw<MonthRow[]>`
-        SELECT
-          EXTRACT(YEAR  FROM scheduled_at)::int AS year,
-          EXTRACT(MONTH FROM scheduled_at)::int AS month,
-          COALESCE(SUM(rate), 0)                AS total
-        FROM lessons
-        WHERE user_id = ${userId}
-          AND status = 'PLANNED'
-          AND scheduled_at >= ${windowStart}
-          AND scheduled_at <= ${windowEnd}
-        GROUP BY 1, 2
-      `,
-    ]);
-
-    const paidMap = new Map(paidRows.map((r) => [`${r.year}-${r.month}`, Number(r.total)]));
-    const plannedMap = new Map(plannedRows.map((r) => [`${r.year}-${r.month}`, Number(r.total)]));
-
-    const months = Array.from({ length: 12 }, (_, idx) => {
-      const i = 11 - idx;
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
+    const sumPeriod = async (start: Date, end: Date) => {
+      const [paid, planned] = await Promise.all([
+        this.prisma.payment.aggregate({
+          where: { userId, status: 'PAID', date: { gte: start, lte: end } },
+          _sum: { amount: true },
+        }),
+        this.prisma.lesson.aggregate({
+          where: { userId, status: 'PLANNED', scheduledAt: { gte: start, lte: end } },
+          _sum: { rate: true },
+        }),
+      ]);
       return {
-        key,
-        label: MONTH_SHORT[d.getMonth()],
-        received: paidMap.get(key) ?? 0,
-        expected: plannedMap.get(key) ?? 0,
-        isCurrent: i === 0,
+        received: paid._sum.amount || 0,
+        expected: planned._sum.rate || 0,
       };
-    });
+    };
 
-    // ── 2. Comparison aggregates: all 10 queries in parallel ──
+    // 12 months window: last 11 + current
+    const months: Array<{
+      key: string;
+      label: string;
+      received: number;
+      expected: number;
+      isCurrent: boolean;
+    }> = [];
+
+    for (let i = 11; i >= 0; i--) {
+      const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const end = new Date(start.getFullYear(), start.getMonth() + 1, 0, 23, 59, 59);
+      const { received, expected } = await sumPeriod(start, end);
+      months.push({
+        key: `${start.getFullYear()}-${start.getMonth() + 1}`,
+        label: MONTH_SHORT[start.getMonth()],
+        received,
+        expected,
+        isCurrent: i === 0,
+      });
+    }
+
+    // Current month MTD (1 .. today)
     const currStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const currMtdEnd = new Date(now.getFullYear(), now.getMonth(), today, 23, 59, 59);
+    const current = await sumPeriod(currStart, currMtdEnd);
 
+    // Prev month MTD (1 .. today of prev month)
     const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const prevMonthDaysInMonth = new Date(now.getFullYear(), now.getMonth(), 0).getDate();
     const prevMonthMtdDay = Math.min(today, prevMonthDaysInMonth);
-    const prevMonthMtdEnd = new Date(now.getFullYear(), now.getMonth() - 1, prevMonthMtdDay, 23, 59, 59);
+    const prevMonthMtdEnd = new Date(
+      now.getFullYear(),
+      now.getMonth() - 1,
+      prevMonthMtdDay,
+      23, 59, 59,
+    );
+    const prevMonth = await sumPeriod(prevMonthStart, prevMonthMtdEnd);
 
+    // Same month previous year MTD
     const prevYearMtdStart = new Date(now.getFullYear() - 1, now.getMonth(), 1);
     const prevYearDaysInMonth = new Date(now.getFullYear() - 1, now.getMonth() + 1, 0).getDate();
     const prevYearMtdDay = Math.min(today, prevYearDaysInMonth);
-    const prevYearMtdEnd = new Date(now.getFullYear() - 1, now.getMonth(), prevYearMtdDay, 23, 59, 59);
+    const prevYearMtdEnd = new Date(
+      now.getFullYear() - 1,
+      now.getMonth(),
+      prevYearMtdDay,
+      23, 59, 59,
+    );
+    const prevYearMtd = await sumPeriod(prevYearMtdStart, prevYearMtdEnd);
 
+    // Year-to-date (Jan 1 .. today)
     const ytdStart = new Date(now.getFullYear(), 0, 1);
     const ytdEnd = new Date(now.getFullYear(), now.getMonth(), today, 23, 59, 59);
+    const ytd = await sumPeriod(ytdStart, ytdEnd);
 
+    // Previous year YTD (Jan 1 .. same month/day)
     const prevYtdStart = new Date(now.getFullYear() - 1, 0, 1);
-    const prevYtdEnd = new Date(now.getFullYear() - 1, now.getMonth(), prevYearMtdDay, 23, 59, 59);
+    const prevYtdEnd = new Date(
+      now.getFullYear() - 1,
+      now.getMonth(),
+      prevYearMtdDay,
+      23, 59, 59,
+    );
+    const prevYtd = await sumPeriod(prevYtdStart, prevYtdEnd);
 
-    const mkPaid = (s: Date, e: Date) =>
-      this.prisma.payment.aggregate({
-        where: { userId, status: 'PAID', date: { gte: s, lte: e } },
-        _sum: { amount: true },
-      });
-    const mkPlanned = (s: Date, e: Date) =>
-      this.prisma.lesson.aggregate({
-        where: { userId, status: 'PLANNED', scheduledAt: { gte: s, lte: e } },
-        _sum: { rate: true },
-      });
-
-    const [
-      currPaid, currPlanned,
-      prevMoPaid, prevMoPlanned,
-      prevYrPaid, prevYrPlanned,
-      ytdPaid, ytdPlanned,
-      prevYtdPaid, prevYtdPlanned,
-    ] = await Promise.all([
-      mkPaid(currStart, currMtdEnd),    mkPlanned(currStart, currMtdEnd),
-      mkPaid(prevMonthStart, prevMonthMtdEnd), mkPlanned(prevMonthStart, prevMonthMtdEnd),
-      mkPaid(prevYearMtdStart, prevYearMtdEnd), mkPlanned(prevYearMtdStart, prevYearMtdEnd),
-      mkPaid(ytdStart, ytdEnd),         mkPlanned(ytdStart, ytdEnd),
-      mkPaid(prevYtdStart, prevYtdEnd), mkPlanned(prevYtdStart, prevYtdEnd),
-    ]);
-
-    const current    = { received: currPaid._sum.amount || 0,    expected: currPlanned._sum.rate || 0 };
-    const prevMonth  = { received: prevMoPaid._sum.amount || 0,  expected: prevMoPlanned._sum.rate || 0 };
-    const prevYearMtd = { received: prevYrPaid._sum.amount || 0, expected: prevYrPlanned._sum.rate || 0 };
-    const ytd        = { received: ytdPaid._sum.amount || 0,     expected: ytdPlanned._sum.rate || 0 };
-    const prevYtd    = { received: prevYtdPaid._sum.amount || 0, expected: prevYtdPlanned._sum.rate || 0 };
-
-    const sum = (p: { received: number; expected: number }) => p.received + p.expected;
+    const currTotal = current.received + current.expected;
+    const prevMonthTotal = prevMonth.received + prevMonth.expected;
+    const prevYearMtdTotal = prevYearMtd.received + prevYearMtd.expected;
+    const ytdTotal = ytd.received + ytd.expected;
+    const prevYtdTotal = prevYtd.received + prevYtd.expected;
 
     const calcDelta = (curr: number, base: number) => {
       if (base === 0) return curr > 0 ? 100 : 0;
@@ -226,12 +213,6 @@ export class DashboardService {
       const yy = String(date.getFullYear()).slice(2);
       return `1\u00a0—\u00a0${endDay}\u00a0${MONTH_SHORT[date.getMonth()].toLowerCase()}\u00a0${yy}`;
     };
-
-    const currTotal       = sum(current);
-    const prevMonthTotal  = sum(prevMonth);
-    const prevYearTotal   = sum(prevYearMtd);
-    const ytdTotal        = sum(ytd);
-    const prevYtdTotal    = sum(prevYtd);
 
     return {
       months,
@@ -245,7 +226,7 @@ export class DashboardService {
           rangeLabel: `к\u00a0${fmtRangeLabel(prevMonthStart, prevMonthMtdDay)}`,
         },
         vsPrevYear: {
-          pct: Math.round(calcDelta(currTotal, prevYearTotal) * 10) / 10,
+          pct: Math.round(calcDelta(currTotal, prevYearMtdTotal) * 10) / 10,
           rangeLabel: `к\u00a0${fmtRangeLabel(prevYearMtdStart, prevYearMtdDay)}`,
         },
       },

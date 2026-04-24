@@ -3,8 +3,8 @@ import CardChart from "@/components/CardChart";
 import { useFinanceChart } from "@/hooks/usePayments";
 
 const legend = [
-    { title: "Получено", color: "#98E9AB" },
-    { title: "Запланировано", color: "#AE7AFF" },
+    { title: "Получено", color: "var(--chart-success)" },
+    { title: "Запланировано", color: "var(--chart-brand)" },
 ];
 
 const periodMap: Record<string, "month" | "quarter" | "year"> = {
@@ -60,8 +60,9 @@ const IncomeChart = () => {
                                 </div>
                                 <div className="h-2 bg-n-4/30 dark:bg-white/10 rounded-sm overflow-hidden">
                                     <div
-                                        className="h-full bg-green-1 rounded-sm transition-all"
+                                        className="h-full rounded-sm transition-all"
                                         style={{
+                                            background: "var(--finance-income)",
                                             width:
                                                 total > 0
                                                     ? `${(received / total) * 100}%`
@@ -82,8 +83,9 @@ const IncomeChart = () => {
                                 </div>
                                 <div className="h-2 bg-n-4/30 dark:bg-white/10 rounded-sm overflow-hidden">
                                     <div
-                                        className="h-full bg-purple-1 rounded-sm transition-all"
+                                        className="h-full rounded-sm transition-all"
                                         style={{
+                                            background: "var(--finance-planned)",
                                             width:
                                                 total > 0
                                                     ? `${(expected / total) * 100}%`

@@ -11,7 +11,6 @@ import * as crypto from 'crypto';
 import * as nodemailer from 'nodemailer';
 import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '../prisma/prisma.service';
-import { AppConfigService } from '../config/app-config.service';
 
 const OTP_CODE_LENGTH = 6;
 const OTP_TTL_MINUTES = 15;
@@ -44,7 +43,6 @@ export class StudentAuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
-    private readonly cfg: AppConfigService,
   ) {}
 
   private normalizeEmail(raw: string) {
@@ -69,7 +67,7 @@ export class StudentAuthService {
   }
 
   private isTestingHarnessEnabled() {
-    return !this.cfg.isProduction;
+    return process.env.NODE_ENV !== 'production';
   }
 
   private rememberOtpForTesting(
@@ -92,7 +90,10 @@ export class StudentAuthService {
   }
 
   private hashCode(code: string) {
-    const secret = this.cfg.studentOtpSecret || this.cfg.jwtSecret || 'repeto-dev-student-otp';
+    const secret =
+      process.env.STUDENT_OTP_SECRET ||
+      process.env.JWT_SECRET ||
+      'repeto-dev-student-otp';
     return crypto.createHmac('sha256', secret).update(code).digest('hex');
   }
 
@@ -177,7 +178,7 @@ export class StudentAuthService {
         error instanceof Error ? error.stack : String(error),
       );
       // Dev-only log: still let caller know we couldn't reach email.
-      if (!this.cfg.isProduction) {
+      if (process.env.NODE_ENV !== 'production') {
         this.logger.log(`[DEV][STUDENT_OTP][${purpose}] ${normalizedEmail}: ${code}`);
         return {
           email: normalizedEmail,
@@ -570,7 +571,7 @@ export class StudentAuthService {
   private async generateTokens(accountId: string) {
     const accessToken = this.jwtService.sign(
       { sub: accountId, role: 'student' },
-      { expiresIn: this.cfg.jwtAccessExpiresIn },
+      { expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '15m' },
     );
 
     const refreshTokenValue = uuidv4();
@@ -639,7 +640,12 @@ export class StudentAuthService {
   }
 
   private buildStudentLoginUrl(email?: string) {
-    const primary = this.cfg.allowedOrigins[0] || 'http://localhost:3300';
+    const raw = process.env.FRONTEND_URL || 'http://localhost:3300';
+    const primary =
+      raw
+        .split(',')
+        .map((v) => v.trim())
+        .find(Boolean) || 'http://localhost:3300';
     const base = `${primary.replace(/\/+$/, '')}/auth?view=student`;
     return email ? `${base}&email=${encodeURIComponent(email)}` : base;
   }
@@ -687,14 +693,19 @@ export class StudentAuthService {
     html: string;
     text: string;
   }) {
-    const host = (this.cfg.smtpHost || '').trim();
-    const user = (this.cfg.smtpUser || '').trim();
-    const pass = this.cfg.smtpPass || '';
+    const host = (process.env.SMTP_HOST || '').trim();
+    const user = (process.env.SMTP_USER || '').trim();
+    const pass = process.env.SMTP_PASS || '';
     if (!host || !user || !pass) return false;
 
-    const port = Number.isFinite(this.cfg.smtpPort) ? this.cfg.smtpPort : 465;
-    const secure = this.cfg.smtpSecure ?? port === 465;
-    const from = this.cfg.smtpFromEmail.trim() || `Repeto <${user}>`;
+    const parsedPort = Number.parseInt(process.env.SMTP_PORT || '465', 10);
+    const port = Number.isFinite(parsedPort) ? parsedPort : 465;
+    const secureRaw = (process.env.SMTP_SECURE || '').trim().toLowerCase();
+    const secure = secureRaw
+      ? ['true', '1', 'yes'].includes(secureRaw)
+      : port === 465;
+    const from =
+      (process.env.SMTP_FROM_EMAIL || '').trim() || `Repeto <${user}>`;
 
     const transporter = nodemailer.createTransport({
       host,
@@ -720,10 +731,10 @@ export class StudentAuthService {
     html: string;
     text: string;
   }) {
-    const apiKey = this.cfg.resendApiKey;
+    const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) return false;
 
-    const from = this.cfg.resendFromEmail;
+    const from = process.env.RESEND_FROM_EMAIL || 'Repeto <noreply@repeto.ru>';
 
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',

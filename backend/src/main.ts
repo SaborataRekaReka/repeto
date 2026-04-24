@@ -5,10 +5,21 @@ import * as cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import * as Sentry from '@sentry/node';
 import { AppModule } from './app.module';
-import { AppConfigService } from './config/app-config.service';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 const logger = new Logger('Bootstrap');
+
+const isProduction = process.env.NODE_ENV === 'production';
+
+// Initialize Sentry in production
+if (isProduction && process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: 'production',
+    tracesSampleRate: 0.2,
+  });
+  logger.log('Sentry initialized');
+}
 
 // Prevent unhandled errors from crashing the process
 process.on('unhandledRejection', (reason) => {
@@ -27,19 +38,7 @@ async function bootstrap() {
     logger: ['error', 'warn', 'log'],
   });
 
-  const cfg = app.get(AppConfigService);
-
-  // Initialize Sentry in production
-  if (cfg.isProduction && cfg.sentryDsn) {
-    Sentry.init({
-      dsn: cfg.sentryDsn,
-      environment: 'production',
-      tracesSampleRate: 0.2,
-    });
-    logger.log('Sentry initialized');
-  }
-
-  if (cfg.isProduction) {
+  if (isProduction) {
     app.getHttpAdapter().getInstance().set('trust proxy', 1);
   }
 
@@ -54,13 +53,16 @@ async function bootstrap() {
   app.use(cookieParser());
 
   // CORS
-  const allowedOrigins = cfg.allowedOrigins;
+  const allowedOrigins = (process.env.FRONTEND_URL || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
 
-  if (cfg.isProduction && allowedOrigins.length === 0) {
+  if (isProduction && allowedOrigins.length === 0) {
     throw new Error('FRONTEND_URL must be configured in production');
   }
 
-  if (!cfg.isProduction) {
+  if (!isProduction) {
     allowedOrigins.push('http://localhost:3300');
     allowedOrigins.push('http://127.0.0.1:3100');
     allowedOrigins.push('http://127.0.0.1:3300');
@@ -85,7 +87,7 @@ async function bootstrap() {
   );
 
   // Swagger — disabled in production
-  const swaggerEnabled = !cfg.isProduction;
+  const swaggerEnabled = !isProduction;
   if (swaggerEnabled) {
     const config = new DocumentBuilder()
       .setTitle('Repeto API')
@@ -97,7 +99,7 @@ async function bootstrap() {
     SwaggerModule.setup('api/docs', app, document);
   }
 
-  const port = cfg.port;
+  const port = process.env.PORT || 3200;
   await app.listen(port);
   logger.log(`Repeto API running on http://localhost:${port}`);
   if (swaggerEnabled) {

@@ -26,7 +26,7 @@ const StudentDetail: NextPage = () => {
     }
 
     return (
-        <GravityLayout title="Ученики" hideSidebar hideHeaderTitle>
+        <GravityLayout title="Ученики">
             <StudentDetailPage student={student} onRefresh={refetch} />
         </GravityLayout>
     );

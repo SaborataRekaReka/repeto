@@ -6,7 +6,6 @@ import {
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
-import { AppConfigService } from '../config/app-config.service';
 import { getPrimaryFrontendUrl } from '../common/utils/frontend-url';
 
 const CALDAV_BASE = 'https://caldav.yandex.ru';
@@ -22,15 +21,12 @@ interface YandexTokenData {
 export class YandexCalendarService {
   private readonly logger = new Logger(YandexCalendarService.name);
 
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly cfg: AppConfigService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   // ── helpers ──
 
   private isProductionEnv() {
-    return this.cfg.isProduction;
+    return process.env.NODE_ENV === 'production';
   }
 
   private getEnvValue(prodKey: string, devKey?: string) {

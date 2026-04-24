@@ -70,7 +70,3 @@ npm run check:smoke
 Готово когда: dashboard API не растет линейно от количества месяцев/учеников, а first-load JS снижен хотя бы на 20-30%.
 
 Этап 9: production hardening
-
-Backend: helmet (HTTP security headers), Sentry для необработанных исключений, глобальный HttpExceptionFilter, graceful shutdown, health-check эндпоинт GET /api/health (проверяет DB). Rate limiting: global 100/мин, auth 10/мин, portal 15/мин. Frontend: React ErrorBoundary оборачивает всё приложение в _app.tsx; page transition loader для UX. Dynamic imports для тяжелых компонентов (recharts изолирован в отдельный chunk через next/dynamic).
-
-Готово когда: неперехваченное исключение идёт в Sentry, Docker HEALTHCHECK отвечает 200, auth-эндпоинты не принимают более 10 req/min.

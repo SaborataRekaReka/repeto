@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, type MouseEventHandler, type KeyboardEventHandler } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo, type MouseEventHandler, type KeyboardEventHandler } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import Head from "next/head";
@@ -20,6 +20,8 @@ import {
     ArrowLeft,
     ChevronDown,
     ChevronRight,
+    ChevronsLeft,
+    ChevronsRight,
     ArrowUpRightFromSquare,
     ArrowRightFromSquare,
     Sun,
@@ -38,6 +40,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useThemeMode, type ThemeMode } from "@/contexts/ThemeContext";
 import { getInitials } from "@/lib/formatters";
 import AnimatedSidebarIcon from "@/components/AnimatedSidebarIcon";
+import {
+    ShellContextSidebarProviderContext,
+    type ShellContextSidebarConfig,
+    type ShellContextNavItem,
+} from "@/components/GravityLayout/context-sidebar";
 
 const GTooltip = Tooltip as any;
 const GIcon = Icon as any;
@@ -47,6 +54,7 @@ const GButton = Button as any;
 const GDropdownMenu = DropdownMenu as any;
 
 const SIDEBAR_KEY = "repeto-sidebar-collapsed";
+const CONTEXT_SIDEBAR_KEY = "repeto-context-sidebar-collapsed";
 
 function readSidebarCollapsed(): boolean {
     if (typeof window === "undefined") {
@@ -57,6 +65,55 @@ function readSidebarCollapsed(): boolean {
     } catch {
         return false;
     }
+}
+
+function readContextSidebarCollapsed(): boolean {
+    if (typeof window === "undefined") {
+        return false;
+    }
+    try {
+        return window.localStorage.getItem(CONTEXT_SIDEBAR_KEY) === "1";
+    } catch {
+        return false;
+    }
+}
+
+function readContextSidebarOffset(open: boolean): number {
+    return open ? 400 : 112;
+}
+
+function shallowNavItemsEqual(a?: ShellContextNavItem[], b?: ShellContextNavItem[]): boolean {
+    if (a === b) return true;
+    if (!a && !b) return true;
+    if (!a || !b) return false;
+    if (a.length !== b.length) return false;
+
+    for (let i = 0; i < a.length; i += 1) {
+        const left = a[i];
+        const right = b[i];
+        if (
+            left.key !== right.key ||
+            left.label !== right.label ||
+            left.icon !== right.icon ||
+            left.animatedIconPath !== right.animatedIconPath
+        ) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function shallowContextSidebarEqual(
+    prev: ShellContextSidebarConfig,
+    next: ShellContextSidebarConfig,
+): boolean {
+    return (
+        prev.activeNav === next.activeNav &&
+        prev.breadcrumb === next.breadcrumb &&
+        prev.backHref === next.backHref &&
+        shallowNavItemsEqual(prev.nav, next.nav)
+    );
 }
 
 type GravityLayoutProps = {
@@ -88,7 +145,10 @@ type SidebarQuickAction = {
 };
 
 const sidebarAnimatedIconPaths = {
+    home: "/icons/sidebar-animated/home.json",
     students: "/icons/sidebar-animated/people.json",
+    schedule: "/icons/sidebar-animated/calendar.json",
+    finance: "/icons/sidebar-animated/wallet.json",
     payments: "/icons/sidebar-animated/receipt.json",
     packages: "/icons/sidebar-animated/archive.json",
     files: "/icons/sidebar-animated/folder-open.json",
@@ -100,16 +160,76 @@ const sidebarAnimatedIconPaths = {
     quickIntegrations: "/icons/sidebar-animated/folder-connection.json",
 } as const;
 
+const overlayAnimatedIconPaths = {
+    people: "/icons/sidebar-animated/people.json",
+    receipt: "/icons/sidebar-animated/receipt.json",
+    archive: "/icons/sidebar-animated/archive.json",
+    folderOpen: "/icons/sidebar-animated/folder-open.json",
+    bookOpen: "/icons/sidebar-animated/book-open.json",
+    userAdd: "/icons/sidebar-animated/user-add.json",
+    receiptAdd: "/icons/sidebar-animated/receipt-add.json",
+    userTick: "/icons/sidebar-animated/user-tick.json",
+    profile: "/icons/sidebar-animated/profile.json",
+    noteText: "/icons/sidebar-animated/note-text.json",
+    taskSquare: "/icons/sidebar-animated/task-square.json",
+    export: "/icons/sidebar-animated/export.json",
+} as const;
+
+function resolveContextNavIcon(item: ShellContextNavItem): IconData {
+    if (item.icon) return item.icon;
+    if (item.key === "create") return CirclePlus as IconData;
+    if (item.key === "lesson" || item.key === "lessons") return Calendar as IconData;
+    if (item.key === "payment" || item.key === "payments") return Receipt as IconData;
+    if (item.key === "files" || item.key === "homework") return FolderOpen as IconData;
+    if (item.key === "access" || item.key === "debtors" || item.key === "profile") return Persons as IconData;
+    if (item.key === "notes") return CircleInfo as IconData;
+    return Thunderbolt as IconData;
+}
+
+function resolveContextNavAnimatedIconPath(item: ShellContextNavItem): string | undefined {
+    if (item.animatedIconPath) {
+        return item.animatedIconPath;
+    }
+
+    const key = item.key.toLowerCase();
+    if (key === "create") return overlayAnimatedIconPaths.userAdd;
+    if (key === "lesson" || key === "lessons") return overlayAnimatedIconPaths.bookOpen;
+    if (key === "payment" || key === "payments") return overlayAnimatedIconPaths.receipt;
+    if (key === "debtors") return overlayAnimatedIconPaths.people;
+    if (key === "files") return overlayAnimatedIconPaths.folderOpen;
+    if (key === "access") return overlayAnimatedIconPaths.userTick;
+    if (key === "profile") return overlayAnimatedIconPaths.profile;
+    if (key === "notes") return overlayAnimatedIconPaths.noteText;
+    if (key === "homework") return overlayAnimatedIconPaths.taskSquare;
+    if (key === "export") return overlayAnimatedIconPaths.export;
+    return undefined;
+}
+
 const menuItems: MenuItem[] = [
-    { title: "Главное", icon: House as IconData, url: "/dashboard" },
+    {
+        title: "Главное",
+        icon: House as IconData,
+        url: "/dashboard",
+        animatedIconPath: sidebarAnimatedIconPaths.home,
+    },
     {
         title: "Ученики",
         icon: Persons as IconData,
         url: "/students",
         animatedIconPath: sidebarAnimatedIconPaths.students,
     },
-    { title: "Расписание", icon: Calendar as IconData, url: "/schedule" },
-    { title: "Финансы", icon: CreditCard as IconData, url: "/finance" },
+    {
+        title: "Расписание",
+        icon: Calendar as IconData,
+        url: "/schedule",
+        animatedIconPath: sidebarAnimatedIconPaths.schedule,
+    },
+    {
+        title: "Финансы",
+        icon: CreditCard as IconData,
+        url: "/finance",
+        animatedIconPath: sidebarAnimatedIconPaths.finance,
+    },
     {
         title: "Оплаты",
         icon: Receipt as IconData,
@@ -130,9 +250,7 @@ const menuItems: MenuItem[] = [
     },
 ];
 
-const topHeaderUrls = new Set(["/dashboard", "/schedule", "/finance"]);
-const topHeaderItems = menuItems.filter((item) => topHeaderUrls.has(item.url));
-const sidebarMenuItems = menuItems.filter((item) => !topHeaderUrls.has(item.url));
+const sidebarMenuItems = menuItems;
 const topHeaderThemeOptions: Array<{ mode: ThemeMode; label: string; icon: IconData }> = [
     { mode: "light", label: "Светлая", icon: Sun as IconData },
     { mode: "system", label: "Системная", icon: Display as IconData },
@@ -212,10 +330,34 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
             return next;
         });
     }, []);
+    const [contextSidebarCollapsed, setContextSidebarCollapsed] = useState<boolean>(() => readContextSidebarCollapsed());
+    const [shellContextSidebar, setShellContextSidebar] = useState<ShellContextSidebarConfig | null>(null);
+    const setShellContextSidebarSafe = useCallback((next: ShellContextSidebarConfig | null) => {
+        setShellContextSidebar((prev) => {
+            if (!prev && !next) return prev;
+            if (!prev || !next) return next;
+            return shallowContextSidebarEqual(prev, next) ? prev : next;
+        });
+    }, []);
+    const shellContextSidebarApi = useMemo(
+        () => ({ setShellContextSidebar: setShellContextSidebarSafe }),
+        [setShellContextSidebarSafe],
+    );
+
+    const toggleContextSidebar = useCallback(() => {
+        setContextSidebarCollapsed((prev) => {
+            const next = !prev;
+            try {
+                window.localStorage.setItem(CONTEXT_SIDEBAR_KEY, next ? "1" : "0");
+            } catch {}
+            return next;
+        });
+    }, []);
 
     // Search
     const [searchOpen, setSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
+    const [topHeaderSearchFocused, setTopHeaderSearchFocused] = useState(false);
     const [profileMenuOpen, setProfileMenuOpen] = useState(false);
     const [mobileProfileMenuOpen, setMobileProfileMenuOpen] = useState(false);
     const [createStudentModalOpen, setCreateStudentModalOpen] = useState(false);
@@ -223,32 +365,40 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
     const [createLessonModalOpen, setCreateLessonModalOpen] = useState(false);
     const [mobileQuickActionsOpen, setMobileQuickActionsOpen] = useState(false);
     const [hoveredSidebarIconKey, setHoveredSidebarIconKey] = useState<string | null>(null);
-    const searchRef = useRef<HTMLDivElement>(null);
+    const topHeaderSearchRef = useRef<HTMLDivElement>(null);
+    const mobileSearchRef = useRef<HTMLDivElement>(null);
     const useTopHeaderSearch = useFlatLayout && !isMobileViewport;
+    const useRailSidebar = useFlatLayout && !isMobileViewport;
 
-    const closeSearch = useCallback(() => {
+    const closeMobileSearch = useCallback(() => {
         setSearchOpen(false);
         setSearchQuery("");
     }, []);
 
     useEffect(() => {
         const handler = (e: MouseEvent) => {
-            if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
-                closeSearch();
+            const target = e.target as Node;
+
+            if (topHeaderSearchRef.current && !topHeaderSearchRef.current.contains(target)) {
+                setTopHeaderSearchFocused(false);
+            }
+
+            if (mobileSearchRef.current && !mobileSearchRef.current.contains(target)) {
+                closeMobileSearch();
             }
         };
         document.addEventListener("mousedown", handler);
         return () => document.removeEventListener("mousedown", handler);
-    }, [closeSearch]);
+    }, [closeMobileSearch]);
 
     useEffect(() => {
-        if (!searchOpen) return;
+        if (!searchOpen || useTopHeaderSearch) return;
         const frame = window.requestAnimationFrame(() => {
-            const input = searchRef.current?.querySelector("input");
+            const input = mobileSearchRef.current?.querySelector("input");
             input?.focus();
         });
         return () => window.cancelAnimationFrame(frame);
-    }, [searchOpen]);
+    }, [searchOpen, useTopHeaderSearch]);
 
     const trimmedSearch = searchQuery.trim();
     const { data: studentsData } = useStudents({
@@ -344,96 +494,109 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
         },
     ];
 
-    const isCollapsed = collapsed;
+    const isCollapsed = useRailSidebar ? true : collapsed;
+    const sidebarIconSize = useRailSidebar ? 24 : 30;
     const footerMenuItems = useFlatLayout ? [] : bottomMenuItems;
+    const shouldShowQuickActions = !useFlatLayout && !useRailSidebar;
+    const shouldShowSidebar = !hideSidebar;
+    const contextSidebarVisible = useRailSidebar && shouldShowSidebar;
+    const contextSidebarExpanded = contextSidebarVisible && !contextSidebarCollapsed;
+    const hasPageContextSidebar = Boolean(shellContextSidebar?.nav?.length);
+    const shellOffset = useFlatLayout && !isMobileViewport && shouldShowSidebar
+        ? readContextSidebarOffset(contextSidebarExpanded)
+        : undefined;
+    const contentInlineStyle = shellOffset === undefined ? undefined : { marginLeft: `${shellOffset}px` };
 
     const sidebarCls = `repeto-sidebar ${isCollapsed ? "repeto-sidebar--collapsed" : ""} ${
         useFlatLayout ? "repeto-sidebar--flat" : ""
-    }`;
-    const shouldShowSidebar = !hideSidebar;
+    } ${useRailSidebar ? "repeto-sidebar--rail" : ""}`;
     const contentCls = `repeto-content ${shouldShowSidebar && isCollapsed ? "repeto-content--sidebar-collapsed" : ""} ${
         useFlatLayout ? "repeto-content--flat" : ""
-    } ${shouldShowSidebar ? "repeto-content--with-sidebar" : "repeto-content--no-sidebar"}`;
+    } ${shouldShowSidebar ? "repeto-content--with-sidebar" : "repeto-content--no-sidebar"} ${
+        contextSidebarExpanded ? "repeto-content--with-context-sidebar" : "repeto-content--with-context-sidebar-collapsed"
+    }`;
+    const topHeaderCls = `repeto-top-header ${
+        shouldShowSidebar
+            ? isCollapsed
+                ? "repeto-top-header--with-sidebar-collapsed"
+                : "repeto-top-header--with-sidebar"
+            : "repeto-top-header--no-sidebar"
+    }`;
+
+    useEffect(() => {
+        const { body } = document;
+        const railClass = "repeto-shell-rail-open";
+        const contextClass = "repeto-shell-context-sidebar-open";
+
+        if (contextSidebarVisible) {
+            body.classList.add(railClass);
+        } else {
+            body.classList.remove(railClass);
+        }
+
+        if (contextSidebarExpanded) {
+            body.classList.add(contextClass);
+        } else {
+            body.classList.remove(contextClass);
+        }
+
+        return () => {
+            body.classList.remove(railClass);
+            body.classList.remove(contextClass);
+        };
+    }, [contextSidebarExpanded, contextSidebarVisible]);
 
     return (
+        <ShellContextSidebarProviderContext.Provider value={shellContextSidebarApi}>
         <>
             <Head>
                 <title>{title ? `${title} — Repeto` : "Repeto"}</title>
             </Head>
 
             {useFlatLayout && (
-                <header className="repeto-top-header" role="banner">
+                <header className={topHeaderCls} role="banner">
                     <div className="repeto-top-header__inner">
                         <div className="repeto-top-header__left">
-                            <Link href="/dashboard" className="repeto-top-header__logo" aria-label="Repeto">
+                            <Link href="/dashboard" className="repeto-top-header__brand" aria-label="Repeto">
                                 <img
                                     className="repeto-logo repeto-logo--full"
                                     src="/brand/logo.svg"
                                     alt="Repeto"
                                 />
                             </Link>
-
-                            <nav className="repeto-top-header__nav" aria-label="Основная навигация">
-                                {topHeaderItems.map((item) => {
-                                    const isActive =
-                                        pathname === item.url ||
-                                        (item.url !== "/dashboard" && pathname.startsWith(item.url + "/"));
-
-                                    return (
-                                        <Link
-                                            key={item.url}
-                                            href={item.url}
-                                            className={`repeto-top-header__nav-item ${
-                                                isActive ? "repeto-top-header__nav-item--active" : ""
-                                            }`}
-                                        >
-                                            {item.title}
-                                        </Link>
-                                    );
-                                })}
-                            </nav>
-                        </div>
-
-                        <div className="repeto-top-header__right">
                             {useTopHeaderSearch && (
                                 <div
-                                    ref={searchRef}
-                                    className={`repeto-top-header__search ${
-                                        searchOpen ? "repeto-top-header__search--open" : ""
-                                    }`}
+                                    ref={topHeaderSearchRef}
+                                    className="repeto-top-header__search repeto-top-header__search--expanded"
                                 >
-                                    <div className="repeto-top-header__search-field">
+                                    <div className="repeto-top-header__search-field repeto-top-header__search-field--expanded">
                                         <GTextInput
-                                            className="repeto-top-header__search-input"
+                                            className="repeto-top-header__search-input repeto-top-header__search-input--modal"
                                             size="l"
                                             placeholder="Поиск учеников..."
                                             value={searchQuery}
-                                            onUpdate={setSearchQuery}
-                                            endContent={
+                                            onFocus={() => setTopHeaderSearchFocused(true)}
+                                            onUpdate={(value: string) => {
+                                                setSearchQuery(value);
+                                                if (!topHeaderSearchFocused) {
+                                                    setTopHeaderSearchFocused(true);
+                                                }
+                                            }}
+                                            startContent={
                                                 <GIcon
                                                     data={Magnifier as IconData}
                                                     size={18}
                                                     style={{
-                                                        color: "var(--g-color-text-secondary)",
-                                                        marginRight: 4,
+                                                        color: "var(--repeto-control-icon)",
+                                                        marginLeft: 4,
+                                                        marginRight: 6,
                                                     }}
                                                 />
                                             }
                                         />
                                     </div>
 
-                                    {!searchOpen && (
-                                        <button
-                                            type="button"
-                                            className="repeto-top-header__icon-btn repeto-top-header__search-btn"
-                                            onClick={() => setSearchOpen(true)}
-                                            aria-label="Поиск учеников"
-                                        >
-                                            <GIcon data={Magnifier as IconData} size={24} />
-                                        </button>
-                                    )}
-
-                                    {searchOpen && trimmedSearch && (
+                                    {topHeaderSearchFocused && trimmedSearch && (
                                         <div className="repeto-search-dropdown">
                                             {searchResults.length > 0 ? (
                                                 <>
@@ -444,7 +607,8 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                                                             className="repeto-search-dropdown__item"
                                                             onClick={() => {
                                                                 router.push(`/students/${s.id}`);
-                                                                closeSearch();
+                                                                setSearchQuery("");
+                                                                setTopHeaderSearchFocused(false);
                                                             }}
                                                         >
                                                             <StudentAvatar student={s} size="xs" />
@@ -470,7 +634,9 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                                     )}
                                 </div>
                             )}
+                        </div>
 
+                        <div className="repeto-top-header__right">
                             <Link
                                 href="/notifications"
                                 aria-label="Уведомления"
@@ -603,16 +769,39 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
             {/* Sidebar */}
             {shouldShowSidebar && (
             <aside className={sidebarCls}>
-                <Link href="/dashboard" className="repeto-sidebar__logo">
-                    <img
-                        className="repeto-logo repeto-logo--full"
-                        src="/brand/logo.svg"
-                        alt="Repeto"
-                    />
-                    <span className="repeto-sr-only">Repeto</span>
-                </Link>
+                {useRailSidebar ? (
+                    !contextSidebarExpanded ? (
+                        <div className="repeto-sidebar__logo repeto-sidebar__logo--rail-slot">
+                            <button
+                                type="button"
+                                className="repeto-sidebar__context-expand-btn"
+                                onClick={toggleContextSidebar}
+                                aria-label="Развернуть меню раздела"
+                            >
+                                <GIcon data={ChevronsRight as IconData} size={18} />
+                            </button>
+                        </div>
+                    ) : null
+                ) : (
+                    <Link href="/dashboard" className="repeto-sidebar__logo">
+                        <span className="repeto-sidebar__logo-icon" aria-hidden="true">
+                            <img
+                                className="repeto-logo repeto-logo--icon"
+                                src="/brand/icon.svg"
+                                alt=""
+                            />
+                        </span>
+                        <img
+                            className="repeto-logo repeto-logo--full"
+                            src="/brand/logo.svg"
+                            alt="Repeto"
+                        />
+                        <span className="repeto-sr-only">Repeto</span>
+                    </Link>
+                )}
 
                 <nav className="repeto-sidebar__nav repeto-sidebar__nav--sections">
+                    {shouldShowQuickActions && (
                     <section className="repeto-sidebar__section repeto-sidebar__section--quick">
                         <div className="repeto-sidebar__section-head">
                             <span className="repeto-sidebar__section-title">Быстрые действия</span>
@@ -657,17 +846,17 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                                                     src={item.animatedIconPath}
                                                     fallbackIcon={item.icon}
                                                     play={hoveredSidebarIconKey === iconKey}
-                                                    size={30}
+                                                    size={sidebarIconSize}
                                                 />
                                             ) : (
-                                                <GIcon data={item.icon} size={30} />
+                                                <GIcon data={item.icon} size={sidebarIconSize} />
                                             )}
                                         </span>
                                         <span className="repeto-sidebar__item-text">{item.title}</span>
                                     </button>
                                 );
 
-                                if (isCollapsed) {
+                                if (isCollapsed && !useRailSidebar) {
                                     return (
                                         <GTooltip key={item.id} content={item.title} placement="right" openDelay={200} closeDelay={0}>
                                             {actionButton}
@@ -679,6 +868,7 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                             })}
                         </div>
                     </section>
+                    )}
 
                     <section className="repeto-sidebar__section repeto-sidebar__section--navigation">
                         <div className="repeto-sidebar__section-head">
@@ -706,6 +896,8 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                                             setHoveredSidebarIconKey((prev) => (prev === iconKey ? null : prev))
                                         }
                                         className={`repeto-sidebar__item repeto-sidebar__item--main ${
+                                            useRailSidebar ? "repeto-sidebar__item--rail" : ""
+                                        } ${
                                             isActive
                                                 ? "repeto-sidebar__item--active"
                                                 : ""
@@ -717,17 +909,20 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                                                     src={item.animatedIconPath}
                                                     fallbackIcon={item.icon}
                                                     play={hoveredSidebarIconKey === iconKey}
-                                                    size={30}
+                                                    size={sidebarIconSize}
                                                 />
                                             ) : (
-                                                <GIcon data={item.icon} size={30} />
+                                                <GIcon data={item.icon} size={sidebarIconSize} />
                                             )}
                                         </span>
                                         <span className="repeto-sidebar__item-text">{item.title}</span>
+                                        {useRailSidebar && (
+                                            <span className="repeto-sidebar__item-rail-label">{item.title}</span>
+                                        )}
                                     </Link>
                                 );
 
-                                if (isCollapsed) {
+                                if (isCollapsed && !useRailSidebar) {
                                     return (
                                         <GTooltip key={item.url} content={item.title} placement="right" openDelay={200} closeDelay={0}>
                                             {linkContent}
@@ -825,8 +1020,103 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
             </aside>
             )}
 
+            {contextSidebarVisible && (
+                <aside className={`repeto-context-sidebar ${contextSidebarExpanded ? "" : "repeto-context-sidebar--collapsed"}`}>
+                    <div className="repeto-context-sidebar__inner">
+                        <button
+                            type="button"
+                            className="repeto-context-sidebar__collapse-btn"
+                            aria-label="Свернуть меню раздела"
+                            onClick={toggleContextSidebar}
+                        >
+                            <GIcon data={ChevronsLeft as IconData} size={18} />
+                        </button>
+
+                        {hasPageContextSidebar && shellContextSidebar?.sidebarHeader && (
+                            <div className="repeto-context-sidebar__meta">{shellContextSidebar.sidebarHeader}</div>
+                        )}
+
+                        <div className="repeto-context-sidebar__list">
+                            {hasPageContextSidebar
+                                ? (shellContextSidebar?.nav || []).map((item) => {
+                                    const iconKey = `context:${item.key}`;
+                                    const resolvedIcon = resolveContextNavIcon(item);
+                                    const resolvedAnimatedIconPath = resolveContextNavAnimatedIconPath(item);
+                                    const isActive = shellContextSidebar?.activeNav === item.key;
+
+                                    return (
+                                        <button
+                                            key={item.key}
+                                            type="button"
+                                            className={`repeto-context-sidebar__item ${
+                                                isActive ? "repeto-context-sidebar__item--active" : ""
+                                            }`}
+                                            onMouseEnter={() => setHoveredSidebarIconKey(iconKey)}
+                                            onMouseLeave={() =>
+                                                setHoveredSidebarIconKey((prev) => (prev === iconKey ? null : prev))
+                                            }
+                                            onFocus={() => setHoveredSidebarIconKey(iconKey)}
+                                            onBlur={() =>
+                                                setHoveredSidebarIconKey((prev) => (prev === iconKey ? null : prev))
+                                            }
+                                            onClick={() => shellContextSidebar?.onNavChange?.(item.key)}
+                                        >
+                                            <span className="repeto-context-sidebar__item-icon">
+                                                {resolvedAnimatedIconPath ? (
+                                                    <AnimatedSidebarIcon
+                                                        src={resolvedAnimatedIconPath}
+                                                        fallbackIcon={resolvedIcon}
+                                                        play={hoveredSidebarIconKey === iconKey}
+                                                        size={24}
+                                                    />
+                                                ) : (
+                                                    <GIcon data={resolvedIcon} size={22} />
+                                                )}
+                                            </span>
+                                            <span className="repeto-context-sidebar__item-text">{item.label}</span>
+                                        </button>
+                                    );
+                                })
+                                : quickActionItems.map((item) => {
+                                    const iconKey = `context:quick:${item.id}`;
+                                    return (
+                                        <button
+                                            key={item.id}
+                                            type="button"
+                                            className="repeto-context-sidebar__item"
+                                            onMouseEnter={() => setHoveredSidebarIconKey(iconKey)}
+                                            onMouseLeave={() =>
+                                                setHoveredSidebarIconKey((prev) => (prev === iconKey ? null : prev))
+                                            }
+                                            onFocus={() => setHoveredSidebarIconKey(iconKey)}
+                                            onBlur={() =>
+                                                setHoveredSidebarIconKey((prev) => (prev === iconKey ? null : prev))
+                                            }
+                                            onClick={item.action}
+                                        >
+                                            <span className="repeto-context-sidebar__item-icon">
+                                                {item.animatedIconPath ? (
+                                                    <AnimatedSidebarIcon
+                                                        src={item.animatedIconPath}
+                                                        fallbackIcon={item.icon}
+                                                        play={hoveredSidebarIconKey === iconKey}
+                                                        size={24}
+                                                    />
+                                                ) : (
+                                                    <GIcon data={item.icon} size={22} />
+                                                )}
+                                            </span>
+                                            <span className="repeto-context-sidebar__item-text">{item.title}</span>
+                                        </button>
+                                    );
+                                })}
+                        </div>
+                    </div>
+                </aside>
+            )}
+
             {/* Content */}
-            <main className={contentCls}>
+            <main className={contentCls} style={contentInlineStyle}>
                 {/* Header */}
                 <header className={`repeto-header ${useFlatLayout ? "repeto-header--flat" : ""}`}>
                     <div className={`repeto-header__left ${mobileSearchActive ? "repeto-header__left--hidden" : ""}`}>
@@ -928,7 +1218,7 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                     <div className={`repeto-header__right ${mobileSearchActive ? "repeto-header__right--search-open" : ""}`}>
                         {!useTopHeaderSearch && (
                             <div
-                                ref={searchRef}
+                                ref={mobileSearchRef}
                                 className={`repeto-header__search ${mobileSearchActive ? "repeto-header__search--mobile" : ""}`}
                             >
                                 {searchOpen ? (
@@ -957,10 +1247,7 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                                             <GButton
                                                 view="flat"
                                                 size="m"
-                                                onClick={() => {
-                                                    setSearchOpen(false);
-                                                    setSearchQuery("");
-                                                }}
+                                                onClick={closeMobileSearch}
                                             >
                                                 Закрыть
                                             </GButton>
@@ -990,8 +1277,7 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                                                         className="repeto-search-dropdown__item"
                                                         onClick={() => {
                                                             router.push(`/students/${s.id}`);
-                                                            setSearchOpen(false);
-                                                            setSearchQuery("");
+                                                            closeMobileSearch();
                                                         }}
                                                     >
                                                         <StudentAvatar student={s} size="xs" />
@@ -1161,6 +1447,7 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                 onSaved={handleCreateLesson}
             />
         </>
+        </ShellContextSidebarProviderContext.Provider>
     );
 };
 

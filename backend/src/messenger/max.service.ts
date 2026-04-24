@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { AppConfigService } from '../config/app-config.service';
 
 const MAX_API_BASE = 'https://platform-api.max.ru';
 const LEGACY_MAX_API_BASE = 'https://api.max.ru/bot/v1';
@@ -7,11 +6,7 @@ const LEGACY_MAX_API_BASE = 'https://api.max.ru/bot/v1';
 @Injectable()
 export class MaxService {
   private readonly logger = new Logger(MaxService.name);
-  private readonly botToken: string;
-
-  constructor(private readonly cfg: AppConfigService) {
-    this.botToken = this.cfg.maxBotToken || '';
-  }
+  private readonly botToken = process.env.MAX_BOT_TOKEN || '';
 
   get isConfigured(): boolean {
     return !!this.botToken;

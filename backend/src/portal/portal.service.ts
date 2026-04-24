@@ -11,12 +11,12 @@ import * as fs from 'fs';
 import * as crypto from 'crypto';
 import { Readable } from 'stream';
 import { PrismaService } from '../prisma/prisma.service';
-import { AppConfigService } from '../config/app-config.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { TelegramService } from '../messenger/telegram.service';
 import { MaxService } from '../messenger/max.service';
 import { mapCancelPolicy, calculatePenalty } from '../common/utils/cancel-policy';
 import {
+  PORTAL_REVIEW_PREFIX,
   buildPortalReviewNote,
   parsePortalReviewNote,
 } from '../common/utils/lesson-note';
@@ -34,7 +34,6 @@ export class PortalService {
     private notificationsService: NotificationsService,
     private telegramService: TelegramService,
     private maxService: MaxService,
-    private cfg: AppConfigService,
   ) {}
 
   private formatPortalDateLabel(value: Date) {
@@ -105,7 +104,7 @@ export class PortalService {
   }
 
   private isProductionEnv() {
-    return this.cfg.isProduction;
+    return process.env.NODE_ENV === 'production';
   }
 
   private getEnvValue(prodKey: string, devKey?: string) {
@@ -553,7 +552,7 @@ export class PortalService {
             rescheduleNewTime: true,
             notes: {
               where: {
-                noteType: 'PORTAL_REVIEW',
+                content: { startsWith: PORTAL_REVIEW_PREFIX },
               },
               orderBy: { createdAt: 'desc' },
               take: 1,
@@ -661,7 +660,7 @@ export class PortalService {
 
     const tutorReviewNotes = await this.prisma.lessonNote.findMany({
       where: {
-        noteType: 'PORTAL_REVIEW',
+        content: { startsWith: PORTAL_REVIEW_PREFIX },
         lesson: { is: { userId: student.userId } },
       },
       select: { content: true },
@@ -1476,7 +1475,7 @@ export class PortalService {
       where: {
         lessonId,
         studentId: student.id,
-        noteType: 'PORTAL_REVIEW',
+        content: { startsWith: PORTAL_REVIEW_PREFIX },
       },
       select: { id: true },
       orderBy: { createdAt: 'desc' },
@@ -1493,7 +1492,6 @@ export class PortalService {
           studentId: student.id,
           lessonId,
           content: serializedReview,
-          noteType: 'PORTAL_REVIEW',
         },
       });
 
@@ -1515,7 +1513,7 @@ export class PortalService {
 
     const reviewNotes = await this.prisma.lessonNote.findMany({
       where: {
-        noteType: 'PORTAL_REVIEW',
+        content: { startsWith: PORTAL_REVIEW_PREFIX },
         lesson: { is: { userId: lesson.userId } },
       },
       select: { content: true },

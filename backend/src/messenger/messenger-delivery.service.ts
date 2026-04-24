@@ -2,7 +2,6 @@ import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { NotificationChannel } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { AppConfigService } from '../config/app-config.service';
 import { TelegramService } from './telegram.service';
 import { MaxService } from './max.service';
 
@@ -51,11 +50,10 @@ export class MessengerDeliveryService {
     private readonly prisma: PrismaService,
     private readonly telegram: TelegramService,
     private readonly max: MaxService,
-    private readonly cfg: AppConfigService,
   ) {}
 
   private isTestingEnvironment() {
-    return !this.cfg.isProduction;
+    return process.env.NODE_ENV !== 'production';
   }
 
   private resolveDeliveryMode(): 'record' | 'live' {
@@ -63,8 +61,10 @@ export class MessengerDeliveryService {
       return 'live';
     }
 
-    const configuredMode = this.cfg.messengerTestMode ? 'record' : 'live';
-    if (configuredMode === 'record') {
+    const configuredMode = String(process.env.MESSENGER_TEST_MODE || '')
+      .trim()
+      .toLowerCase();
+    if (configuredMode === 'record' || configuredMode === 'mock' || configuredMode === 'outbox') {
       return 'record';
     }
 

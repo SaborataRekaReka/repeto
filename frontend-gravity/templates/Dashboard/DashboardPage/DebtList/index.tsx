@@ -20,7 +20,7 @@ type DebtStudent = {
     parentEmail?: string | null;
 };
 
-const DEBT_COLOR = "#D16B8F";
+const DEBT_COLOR = "var(--finance-debt)";
 
 const DebtList = () => {
     const { data: debtStudents = [], loading } = useDebts();

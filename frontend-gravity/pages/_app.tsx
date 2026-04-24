@@ -24,13 +24,33 @@ function PageTransitionLoader() {
     useEffect(() => {
         const start = () => setLoading(true);
         const end = () => setLoading(false);
+        const handleRouteError = (error: unknown, url: string) => {
+            end();
+
+            if (typeof window === "undefined") {
+                return;
+            }
+
+            const errorName = typeof error === "object" && error !== null && "name" in error
+                ? String((error as { name?: unknown }).name ?? "")
+                : "";
+            const errorMessage = typeof error === "object" && error !== null && "message" in error
+                ? String((error as { message?: unknown }).message ?? "")
+                : String(error ?? "");
+            const combined = `${errorName} ${errorMessage}`;
+
+            if (/ChunkLoadError|Loading chunk [\d]+ failed|CSS_CHUNK_LOAD_FAILED/i.test(combined)) {
+                window.location.assign(url || window.location.href);
+            }
+        };
+
         router.events.on("routeChangeStart", start);
         router.events.on("routeChangeComplete", end);
-        router.events.on("routeChangeError", end);
+        router.events.on("routeChangeError", handleRouteError);
         return () => {
             router.events.off("routeChangeStart", start);
             router.events.off("routeChangeComplete", end);
-            router.events.off("routeChangeError", end);
+            router.events.off("routeChangeError", handleRouteError);
         };
     }, [router]);
 

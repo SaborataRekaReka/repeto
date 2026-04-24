@@ -24,10 +24,10 @@ const ConversionRate = () => {
     const payments = data?.paymentsCount ?? 0;
 
     const barColor = pct >= 80
-        ? "var(--t-success, #3F9180)"
+        ? "var(--color-status-success-strong)"
         : pct >= 50
-            ? "#B39DF7"
-            : "#D84D4D";
+            ? "var(--chart-brand-soft)"
+            : "var(--color-status-danger-strong)";
 
     return (
         <Card view="outlined" className="repeto-conversion-card repeto-tochka-summary-card">

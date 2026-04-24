@@ -15,6 +15,7 @@ import {
 } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import AnimatedSidebarIcon from "@/components/AnimatedSidebarIcon";
+import { useShellContextSidebar } from "@/components/GravityLayout/context-sidebar";
 
 const GDropdownMenu = DropdownMenu as any;
 
@@ -61,6 +62,7 @@ type PageOverlayProps = {
 
 const PageOverlay = ({
     title,
+    breadcrumb,
     nav,
     activeNav,
     onNavChange,
@@ -69,14 +71,49 @@ const PageOverlay = ({
     backHref,
 }: PageOverlayProps) => {
     const router = useRouter();
+    const shellContextSidebar = useShellContextSidebar();
     const [isLeaving, setIsLeaving] = useState(false);
+    const [isMobileViewport, setIsMobileViewport] = useState(false);
     const [quickActionsOpen, setQuickActionsOpen] = useState(false);
     const [hoveredQuickActionKey, setHoveredQuickActionKey] = useState<string | null>(null);
     const [hoveredSidebarNavKey, setHoveredSidebarNavKey] = useState<string | null>(null);
     const overlayRef = useRef<HTMLDivElement>(null);
+    const useShellContextMode = Boolean(shellContextSidebar) && !isMobileViewport;
 
     useEffect(() => {
-        // Prevent body scroll
+        if (typeof window === "undefined") {
+            return;
+        }
+
+        const mediaQuery = window.matchMedia("(max-width: 768px)");
+        const syncViewport = () => {
+            setIsMobileViewport(mediaQuery.matches);
+        };
+
+        syncViewport();
+
+        if (typeof mediaQuery.addEventListener === "function") {
+            mediaQuery.addEventListener("change", syncViewport);
+            return () => {
+                mediaQuery.removeEventListener("change", syncViewport);
+            };
+        }
+
+        mediaQuery.addListener(syncViewport);
+        return () => {
+            mediaQuery.removeListener(syncViewport);
+        };
+    }, []);
+
+    useEffect(() => {
+        if (useShellContextMode) {
+            document.body.classList.add("repeto-shell-page-context-active");
+            return () => {
+                document.body.classList.remove("repeto-shell-page-context-active");
+            };
+        }
+
+        // Keep legacy full-overlay behavior on mobile.
         const prev = document.body.style.overflow;
         document.body.style.overflow = "hidden";
         document.body.classList.add("repeto-page-overlay-open");
@@ -84,7 +121,40 @@ const PageOverlay = ({
             document.body.style.overflow = prev;
             document.body.classList.remove("repeto-page-overlay-open");
         };
-    }, []);
+    }, [useShellContextMode]);
+
+    useEffect(() => {
+        if (!shellContextSidebar) return;
+
+        if (!useShellContextMode) {
+            shellContextSidebar.setShellContextSidebar(null);
+            return;
+        }
+
+        shellContextSidebar.setShellContextSidebar({
+            title,
+            breadcrumb,
+            nav,
+            activeNav,
+            onNavChange,
+            sidebarHeader,
+            backHref,
+        });
+
+        return () => {
+            shellContextSidebar.setShellContextSidebar(null);
+        };
+    }, [
+        activeNav,
+        backHref,
+        breadcrumb,
+        nav,
+        onNavChange,
+        shellContextSidebar,
+        sidebarHeader,
+        title,
+        useShellContextMode,
+    ]);
 
     const resolveNavIcon = (item: PageOverlayNavItem): IconData => {
         if (item.icon) return item.icon;
@@ -148,20 +218,23 @@ const PageOverlay = ({
     return (
         <div
             ref={overlayRef}
-            className={`page-overlay${isLeaving ? " page-overlay--leaving" : ""}`}
+            className={`page-overlay${isLeaving ? " page-overlay--leaving" : ""}${useShellContextMode ? " page-overlay--shell" : ""}`}
         >
             {/* Back button */}
-            <button
-                type="button"
-                className="page-overlay__back"
-                onClick={handleBack}
-                aria-label="Назад"
-            >
-                <Icon data={ArrowLeft as IconData} size={20} />
-            </button>
+            {!useShellContextMode && (
+                <button
+                    type="button"
+                    className="page-overlay__back"
+                    onClick={handleBack}
+                    aria-label="Назад"
+                >
+                    <Icon data={ArrowLeft as IconData} size={20} />
+                </button>
+            )}
 
             <div className="page-overlay__layout">
                 {/* Sidebar */}
+                {!useShellContextMode && (
                 <aside className="page-overlay__sidebar">
                     <h2 className="page-overlay__title">{title}</h2>
 
@@ -213,14 +286,15 @@ const PageOverlay = ({
                         </nav>
                     )}
                 </aside>
+                )}
 
                 {/* Content */}
-                <main className="page-overlay__content">
+                <main className={`page-overlay__content${useShellContextMode ? " page-overlay__content--shell" : ""}`}>
                     {children}
                 </main>
             </div>
 
-            {mobileNavMenuItems.length > 0 && (
+            {!useShellContextMode && mobileNavMenuItems.length > 0 && (
                 <>
                     {quickActionsOpen && (
                         <button

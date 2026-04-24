@@ -15,7 +15,6 @@ import {
   Prisma,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { AppConfigService } from '../config/app-config.service';
 import { MessengerDeliveryService } from '../messenger/messenger-delivery.service';
 import { PushNotificationsService } from './push-notifications.service';
 import { StudentAuthService } from '../student-auth/student-auth.service';
@@ -42,7 +41,6 @@ export class NotificationsService {
     private messenger: MessengerDeliveryService,
     private pushNotifications: PushNotificationsService,
     private studentAuth: StudentAuthService,
-    private cfg: AppConfigService,
   ) {}
 
   private async getSettings(userId: string) {
@@ -129,10 +127,17 @@ export class NotificationsService {
     html: string;
     text: string;
   }) {
-    const host = (this.cfg.smtpHost || '').trim();
-    const user = (this.cfg.smtpUser || '').trim();
-    const pass = this.cfg.smtpPass || '';
-    const hasSmtpHints = Boolean(host || user || pass || this.cfg.smtpPort || this.cfg.smtpFromEmail);
+    const host = (process.env.SMTP_HOST || '').trim();
+    const user = (process.env.SMTP_USER || '').trim();
+    const pass = process.env.SMTP_PASS || '';
+    const hasSmtpHints = Boolean(
+      host ||
+        user ||
+        pass ||
+        process.env.SMTP_PORT ||
+        process.env.SMTP_SECURE ||
+        process.env.SMTP_FROM_EMAIL,
+    );
 
     if (!hasSmtpHints) {
       return false;
@@ -143,9 +148,12 @@ export class NotificationsService {
       return false;
     }
 
-    const port = Number.isFinite(this.cfg.smtpPort) ? this.cfg.smtpPort : 465;
-    const secure = this.resolveSmtpSecure(port, this.cfg.smtpSecure ? 'true' : 'false');
-    const from = this.cfg.smtpFromEmail.trim() || `Repeto <${user}>`;
+    const parsedPort = Number.parseInt(process.env.SMTP_PORT || '465', 10);
+    const port = Number.isFinite(parsedPort) ? parsedPort : 465;
+    const secure = this.resolveSmtpSecure(port, process.env.SMTP_SECURE);
+    const from =
+      (process.env.SMTP_FROM_EMAIL || '').trim() ||
+      `Repeto <${user}>`;
 
     const transporter = nodemailer.createTransport({
       host,
@@ -174,12 +182,12 @@ export class NotificationsService {
     html: string;
     text: string;
   }) {
-    const apiKey = this.cfg.resendApiKey;
+    const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
       return false;
     }
 
-    const from = this.cfg.resendFromEmail;
+    const from = process.env.RESEND_FROM_EMAIL || 'Repeto <noreply@repeto.ru>';
 
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',

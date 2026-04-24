@@ -3,6 +3,15 @@ import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { usePaymentMethods } from "@/hooks/usePayments";
 
 const RADIAN = Math.PI / 180;
+const CHART_COLORS = [
+    "var(--chart-brand)",
+    "var(--chart-info)",
+    "var(--chart-success)",
+    "var(--chart-warning)",
+    "var(--chart-danger)",
+    "var(--chart-lavender)",
+];
+
 const renderCustomizedLabel = ({
     cx,
     cy,
@@ -21,7 +30,7 @@ const renderCustomizedLabel = ({
             y={y}
             fontSize={12}
             fontWeight={700}
-            fill="#fff"
+            fill="var(--color-text-inverse)"
             textAnchor="middle"
             dominantBaseline="central"
         >
@@ -58,7 +67,7 @@ const PaymentMethods = () => {
                                     stroke="none"
                                 >
                                     {paymentMethodsData.map((entry, i) => (
-                                        <Cell key={i} fill={entry.color} />
+                                        <Cell key={i} fill={entry.color || CHART_COLORS[i % CHART_COLORS.length]} />
                                     ))}
                                 </Pie>
                             </PieChart>
@@ -81,7 +90,7 @@ const PaymentMethods = () => {
                         >
                             <div
                                 className="w-2 h-2 mr-1.5 rounded-full"
-                                style={{ backgroundColor: item.color }}
+                                style={{ backgroundColor: item.color || CHART_COLORS[i % CHART_COLORS.length] }}
                             />
                             {item.name}
                         </div>

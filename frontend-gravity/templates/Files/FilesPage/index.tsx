@@ -64,7 +64,7 @@ const FilesPage = () => {
     };
 
     return (
-        <GravityLayout title="Материалы" hideSidebar hideHeaderTitle>
+        <GravityLayout title="Материалы">
             <PageOverlay
                 title="Материалы"
                 breadcrumb="Дашборд"

@@ -2,7 +2,6 @@ import { Controller, Get, Post, Param, Query, Body, Res, HttpCode, HttpStatus } 
 import { ApiTags, ApiQuery } from '@nestjs/swagger';
 import { Response } from 'express';
 import { Public } from '../common/decorators';
-import { AppConfigService } from '../config/app-config.service';
 import { PublicService } from './public.service';
 import { TelegramService } from '../messenger/telegram.service';
 import { MaxService } from '../messenger/max.service';
@@ -18,7 +17,6 @@ export class PublicController {
     private readonly maxService: MaxService,
     private readonly botPollerService: BotPollerService,
     private readonly studentAuthService: StudentAuthService,
-    private readonly cfg: AppConfigService,
   ) {}
 
   @Public()
@@ -90,7 +88,7 @@ export class PublicController {
     const result = await this.publicService.verifyBookingEmailForSlug(slug, body);
     res.cookie('student_refresh_token', result.refreshToken, {
       httpOnly: true,
-      secure: this.cfg.isProduction,
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 30 * 24 * 60 * 60 * 1000,
       path: '/',
