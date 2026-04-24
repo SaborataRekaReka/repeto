@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { useEffect, useRef } from "react";
-import { Card, Text, Loader } from "@gravity-ui/uikit";
+import { Card, Text, Loader, Icon } from "@gravity-ui/uikit";
+import type { IconData } from "@gravity-ui/uikit";
+import { ChevronRight } from "@gravity-ui/icons";
 import { useWeekLessons } from "@/hooks/useDashboard";
 import { shortName } from "@/lib/formatters";
-import { useThemeMode } from "@/contexts/ThemeContext";
-import { accent } from "@/constants/brand";
 import type { Lesson } from "@/types/schedule";
 import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 import StudentAvatar from "@/components/StudentAvatar";
@@ -17,8 +17,6 @@ type Props = {
 };
 
 const WeekSchedule = ({ onLessonClick, refreshKey }: Props) => {
-    const { theme } = useThemeMode();
-    const isDarkTheme = theme === "dark";
     const didMountRef = useRef(false);
 
     const { data: lessons = [], loading, refetch } = useWeekLessons();
@@ -45,9 +43,10 @@ const WeekSchedule = ({ onLessonClick, refreshKey }: Props) => {
                 <Text variant="subheader-2">Занятия на неделю</Text>
                 <Link
                     href="/schedule"
-                    className="repeto-card-link"
+                    className="repeto-card-chevron"
+                    aria-label="Открыть расписание"
                 >
-                    Расписание →
+                    <Icon data={ChevronRight as IconData} size={18} />
                 </Link>
             </div>
             {loading ? (
@@ -74,30 +73,11 @@ const WeekSchedule = ({ onLessonClick, refreshKey }: Props) => {
                                     <div style={{ height: 1, background: "var(--g-color-line-generic)" }} />
                                 )}
                                 <div
-                                    style={{
-                                        padding: isToday ? "0 16px" : "10px 16px 4px",
-                                        minHeight: isToday ? 40 : undefined,
-                                        display: isToday ? "flex" : undefined,
-                                        alignItems: isToday ? "center" : undefined,
-                                        background: isToday
-                                            ? isDarkTheme
-                                                ? "var(--g-color-base-brand-hover)"
-                                                : accent[300]
-                                            : undefined,
-                                    }}
+                                    className={isToday ? "repeto-week-day-header repeto-week-day-header--today" : "repeto-week-day-header"}
                                 >
                                     <Text
                                         variant="caption-2"
-                                        style={{
-                                            textTransform: "uppercase",
-                                            letterSpacing: "0.05em",
-                                            fontWeight: 600,
-                                            color: isToday
-                                                ? isDarkTheme
-                                                    ? "var(--g-color-text-light-primary)"
-                                                    : "var(--g-color-text-primary)"
-                                                : "var(--g-color-text-secondary)",
-                                        }}
+                                        className="repeto-week-day-header__label"
                                     >
                                         {isToday ? "Сегодня" : dayLabel}
                                     </Text>
@@ -111,13 +91,11 @@ const WeekSchedule = ({ onLessonClick, refreshKey }: Props) => {
                                         style={{
                                             display: "flex",
                                             alignItems: "center",
-                                            gap: 12,
                                             width: "100%",
-                                            padding: "10px 16px",
                                             border: "none",
+                                            background: "transparent",
                                             cursor: "pointer",
                                             textAlign: "left",
-                                            transition: "background 0.15s",
                                         }}
                                     >
                                         <StudentAvatar

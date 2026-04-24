@@ -288,7 +288,7 @@ export class PortalController {
   async getSetupData(@CurrentStudent('id') accountId: string) {
     const account = await this.prisma.studentAccount.findUnique({
       where: { id: accountId },
-      select: { id: true, email: true, name: true },
+      select: { id: true, email: true, name: true, avatarUrl: true },
     });
     if (!account) throw new NotFoundException('Account not found');
 
@@ -314,6 +314,7 @@ export class PortalController {
     return {
       name: account.name || pick('name') || '',
       email: account.email,
+      avatarUrl: account.avatarUrl || null,
       phone: pick('phone') || '',
       age: pick('age') || null,
       grade: pick('grade') || '',

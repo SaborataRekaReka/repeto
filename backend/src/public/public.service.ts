@@ -5,6 +5,13 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { BotPollerService } from '../messenger/bot-poller.service';
 import { StudentAuthService } from '../student-auth/student-auth.service';
 import { mapCancelPolicy } from '../common/utils/cancel-policy';
+import {
+  extractQualificationVerificationSets,
+  normalizeCertificateEntries,
+  normalizeEducationEntries,
+  resolveQualificationVerificationLabel,
+  splitExperienceLines,
+} from '../common/utils/qualification-verification';
 
 type ReminderMethod = 'telegram' | 'max' | 'email' | 'push';
 
@@ -131,6 +138,7 @@ export class PublicService {
         qualificationVerified: true,
         qualificationLabel: true,
         certificates: true,
+        paymentSettings: true,
         createdAt: true,
       },
     });
@@ -262,6 +270,41 @@ export class PublicService {
     )
       ? defaultPaymentMethodRaw
       : 'sbp';
+    const qualificationLabel = user.qualificationVerified ? 'Верифицирован' : null;
+    const verificationSets = extractQualificationVerificationSets(user.paymentSettings);
+
+    const education = normalizeEducationEntries(user.education).map((entry) => {
+      const verified = verificationSets.education.has(entry.id) || entry.legacyVerified;
+      return {
+        id: entry.id,
+        institution: entry.institution,
+        program: entry.program,
+        years: entry.years,
+        verified,
+        verificationLabel: resolveQualificationVerificationLabel(verified),
+      };
+    });
+
+    const experienceLines = splitExperienceLines(user.experience).map((entry) => {
+      const verified = verificationSets.experience.has(entry.id);
+      return {
+        ...entry,
+        verified,
+        verificationLabel: resolveQualificationVerificationLabel(verified),
+      };
+    });
+
+    const certificates = normalizeCertificateEntries(user.certificates).map((entry) => {
+      const verified = verificationSets.certificates.has(entry.id) || entry.legacyVerified;
+      return {
+        id: entry.id,
+        title: entry.title,
+        fileUrl: entry.fileUrl,
+        uploadedAt: entry.uploadedAt,
+        verified,
+        verificationLabel: resolveQualificationVerificationLabel(verified),
+      };
+    });
 
     return {
       slug: user.slug,
@@ -286,11 +329,12 @@ export class PublicService {
       preferredPaymentMethod,
       memberSince: user.createdAt,
       hasWorkingDays: weeklySlotsCount > 0,
-      education: user.education,
+      education,
       experience: user.experience,
+      experienceLines,
       qualificationVerified: user.qualificationVerified,
-      qualificationLabel: user.qualificationLabel,
-      certificates: user.certificates,
+      qualificationLabel,
+      certificates,
     };
   }
 

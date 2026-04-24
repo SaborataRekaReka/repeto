@@ -7,7 +7,6 @@ import {
     Comment,
     Envelope,
     Link as LinkIcon,
-    ShieldCheck,
     Smartphone,
 } from "@gravity-ui/icons";
 import type { IconType } from "react-icons";
@@ -41,7 +40,6 @@ type PublicTutorWidgetProps = {
     name: string;
     avatarUrl?: string | null;
     subjectsText?: string;
-    hasQualification?: boolean;
     rating?: number | string | null;
     reviewsCount?: number;
     noReviewsLabel?: string;
@@ -119,7 +117,6 @@ const PublicTutorWidget = ({
     name,
     avatarUrl,
     subjectsText,
-    hasQualification,
     rating,
     reviewsCount = 0,
     noReviewsLabel = "Пока без отзывов",
@@ -172,15 +169,6 @@ const PublicTutorWidget = ({
                         <Text variant="header-2" as="div" className="repeto-tp-widget__name">
                             {name}
                         </Text>
-                        {hasQualification && (
-                            <span
-                                className="repeto-tp-widget__verif-icon"
-                                title="Верификация пройдена"
-                                aria-label="Верификация пройдена"
-                            >
-                                <Icon data={ShieldCheck as IconData} size={18} />
-                            </span>
-                        )}
                     </div>
 
                     {subjectsText ? (

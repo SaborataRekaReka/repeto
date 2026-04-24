@@ -8,7 +8,7 @@
     "backend"
   ],
   "scripts": {
-    "predev:frontend": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$ErrorActionPreference='SilentlyContinue'; try { $connPids = @(Get-NetTCPConnection -LocalPort 3300 | Select-Object -ExpandProperty OwningProcess -Unique); foreach ($processId in $connPids) { if ($processId) { Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue } } } catch {}; exit 0\"",
+    "predev:frontend": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"$ErrorActionPreference='SilentlyContinue'; try { $connPids = @(Get-NetTCPConnection -LocalPort 3300 | Select-Object -ExpandProperty OwningProcess -Unique); foreach ($processId in $connPids) { if ($processId) { Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue } } } catch {}; try { if (Test-Path './frontend-gravity/.next') { Remove-Item './frontend-gravity/.next' -Recurse -Force -ErrorAction SilentlyContinue } } catch {}; exit 0\"",
     "dev:frontend": "cmd /c \"set NEXT_TELEMETRY_DISABLED=1&& set NEXT_IGNORE_INCORRECT_LOCKFILE=1&& cd frontend-gravity&& node ../node_modules/next/dist/bin/next dev -p 3300\"",
     "predev:gravity": "npm run predev:frontend",
     "dev:gravity": "npm run dev:frontend",

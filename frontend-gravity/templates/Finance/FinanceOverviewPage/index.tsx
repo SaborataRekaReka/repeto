@@ -2,20 +2,20 @@ import GravityLayout from "@/components/GravityLayout";
 import StatCards from "./StatCards";
 import IncomeByStudents from "./IncomeByStudents";
 import PeriodSummary from "./PeriodSummary";
-import BalanceTable from "./BalanceTable";
+import RecentPayments from "@/templates/Dashboard/DashboardPage/RecentPayments";
 
 const FinanceOverviewPage = () => (
     <GravityLayout title="Финансы">
-        <StatCards />
-        <div className="repeto-finance-overview-row">
-            <div style={{ flex: 1, minWidth: 0 }}>
-                <IncomeByStudents />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-                <PeriodSummary />
+        <div className="repeto-tochka-dash">
+            <div className="repeto-tochka-finance">
+                <StatCards />
+                <div className="repeto-two-col">
+                    <IncomeByStudents />
+                    <PeriodSummary />
+                </div>
+                <RecentPayments />
             </div>
         </div>
-        <BalanceTable />
     </GravityLayout>
 );
 

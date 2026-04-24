@@ -364,6 +364,13 @@ const SettingsPage = () => {
                                     {item.label}
                                 </button>
                             ))}
+
+                            {user?.role === "admin" && (
+                                <Link href="/admin" className="repeto-settings-nav-btn repeto-settings-nav-link">
+                                    <Icon data={ArrowUpRightFromSquare as IconData} size={18} />
+                                    Открыть админку
+                                </Link>
+                            )}
                         </div>
 
                         <div className="repeto-settings-logout">

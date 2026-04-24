@@ -44,6 +44,8 @@ export type CertificateEntry = {
   title: string;
   fileUrl: string;
   uploadedAt: string;
+  verified?: boolean;
+  verificationLabel?: string | null;
 };
 
 export async function uploadCertificate(file: File, title?: string) {

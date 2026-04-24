@@ -24,6 +24,14 @@ import {
   normalizeTutorPaymentSbpPhone,
 } from '../common/utils/payment-requisites';
 import {
+  extractQualificationVerificationSets,
+  mergeQualificationVerificationSets,
+  normalizeCertificateEntries,
+  normalizeEducationEntries,
+  resolveQualificationVerificationLabel,
+  splitExperienceLines,
+} from '../common/utils/qualification-verification';
+import {
   UpdateAccountDto,
   ChangePasswordDto,
   UpdateNotificationsDto,
@@ -419,9 +427,47 @@ export class SettingsService {
     const paymentRequisites = extractTutorPaymentRequisites(user.paymentSettings);
     const paymentCardNumber = extractTutorPaymentCardNumber(user.paymentSettings);
     const paymentSbpPhone = extractTutorPaymentSbpPhone(user.paymentSettings);
+    const verificationSets = extractQualificationVerificationSets(user.paymentSettings);
+
+    const education = normalizeEducationEntries(user.education).map((entry) => {
+      const verified = verificationSets.education.has(entry.id) || entry.legacyVerified;
+      return {
+        id: entry.id,
+        institution: entry.institution,
+        program: entry.program,
+        years: entry.years,
+        verified,
+        verificationLabel: resolveQualificationVerificationLabel(verified),
+      };
+    });
+
+    const experienceLines = splitExperienceLines(user.experience).map((entry) => {
+      const verified = verificationSets.experience.has(entry.id);
+      return {
+        ...entry,
+        verified,
+        verificationLabel: resolveQualificationVerificationLabel(verified),
+      };
+    });
+
+    const certificates = normalizeCertificateEntries(user.certificates).map((entry) => {
+      const verified = verificationSets.certificates.has(entry.id) || entry.legacyVerified;
+      return {
+        id: entry.id,
+        title: entry.title,
+        fileUrl: entry.fileUrl,
+        uploadedAt: entry.uploadedAt,
+        verified,
+        verificationLabel: resolveQualificationVerificationLabel(verified),
+      };
+    });
 
     return {
       ...user,
+      education,
+      certificates,
+      experienceLines,
+      qualificationLabel: user.qualificationVerified ? 'Верифицирован' : null,
       paymentRequisites,
       paymentCardNumber,
       paymentSbpPhone,
@@ -699,6 +745,9 @@ export class SettingsService {
         slug: true,
         published: true,
         showPublicPackages: true,
+        education: true,
+        experience: true,
+        certificates: true,
         paymentSettings: true,
       },
     });
@@ -725,6 +774,36 @@ export class SettingsService {
 
     const data: any = { ...restDto };
 
+    if (dto.education !== undefined) {
+      const normalizedEducation = normalizeEducationEntries(dto.education).map((entry) => ({
+        id: entry.id,
+        institution: entry.institution,
+        program: entry.program,
+        years: entry.years,
+      }));
+
+      data.education =
+        normalizedEducation.length > 0
+          ? (normalizedEducation as Prisma.InputJsonValue)
+          : Prisma.DbNull;
+    }
+
+    if (dto.certificates !== undefined) {
+      const normalizedCertificates = normalizeCertificateEntries(dto.certificates).map(
+        (entry) => ({
+          id: entry.id,
+          title: entry.title,
+          fileUrl: entry.fileUrl,
+          uploadedAt: entry.uploadedAt,
+        }),
+      );
+
+      data.certificates =
+        normalizedCertificates.length > 0
+          ? (normalizedCertificates as Prisma.InputJsonValue)
+          : Prisma.DbNull;
+    }
+
     if (
       dto.paymentRequisites !== undefined ||
       dto.paymentCardNumber !== undefined ||
@@ -746,6 +825,45 @@ export class SettingsService {
               ? normalizeTutorPaymentSbpPhone(paymentSbpPhone)
               : undefined,
         },
+      ) as Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput;
+    }
+
+    if (
+      dto.education !== undefined ||
+      dto.experience !== undefined ||
+      dto.certificates !== undefined
+    ) {
+      const verificationSets = extractQualificationVerificationSets(currentUser.paymentSettings);
+
+      const nextEducation =
+        dto.education !== undefined
+          ? normalizeEducationEntries(dto.education)
+          : normalizeEducationEntries(currentUser.education);
+      const nextExperienceLines = splitExperienceLines(
+        dto.experience !== undefined ? dto.experience : currentUser.experience,
+      );
+      const nextCertificates =
+        dto.certificates !== undefined
+          ? normalizeCertificateEntries(dto.certificates)
+          : normalizeCertificateEntries(currentUser.certificates);
+
+      const allowedEducationIds = new Set(nextEducation.map((entry) => entry.id));
+      const allowedExperienceIds = new Set(nextExperienceLines.map((entry) => entry.id));
+      const allowedCertificateIds = new Set(nextCertificates.map((entry) => entry.id));
+
+      verificationSets.education = new Set(
+        Array.from(verificationSets.education).filter((id) => allowedEducationIds.has(id)),
+      );
+      verificationSets.experience = new Set(
+        Array.from(verificationSets.experience).filter((id) => allowedExperienceIds.has(id)),
+      );
+      verificationSets.certificates = new Set(
+        Array.from(verificationSets.certificates).filter((id) => allowedCertificateIds.has(id)),
+      );
+
+      data.paymentSettings = mergeQualificationVerificationSets(
+        data.paymentSettings !== undefined ? data.paymentSettings : currentUser.paymentSettings,
+        verificationSets,
       ) as Prisma.InputJsonValue | Prisma.NullableJsonNullValueInput;
     }
 
@@ -788,8 +906,47 @@ export class SettingsService {
       },
     });
 
+    const verificationSets = extractQualificationVerificationSets(updatedUser.paymentSettings);
+
+    const education = normalizeEducationEntries(updatedUser.education).map((entry) => {
+      const verified = verificationSets.education.has(entry.id) || entry.legacyVerified;
+      return {
+        id: entry.id,
+        institution: entry.institution,
+        program: entry.program,
+        years: entry.years,
+        verified,
+        verificationLabel: resolveQualificationVerificationLabel(verified),
+      };
+    });
+
+    const experienceLines = splitExperienceLines(updatedUser.experience).map((entry) => {
+      const verified = verificationSets.experience.has(entry.id);
+      return {
+        ...entry,
+        verified,
+        verificationLabel: resolveQualificationVerificationLabel(verified),
+      };
+    });
+
+    const certificates = normalizeCertificateEntries(updatedUser.certificates).map((entry) => {
+      const verified = verificationSets.certificates.has(entry.id) || entry.legacyVerified;
+      return {
+        id: entry.id,
+        title: entry.title,
+        fileUrl: entry.fileUrl,
+        uploadedAt: entry.uploadedAt,
+        verified,
+        verificationLabel: resolveQualificationVerificationLabel(verified),
+      };
+    });
+
     return {
       ...updatedUser,
+      education,
+      certificates,
+      experienceLines,
+      qualificationLabel: updatedUser.qualificationVerified ? 'Верифицирован' : null,
       paymentRequisites: extractTutorPaymentRequisites(updatedUser.paymentSettings),
       paymentCardNumber: extractTutorPaymentCardNumber(updatedUser.paymentSettings),
       paymentSbpPhone: extractTutorPaymentSbpPhone(updatedUser.paymentSettings),
@@ -840,7 +997,12 @@ export class SettingsService {
       select: { certificates: true },
     });
 
-    const existing = Array.isArray(user?.certificates) ? (user.certificates as any[]) : [];
+    const existing = normalizeCertificateEntries(user?.certificates).map((entry) => ({
+      id: entry.id,
+      title: entry.title,
+      fileUrl: entry.fileUrl,
+      uploadedAt: entry.uploadedAt,
+    }));
     const newCert = {
       id: crypto.randomUUID(),
       title: (title || file.originalname || '').slice(0, 200),
@@ -855,16 +1017,25 @@ export class SettingsService {
       data: { certificates: updated as any },
     });
 
-    return newCert;
+    return {
+      ...newCert,
+      verified: false,
+      verificationLabel: null,
+    };
   }
 
   async deleteCertificate(userId: string, certId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { certificates: true },
+      select: { certificates: true, paymentSettings: true },
     });
 
-    const existing = Array.isArray(user?.certificates) ? (user.certificates as any[]) : [];
+    const existing = normalizeCertificateEntries(user?.certificates).map((entry) => ({
+      id: entry.id,
+      title: entry.title,
+      fileUrl: entry.fileUrl,
+      uploadedAt: entry.uploadedAt,
+    }));
     const cert = existing.find((c: any) => c.id === certId);
 
     if (!cert) {
@@ -880,10 +1051,22 @@ export class SettingsService {
     }
 
     const updated = existing.filter((c: any) => c.id !== certId);
+    const verificationSets = extractQualificationVerificationSets(user?.paymentSettings);
+    verificationSets.certificates.delete(certId);
+    const nextPaymentSettings = mergeQualificationVerificationSets(
+      user?.paymentSettings,
+      verificationSets,
+    );
 
     await this.prisma.user.update({
       where: { id: userId },
-      data: { certificates: updated.length > 0 ? (updated as any) : Prisma.DbNull },
+      data: {
+        certificates: updated.length > 0 ? (updated as any) : Prisma.DbNull,
+        paymentSettings:
+          nextPaymentSettings !== null
+            ? (nextPaymentSettings as Prisma.InputJsonValue)
+            : Prisma.DbNull,
+      },
     });
 
     return { deleted: true };

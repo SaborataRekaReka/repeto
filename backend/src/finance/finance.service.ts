@@ -145,8 +145,6 @@ export class FinanceService {
     const limit = query.limit || 20;
     const skip = (page - 1) * limit;
 
-    const orderClause = query.sort === 'balance' ? 'ORDER BY debt DESC' : 'ORDER BY s.name ASC';
-
     const data = await this.prisma.$queryRaw<
       { studentId: string; studentName: string; subject: string; lessonsCount: number; totalAmount: number; paidAmount: number; debt: number }[]
     >`
@@ -158,19 +156,19 @@ export class FinanceService {
       FROM "students" s
       LEFT JOIN (
         SELECT student_id, COUNT(*)::int AS cnt, SUM(rate)::int AS total_rate
-        FROM "lessons" WHERE status = 'COMPLETED' GROUP BY student_id
+        FROM "lessons" WHERE status = 'COMPLETED' AND user_id = ${userId} GROUP BY student_id
       ) l ON s.id = l.student_id
       LEFT JOIN (
         SELECT student_id, SUM(amount)::int AS total_paid
-        FROM "payments" WHERE status = 'PAID' GROUP BY student_id
+        FROM "payments" WHERE status = 'PAID' AND user_id = ${userId} GROUP BY student_id
       ) p ON s.id = p.student_id
-      WHERE s.user_id = ${userId} AND s.status = 'ACTIVE'
+      WHERE s.user_id = ${userId}
       ORDER BY CASE WHEN ${query.sort || ''} = 'balance' THEN (COALESCE(l.total_rate, 0) - COALESCE(p.total_paid, 0)) ELSE 0 END DESC, s.name ASC
       LIMIT ${limit} OFFSET ${skip}
     `;
 
     const total = await this.prisma.student.count({
-      where: { userId, status: 'ACTIVE' },
+      where: { userId },
     });
 
     return { data, total, page, pages: Math.ceil(total / limit) };
@@ -202,7 +200,8 @@ export class FinanceService {
   }
 
   private async calculateStatsForRange(userId: string, from: Date, to: Date) {
-    const [income, plannedLessons, totalEarned, totalPaid, lessonsCount, paymentsCount] = await Promise.all([
+    const debtAsOf = to > new Date() ? new Date() : to;
+    const [income, plannedLessons, totalDebt, lessonsCount, paymentsCount] = await Promise.all([
       this.prisma.payment.aggregate({
         where: { userId, status: 'PAID', date: { gte: from, lte: to } },
         _sum: { amount: true },
@@ -211,14 +210,7 @@ export class FinanceService {
         where: { userId, status: 'PLANNED', scheduledAt: { gte: from, lte: to } },
         _sum: { rate: true },
       }),
-      this.prisma.lesson.aggregate({
-        where: { userId, status: 'COMPLETED', scheduledAt: { lte: to } },
-        _sum: { rate: true },
-      }),
-      this.prisma.payment.aggregate({
-        where: { userId, status: 'PAID', date: { lte: to } },
-        _sum: { amount: true },
-      }),
+      this.calculateOutstandingDebt(userId, debtAsOf),
       this.prisma.lesson.count({
         where: { userId, status: 'PLANNED', scheduledAt: { gte: from, lte: to } },
       }),
@@ -229,7 +221,6 @@ export class FinanceService {
 
     const totalIncome = income._sum.amount || 0;
     const totalPending = plannedLessons._sum.rate || 0;
-    const totalDebt = Math.max(0, (totalEarned._sum.rate || 0) - (totalPaid._sum.amount || 0));
 
     return {
       totalIncome,
@@ -238,6 +229,37 @@ export class FinanceService {
       lessonsCount,
       paymentsCount,
     };
+  }
+
+  private async calculateOutstandingDebt(userId: string, asOf: Date): Promise<number> {
+    const [earnedByStudent, paidByStudent] = await Promise.all([
+      this.prisma.lesson.groupBy({
+        by: ['studentId'],
+        where: { userId, status: 'COMPLETED', scheduledAt: { lte: asOf } },
+        _sum: { rate: true },
+      }),
+      this.prisma.payment.groupBy({
+        by: ['studentId'],
+        where: { userId, status: 'PAID', date: { lte: asOf } },
+        _sum: { amount: true },
+      }),
+    ]);
+
+    const paidByStudentMap = new Map<string, number>();
+    for (const row of paidByStudent) {
+      paidByStudentMap.set(row.studentId, row._sum.amount || 0);
+    }
+
+    let totalDebt = 0;
+    for (const row of earnedByStudent) {
+      const earned = row._sum.rate || 0;
+      const paid = paidByStudentMap.get(row.studentId) || 0;
+      if (earned > paid) {
+        totalDebt += earned - paid;
+      }
+    }
+
+    return totalDebt;
   }
 
   private calculateChangePercent(current: number, previous: number): number {

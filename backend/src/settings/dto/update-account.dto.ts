@@ -125,17 +125,6 @@ export class UpdateAccountDto {
   @MaxLength(5000)
   experience?: string;
 
-  @ApiPropertyOptional({ example: false })
-  @IsOptional()
-  @IsBoolean()
-  qualificationVerified?: boolean;
-
-  @ApiPropertyOptional({ example: 'Диплом с отличием' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(200)
-  qualificationLabel?: string;
-
   @ApiPropertyOptional({ description: 'Certificates (JSON array)' })
   @IsOptional()
   certificates?: any;

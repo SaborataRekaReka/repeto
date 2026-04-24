@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { useEffect, useRef } from "react";
-import { Card, Text, Label, Loader } from "@gravity-ui/uikit";
+import { Card, Text, Label, Loader, Icon } from "@gravity-ui/uikit";
+import type { IconData } from "@gravity-ui/uikit";
+import { ChevronRight } from "@gravity-ui/icons";
 import { useTodayLessons } from "@/hooks/useDashboard";
 import { shortName } from "@/lib/formatters";
 import type { Lesson } from "@/types/schedule";
@@ -64,9 +66,10 @@ const TodaySchedule = ({ onLessonClick, refreshKey }: TodayScheduleProps) => {
                 <Text variant="subheader-2">Сегодня, {dayLabel}</Text>
                 <Link
                     href="/schedule"
-                    className="repeto-card-link"
+                    className="repeto-card-chevron"
+                    aria-label="Открыть расписание"
                 >
-                    Расписание →
+                    <Icon data={ChevronRight as IconData} size={18} />
                 </Link>
             </div>
             {loading ? (
@@ -89,14 +92,11 @@ const TodaySchedule = ({ onLessonClick, refreshKey }: TodayScheduleProps) => {
                             style={{
                                 display: "flex",
                                 alignItems: "center",
-                                gap: 12,
                                 width: "100%",
-                                padding: "10px 16px",
                                 border: "none",
-                                borderTop: "1px solid var(--g-color-line-generic)",
+                                background: "transparent",
                                 cursor: "pointer",
                                 textAlign: "left",
-                                transition: "background 0.15s",
                             }}
                         >
                             <StudentAvatar

@@ -1,126 +1,124 @@
-import { useState, useMemo } from "react";
-import { Card, Text, Loader } from "@gravity-ui/uikit";
-import PillTabs from "@/components/PillTabs";
+import Link from "next/link";
+import { useMemo } from "react";
+import { Card, Loader, Icon } from "@gravity-ui/uikit";
+import { ChevronRight } from "@gravity-ui/icons";
+import type { IconData } from "@gravity-ui/uikit";
 import { useIncomeChart } from "@/hooks/useDashboard";
 
-const periodOptions = [
-    { value: "month", label: "Месяц" },
-    { value: "quarter", label: "Квартал" },
-    { value: "year", label: "Год" },
-] as const;
+const MONTH_GENITIVE = [
+    "января", "февраля", "марта", "апреля", "мая", "июня",
+    "июля", "августа", "сентября", "октября", "ноября", "декабря",
+];
+const MONTH_NOM = [
+    "январь", "февраль", "март", "апрель", "май", "июнь",
+    "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь",
+];
 
-type PeriodValue = (typeof periodOptions)[number]["value"];
+const formatRub = (value: number) => {
+    const rounded = Math.round(value * 100) / 100;
+    return `${rounded.toLocaleString("ru-RU", {
+        minimumFractionDigits: rounded % 1 === 0 ? 0 : 2,
+        maximumFractionDigits: 2,
+    })}\u00A0₽`;
+};
+
+const niceMax = (value: number) => {
+    if (value <= 0) return 100_000;
+    const steps = [
+        5_000, 10_000, 20_000, 50_000, 100_000, 150_000, 200_000, 250_000,
+        350_000, 500_000, 700_000, 1_000_000, 1_500_000, 2_000_000, 3_000_000, 5_000_000,
+    ];
+    for (const s of steps) {
+        if (value <= s) return s;
+    }
+    return Math.ceil(value / 1_000_000) * 1_000_000;
+};
 
 const IncomeChart = () => {
-    const [selectedPeriod, setSelectedPeriod] = useState<PeriodValue>("month");
-    const { data: incomeChartData = [], loading } = useIncomeChart(selectedPeriod);
+    const { data, loading } = useIncomeChart("year");
 
-    const received = useMemo(
-        () => incomeChartData.reduce((s, w) => s + (w.received || 0), 0),
-        [incomeChartData]
-    );
-    const expected = useMemo(
-        () => incomeChartData.reduce((s, w) => s + (w.expected || 0), 0),
-        [incomeChartData]
-    );
-    const total = received + expected;
-    const receivedPct = total > 0 ? (received / total) * 100 : 0;
-    const expectedPct = total > 0 ? (expected / total) * 100 : 0;
+    const view = useMemo(() => {
+        const all = data?.months ?? [];
+        const months = all.slice(-6);
+        const total = months.reduce((s, m) => s + m.received + m.expected, 0);
+        const peak = months.reduce((m, row) => Math.max(m, row.received + row.expected), 0);
+        const axisMax = niceMax(peak);
+        const firstIdx = months.length ? Number(months[0].key.split("-")[1]) - 1 : 0;
+        const lastIdx = months.length
+            ? Number(months[months.length - 1].key.split("-")[1]) - 1
+            : 0;
+        const title = months.length
+            ? `Доход с ${MONTH_GENITIVE[firstIdx]} по ${MONTH_NOM[lastIdx]}`
+            : "Доход";
+        return { months, axisMax, total, title };
+    }, [data]);
 
     return (
-        <Card className="repeto-income-card" view="outlined" style={{ background: "var(--g-color-base-float)" }}>
-            <div className="repeto-card-header repeto-income-card__header">
-                <Text variant="subheader-2">Доход</Text>
-                <PillTabs
-                    size="s"
-                    value={selectedPeriod}
-                    onChange={(value) => setSelectedPeriod(value as PeriodValue)}
-                    options={periodOptions as unknown as Array<{ value: string; label: string }>}
-                    ariaLabel="Период"
-                />
-            </div>
-            <div className="repeto-card-body">
-                {loading ? (
-                    <div style={{ padding: "32px 0", textAlign: "center" }}>
-                        <Loader size="s" />
+        <Card className="repeto-income-card repeto-tochka-income" view="outlined">
+            <header className="repeto-tochka-income__header">
+                <span className="repeto-tochka-income__title">{view.title}</span>
+                <Link
+                    href="/payments"
+                    className="repeto-card-chevron"
+                    aria-label="Все оплаты"
+                >
+                    <Icon data={ChevronRight as IconData} size={18} />
+                </Link>
+            </header>
+
+            {loading && !data ? (
+                <div className="repeto-tochka-income__loader">
+                    <Loader size="s" />
+                </div>
+            ) : (
+                <>
+                    <div className="repeto-tochka-income__amount">
+                        {formatRub(view.total)}
                     </div>
-                ) : (
-                    <>
-                        {/* Legend */}
-                        <div className="repeto-income-card__legend">
-                            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                <span
-                                    style={{
-                                        width: 8,
-                                        height: 8,
-                                        borderRadius: 2,
-                                        background: "var(--g-color-text-primary)",
-                                    }}
-                                />
-                                <Text variant="body-1" color="secondary">Получено</Text>
+
+                    <div className="repeto-tochka-income__chart repeto-tochka-income__chart--compact">
+                        <div className="repeto-tochka-income__axis">
+                            <span className="repeto-tochka-income__axis-tick">
+                                {view.axisMax.toLocaleString("ru-RU")}
+                            </span>
+                            <span className="repeto-tochka-income__axis-tick">
+                                {Math.round(view.axisMax / 2).toLocaleString("ru-RU")}
+                            </span>
+                            <span className="repeto-tochka-income__axis-tick">0</span>
+                        </div>
+                        <div className="repeto-tochka-income__plot">
+                            <span className="repeto-tochka-income__grid repeto-tochka-income__grid--top" />
+                            <span className="repeto-tochka-income__grid repeto-tochka-income__grid--mid" />
+                            <span className="repeto-tochka-income__grid repeto-tochka-income__grid--bottom" />
+                            <div className="repeto-tochka-income__bars">
+                                {view.months.map((m) => {
+                                    const total = m.received + m.expected;
+                                    const height = view.axisMax
+                                        ? (total / view.axisMax) * 100
+                                        : 0;
+                                    return (
+                                        <div
+                                            key={m.key}
+                                            className={`repeto-tochka-income__col${m.isCurrent ? " repeto-tochka-income__col--current" : ""}`}
+                                        >
+                                            <div className="repeto-tochka-income__pair">
+                                                <span
+                                                    className="repeto-tochka-income__bar"
+                                                    style={{ height: `${height}%` }}
+                                                    title={`${m.label}: ${formatRub(total)}`}
+                                                />
+                                            </div>
+                                            <span className="repeto-tochka-income__col-label">
+                                                {m.label}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
                             </div>
-                            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                <span
-                                    style={{
-                                        width: 8,
-                                        height: 8,
-                                        borderRadius: 2,
-                                        background: "var(--g-color-base-brand-light, #EEE9FF)",
-                                        border: "1px solid var(--g-color-line-generic)",
-                                    }}
-                                />
-                                <Text variant="body-1" color="secondary">Запланировано</Text>
-                            </div>
                         </div>
-
-                        {/* Single stacked bar */}
-                        <div className="repeto-income-card__bar">
-                            {received > 0 && (
-                                <div
-                                    className="repeto-income-card__bar-part repeto-income-card__bar-part--received"
-                                    style={{
-                                        flexBasis: `${receivedPct}%`,
-                                    }}
-                                />
-                            )}
-                            {expected > 0 && (
-                                <div
-                                    className="repeto-income-card__bar-part repeto-income-card__bar-part--expected"
-                                    style={{
-                                        flexBasis: `${expectedPct}%`,
-                                    }}
-                                />
-                            )}
-                        </div>
-
-                        {/* Amounts */}
-                        <div className="repeto-income-card__amounts">
-                            {received > 0 && (
-                                <div className="repeto-income-card__amount-line">
-                                    <span className="repeto-income-card__amount-label">Получено:</span>{" "}
-                                    <span className="repeto-income-card__amount-value repeto-dashboard-inline-value">{received.toLocaleString("ru-RU")} ₽</span>
-                                </div>
-                            )}
-                            {expected > 0 && (
-                                <div className="repeto-income-card__amount-line">
-                                    <span className="repeto-income-card__amount-label">Запланировано:</span>{" "}
-                                    <span className="repeto-income-card__amount-value repeto-dashboard-inline-value">{expected.toLocaleString("ru-RU")} ₽</span>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Total */}
-                        <div
-                            className="repeto-income-card__total"
-                        >
-                            <Text variant="body-1" color="secondary">
-                                Итого за период
-                            </Text>
-                            <div className="repeto-income-card__total-value repeto-dashboard-primary-value repeto-dashboard-primary-value--section">{total.toLocaleString("ru-RU")} ₽</div>
-                        </div>
-                    </>
-                )}
-            </div>
+                    </div>
+                </>
+            )}
         </Card>
     );
 };

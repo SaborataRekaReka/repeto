@@ -75,13 +75,13 @@ export class DashboardService {
       FROM "students" s
       LEFT JOIN (
         SELECT student_id, SUM(rate) AS total_rate
-        FROM "lessons" WHERE status = 'COMPLETED' GROUP BY student_id
+        FROM "lessons" WHERE status = 'COMPLETED' AND user_id = ${userId} GROUP BY student_id
       ) l ON s.id = l.student_id
       LEFT JOIN (
         SELECT student_id, SUM(amount) AS total_paid
-        FROM "payments" WHERE status = 'PAID' GROUP BY student_id
+        FROM "payments" WHERE status = 'PAID' AND user_id = ${userId} GROUP BY student_id
       ) p ON s.id = p.student_id
-      WHERE s.user_id = ${userId} AND s.status = 'ACTIVE'
+      WHERE s.user_id = ${userId}
         AND COALESCE(p.total_paid, 0) - COALESCE(l.total_rate, 0) < 0
       ORDER BY balance ASC
       LIMIT ${limit}
@@ -102,55 +102,145 @@ export class DashboardService {
     });
   }
 
-  async getIncomeChart(userId: string, period: 'month' | 'quarter' | 'year' = 'month') {
+  async getIncomeChart(userId: string, _period: 'month' | 'quarter' | 'year' = 'month') {
     const now = new Date();
-    let from: Date;
-    let to: Date;
+    const today = now.getDate();
 
-    switch (period) {
-      case 'quarter':
-        from = new Date(now.getFullYear(), now.getMonth() - 3, 1);
-        to = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-        break;
-      case 'year':
-        from = new Date(now.getFullYear() - 1, now.getMonth(), 1);
-        to = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-        break;
-      default:
-        from = new Date(now.getFullYear(), now.getMonth(), 1);
-        to = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    const MONTH_SHORT = [
+      'Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн',
+      'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек',
+    ];
+    const MONTH_GENITIVE = [
+      'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+      'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря',
+    ];
+
+    const sumPeriod = async (start: Date, end: Date) => {
+      const [paid, planned] = await Promise.all([
+        this.prisma.payment.aggregate({
+          where: { userId, status: 'PAID', date: { gte: start, lte: end } },
+          _sum: { amount: true },
+        }),
+        this.prisma.lesson.aggregate({
+          where: { userId, status: 'PLANNED', scheduledAt: { gte: start, lte: end } },
+          _sum: { rate: true },
+        }),
+      ]);
+      return {
+        received: paid._sum.amount || 0,
+        expected: planned._sum.rate || 0,
+      };
+    };
+
+    // 12 months window: last 11 + current
+    const months: Array<{
+      key: string;
+      label: string;
+      received: number;
+      expected: number;
+      isCurrent: boolean;
+    }> = [];
+
+    for (let i = 11; i >= 0; i--) {
+      const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const end = new Date(start.getFullYear(), start.getMonth() + 1, 0, 23, 59, 59);
+      const { received, expected } = await sumPeriod(start, end);
+      months.push({
+        key: `${start.getFullYear()}-${start.getMonth() + 1}`,
+        label: MONTH_SHORT[start.getMonth()],
+        received,
+        expected,
+        isCurrent: i === 0,
+      });
     }
 
-    const [payments, plannedLessons] = await Promise.all([
-      this.prisma.payment.findMany({
-        where: {
-          userId,
-          status: 'PAID',
-          date: { gte: from, lte: to },
+    // Current month MTD (1 .. today)
+    const currStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const currMtdEnd = new Date(now.getFullYear(), now.getMonth(), today, 23, 59, 59);
+    const current = await sumPeriod(currStart, currMtdEnd);
+
+    // Prev month MTD (1 .. today of prev month)
+    const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevMonthDaysInMonth = new Date(now.getFullYear(), now.getMonth(), 0).getDate();
+    const prevMonthMtdDay = Math.min(today, prevMonthDaysInMonth);
+    const prevMonthMtdEnd = new Date(
+      now.getFullYear(),
+      now.getMonth() - 1,
+      prevMonthMtdDay,
+      23, 59, 59,
+    );
+    const prevMonth = await sumPeriod(prevMonthStart, prevMonthMtdEnd);
+
+    // Same month previous year MTD
+    const prevYearMtdStart = new Date(now.getFullYear() - 1, now.getMonth(), 1);
+    const prevYearDaysInMonth = new Date(now.getFullYear() - 1, now.getMonth() + 1, 0).getDate();
+    const prevYearMtdDay = Math.min(today, prevYearDaysInMonth);
+    const prevYearMtdEnd = new Date(
+      now.getFullYear() - 1,
+      now.getMonth(),
+      prevYearMtdDay,
+      23, 59, 59,
+    );
+    const prevYearMtd = await sumPeriod(prevYearMtdStart, prevYearMtdEnd);
+
+    // Year-to-date (Jan 1 .. today)
+    const ytdStart = new Date(now.getFullYear(), 0, 1);
+    const ytdEnd = new Date(now.getFullYear(), now.getMonth(), today, 23, 59, 59);
+    const ytd = await sumPeriod(ytdStart, ytdEnd);
+
+    // Previous year YTD (Jan 1 .. same month/day)
+    const prevYtdStart = new Date(now.getFullYear() - 1, 0, 1);
+    const prevYtdEnd = new Date(
+      now.getFullYear() - 1,
+      now.getMonth(),
+      prevYearMtdDay,
+      23, 59, 59,
+    );
+    const prevYtd = await sumPeriod(prevYtdStart, prevYtdEnd);
+
+    const currTotal = current.received + current.expected;
+    const prevMonthTotal = prevMonth.received + prevMonth.expected;
+    const prevYearMtdTotal = prevYearMtd.received + prevYearMtd.expected;
+    const ytdTotal = ytd.received + ytd.expected;
+    const prevYtdTotal = prevYtd.received + prevYtd.expected;
+
+    const calcDelta = (curr: number, base: number) => {
+      if (base === 0) return curr > 0 ? 100 : 0;
+      return ((curr - base) / base) * 100;
+    };
+
+    const fmtRangeLabel = (date: Date, endDay: number) => {
+      const yy = String(date.getFullYear()).slice(2);
+      return `1\u00a0—\u00a0${endDay}\u00a0${MONTH_SHORT[date.getMonth()].toLowerCase()}\u00a0${yy}`;
+    };
+
+    return {
+      months,
+      current: {
+        title: `Входящие 1\u00a0—\u00a0${today}\u00a0${MONTH_GENITIVE[now.getMonth()]}`,
+        total: currTotal,
+        received: current.received,
+        expected: current.expected,
+        vsPrevMonth: {
+          pct: Math.round(calcDelta(currTotal, prevMonthTotal) * 10) / 10,
+          rangeLabel: `к\u00a0${fmtRangeLabel(prevMonthStart, prevMonthMtdDay)}`,
         },
-        select: { amount: true },
-      }),
-      this.prisma.lesson.findMany({
-        where: {
-          userId,
-          status: 'PLANNED',
-          scheduledAt: { gte: from, lte: to },
+        vsPrevYear: {
+          pct: Math.round(calcDelta(currTotal, prevYearMtdTotal) * 10) / 10,
+          rangeLabel: `к\u00a0${fmtRangeLabel(prevYearMtdStart, prevYearMtdDay)}`,
         },
-        select: { rate: true },
-      }),
-    ]);
-
-    const received = payments.reduce((sum, p) => sum + p.amount, 0);
-    const expected = plannedLessons.reduce((sum, l) => sum + l.rate, 0);
-
-    const label =
-      period === 'year'
-        ? 'За год'
-        : period === 'quarter'
-          ? 'За квартал'
-          : now.toLocaleDateString('ru-RU', { month: 'long' }).replace(/^./, (c) => c.toUpperCase());
-
-    return [{ week: label, received, expected }];
+      },
+      ytd: {
+        title: `Входящие 1\u00a0января\u00a0—\u00a0${today}\u00a0${MONTH_GENITIVE[now.getMonth()]}`,
+        total: ytdTotal,
+        received: ytd.received,
+        expected: ytd.expected,
+        vsPrevYear: {
+          pct: Math.round(calcDelta(ytdTotal, prevYtdTotal) * 10) / 10,
+          rangeLabel: `к\u00a01\u00a0янв\u00a0—\u00a0${prevYearMtdDay}\u00a0${MONTH_SHORT[now.getMonth()].toLowerCase()}\u00a0${String(now.getFullYear() - 1).slice(2)}`,
+        },
+      },
+    };
   }
 
   async getWeekLessons(userId: string) {
@@ -244,19 +334,33 @@ export class DashboardService {
   }
 
   private async calculateTotalDebt(userId: string): Promise<number> {
-    const [earned, paid] = await Promise.all([
-      this.prisma.lesson.aggregate({
+    const [earnedByStudent, paidByStudent] = await Promise.all([
+      this.prisma.lesson.groupBy({
+        by: ['studentId'],
         where: { userId, status: 'COMPLETED' },
         _sum: { rate: true },
       }),
-      this.prisma.payment.aggregate({
+      this.prisma.payment.groupBy({
+        by: ['studentId'],
         where: { userId, status: 'PAID' },
         _sum: { amount: true },
       }),
     ]);
 
-    const totalEarned = earned._sum.rate || 0;
-    const totalPaid = paid._sum.amount || 0;
-    return Math.max(0, totalEarned - totalPaid);
+    const paidByStudentMap = new Map<string, number>();
+    for (const row of paidByStudent) {
+      paidByStudentMap.set(row.studentId, row._sum.amount || 0);
+    }
+
+    let totalDebt = 0;
+    for (const row of earnedByStudent) {
+      const earned = row._sum.rate || 0;
+      const paid = paidByStudentMap.get(row.studentId) || 0;
+      if (earned > paid) {
+        totalDebt += earned - paid;
+      }
+    }
+
+    return totalDebt;
   }
 }

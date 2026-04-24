@@ -20,6 +20,7 @@ type DebtStudent = {
 
 type RecentPayment = {
   id: string;
+  studentId?: string;
   date: string;
   studentName: string;
   studentAccountId?: string | null;
@@ -28,10 +29,36 @@ type RecentPayment = {
   status: 'received';
 };
 
-type IncomeChartItem = {
-  name: string;
+type IncomeChartMonth = {
+  key: string;
+  label: string;
   received: number;
   expected: number;
+  isCurrent: boolean;
+};
+
+type IncomeChartComparison = {
+  pct: number;
+  rangeLabel: string;
+};
+
+export type IncomeChartData = {
+  months: IncomeChartMonth[];
+  current: {
+    title: string;
+    total: number;
+    received: number;
+    expected: number;
+    vsPrevMonth: IncomeChartComparison;
+    vsPrevYear: IncomeChartComparison;
+  };
+  ytd: {
+    title: string;
+    total: number;
+    received: number;
+    expected: number;
+    vsPrevYear: IncomeChartComparison;
+  };
 };
 
 // Dashboard stat cards derived from stats API
@@ -74,6 +101,7 @@ export function useRecentPayments(limit = 5) {
     ...result,
     data: result.data?.map((p: any): RecentPayment => ({
       id: p.id,
+      studentId: p.student?.id ?? p.studentId ?? undefined,
       date: new Date(p.date).toLocaleDateString('ru-RU', {
         day: '2-digit',
         month: '2-digit',
@@ -89,16 +117,7 @@ export function useRecentPayments(limit = 5) {
 }
 
 export function useIncomeChart(period: 'month' | 'quarter' | 'year' = 'month') {
-  const result = useApi<any[]>('/dashboard/income-chart', { period });
-
-  return {
-    ...result,
-    data: (result.data || []).map((row: any): IncomeChartItem => ({
-      name: row.name || row.week || row.label || '',
-      received: Number(row.received ?? row.amount ?? 0),
-      expected: Number(row.expected ?? 0),
-    })),
-  };
+  return useApi<IncomeChartData>('/dashboard/income-chart', { period });
 }
 
 function mapPaymentMethod(method: string): string {

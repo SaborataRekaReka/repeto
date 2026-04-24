@@ -47,7 +47,7 @@ const StatCards = () => {
         },
         {
             id: "debt",
-            title: "Задолженность",
+            title: "К оплате учениками",
             href: "/payments",
             value: loading ? "—" : formatCurrencyValue(stats?.totalDebt ?? 0),
             metaText: !loading ? formatTrendValue(stats?.debtChangePercent ?? 0) : null,
@@ -71,7 +71,7 @@ const StatCards = () => {
     ];
 
     return (
-        <div className="repeto-stat-cards" style={{ marginBottom: 20 }}>
+        <div className="repeto-stat-cards">
             {cards.map((card) => {
                 const color = (card as any).metaCustomColor
                     ? (card as any).metaCustomColor

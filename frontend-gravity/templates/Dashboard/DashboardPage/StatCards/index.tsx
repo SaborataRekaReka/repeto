@@ -43,7 +43,7 @@ const StatCards = () => {
     const { data: stats, loading } = useDashboardStats();
 
     return (
-        <div className="repeto-stat-cards" style={{ marginBottom: 20 }}>
+        <div className="repeto-stat-cards">
             {cards.map((card) => {
                 const value = stats?.[card.key] ?? 0;
                 return (

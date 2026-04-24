@@ -95,6 +95,7 @@ const sidebarAnimatedIconPaths = {
     quickLesson: "/icons/sidebar-animated/book-open.json",
     quickStudent: "/icons/sidebar-animated/user-add.json",
     quickPayment: "/icons/sidebar-animated/receipt-add.json",
+    quickScheduleToday: "/icons/sidebar-animated/clock.json",
     quickPublic: "/icons/sidebar-animated/global.json",
     quickIntegrations: "/icons/sidebar-animated/folder-connection.json",
 } as const;
@@ -149,6 +150,9 @@ const mobileNavItems: MenuItem[] = [
     { title: "Ученики", icon: Persons as IconData, url: "/students" },
     { title: "Расписание", icon: Calendar as IconData, url: "/schedule" },
     { title: "Финансы", icon: CreditCard as IconData, url: "/finance" },
+    { title: "Материалы", icon: FolderOpen as IconData, url: "/files" },
+    { title: "Пакеты", icon: ObjectAlignJustifyVertical as IconData, url: "/packages" },
+    { title: "Оплаты", icon: Receipt as IconData, url: "/payments" },
 ];
 
 const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = false, children }: GravityLayoutProps) => {
@@ -213,6 +217,7 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
     const [searchOpen, setSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+    const [mobileProfileMenuOpen, setMobileProfileMenuOpen] = useState(false);
     const [createStudentModalOpen, setCreateStudentModalOpen] = useState(false);
     const [createPaymentModalOpen, setCreatePaymentModalOpen] = useState(false);
     const [createLessonModalOpen, setCreateLessonModalOpen] = useState(false);
@@ -256,9 +261,11 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
         ? (studentsData?.data || []).slice(0, 5)
         : [];
     const mobileSearchActive = isMobileViewport && searchOpen;
+    const notificationsActive = pathname === "/notifications" || pathname.startsWith("/notifications/");
 
     const openPublicPage = useCallback(() => {
         setProfileMenuOpen(false);
+        setMobileProfileMenuOpen(false);
         if (tutorSlug) {
             if (typeof window !== "undefined") {
                 window.open(`/t/${tutorSlug}`, "_blank", "noopener,noreferrer");
@@ -327,18 +334,13 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
             },
         },
         {
-            id: "quick-public-page",
-            title: "Публичная страница",
-            icon: ArrowUpRightFromSquare as IconData,
-            animatedIconPath: sidebarAnimatedIconPaths.quickPublic,
-            action: openPublicPage,
-        },
-        {
-            id: "quick-integrations",
-            title: "Подключить диски",
-            icon: FolderOpen as IconData,
-            animatedIconPath: sidebarAnimatedIconPaths.quickIntegrations,
-            action: openIntegrations,
+            id: "quick-schedule-today",
+            title: "Расписание сегодня",
+            icon: Calendar as IconData,
+            animatedIconPath: sidebarAnimatedIconPaths.quickScheduleToday,
+            action: () => {
+                void router.push("/schedule?view=day");
+            },
         },
     ];
 
@@ -611,9 +613,9 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                 </Link>
 
                 <nav className="repeto-sidebar__nav repeto-sidebar__nav--sections">
-                    <section className="repeto-sidebar__section repeto-sidebar__section--navigation">
+                    <section className="repeto-sidebar__section repeto-sidebar__section--quick">
                         <div className="repeto-sidebar__section-head">
-                            <span className="repeto-sidebar__section-title">Навигация</span>
+                            <span className="repeto-sidebar__section-title">Быстрые действия</span>
                             <button
                                 type="button"
                                 className="repeto-sidebar__collapse-btn"
@@ -629,66 +631,6 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                                     <GIcon data={ChevronRight as IconData} size={24} />
                                 </span>
                             </button>
-                        </div>
-
-                        <div className="repeto-sidebar__section-list">
-                            {sidebarMenuItems.map((item) => {
-                                const isActive =
-                                    pathname === item.url ||
-                                    (item.url !== "/dashboard" &&
-                                        pathname.startsWith(item.url + "/"));
-                                const iconKey = `nav:${item.url}`;
-
-                                const linkContent = (
-                                    <Link
-                                        key={item.url}
-                                        href={item.url}
-                                        onMouseEnter={() => setHoveredSidebarIconKey(iconKey)}
-                                        onMouseLeave={() =>
-                                            setHoveredSidebarIconKey((prev) => (prev === iconKey ? null : prev))
-                                        }
-                                        onFocus={() => setHoveredSidebarIconKey(iconKey)}
-                                        onBlur={() =>
-                                            setHoveredSidebarIconKey((prev) => (prev === iconKey ? null : prev))
-                                        }
-                                        className={`repeto-sidebar__item repeto-sidebar__item--main ${
-                                            isActive
-                                                ? "repeto-sidebar__item--active"
-                                                : ""
-                                        }`}
-                                    >
-                                        <span className="repeto-sidebar__item-icon">
-                                            {item.animatedIconPath ? (
-                                                <AnimatedSidebarIcon
-                                                    src={item.animatedIconPath}
-                                                    fallbackIcon={item.icon}
-                                                    play={hoveredSidebarIconKey === iconKey}
-                                                    size={38}
-                                                />
-                                            ) : (
-                                                <GIcon data={item.icon} size={38} />
-                                            )}
-                                        </span>
-                                        <span className="repeto-sidebar__item-text">{item.title}</span>
-                                    </Link>
-                                );
-
-                                if (isCollapsed) {
-                                    return (
-                                        <GTooltip key={item.url} content={item.title} placement="right" openDelay={200} closeDelay={0}>
-                                            {linkContent}
-                                        </GTooltip>
-                                    );
-                                }
-
-                                return linkContent;
-                            })}
-                        </div>
-                    </section>
-
-                    <section className="repeto-sidebar__section repeto-sidebar__section--quick">
-                        <div className="repeto-sidebar__section-head">
-                            <span className="repeto-sidebar__section-title">Быстрые действия</span>
                         </div>
 
                         <div className="repeto-sidebar__section-list">
@@ -734,6 +676,66 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                                 }
 
                                 return actionButton;
+                            })}
+                        </div>
+                    </section>
+
+                    <section className="repeto-sidebar__section repeto-sidebar__section--navigation">
+                        <div className="repeto-sidebar__section-head">
+                            <span className="repeto-sidebar__section-title">Навигация</span>
+                        </div>
+
+                        <div className="repeto-sidebar__section-list">
+                            {sidebarMenuItems.map((item) => {
+                                const isActive =
+                                    pathname === item.url ||
+                                    (item.url !== "/dashboard" &&
+                                        pathname.startsWith(item.url + "/"));
+                                const iconKey = `nav:${item.url}`;
+
+                                const linkContent = (
+                                    <Link
+                                        key={item.url}
+                                        href={item.url}
+                                        onMouseEnter={() => setHoveredSidebarIconKey(iconKey)}
+                                        onMouseLeave={() =>
+                                            setHoveredSidebarIconKey((prev) => (prev === iconKey ? null : prev))
+                                        }
+                                        onFocus={() => setHoveredSidebarIconKey(iconKey)}
+                                        onBlur={() =>
+                                            setHoveredSidebarIconKey((prev) => (prev === iconKey ? null : prev))
+                                        }
+                                        className={`repeto-sidebar__item repeto-sidebar__item--main ${
+                                            isActive
+                                                ? "repeto-sidebar__item--active"
+                                                : ""
+                                        }`}
+                                    >
+                                        <span className="repeto-sidebar__item-icon">
+                                            {item.animatedIconPath ? (
+                                                <AnimatedSidebarIcon
+                                                    src={item.animatedIconPath}
+                                                    fallbackIcon={item.icon}
+                                                    play={hoveredSidebarIconKey === iconKey}
+                                                    size={30}
+                                                />
+                                            ) : (
+                                                <GIcon data={item.icon} size={30} />
+                                            )}
+                                        </span>
+                                        <span className="repeto-sidebar__item-text">{item.title}</span>
+                                    </Link>
+                                );
+
+                                if (isCollapsed) {
+                                    return (
+                                        <GTooltip key={item.url} content={item.title} placement="right" openDelay={200} closeDelay={0}>
+                                            {linkContent}
+                                        </GTooltip>
+                                    );
+                                }
+
+                                return linkContent;
                             })}
                         </div>
                     </section>
@@ -828,18 +830,99 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                 {/* Header */}
                 <header className={`repeto-header ${useFlatLayout ? "repeto-header--flat" : ""}`}>
                     <div className={`repeto-header__left ${mobileSearchActive ? "repeto-header__left--hidden" : ""}`}>
-                        {back && (
-                            <GButton
-                                view="flat"
-                                size="m"
-                                onClick={() => router.back()}
-                                style={{ marginRight: 8 }}
-                            >
-                                <GIcon data={ArrowLeft as IconData} size={18} />
-                            </GButton>
-                        )}
-                        {title && !hideHeaderTitle && (
-                            <h1 className="repeto-page-title">{title}</h1>
+                        {isMobileViewport ? (
+                            <>
+                                {back && (
+                                    <GButton
+                                        view="flat"
+                                        size="m"
+                                        onClick={() => router.back()}
+                                        className="repeto-header__mobile-back"
+                                    >
+                                        <GIcon data={ArrowLeft as IconData} size={18} />
+                                    </GButton>
+                                )}
+
+                                <GDropdownMenu
+                                    open={mobileProfileMenuOpen}
+                                    onOpenToggle={setMobileProfileMenuOpen}
+                                    switcherWrapperClassName="repeto-header__mobile-profile-dropdown"
+                                    popupProps={{
+                                        placement: "bottom-start",
+                                        className: "repeto-header__mobile-profile-popup",
+                                    }}
+                                    renderSwitcher={({ onClick, onKeyDown }: DropdownSwitcherHandlers) => (
+                                        <button
+                                            type="button"
+                                            className={`repeto-top-header__profile-trigger repeto-header__profile-trigger ${
+                                                mobileProfileMenuOpen ? "repeto-top-header__profile-trigger--open" : ""
+                                            }`}
+                                            onClick={onClick}
+                                            onKeyDown={onKeyDown}
+                                            aria-label="Профиль"
+                                        >
+                                            <Avatar text={getInitials(user?.name || "U")} size="xs" theme="brand" />
+                                            <span className="repeto-top-header__profile-name">{tutorName}</span>
+                                            <span className="repeto-top-header__profile-chevron" aria-hidden="true">
+                                                <GIcon data={ChevronDown as IconData} size={14} />
+                                            </span>
+                                        </button>
+                                    )}
+                                >
+                                    <div className="repeto-top-header__profile-menu repeto-header__mobile-profile-menu">
+                                        <button
+                                            type="button"
+                                            className="repeto-top-header__menu-item"
+                                            onClick={() => {
+                                                setMobileProfileMenuOpen(false);
+                                                void router.push("/settings");
+                                            }}
+                                        >
+                                            <span>Настройки</span>
+                                            <GIcon data={Gear as IconData} size={14} />
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            className="repeto-top-header__menu-item"
+                                            onClick={openPublicPage}
+                                        >
+                                            <span>Публичная страница</span>
+                                            <GIcon data={ArrowUpRightFromSquare as IconData} size={14} />
+                                        </button>
+
+                                        <div className="repeto-top-header__profile-divider" />
+
+                                        <button
+                                            type="button"
+                                            className="repeto-top-header__menu-item repeto-top-header__menu-item--danger"
+                                            onClick={() => {
+                                                setMobileProfileMenuOpen(false);
+                                                void logout();
+                                            }}
+                                        >
+                                            <GIcon data={ArrowRightFromSquare as IconData} size={16} />
+                                            <span>Выйти из аккаунта</span>
+                                        </button>
+                                    </div>
+                                </GDropdownMenu>
+                            </>
+                        ) : (
+                            <>
+                                {back && (
+                                    <GButton
+                                        view="flat"
+                                        size="m"
+                                        onClick={() => router.back()}
+                                        style={{ marginRight: 8 }}
+                                    >
+                                        <GIcon data={ArrowLeft as IconData} size={18} />
+                                    </GButton>
+                                )}
+                                {title && !hideHeaderTitle && (
+                                    <h1 className="repeto-page-title">{title}</h1>
+                                )}
+                            </>
                         )}
                     </div>
                     <div className={`repeto-header__right ${mobileSearchActive ? "repeto-header__right--search-open" : ""}`}>
@@ -851,12 +934,13 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                                 {searchOpen ? (
                                     <>
                                         <GTextInput
+                                            className={`repeto-header__search-input ${mobileSearchActive ? "repeto-header__search-input--mobile" : ""}`}
                                             size="m"
                                             placeholder="Поиск учеников..."
                                             value={searchQuery}
                                             onUpdate={setSearchQuery}
                                             autoFocus
-                                            style={mobileSearchActive ? { width: "100%" } : { width: 260 }}
+                                            style={mobileSearchActive ? undefined : { width: 260 }}
                                             startContent={
                                                 <GIcon
                                                     data={Magnifier as IconData}
@@ -936,7 +1020,27 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
 
                         {!mobileSearchActive && (
                             <>
-                                {!useFlatLayout && (
+                                {isMobileViewport && (
+                                    <button
+                                        type="button"
+                                        aria-label="Уведомления"
+                                        className={`repeto-top-header__icon-btn repeto-header__icon-btn ${
+                                            notificationsActive ? "repeto-top-header__icon-btn--active" : ""
+                                        }`}
+                                        onClick={() => {
+                                            void router.push("/notifications");
+                                        }}
+                                    >
+                                        <span className="repeto-mobile-nav__icon">
+                                            <GIcon data={Bell as IconData} size={18} />
+                                            {unreadCount > 0 && (
+                                                <span className="repeto-mobile-nav__badge" />
+                                            )}
+                                        </span>
+                                    </button>
+                                )}
+
+                                {!isMobileViewport && !useFlatLayout && (
                                     <GButton
                                         view="flat"
                                         size="m"
@@ -1037,36 +1141,6 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                         </Link>
                     );
                 })}
-
-                <GDropdownMenu
-                    switcher={
-                        <button
-                            type="button"
-                            className={`repeto-mobile-nav__item repeto-mobile-nav__profile-switcher ${pathname.startsWith("/settings") ? "repeto-mobile-nav__item--active" : ""}`}
-                        >
-                            <span className="repeto-mobile-nav__icon">
-                                <Avatar
-                                    text={getInitials(user?.name || "U")}
-                                    size="xs"
-                                    theme="brand"
-                                />
-                            </span>
-                            <span className="repeto-mobile-nav__label">Профиль</span>
-                        </button>
-                    }
-                    items={[
-                        {
-                            text: "Настройки",
-                            action: () => router.push("/settings"),
-                        },
-                        {
-                            text: "Выйти",
-                            action: () => {
-                                void logout();
-                            },
-                        },
-                    ]}
-                />
             </nav>
 
             <CreateStudentModal

@@ -1,8 +1,12 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { Text, Card, Label } from "@gravity-ui/uikit";
+import { Text, Card, Icon } from "@gravity-ui/uikit";
+import { ChevronRight } from "@gravity-ui/icons";
+import type { IconData } from "@gravity-ui/uikit";
 import { useStudentBalances } from "@/hooks/usePayments";
 import StudentNameWithBadge from "@/components/StudentNameWithBadge";
+
+const formatRub = (value: number) => `${value.toLocaleString("ru-RU")}\u00A0₽`;
 
 const BalanceTable = () => {
     const router = useRouter();
@@ -10,84 +14,86 @@ const BalanceTable = () => {
     const studentBalances = balancesData?.data || [];
 
     return (
-        <Card className="repeto-balance-table-card" view="outlined" style={{ marginTop: 20, background: "var(--g-color-base-float)", overflow: "hidden" }}>
-            <div
-                style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "16px 20px",
-                    borderBottom: "1px solid var(--g-color-line-generic)",
-                }}
-            >
+        <Card view="outlined" className="repeto-balance-table-card">
+            <div className="repeto-card-header">
                 <Text variant="subheader-2">Баланс учеников</Text>
-                <Link href="/payments" style={{ textDecoration: "none" }}>
-                    <Text variant="body-1" color="brand" style={{ fontWeight: 600, cursor: "pointer" }}>
-                        Все →
-                    </Text>
+                <Link
+                    href="/payments"
+                    className="repeto-card-chevron"
+                    aria-label="Все оплаты"
+                >
+                    <Icon data={ChevronRight as IconData} size={18} />
                 </Link>
             </div>
+
+            <div className="repeto-card-body repeto-balance-table-card__body">
+                {loading ? (
+                    <div className="repeto-balance-table-card__state">
+                        <Text variant="body-1" color="secondary">Загрузка…</Text>
+                    </div>
+                ) : studentBalances.length === 0 ? (
+                    <div className="repeto-balance-table-card__state">
+                        <Text variant="body-1" color="secondary">Нет данных</Text>
+                    </div>
+                ) : (
                     <div className="repeto-balance-table-scroll">
                         <table className="repeto-balance-table">
                             <thead>
-                                <tr style={{ borderBottom: "1px solid var(--g-color-line-generic)" }}>
-                                    {["Имя", "Занятий", "Сумма", "Оплачено", "Долг"].map((h, i) => (
-                                        <th
-                                            key={h}
-                                            style={{
-                                                padding: "10px 20px",
-                                                textAlign: i === 0 ? "left" : "right",
-                                                fontWeight: 500,
-                                                fontSize: 13,
-                                                color: "var(--g-color-text-secondary)",
-                                            }}
-                                        >
-                                            {h}
-                                        </th>
-                                    ))}
+                                <tr>
+                                    <th className="repeto-balance-table__th repeto-balance-table__th--left">Имя</th>
+                                    <th className="repeto-balance-table__th">Занятий</th>
+                                    <th className="repeto-balance-table__th">Сумма</th>
+                                    <th className="repeto-balance-table__th">Оплачено</th>
+                                    <th className="repeto-balance-table__th">Долг</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {studentBalances.map((s) => (
-                                    <tr
-                                        key={s.studentId}
-                                        onClick={() => router.push(`/students/${s.studentId}`)}
-                                        style={{ cursor: "pointer", borderBottom: "1px solid var(--g-color-line-generic)", transition: "background 0.15s" }}
-                                        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--g-color-base-simple-hover)")}
-                                        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                                    >
-                                        <td style={{ padding: "12px 20px" }}>
-                                            <Text variant="body-1" style={{ fontWeight: 600 }}>
-                                                <StudentNameWithBadge
-                                                    name={s.studentName}
-                                                    hasRepetoAccount={Boolean(s.studentAccountId)}
-                                                />
-                                            </Text>
-                                            <Text variant="caption-2" color="secondary" style={{ display: "block" }}>{s.subject}</Text>
-                                        </td>
-                                        <td style={{ padding: "12px 20px", textAlign: "right" }}>
-                                            <Text variant="body-1">{s.lessonsCount}</Text>
-                                        </td>
-                                        <td style={{ padding: "12px 20px", textAlign: "right" }}>
-                                            <Text variant="body-1" style={{ fontVariantNumeric: "tabular-nums" }}>{s.totalAmount.toLocaleString("ru-RU")} ₽</Text>
-                                        </td>
-                                        <td style={{ padding: "12px 20px", textAlign: "right" }}>
-                                            <Text variant="body-1" style={{ fontVariantNumeric: "tabular-nums" }}>{s.paidAmount.toLocaleString("ru-RU")} ₽</Text>
-                                        </td>
-                                        <td style={{ padding: "12px 20px", textAlign: "right" }}>
-                                            {s.debt > 0 ? (
-                                                <Label theme="danger" size="s">{s.debt.toLocaleString("ru-RU")} ₽</Label>
-                                            ) : s.debt < 0 ? (
-                                                <Label theme="success" size="s">−{Math.abs(s.debt).toLocaleString("ru-RU")} ₽</Label>
-                                            ) : (
-                                                <Text variant="body-1" color="secondary">—</Text>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
+                                {studentBalances.map((s) => {
+                                    const debtClass = s.debt > 0
+                                        ? "repeto-balance-table__debt repeto-balance-table__debt--owed"
+                                        : s.debt < 0
+                                            ? "repeto-balance-table__debt repeto-balance-table__debt--credit"
+                                            : "repeto-balance-table__debt repeto-balance-table__debt--none";
+                                    const debtText = s.debt > 0
+                                        ? formatRub(s.debt)
+                                        : s.debt < 0
+                                            ? `−${formatRub(Math.abs(s.debt))}`
+                                            : "—";
+                                    return (
+                                        <tr
+                                            key={s.studentId}
+                                            className="repeto-balance-table__row"
+                                            onClick={() => router.push(`/students/${s.studentId}`)}
+                                        >
+                                            <td className="repeto-balance-table__td repeto-balance-table__td--name">
+                                                <div className="repeto-balance-table__name">
+                                                    <StudentNameWithBadge
+                                                        name={s.studentName}
+                                                        hasRepetoAccount={Boolean(s.studentAccountId)}
+                                                    />
+                                                </div>
+                                                <div className="repeto-balance-table__subject">{s.subject}</div>
+                                            </td>
+                                            <td className="repeto-balance-table__td repeto-balance-table__td--num">
+                                                {s.lessonsCount}
+                                            </td>
+                                            <td className="repeto-balance-table__td repeto-balance-table__td--num">
+                                                {formatRub(s.totalAmount)}
+                                            </td>
+                                            <td className="repeto-balance-table__td repeto-balance-table__td--num">
+                                                {formatRub(s.paidAmount)}
+                                            </td>
+                                            <td className="repeto-balance-table__td repeto-balance-table__td--num">
+                                                <span className={debtClass}>{debtText}</span>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
+                )}
+            </div>
         </Card>
     );
 };

@@ -29,6 +29,7 @@ import {
   isPlatformPlanId,
   normalizePlatformAccess,
 } from '../common/utils/platform-access';
+import { resolveUserRole } from '../common/utils/admin-access';
 
 const REGISTRATION_CODE_LENGTH = 6;
 const REGISTRATION_CODE_TTL_MINUTES = 15;
@@ -308,7 +309,7 @@ export class AuthService {
       return createdUser;
     });
 
-    const tokens = await this.generateTokens(user.id);
+    const tokens = await this.generateTokens(user.id, user.email);
     return {
       user: this.sanitizeUser(user),
       ...tokens,
@@ -440,7 +441,7 @@ export class AuthService {
       throw new UnauthorizedException('Неверный email или пароль');
     }
 
-    const tokens = await this.generateTokens(user.id);
+    const tokens = await this.generateTokens(user.id, user.email);
     return {
       user: this.sanitizeUser(user),
       ...tokens,
@@ -464,8 +465,15 @@ export class AuthService {
 
     // Rotate: delete old, create new (atomically)
     const userId = stored.userId;
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true },
+    });
+    if (!user) {
+      throw new UnauthorizedException();
+    }
     await this.prisma.refreshToken.deleteMany({ where: { id: stored.id } });
-    return this.generateTokens(userId);
+    return this.generateTokens(userId, user.email);
   }
 
   async logout(refreshToken: string) {
@@ -1034,9 +1042,10 @@ export class AuthService {
     return normalized === 'true' || normalized === '1' || normalized === 'yes';
   }
 
-  private async generateTokens(userId: string) {
+  private async generateTokens(userId: string, userEmail: string) {
+    const role = resolveUserRole(userEmail);
     const accessToken = this.jwtService.sign(
-      { sub: userId, role: 'tutor' },
+      { sub: userId, role },
       { expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '15m' },
     );
 
@@ -1103,6 +1112,7 @@ export class AuthService {
   }) {
     const platformAccess = normalizePlatformAccess(user.paymentSettings);
     const platformAccessState = getPlatformAccessState(user.paymentSettings);
+    const role = resolveUserRole(user.email);
 
     return {
       id: user.id,
@@ -1115,6 +1125,7 @@ export class AuthService {
       avatarUrl: user.avatarUrl,
       subjects: user.subjects,
       aboutText: user.aboutText,
+      role,
       platformAccess,
       platformAccessState,
     };

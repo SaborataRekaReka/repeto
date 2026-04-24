@@ -22,6 +22,7 @@ import { FilesModule } from './files/files.module';
 import { MessengerModule } from './messenger/messenger.module';
 import { StudentAuthModule } from './student-auth/student-auth.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     HealthModule,
     AvailabilityModule,
     MessengerModule,
+    AdminModule,
   ],
   providers: [
     {

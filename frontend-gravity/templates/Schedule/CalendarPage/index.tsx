@@ -152,6 +152,15 @@ const CalendarPage = () => {
         }
     }, [router.query.create]);
 
+    useEffect(() => {
+        const viewParam = router.query.view;
+        const raw = Array.isArray(viewParam) ? viewParam[0] : viewParam;
+        if (raw === "day" || raw === "week" || raw === "month") {
+            setView(raw);
+            setCurrentDate(new Date());
+        }
+    }, [router.query.view]);
+
     const dateRange = useMemo(() => {
         const d = currentDate;
         if (view === "month") {

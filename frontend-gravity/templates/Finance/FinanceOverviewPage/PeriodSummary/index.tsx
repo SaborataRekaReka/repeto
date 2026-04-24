@@ -1,15 +1,14 @@
-import { useState } from "react";
-import { Text, Card } from "@gravity-ui/uikit";
-import PillTabs from "@/components/PillTabs";
-import { useFinanceSummary } from "@/hooks/usePayments";
-
-const periodOptions = [
-    { value: "month", label: "Месяц" },
-    { value: "quarter", label: "Квартал" },
-    { value: "year", label: "Год" },
-];
+import { useFinanceStats, useFinanceSummary } from "@/hooks/usePayments";
 
 type MetricItem = { label: string; value: string };
+type SegmentTone = "cancelled" | "received" | "planned" | "debt";
+type SegmentItem = {
+    key: string;
+    label: string;
+    amount: number;
+    tone: SegmentTone;
+};
+
 type SummaryData = {
     completedLessons: number;
     cancelledLessons: number;
@@ -19,20 +18,16 @@ type SummaryData = {
     avgPayment: number;
 };
 
-function formatCurrencyMetric(value: number): string {
-    return `${value.toLocaleString("ru-RU")} ₽`;
-}
+const formatCurrencyMetric = (value: number) => `${value.toLocaleString("ru-RU")} ₽`;
 
-function buildMetrics(data: SummaryData): MetricItem[] {
-    return [
-        { label: "Уроков", value: String(data.completedLessons) },
-        { label: "Ср. ставка", value: formatCurrencyMetric(data.avgRate) },
-        { label: "Платежей", value: String(data.paymentsCount) },
-        { label: "Ср. платёж", value: formatCurrencyMetric(data.avgPayment) },
-    ];
-}
+const buildMetrics = (data: SummaryData): MetricItem[] => [
+    { label: "Уроков за месяц", value: String(data.completedLessons) },
+    { label: "Средняя ставка", value: formatCurrencyMetric(data.avgRate) },
+    { label: "Платежей за месяц", value: String(data.paymentsCount) },
+    { label: "Средний платёж", value: formatCurrencyMetric(data.avgPayment) },
+];
 
-const emptyData = {
+const emptyData: SummaryData = {
     completedLessons: 0,
     cancelledLessons: 0,
     cancellationRate: 0,
@@ -42,74 +37,95 @@ const emptyData = {
 };
 
 const PeriodSummary = () => {
-    const [period, setPeriod] = useState("month");
-    const { data, loading } = useFinanceSummary(period as "month" | "quarter" | "year");
+    const { data } = useFinanceSummary("month");
+    const { data: monthStats } = useFinanceStats("month");
     const summaryData = data || emptyData;
     const items = buildMetrics(summaryData);
 
+    const cancelledAmount = Math.max(
+        0,
+        Math.round((summaryData.cancelledLessons || 0) * (summaryData.avgRate || 0))
+    );
+
+    const segmentItems: SegmentItem[] = [
+        {
+            key: "cancelled",
+            label: "Отмененные",
+            amount: cancelledAmount,
+            tone: "cancelled",
+        },
+        {
+            key: "received",
+            label: "Полученные",
+            amount: Math.max(0, Math.round(monthStats?.totalIncome ?? 0)),
+            tone: "received",
+        },
+        {
+            key: "planned",
+            label: "Запланированные",
+            amount: Math.max(0, Math.round(monthStats?.totalPending ?? 0)),
+            tone: "planned",
+        },
+        {
+            key: "debt",
+            label: "Долги",
+            amount: Math.max(0, Math.round(monthStats?.totalDebt ?? 0)),
+            tone: "debt",
+        },
+    ];
+
+    const maxSegmentAmount = Math.max(
+        1,
+        ...segmentItems.map((segment) => segment.amount)
+    );
+
+    const getSegmentWeight = (amount: number) => {
+        if (amount <= 0) return 0.45;
+        return Math.max(amount / maxSegmentAmount, 0.45);
+    };
+
     return (
-        <div className="repeto-finance-summary" style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-            <div
-                className="repeto-finance-summary-header"
-                style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    marginBottom: 8,
-                    flexShrink: 0,
-                }}
-            >
-                <Text variant="subheader-2">Сводка</Text>
-                <div className="repeto-finance-summary-period">
-                    <PillTabs size="s" value={period} onChange={setPeriod} options={periodOptions} ariaLabel="Период" />
-                </div>
+        <section
+            className="repeto-finance-summary-card repeto-finance-summary-card--discrete"
+            aria-label="Сводка за последний месяц"
+        >
+            <div className="repeto-finance-summary-card__grid repeto-finance-summary-card__grid--discrete">
+                {items.map((item) => (
+                    <article
+                        key={item.label}
+                        className="repeto-finance-summary-card__metric repeto-finance-summary-card__metric--discrete"
+                    >
+                        <div className="repeto-finance-summary-card__metric-label">
+                            {item.label}
+                        </div>
+                        <div className="repeto-finance-summary-card__metric-value">
+                            {item.value}
+                        </div>
+                    </article>
+                ))}
             </div>
 
-            {loading ? (
-                <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Text color="secondary">Загрузка...</Text>
-                </div>
-            ) : (
-                <div className="repeto-finance-summary-metrics" style={{ flex: 1 }}>
-                    {items.map((item) => (
-                        <Card
-                            key={item.label}
-                            view="outlined"
-                            className="repeto-finance-summary-metric"
-                            style={{
-                                padding: "10px 12px",
-                                minHeight: 92,
-                                display: "flex",
-                                flexDirection: "column",
-                                justifyContent: "space-between",
-                                background: "var(--g-color-base-float)",
-                            }}
-                        >
-                            <Text
-                                variant="body-2"
-                                className="repeto-finance-summary-metric-label"
-                                color="secondary"
-                                style={{ display: "block", marginBottom: 2, lineHeight: 1.25 }}
-                            >
-                                {item.label}
-                            </Text>
-                            <Text
-                                variant="header-1"
-                                className="repeto-finance-summary-metric-value"
-                                style={{
-                                    display: "block",
-                                    fontVariantNumeric: "tabular-nums",
-                                    whiteSpace: "nowrap",
-                                    lineHeight: 1,
-                                }}
-                            >
-                                {item.value}
-                            </Text>
-                        </Card>
-                    ))}
-                </div>
-            )}
-        </div>
+            <div className="repeto-finance-segments" aria-label="Сегменты сумм за месяц">
+                {segmentItems.map((segment) => (
+                    <article
+                        key={segment.key}
+                        className={`repeto-finance-segments__item repeto-finance-segments__item--${segment.tone}`}
+                        style={{ flex: `${getSegmentWeight(segment.amount)} 1 0` }}
+                    >
+                        <div className="repeto-finance-segments__meta">
+                            <span className="repeto-finance-segments__marker" aria-hidden="true" />
+                            <div className="repeto-finance-segments__meta-text">
+                                <div className="repeto-finance-segments__name">{segment.label}</div>
+                                <div className="repeto-finance-segments__sum">
+                                    {formatCurrencyMetric(segment.amount)}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="repeto-finance-segments__bar" aria-hidden="true" />
+                    </article>
+                ))}
+            </div>
+        </section>
     );
 };
 

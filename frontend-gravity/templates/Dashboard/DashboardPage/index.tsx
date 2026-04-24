@@ -3,13 +3,16 @@ import { useRouter } from "next/router";
 import GravityLayout from "@/components/GravityLayout";
 import LessonPanelV2 from "@/components/LessonPanelV2";
 import StatCards from "./StatCards";
+import TaskTiles from "./TaskTiles";
+import InsightBanner from "./InsightBanner";
 import TodaySchedule from "./TodaySchedule";
 import WeekSchedule from "./WeekSchedule";
 import IncomeChart from "./IncomeChart";
 import ConversionRate from "./ConversionRate";
 import ExpiringPackages from "./ExpiringPackages";
+import ProfitBreakdown from "./ProfitBreakdown";
 import DebtList from "./DebtList";
-import RecentPayments from "./RecentPayments";
+import WeekLoad from "./WeekLoad";
 import type { Lesson } from "@/types/schedule";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -187,6 +190,7 @@ const DashboardPage = () => {
 
     return (
         <GravityLayout title="Дашборд">
+            <div className="repeto-tochka-dash">
             {isAccessExpired && (
                 <section className="repeto-platform-access-alert">
                     <div className="repeto-platform-access-alert__content">
@@ -216,15 +220,20 @@ const DashboardPage = () => {
 
             {!isAccessExpired && (
                 <>
+                    <TaskTiles />
                     <StatCards />
+                    <InsightBanner />
                     <div className="repeto-dashboard-grid">
                         <div className="repeto-dashboard-grid__main">
-                            <IncomeChart />
                             <div className="repeto-two-col">
+                                <IncomeChart />
                                 <ConversionRate />
-                                <ExpiringPackages />
                             </div>
-                            <RecentPayments />
+                            <div className="repeto-two-col">
+                                <ExpiringPackages />
+                                <ProfitBreakdown />
+                            </div>
+                            <WeekLoad />
                         </div>
                         <div className="repeto-dashboard-grid__aside">
                             <TodaySchedule
@@ -246,6 +255,7 @@ const DashboardPage = () => {
                     />
                 </>
             )}
+            </div>
         </GravityLayout>
     );
 };

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowChevronLeft, ArrowChevronRight } from "@gravity-ui/icons";
+import { ArrowChevronLeft, ArrowChevronRight, ChevronRight } from "@gravity-ui/icons";
 import { Button, Card, Icon, Text, Loader } from "@gravity-ui/uikit";
 import type { IconData } from "@gravity-ui/uikit";
 import { useExpiringPackages } from "@/hooks/useDashboard";
@@ -79,9 +79,10 @@ const ExpiringPackages = () => {
                     )}
                     <Link
                         href="/packages"
-                        className="repeto-card-link"
+                        className="repeto-card-chevron"
+                        aria-label="Открыть пакеты"
                     >
-                        Открыть →
+                        <Icon data={ChevronRight as IconData} size={18} />
                     </Link>
                 </div>
             </div>

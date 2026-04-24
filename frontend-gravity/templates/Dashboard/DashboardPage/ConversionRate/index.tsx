@@ -1,121 +1,90 @@
-import { useState } from "react";
-import { Card, Text, Loader } from "@gravity-ui/uikit";
+import Link from "next/link";
+import { Card, Text, Loader, Icon } from "@gravity-ui/uikit";
+import { ChevronRight } from "@gravity-ui/icons";
+import type { IconData } from "@gravity-ui/uikit";
 import { useConversion } from "@/hooks/useDashboard";
-import PillTabs from "@/components/PillTabs";
 
-type ConversionPeriod = "month" | "quarter" | "year";
+const formatRub = (value: number) => `${value.toLocaleString("ru-RU")}\u00A0₽`;
 
-const periodOptions = [
-    { value: "month" as const, label: "Месяц" },
-    { value: "quarter" as const, label: "Квартал" },
-    { value: "year" as const, label: "Год" },
-];
+const lessonsWord = (n: number) => {
+    const mod10 = n % 10;
+    const mod100 = n % 100;
+    if (mod10 === 1 && mod100 !== 11) return "занятие";
+    if ([2, 3, 4].includes(mod10) && ![12, 13, 14].includes(mod100)) return "занятия";
+    return "занятий";
+};
 
 const ConversionRate = () => {
-    const [period, setPeriod] = useState<ConversionPeriod>("month");
-    const { data, loading } = useConversion(period);
+    const { data, loading } = useConversion("month");
 
     const pct = Math.min(100, Math.max(0, Math.round(data?.conversionPct ?? 0)));
     const earned = data?.earned ?? 0;
     const paid = data?.paid ?? 0;
-    const balance = paid - earned;
     const lessons = data?.completedLessons ?? 0;
     const payments = data?.paymentsCount ?? 0;
 
-    // Один цвет прогресс-бара вне зависимости от значения — светофор
-    // (зелёный/фиолетовый/розовый в зависимости от pct) создавал ощущение
-    // «меняющегося статуса» там, где цифра уже сама по себе всё рассказывает.
-    const barColor = "var(--g-color-text-primary)";
+    const barColor = pct >= 80
+        ? "var(--t-success, #3F9180)"
+        : pct >= 50
+            ? "#B39DF7"
+            : "#D84D4D";
 
     return (
-        <Card view="outlined" style={{ overflow: "hidden", background: "var(--g-color-base-float)" }}>
-            <div className="repeto-card-header repeto-conversion-card__header">
-                <Text variant="subheader-2">Конверсия в оплату</Text>
-                <PillTabs
-                    size="s"
-                    value={period}
-                    onChange={(value) => setPeriod(value)}
-                    options={periodOptions}
-                />
+        <Card view="outlined" className="repeto-conversion-card repeto-tochka-summary-card">
+            <div className="repeto-tochka-summary-card__header">
+                <div className="repeto-tochka-summary-card__titles">
+                    <Text className="repeto-tochka-summary-card__title">Конверсия в оплату</Text>
+                    <Text className="repeto-tochka-summary-card__subtitle">
+                        За месяц: {payments} из {lessons} {lessonsWord(lessons)} оплачено
+                    </Text>
+                </div>
+                <Link
+                    href="/payments"
+                    className="repeto-card-chevron"
+                    aria-label="Все оплаты"
+                >
+                    <Icon data={ChevronRight as IconData} size={18} />
+                </Link>
             </div>
-            <div className="repeto-card-body">
-                {loading ? (
-                    <div style={{ padding: "16px 0", textAlign: "center" }}>
-                        <Loader size="s" />
-                    </div>
-                ) : (
-                    <div className="repeto-conversion-card__content">
-                        {/* Hero percentage */}
-                        <div className="repeto-conversion-card__hero">
-                            <span className="repeto-conversion-card__pct repeto-dashboard-primary-value repeto-dashboard-primary-value--hero">
-                                {pct}%
-                            </span>
-                            {balance !== 0 && (
-                                <span
-                                    className="repeto-conversion-card__delta"
-                                    style={{
-                                        color: balance > 0
-                                            ? "var(--g-color-text-positive)"
-                                            : "var(--g-color-text-danger)",
-                                        background: "transparent",
-                                        padding: 0,
-                                    }}
-                                >
-                                    {balance > 0 ? "+" : "−"}{Math.abs(balance).toLocaleString("ru-RU")} ₽
-                                </span>
-                            )}
-                        </div>
 
-                        {/* Progress bar */}
-                        <div>
-                            <div
-                                style={{
-                                    height: 6,
-                                    borderRadius: 3,
-                                    background: "var(--g-color-base-generic)",
-                                    overflow: "hidden",
-                                }}
-                            >
-                                <div
-                                    style={{
-                                        width: `${pct}%`,
-                                        height: "100%",
-                                        borderRadius: 3,
-                                        background: barColor,
-                                        transition: "width 0.4s ease",
-                                    }}
-                                />
-                            </div>
-                            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
-                                <Text variant="caption-2" color="hint">0%</Text>
-                                <Text variant="caption-2" color="hint">100%</Text>
-                            </div>
-                        </div>
-
-                        {/* Stats rows */}
-                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                            <div className="repeto-conversion-card__stat-row">
-                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                    <span style={{ width: 8, height: 8, borderRadius: 2, background: "var(--g-color-text-primary)", flexShrink: 0 }} />
-                                    <Text variant="body-1" color="secondary">Проведено</Text>
-                                </div>
-                                <Text variant="body-1" className="repeto-conversion-card__stat-value repeto-dashboard-inline-value">
-                                    {lessons} зан. · {earned.toLocaleString("ru-RU")} ₽
-                                </Text>
-                            </div>
-                            <div className="repeto-conversion-card__stat-row">
-                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                    <span style={{ width: 8, height: 8, borderRadius: 2, background: "var(--g-color-base-brand-light, #EEE9FF)", border: "1px solid var(--g-color-line-generic)", flexShrink: 0 }} />
-                                    <Text variant="body-1" color="secondary">Оплачено</Text>
-                                </div>
-                                <Text variant="body-1" className="repeto-conversion-card__stat-value repeto-dashboard-inline-value">
-                                    {payments} плат. · {paid.toLocaleString("ru-RU")} ₽
-                                </Text>
-                            </div>
-                        </div>
+            {loading ? (
+                <div className="repeto-tochka-summary-card__loader">
+                    <Loader size="s" />
+                </div>
+            ) : (
+                <>
+                    <div className="repeto-tochka-summary-card__hero">
+                        <span className="repeto-tochka-summary-card__hero-value">
+                            {pct}%
+                        </span>
+                        <span className="repeto-tochka-summary-card__hero-hint">
+                            от проведённых
+                        </span>
                     </div>
-                )}
-            </div>
+
+                    <div className="repeto-tochka-summary-card__bar">
+                        <div
+                            className="repeto-tochka-summary-card__bar-fill"
+                            style={{ width: `${pct}%`, background: barColor }}
+                        />
+                    </div>
+
+                    <dl className="repeto-tochka-summary-card__list">
+                        <div className="repeto-tochka-summary-card__list-row">
+                            <dt>Проведено</dt>
+                            <dd>
+                                {formatRub(earned)}
+                            </dd>
+                        </div>
+                        <div className="repeto-tochka-summary-card__list-row">
+                            <dt>Оплачено</dt>
+                            <dd>
+                                {formatRub(paid)}
+                            </dd>
+                        </div>
+                    </dl>
+                </>
+            )}
         </Card>
     );
 };

@@ -24,8 +24,16 @@ const formatOptions = [
 type SubjectDraft = { name: string; price: string; duration: string };
 const DEFAULT_SUBJECT: SubjectDraft = { name: "", price: "", duration: "60" };
 
-type EducationEntry = { institution: string; program: string; years: string };
+type EducationEntry = { id: string; institution: string; program: string; years: string };
 type CertificateEntry = { id: string; title: string; fileUrl: string; uploadedAt: string };
+
+function createDraftEducationId() {
+    if (typeof globalThis !== "undefined" && globalThis.crypto?.randomUUID) {
+        return `edu-${globalThis.crypto.randomUUID()}`;
+    }
+
+    return `edu-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
 
 function isPdfUrl(value?: string | null): boolean {
     const normalized = String(value || "").split("?")[0].toLowerCase();
@@ -188,8 +196,6 @@ const Account = () => {
     const [showPublicPackages, setShowPublicPackages] = useState(true);
     const [education, setEducation] = useState<EducationEntry[]>([]);
     const [experience, setExperience] = useState("");
-    const [qualificationVerified, setQualificationVerified] = useState(false);
-    const [qualificationLabel, setQualificationLabel] = useState("");
     const [certificates, setCertificates] = useState<CertificateEntry[]>([]);
     const [certUploading, setCertUploading] = useState(false);
     const certInputRef = useRef<HTMLInputElement>(null);
@@ -210,11 +216,18 @@ const Account = () => {
         setFormat(settings?.format || "online");
         setShowPublicPackages(settings?.showPublicPackages !== false);
         setExperience(settings?.experience || "");
-        setQualificationVerified(settings?.qualificationVerified || false);
-        setQualificationLabel(settings?.qualificationLabel || "");
         const eduData = settings?.education as EducationEntry[] | null;
         if (eduData && Array.isArray(eduData) && eduData.length > 0) {
-            setEducation(eduData);
+            setEducation(
+                eduData.map((entry) => ({
+                    id: typeof entry?.id === "string" && entry.id.trim().length > 0
+                        ? entry.id
+                        : createDraftEducationId(),
+                    institution: entry?.institution || "",
+                    program: entry?.program || "",
+                    years: entry?.years || "",
+                }))
+            );
         } else {
             setEducation([]);
         }
@@ -339,8 +352,6 @@ const Account = () => {
                 showPublicPackages,
                 education: education.filter((e) => e.institution.trim()),
                 experience: experience.trim(),
-                qualificationVerified,
-                qualificationLabel: qualificationLabel.trim(),
             });
             await Promise.all([mutateSettings(), refreshUser()]);
             setSavedSubjectFlags(subjects.map((s) => Boolean(s.name.trim())));
@@ -352,6 +363,7 @@ const Account = () => {
     };
 
     const paymentRequisitesPreview = summarizePaymentRequisites(paymentRequisites);
+    const qualificationVerified = !!settings?.qualificationVerified;
 
     return (
         <div className="repeto-settings-account-stack" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -635,7 +647,7 @@ const Account = () => {
             <Card className="repeto-settings-section-card" view="outlined">
                 <div className="repeto-settings-card__header" style={{ padding: "16px 24px", borderBottom: "1px solid var(--g-color-line-generic)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <Text variant="subheader-2">Образование</Text>
-                    <Button view="outlined" size="s" onClick={() => setEducation((prev) => [...prev, { institution: "", program: "", years: "" }])}>
+                    <Button view="outlined" size="s" onClick={() => setEducation((prev) => [...prev, { id: createDraftEducationId(), institution: "", program: "", years: "" }])}>
                         <Icon data={Plus as IconData} size={14} />
                         Добавить
                     </Button>
@@ -648,7 +660,7 @@ const Account = () => {
                     ) : (
                         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                             {education.map((edu, i) => (
-                                <div key={i} className="repeto-settings-account-grid" style={{ position: "relative", paddingBottom: 8, borderBottom: i < education.length - 1 ? "1px solid var(--g-color-line-generic)" : "none" }}>
+                                <div key={edu.id} className="repeto-settings-account-grid" style={{ position: "relative", paddingBottom: 8, borderBottom: i < education.length - 1 ? "1px solid var(--g-color-line-generic)" : "none" }}>
                                     <FormField label="Учебное заведение" full>
                                         <TextInput value={edu.institution} onUpdate={(v) => { const u = [...education]; u[i] = { ...u[i], institution: v }; setEducation(u); }} placeholder="МГУ им. М.В. Ломоносова" size="l" />
                                     </FormField>
@@ -680,20 +692,24 @@ const Account = () => {
                         <FormField label="Опыт работы" full>
                             <TextArea value={experience} onUpdate={setExperience} placeholder="Опишите ваш опыт преподавания, достижения, стаж..." rows={3} size="l" />
                         </FormField>
-                        <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 8 }}>
-                            <div>
-                                <Text variant="body-1" style={{ fontWeight: 600, display: "block" }}>Подтверждена квалификация</Text>
-                                <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 2 }}>
-                                    Отображает специальный значок на публичной странице
-                                </Text>
-                            </div>
-                            <Switch checked={qualificationVerified} onUpdate={setQualificationVerified} size="m" />
+                        <div style={{ gridColumn: "1 / -1", paddingTop: 8 }}>
+                            <Text variant="body-1" style={{ fontWeight: 600, display: "block" }}>Верификация профиля</Text>
+                            <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 2 }}>
+                                Значок «Верифицирован» выдается модератором после проверки документов.
+                            </Text>
+                            <Text
+                                variant="body-2"
+                                style={{
+                                    display: "block",
+                                    marginTop: 8,
+                                    color: qualificationVerified
+                                        ? "var(--g-color-text-positive)"
+                                        : "var(--g-color-text-secondary)",
+                                }}
+                            >
+                                Статус: {qualificationVerified ? "Верифицирован" : "Ожидает проверки модератором"}
+                            </Text>
                         </div>
-                        {qualificationVerified && (
-                            <FormField label="Подпись значка" full>
-                                <TextInput value={qualificationLabel} onUpdate={setQualificationLabel} placeholder="Подтвердил квалификацию" size="l" />
-                            </FormField>
-                        )}
                     </div>
                 </div>
             </Card>

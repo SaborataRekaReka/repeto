@@ -2,7 +2,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Card, Text, Button, Icon, Loader } from "@gravity-ui/uikit";
 import type { IconData } from "@gravity-ui/uikit";
-import { Envelope } from "@gravity-ui/icons";
+import { Envelope, ChevronRight } from "@gravity-ui/icons";
 import RemindModal from "@/components/RemindModal";
 import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 import StudentAvatar from "@/components/StudentAvatar";
@@ -35,9 +35,10 @@ const DebtList = () => {
                     <Text variant="subheader-2">Задолженности</Text>
                     <Link
                         href="/payments"
-                        className="repeto-card-link"
+                        className="repeto-card-chevron"
+                        aria-label="Все задолженности"
                     >
-                        Все →
+                        <Icon data={ChevronRight as IconData} size={18} />
                     </Link>
                 </div>
                 {loading ? (
@@ -59,12 +60,8 @@ const DebtList = () => {
                                 style={{
                                     display: "flex",
                                     alignItems: "center",
-                                    gap: 12,
                                     width: "100%",
-                                    padding: "10px 16px",
                                     textDecoration: "none",
-                                    borderTop: "1px solid var(--g-color-line-generic)",
-                                    transition: "background 0.15s",
                                 }}
                                 className="repeto-week-lesson-row"
                             >

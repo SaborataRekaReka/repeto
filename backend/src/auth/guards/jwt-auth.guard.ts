@@ -7,6 +7,7 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from '../../common/decorators';
+import { isAdminEmail } from '../../common/utils/admin-access';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
@@ -38,9 +39,18 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
     const request = context.switchToHttp().getRequest<{ path?: string; url?: string }>();
     const path = (request.path || request.url || '').toLowerCase();
+    const authUser = user as {
+      platformAccessState?: string;
+      role?: string;
+      email?: string;
+    };
     const shouldBypassPlatformAccessCheck =
-      path.startsWith('/api/auth') || path.startsWith('/auth');
-    const authUser = user as { platformAccessState?: string };
+      path.startsWith('/api/auth') ||
+      path.startsWith('/auth') ||
+      path.startsWith('/api/admin') ||
+      path.startsWith('/admin') ||
+      authUser.role === 'admin' ||
+      isAdminEmail(authUser.email);
 
     if (!shouldBypassPlatformAccessCheck && authUser.platformAccessState === 'expired') {
       throw new ForbiddenException('Доступ к платформе закрыт. Нажмите «Продлить».');

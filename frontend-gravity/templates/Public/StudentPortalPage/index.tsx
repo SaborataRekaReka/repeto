@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Head from "next/head";
+import { useRouter } from "next/router";
 import {
     Text,
     Avatar,
@@ -69,6 +70,7 @@ const StudentPortalPage = ({
     onLogout,
     error,
 }: Props) => {
+    const router = useRouter();
     const [tab, setTab] = useState("lessons");
     const [tutorSwitcherExpanded, setTutorSwitcherExpanded] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
@@ -85,6 +87,7 @@ const StudentPortalPage = ({
     const [settingsAvatarSrc, setSettingsAvatarSrc] = useState<string | null>(
         data.studentAvatarUrl ? resolveApiAssetUrl(data.studentAvatarUrl) || null : null
     );
+    const settingsQueryHandledRef = useRef(false);
     const avatarInputRef = useRef<HTMLInputElement>(null);
     const avatarUploadRef = useRef<Promise<unknown> | null>(null);
     const { theme, setTheme } = useThemeMode();
@@ -110,6 +113,51 @@ const StudentPortalPage = ({
     const closeSettings = useCallback(() => {
         setSettingsOpen(false);
     }, []);
+
+    useEffect(() => {
+        if (!router.isReady) return;
+
+        const settingsParam = Array.isArray(router.query.settings)
+            ? router.query.settings[0]
+            : router.query.settings;
+        const tabParam = Array.isArray(router.query.tab)
+            ? router.query.tab[0]
+            : router.query.tab;
+
+        const shouldOpenFromQuery =
+            settingsParam === "1" ||
+            settingsParam === "true" ||
+            settingsParam === "yes" ||
+            tabParam === "settings" ||
+            tabParam === "profile";
+
+        if (!shouldOpenFromQuery) {
+            settingsQueryHandledRef.current = false;
+            return;
+        }
+
+        if (settingsQueryHandledRef.current) return;
+        settingsQueryHandledRef.current = true;
+
+        void openSettings();
+
+        const nextQuery: Record<string, string | string[] | undefined> = {
+            ...router.query,
+        };
+        delete nextQuery.settings;
+        if (tabParam === "settings" || tabParam === "profile") {
+            delete nextQuery.tab;
+        }
+
+        void router.replace(
+            {
+                pathname: router.pathname,
+                query: nextQuery,
+            },
+            undefined,
+            { shallow: true },
+        );
+    }, [openSettings, router]);
 
     const handleAvatarChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];

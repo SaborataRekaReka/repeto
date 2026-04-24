@@ -21,6 +21,8 @@ import PhoneInput from "@/components/PhoneInput";
 import AppField from "@/components/AppField";
 import { codedErrorMessage } from "@/lib/errorCodes";
 import { verifyBookingEmail } from "@/lib/studentAuth";
+import { PublicPageFooter, PublicPageHeader } from "../PublicPageChrome";
+import StudentHeaderRight from "../StudentHeaderRight";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
 
@@ -635,7 +637,11 @@ const BookingPage = ({ slug }: { slug: string }) => {
             <Head>
                 <title>{`Запись — ${t.name || slug} — Repeto`}</title>
             </Head>
-            <div className="repeto-portal-page repeto-booking-page">
+            <div className="repeto-portal-page repeto-tp-page repeto-booking-page">
+                <PublicPageHeader
+                    containerClassName="repeto-tp-container"
+                    rightContent={<StudentHeaderRight />}
+                />
                 {loading && (
                     <div className="repeto-tp-loading">
                         <Text variant="body-2" color="secondary">Загрузка...</Text>
@@ -665,29 +671,27 @@ const BookingPage = ({ slug }: { slug: string }) => {
                 )}
                 {!loading && !loadError && profile && (
                 <>
-                {/* Header bar */}
-                <div className="repeto-portal-header">
-                    <div className="repeto-portal-container repeto-portal-header__inner">
-                        {step > 0 && step <= 3 ? (
-                            <Button view="flat" size="m" onClick={goBack} className="repeto-bk-back-btn">
+                {/* Sub-header: back + tutor identity (personal content inside the shared shell) */}
+                <div className="repeto-tp-container repeto-bk-subheader">
+                    {step > 0 && step <= 3 ? (
+                        <Button view="flat" size="m" onClick={goBack} className="repeto-bk-back-btn">
+                            <Icon data={ArrowLeft as IconData} size={18} />
+                        </Button>
+                    ) : step === 0 ? (
+                        <Link href={`/t/${slug}`} style={{ textDecoration: "none" }}>
+                            <Button view="flat" size="m" className="repeto-bk-back-btn">
                                 <Icon data={ArrowLeft as IconData} size={18} />
                             </Button>
-                        ) : step === 0 ? (
-                            <Link href={`/t/${slug}`} style={{ textDecoration: "none" }}>
-                                <Button view="flat" size="m" className="repeto-bk-back-btn">
-                                    <Icon data={ArrowLeft as IconData} size={18} />
-                                </Button>
-                            </Link>
-                        ) : null}
-                        <div className="repeto-bk-header-info">
-                            <Text variant="body-2" className="repeto-bk-header-info__name">{t.name}</Text>
-                            {t.tagline && <Text variant="body-1" color="secondary">{t.tagline}</Text>}
-                        </div>
+                        </Link>
+                    ) : null}
+                    <div className="repeto-bk-header-info">
+                        <Text variant="body-2" className="repeto-bk-header-info__name">{t.name}</Text>
+                        {t.tagline && <Text variant="body-1" color="secondary">{t.tagline}</Text>}
                     </div>
                 </div>
 
                 {/* Content */}
-                <div className="repeto-portal-container repeto-portal-main">
+                <div className="repeto-tp-container repeto-portal-main">
                     {/* ── Step 0: Select subject ── */}
                     {step === 0 && (
                         <div className="repeto-bk-step">
@@ -1056,15 +1060,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
                 </>
                 )}
 
-                {/* Footer */}
-                <div className="repeto-portal-footer" style={{ padding: 24 }}>
-                    <Text variant="caption-2" color="secondary">
-                        Работает на{" "}
-                        <Link href="/" style={{ fontWeight: 600, textDecoration: "none", color: "inherit" }}>
-                            Repeto
-                        </Link>
-                    </Text>
-                </div>
+                <PublicPageFooter />
             </div>
         </>
     );

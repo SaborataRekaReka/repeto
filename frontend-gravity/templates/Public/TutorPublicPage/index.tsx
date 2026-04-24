@@ -8,14 +8,13 @@ import {
     Pencil,
     GraduationCap,
     FileCheck,
-    Person,
-    Gear,
+    ShieldCheck,
 } from "@gravity-ui/icons";
 import AppDialog from "@/components/AppDialog";
 import CancelPolicyBlock from "@/components/CancelPolicyBlock";
 import StudentAvatar from "@/components/StudentAvatar";
-import StudentSignIn from "@/templates/RegistrationPage/StudentSignIn";
 import { PublicPageFooter, PublicPageHeader } from "../PublicPageChrome";
+import StudentHeaderRight from "../StudentHeaderRight";
 import PublicTutorWidget, {
     type PublicTutorWidgetContactItem,
 } from "@/components/PublicTutorWidget";
@@ -24,7 +23,6 @@ import {
     formatCancelPolicyHoursWord,
 } from "@/lib/cancelPolicy";
 import { resolveApiAssetUrl } from "@/lib/api";
-import { getStudentAccessToken, studentApi } from "@/lib/studentAuth";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
 
@@ -46,9 +44,12 @@ type PublicPackage = {
 };
 
 type EducationEntry = {
+    id: string;
     institution: string;
     program?: string;
     years?: string;
+    verified?: boolean;
+    verificationLabel?: string | null;
 };
 
 type CertificateEntry = {
@@ -56,6 +57,15 @@ type CertificateEntry = {
     title: string;
     fileUrl: string;
     uploadedAt: string;
+    verified?: boolean;
+    verificationLabel?: string | null;
+};
+
+type ExperienceLineEntry = {
+    id: string;
+    text: string;
+    verified?: boolean;
+    verificationLabel?: string | null;
 };
 
 type TutorProfile = {
@@ -89,6 +99,7 @@ type TutorProfile = {
     publicPackages?: PublicPackage[];
     education?: EducationEntry[] | null;
     experience?: string | null;
+    experienceLines?: ExperienceLineEntry[] | null;
     qualificationVerified?: boolean;
     qualificationLabel?: string | null;
     certificates?: CertificateEntry[] | null;
@@ -182,6 +193,20 @@ function formatCertificateDate(raw?: string): string {
     });
 }
 
+const DEFAULT_VERIFICATION_LABEL = "Верифицирован";
+
+function VerificationIcon({ label, className }: { label: string; className?: string }) {
+    const classes = className
+        ? `repeto-tp-verified-icon ${className}`
+        : "repeto-tp-verified-icon";
+
+    return (
+        <span className={classes} title={label} aria-label={label}>
+            <Icon data={ShieldCheck as IconData} size={14} />
+        </span>
+    );
+}
+
 type SidebarSection = { id: string; label: string };
 
 const TutorPublicPage = () => {
@@ -195,39 +220,6 @@ const TutorPublicPage = () => {
     const [certPreviewIndex, setCertPreviewIndex] = useState<number | null>(null);
     const [policyPopupOpen, setPolicyPopupOpen] = useState(false);
     const [activeSection, setActiveSection] = useState<string>("about");
-    const [studentSignInOpen, setStudentSignInOpen] = useState(false);
-    const [studentProfileName, setStudentProfileName] = useState<string | null>(null);
-
-    useEffect(() => {
-        let canceled = false;
-
-        const loadStudentPreview = async () => {
-            if (!getStudentAccessToken()) {
-                if (!canceled) {
-                    setStudentProfileName(null);
-                }
-                return;
-            }
-
-            try {
-                const setup = await studentApi<{ name?: string | null }>("/student-portal/setup");
-                if (!canceled) {
-                    const normalizedName = String(setup?.name || "").trim();
-                    setStudentProfileName(normalizedName || "Ученик");
-                }
-            } catch {
-                if (!canceled) {
-                    setStudentProfileName(null);
-                }
-            }
-        };
-
-        void loadStudentPreview();
-
-        return () => {
-            canceled = true;
-        };
-    }, []);
 
     useEffect(() => {
         if (!slug) return;
@@ -330,19 +322,31 @@ const TutorPublicPage = () => {
     const canBook = t.hasWorkingDays !== false;
     const educationList = Array.isArray(t.education) ? t.education.filter((e) => e.institution?.trim()) : [];
     const certsList = Array.isArray(t.certificates) ? t.certificates : [];
+    const experienceList = Array.isArray(t.experienceLines) && t.experienceLines.length > 0
+        ? t.experienceLines.filter((item) => item.text?.trim())
+        : String(t.experience || "")
+            .split(/\r?\n/)
+            .map((line, index) => ({
+                id: `exp-fallback-${index}`,
+                text: line.trim(),
+                verified: false,
+            }))
+            .filter((item) => item.text.length > 0);
     const certGalleryItems = certsList.map((cert) => {
         const resolvedUrl = resolveApiAssetUrl(cert.fileUrl) || cert.fileUrl;
+        const verified = !!cert.verified;
+
         return {
             ...cert,
             fileUrl: resolvedUrl,
+            verified,
             isPdf: isPdfUrl(resolvedUrl),
             uploadedLabel: formatCertificateDate(cert.uploadedAt),
         };
     });
     const activeCertificate =
         certPreviewIndex !== null ? certGalleryItems[certPreviewIndex] || null : null;
-    const hasExperience = !!t.experience?.trim();
-    const hasQualification = !!t.qualificationVerified;
+    const hasExperience = experienceList.length > 0;
 
     const normalizedPhone = (t.contacts.phone || "").replace(/[^+\d]/g, "");
     const freeHours = t.cancelPolicy?.freeHours ?? 24;
@@ -474,32 +478,7 @@ const TutorPublicPage = () => {
             <div className="repeto-portal-page repeto-tp-page">
                 <PublicPageHeader
                     containerClassName="repeto-tp-container"
-                    rightContent={
-                        studentProfileName ? (
-                            <>
-                                <Text variant="body-1" style={{ fontWeight: 500 }}>
-                                    {studentProfileName}
-                                </Text>
-                                <Button
-                                    view="flat"
-                                    size="s"
-                                    onClick={() => void router.push("/student")}
-                                    aria-label="Кабинет ученика"
-                                >
-                                    <Icon data={Gear as IconData} size={16} />
-                                </Button>
-                            </>
-                        ) : (
-                            <Button
-                                view="flat"
-                                size="s"
-                                onClick={() => setStudentSignInOpen(true)}
-                                aria-label="Вход ученика"
-                            >
-                                <Icon data={Person as IconData} size={16} />
-                            </Button>
-                        )
-                    }
+                    rightContent={<StudentHeaderRight />}
                 />
 
                 <div className="repeto-tp-container repeto-portal-main">
@@ -541,7 +520,6 @@ const TutorPublicPage = () => {
                                         ? t.subjects.map(getSubjectName).join(", ")
                                         : undefined
                                 }
-                                hasQualification={hasQualification}
                                 rating={t.rating}
                                 reviewsCount={t.reviewsCount}
                                 onOpenReviews={() => setReviewsOpen(true)}
@@ -577,18 +555,27 @@ const TutorPublicPage = () => {
                             </Text>
                             <div className="repeto-tp-section__body">
                                 <div className="repeto-tp-edu-list">
-                                    {educationList.map((edu, i) => (
-                                        <div key={i} className="repeto-tp-edu-item">
-                                            <span className="repeto-tp-edu-item__icon">
-                                                <Icon data={GraduationCap as IconData} size={16} />
-                                            </span>
-                                            <div className="repeto-tp-edu-item__text">
-                                                <Text variant="body-2" style={{ fontWeight: 600 }}>{edu.institution}</Text>
-                                                {edu.program && <Text variant="body-1" color="secondary">{edu.program}</Text>}
-                                                {edu.years && <Text variant="caption-2" color="secondary">{edu.years}</Text>}
+                                    {educationList.map((edu, i) => {
+                                        const educationVerified = !!edu.verified;
+
+                                        return (
+                                            <div key={edu.id || i} className="repeto-tp-edu-item">
+                                                <span className="repeto-tp-edu-item__icon">
+                                                    <Icon data={GraduationCap as IconData} size={16} />
+                                                </span>
+                                                <div className="repeto-tp-edu-item__text">
+                                                    <div className="repeto-tp-edu-item__head">
+                                                        <Text variant="body-2" style={{ fontWeight: 600 }}>{edu.institution}</Text>
+                                                        {educationVerified && (
+                                                            <VerificationIcon label={DEFAULT_VERIFICATION_LABEL} />
+                                                        )}
+                                                    </div>
+                                                    {edu.program && <Text variant="body-1" color="secondary">{edu.program}</Text>}
+                                                    {edu.years && <Text variant="caption-2" color="secondary">{edu.years}</Text>}
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             </div>
                         </div>
@@ -600,7 +587,16 @@ const TutorPublicPage = () => {
                                 Опыт
                             </Text>
                             <div className="repeto-tp-section__body">
-                                <Text variant="body-2" style={{ lineHeight: 1.7, whiteSpace: "pre-line" }}>{t.experience}</Text>
+                                <div className="repeto-tp-experience-list">
+                                    {experienceList.map((line) => (
+                                        <div key={line.id} className="repeto-tp-experience-item">
+                                            <Text variant="body-2" style={{ lineHeight: 1.7 }}>{line.text}</Text>
+                                            {line.verified && (
+                                                <VerificationIcon label={DEFAULT_VERIFICATION_LABEL} />
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     )}
@@ -632,6 +628,12 @@ const TutorPublicPage = () => {
                                                 </div>
                                             ) : (
                                                 <img src={cert.fileUrl} alt={cert.title} className="repeto-tp-cert-thumb__img" />
+                                            )}
+                                            {cert.verified && (
+                                                <VerificationIcon
+                                                    label={DEFAULT_VERIFICATION_LABEL}
+                                                    className="repeto-tp-cert-thumb__verified"
+                                                />
                                             )}
                                         </button>
                                     ))}
@@ -883,16 +885,6 @@ const TutorPublicPage = () => {
                         />
                     </div>
                 </div>
-            </AppDialog>
-
-            <AppDialog
-                open={studentSignInOpen}
-                onClose={() => setStudentSignInOpen(false)}
-                size="s"
-                caption={undefined}
-                footer={undefined}
-            >
-                <StudentSignIn onBack={() => setStudentSignInOpen(false)} />
             </AppDialog>
         </>
     );
