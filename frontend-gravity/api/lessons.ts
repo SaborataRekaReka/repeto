@@ -56,8 +56,9 @@ function extractLessonReview(raw: RawLesson): { rating: number; feedback?: strin
 
 function extractLessonNote(raw: RawLesson): string | undefined {
   if (typeof raw.notes === 'string') {
-    if (isSystemLessonNoteContent(raw.notes)) return undefined;
-    const normalized = raw.notes.trim();
+    const notes = raw.notes;
+    if (isSystemLessonNoteContent(notes)) return undefined;
+    const normalized = notes.trim();
     return normalized.length > 0 ? normalized : undefined;
   }
 
