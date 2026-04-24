@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -19,8 +19,15 @@ import {
 import type { IconData } from "@gravity-ui/uikit";
 import PhoneInput from "@/components/PhoneInput";
 import AppField from "@/components/AppField";
+import AppDialog from "@/components/AppDialog";
 import { codedErrorMessage } from "@/lib/errorCodes";
-import { verifyBookingEmail } from "@/lib/studentAuth";
+import {
+    verifyBookingEmail,
+    getStudentAccessToken,
+    studentApi,
+    type StudentAuthResponse,
+} from "@/lib/studentAuth";
+import StudentSignIn from "@/templates/RegistrationPage/StudentSignIn";
 import { PublicPageFooter, PublicPageHeader } from "../PublicPageChrome";
 import StudentHeaderRight from "../StudentHeaderRight";
 
@@ -48,13 +55,6 @@ type TutorProfile = {
     tagline?: string;
 };
 
-type BookingPrefill = {
-    name: string;
-    phone: string;
-    email?: string;
-    updatedAt: string;
-};
-
 type BookingCreateResponse = {
     id?: string;
     otpSent?: boolean;
@@ -75,9 +75,10 @@ type ContactStatusResponse = {
 
 type ReminderMethod = "telegram" | "max" | "email" | "push";
 
-type BookingPrefillStore = {
-    byTutor: Record<string, BookingPrefill>;
-    byPhone: Record<string, BookingPrefill>;
+type StudentSetupData = {
+    name?: string | null;
+    email?: string | null;
+    phone?: string | null;
 };
 
 const DAYS_RU = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
@@ -119,8 +120,6 @@ const WEEKDAYS_FULL = [
     "суббота",
 ];
 
-const BOOKING_PREFILL_STORAGE_KEY = "repeto.booking-prefill.v1";
-
 /* inline style constants removed — now using CSS classes */
 
 const REMINDER_METHODS: Array<{ id: ReminderMethod; label: string }> = [
@@ -136,36 +135,28 @@ const REMINDER_TIME_OPTIONS = [
     { minutes: 1440, label: "За 24 часа" },
 ];
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 function normalizePhone(value: string): string {
     return value.replace(/[^\d]/g, "");
 }
 
-function readPrefillStore(): BookingPrefillStore {
-    if (typeof window === "undefined") {
-        return { byTutor: {}, byPhone: {} };
-    }
-
-    try {
-        const raw = localStorage.getItem(BOOKING_PREFILL_STORAGE_KEY);
-        if (!raw) return { byTutor: {}, byPhone: {} };
-
-        const parsed = JSON.parse(raw) as Partial<BookingPrefillStore>;
-        return {
-            byTutor: parsed.byTutor && typeof parsed.byTutor === "object" ? parsed.byTutor : {},
-            byPhone: parsed.byPhone && typeof parsed.byPhone === "object" ? parsed.byPhone : {},
-        };
-    } catch {
-        return { byTutor: {}, byPhone: {} };
-    }
+function validateBookingName(value: string): string | undefined {
+    if (!value.trim()) return "Укажите имя";
+    return undefined;
 }
 
-function savePrefillStore(store: BookingPrefillStore) {
-    if (typeof window === "undefined") return;
-    try {
-        localStorage.setItem(BOOKING_PREFILL_STORAGE_KEY, JSON.stringify(store));
-    } catch {
-        // Private browsing or quota exceeded
-    }
+function validateBookingPhone(value: string): string | undefined {
+    if (!value.trim()) return "Укажите телефон";
+    if (normalizePhone(value).length < 10) return "Введите корректный телефон";
+    return undefined;
+}
+
+function validateBookingEmail(value: string): string | undefined {
+    const trimmed = value.trim();
+    if (!trimmed) return "Укажите email";
+    if (!EMAIL_RE.test(trimmed)) return "Введите корректный email";
+    return undefined;
 }
 
 const BookingPage = ({ slug }: { slug: string }) => {
@@ -274,14 +265,28 @@ const BookingPage = ({ slug }: { slug: string }) => {
     const [email, setEmail] = useState("");
     const [comment, setComment] = useState("");
     const [submitError, setSubmitError] = useState<string | null>(null);
+    const [touchedFields, setTouchedFields] = useState({
+        name: false,
+        phone: false,
+        email: false,
+    });
     const [consent, setConsent] = useState(false);
     const [autofillHint, setAutofillHint] = useState<string | null>(null);
+    const [signInOpen, setSignInOpen] = useState(false);
+    const [isStudentAuthorized, setIsStudentAuthorized] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [verifying, setVerifying] = useState(false);
     const [bookingId, setBookingId] = useState<string | null>(null);
     const [otpCode, setOtpCode] = useState("");
     const [otpError, setOtpError] = useState<string | null>(null);
     const router = useRouter();
+
+    const rawNameError = useMemo(() => validateBookingName(name), [name]);
+    const rawPhoneError = useMemo(() => validateBookingPhone(phone), [phone]);
+    const rawEmailError = useMemo(() => validateBookingEmail(email), [email]);
+    const nameError = touchedFields.name ? rawNameError : undefined;
+    const phoneError = touchedFields.phone ? rawPhoneError : undefined;
+    const emailError = touchedFields.email ? rawEmailError : undefined;
 
     // Messenger deep-link state
     const [linkCode] = useState(() => `book_${crypto.randomUUID()}`);
@@ -292,10 +297,31 @@ const BookingPage = ({ slug }: { slug: string }) => {
     const [maxLinked, setMaxLinked] = useState(false);
     const [selectedReminderMethods, setSelectedReminderMethods] = useState<ReminderMethod[]>([]);
     const [reminderMinutesBefore, setReminderMinutesBefore] = useState(180);
+    const sessionAutofillAttemptedRef = useRef(false);
     const deepLinkOpenedRef = useRef<{ telegram: boolean; max: boolean }>({
         telegram: false,
         max: false,
     });
+
+    const applyStudentSessionAutofill = useCallback(async () => {
+        if (!getStudentAccessToken()) {
+            setIsStudentAuthorized(false);
+            return false;
+        }
+
+        try {
+            const setup = await studentApi<StudentSetupData>("/student-portal/setup");
+            setIsStudentAuthorized(true);
+            setName((prev) => prev || String(setup?.name || "").trim());
+            setEmail((prev) => prev || String(setup?.email || "").trim());
+            setPhone((prev) => prev || String(setup?.phone || "").trim());
+            setAutofillHint("Вы авторизованы, данные подставлены автоматически");
+            return true;
+        } catch {
+            setIsStudentAuthorized(false);
+            return false;
+        }
+    }, []);
 
     // Poll link status every 3s while on step 2
     useEffect(() => {
@@ -318,15 +344,21 @@ const BookingPage = ({ slug }: { slug: string }) => {
     }, [step, linkCode, telegramLinked, maxLinked]);
 
     useEffect(() => {
-        const store = readPrefillStore();
-        const byTutor = store.byTutor[slug];
-        if (!byTutor) return;
-
-        setName((prev) => prev || byTutor.name || "");
-        setPhone((prev) => prev || byTutor.phone || "");
-        setEmail((prev) => prev || byTutor.email || "");
-        setAutofillHint("Мы подставили ваши данные из прошлой записи");
+        sessionAutofillAttemptedRef.current = false;
+        setAutofillHint(null);
+        setIsStudentAuthorized(Boolean(getStudentAccessToken()));
     }, [slug]);
+
+    useEffect(() => {
+        if (step !== 2 || sessionAutofillAttemptedRef.current) return;
+        if (!getStudentAccessToken()) {
+            setIsStudentAuthorized(false);
+            return;
+        }
+
+        sessionAutofillAttemptedRef.current = true;
+        void applyStudentSessionAutofill();
+    }, [step, applyStudentSessionAutofill]);
 
     useEffect(() => {
         const normalizedPhone = normalizePhone(phone);
@@ -365,18 +397,19 @@ const BookingPage = ({ slug }: { slug: string }) => {
         return () => clearTimeout(timeout);
     }, [phone, email, slug]);
 
-    useEffect(() => {
-        const normalized = normalizePhone(phone);
-        if (normalized.length < 10) return;
+    const handleStudentSignedIn = useCallback(
+        async (result: StudentAuthResponse) => {
+            if (result.needsSetup) {
+                await router.push("/student/setup");
+                return;
+            }
 
-        const store = readPrefillStore();
-        const byPhone = store.byPhone[normalized];
-        if (!byPhone) return;
-
-        setName((prev) => prev || byPhone.name || "");
-        setEmail((prev) => prev || byPhone.email || "");
-        setAutofillHint("Нашли ваш прошлый профиль, данные подставлены");
-    }, [phone]);
+            setSignInOpen(false);
+            sessionAutofillAttemptedRef.current = false;
+            await applyStudentSessionAutofill();
+        },
+        [applyStudentSessionAutofill, router]
+    );
 
     // Dates that have at least one available slot
     const availableDates = useMemo(() => {
@@ -457,6 +490,14 @@ const BookingPage = ({ slug }: { slug: string }) => {
         }
     };
 
+    const touchField = (field: "name" | "phone" | "email") => {
+        setTouchedFields((prev) => (prev[field] ? prev : { ...prev, [field]: true }));
+    };
+
+    const touchAllFields = () => {
+        setTouchedFields({ name: true, phone: true, email: true });
+    };
+
     const openMessengerDeepLink = (method: "telegram" | "max"): boolean => {
         if (typeof window === "undefined") return false;
 
@@ -504,14 +545,15 @@ const BookingPage = ({ slug }: { slug: string }) => {
         if (!selectedDate || !selectedTime || (!selectedSubject && !selectedPackage)) return;
         setSubmitError(null);
 
+        touchAllFields();
+
+        if (rawNameError || rawPhoneError || rawEmailError) {
+            return;
+        }
+
         const trimmedName = name.trim();
         const trimmedPhone = phone.trim();
         const trimmedEmail = email.trim();
-
-        if (!trimmedEmail.includes("@")) {
-            setSubmitError("Укажите email — на него придёт код для подтверждения.");
-            return;
-        }
 
         const bookingSubject = selectedPackage?.subject || selectedSubject?.name || "";
 
@@ -552,20 +594,6 @@ const BookingPage = ({ slug }: { slug: string }) => {
             const bookingPayload =
                 (await res.json().catch(() => null)) as BookingCreateResponse | null;
             if (bookingPayload?.id) setBookingId(bookingPayload.id);
-
-            const normalizedPhone = normalizePhone(trimmedPhone);
-            if (trimmedName && normalizedPhone) {
-                const store = readPrefillStore();
-                const payload: BookingPrefill = {
-                    name: trimmedName,
-                    phone: trimmedPhone,
-                    email: trimmedEmail || undefined,
-                    updatedAt: new Date().toISOString(),
-                };
-                store.byTutor[slug] = payload;
-                store.byPhone[normalizedPhone] = payload;
-                savePrefillStore(store);
-            }
 
             setOtpCode("");
             setOtpError(null);
@@ -631,6 +659,16 @@ const BookingPage = ({ slug }: { slug: string }) => {
         selectedReminderMethods.includes("max") && !maxLinked;
     const needsEmailAddress =
         selectedReminderMethods.includes("email") && !email.trim();
+    const reminderError =
+        needsTelegramConnect || needsMaxConnect || needsEmailAddress
+            ? [
+                  needsTelegramConnect ? "Подключите Telegram для выбранного канала." : null,
+                  needsMaxConnect ? "Подключите Макс для выбранного канала." : null,
+                  needsEmailAddress ? "Укажите email для уведомлений по почте." : null,
+              ]
+                  .filter(Boolean)
+                  .join(" ")
+            : null;
 
     return (
         <>
@@ -894,23 +932,58 @@ const BookingPage = ({ slug }: { slug: string }) => {
                             <Text variant="header-2" as="div" className="repeto-portal-plain-section-title">
                                 Ваши данные
                             </Text>
-                            {submitError && (
-                                <div style={{ marginBottom: 16 }}>
-                                    <Alert theme="danger" title="Не удалось отправить заявку" message={submitError} />
+                            {!isStudentAuthorized && (
+                                <div className="repeto-bk-autofill-hint repeto-bk-auth-hint">
+                                    <Text variant="body-2" as="div">
+                                        Уже есть аккаунт ученика? Войдите, чтобы подставить данные автоматически.
+                                    </Text>
+                                    <Button
+                                        size="m"
+                                        view="flat"
+                                        onClick={() => setSignInOpen(true)}
+                                    >
+                                        Войти
+                                    </Button>
                                 </div>
                             )}
                             {autofillHint && (
                                 <div className="repeto-bk-autofill-hint">{autofillHint}</div>
                             )}
                             <div className="repeto-bk-form">
-                                <AppField label="Имя" required className="repeto-bk-app-field">
-                                    <TextInput size="l" value={name} onUpdate={setName} placeholder="Иван Иванов" />
+                                <AppField label="Имя" required error={nameError} className="repeto-bk-app-field">
+                                    <TextInput
+                                        size="l"
+                                        value={name}
+                                        onUpdate={(value) => {
+                                            touchField("name");
+                                            setName(value);
+                                            setSubmitError(null);
+                                        }}
+                                        placeholder="Иван Иванов"
+                                    />
                                 </AppField>
-                                <AppField label="Телефон" required className="repeto-bk-app-field">
-                                    <PhoneInput value={phone} onUpdate={setPhone} />
+                                <AppField label="Телефон" required error={phoneError} className="repeto-bk-app-field">
+                                    <PhoneInput
+                                        value={phone}
+                                        onUpdate={(value) => {
+                                            touchField("phone");
+                                            setPhone(value);
+                                            setSubmitError(null);
+                                        }}
+                                    />
                                 </AppField>
-                                <AppField label="E-mail" required className="repeto-bk-app-field">
-                                    <TextInput size="l" type="email" value={email} onUpdate={setEmail} placeholder="email@example.com" />
+                                <AppField label="E-mail" required error={emailError} className="repeto-bk-app-field">
+                                    <TextInput
+                                        size="l"
+                                        type="email"
+                                        value={email}
+                                        onUpdate={(value) => {
+                                            touchField("email");
+                                            setEmail(value);
+                                            setSubmitError(null);
+                                        }}
+                                        placeholder="email@example.com"
+                                    />
                                 </AppField>
                                 <AppField label="Комментарий" className="repeto-bk-app-field repeto-bk-app-field--last">
                                     <TextArea size="l" rows={4} value={comment} onUpdate={setComment} placeholder="Комментарий к записи" />
@@ -954,13 +1027,6 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                         ))}
                                     </div>
                                 )}
-                                {(needsTelegramConnect || needsMaxConnect || needsEmailAddress) && (
-                                    <Text variant="body-1" color="danger" style={{ display: "block", marginTop: 10 }}>
-                                        {needsTelegramConnect && "Подключите Telegram для выбранного канала. "}
-                                        {needsMaxConnect && "Подключите Макс для выбранного канала. "}
-                                        {needsEmailAddress && "Укажите email для уведомлений по почте."}
-                                    </Text>
-                                )}
                             </div>
 
                             <div style={{ marginBottom: 24 }}>
@@ -995,16 +1061,42 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                 </Text>
                             )}
 
+                            {(submitError || reminderError) && (
+                                <div className="repeto-bk-inline-alert">
+                                    <Alert
+                                        theme={submitError ? "danger" : "warning"}
+                                        view="filled"
+                                        corners="rounded"
+                                        title={submitError ? "Не удалось отправить заявку" : "Проверьте данные перед отправкой"}
+                                        message={submitError || reminderError || ""}
+                                    />
+                                </div>
+                            )}
+
                             <Button
                                 view="action"
                                 size="xl"
                                 className="repeto-bk-action-btn"
                                 loading={submitting}
-                                disabled={!name.trim() || !phone.trim() || !email.trim() || !consent || needsTelegramConnect || needsMaxConnect || needsEmailAddress}
+                                disabled={Boolean(rawNameError || rawPhoneError || rawEmailError) || !consent || needsTelegramConnect || needsMaxConnect || needsEmailAddress}
                                 onClick={handleSubmit}
                             >
                                 Подтвердить почту
                             </Button>
+
+                            <AppDialog
+                                open={signInOpen}
+                                onClose={() => setSignInOpen(false)}
+                                size="s"
+                                caption={undefined}
+                                footer={undefined}
+                            >
+                                <StudentSignIn
+                                    onBack={() => setSignInOpen(false)}
+                                    initialEmail={email.trim() || undefined}
+                                    onSignedIn={handleStudentSignedIn}
+                                />
+                            </AppDialog>
                         </div>
                     )}
 

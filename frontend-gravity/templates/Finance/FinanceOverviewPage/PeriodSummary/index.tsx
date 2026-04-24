@@ -1,3 +1,4 @@
+import { Text } from "@gravity-ui/uikit";
 import { useFinanceStats, useFinanceSummary } from "@/hooks/usePayments";
 
 type MetricItem = { label: string; value: string };
@@ -89,6 +90,10 @@ const PeriodSummary = () => {
             className="repeto-finance-summary-card repeto-finance-summary-card--discrete"
             aria-label="Сводка за последний месяц"
         >
+            <div className="repeto-card-header repeto-finance-summary-card__header">
+                <Text variant="subheader-2">Сводка</Text>
+            </div>
+
             <div className="repeto-finance-summary-card__grid repeto-finance-summary-card__grid--discrete">
                 {items.map((item) => (
                     <article
@@ -112,9 +117,6 @@ const PeriodSummary = () => {
                         className={`repeto-finance-segments__item repeto-finance-segments__item--${segment.tone}`}
                         style={{ flex: `${getSegmentWeight(segment.amount)} 1 0` }}
                     >
-                        {segment.key === "cancelled" && (
-                            <div className="repeto-finance-segments__section-title">Сводка</div>
-                        )}
                         <div className="repeto-finance-segments__meta">
                             <span className="repeto-finance-segments__marker" aria-hidden="true" />
                             <div className="repeto-finance-segments__meta-text">

@@ -3091,21 +3091,15 @@
     flex-direction: column;
     gap: 14px;
 }
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-summary-card__header {
+    padding: 0 !important;
+    min-height: 0;
+}
 .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-summary-card__state {
     display: flex;
     align-items: center;
     justify-content: center;
     min-height: 160px;
-}
-.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-summary-card__title-row {
-    margin-bottom: 14px;
-}
-.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-summary-card__title {
-    font-size: 16px;
-    line-height: 22px;
-    font-weight: 600;
-    color: var(--t-text-primary, #1C1C1E);
-    letter-spacing: -0.01em;
 }
 .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-summary-card--discrete .repeto-finance-summary-card__grid {
     display: grid;
@@ -3162,19 +3156,10 @@
     min-width: 0;
     padding: 0;
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-rows: minmax(0, 1fr) auto;
     gap: 0;
     background: #FFFFFF;
     border-radius: 10px;
-}
-.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__section-title {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: #8b8b8b;
-    padding: 8px 10px 0;
-    line-height: 1.2;
 }
 .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__meta {
     display: flex;
@@ -3223,13 +3208,13 @@
     border-radius: 0 10px 10px 0;
 }
 .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--cancelled {
-    --segment-marker: #d46c75;
+    --segment-marker: #C97A96;
 }
 .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--cancelled .repeto-finance-segments__bar {
     background: repeating-linear-gradient(
         135deg,
-        #e9a7ad 0 7px,
-        #f3c8cb 7px 14px
+        #EBC1D0 0 7px,
+        #F4D9E2 7px 14px
     );
 }
 .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--received {
@@ -3414,10 +3399,12 @@
 }
 
 .repeto-tochka-dash .repeto-tochka-finance .repeto-income-chart__body {
-    padding: 18px 20px 16px !important;
+    padding: 18px 20px 6px !important;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
+    flex: 1 1 auto;
+    min-height: 0;
     gap: 16px;
     min-height: 260px;
 }
@@ -3426,7 +3413,9 @@
     grid-template-columns: repeat(3, 1fr);
     gap: 20px;
     align-items: end;
-    height: 200px;
+    height: 100%;
+    min-height: 200px;
+    margin-top: auto;
     position: relative;
     isolation: isolate;
 }
@@ -3460,7 +3449,6 @@
     flex: 1;
     width: 100%;
     max-width: 72px;
-    min-height: 0;
     display: flex;
     align-items: flex-end;
     justify-content: center;

@@ -4,12 +4,14 @@ import { TextInput, Button, Text } from "@gravity-ui/uikit";
 import {
     requestStudentOtp,
     verifyStudentOtp,
+    type StudentAuthResponse,
 } from "@/lib/studentAuth";
 import { codedErrorMessage } from "@/lib/errorCodes";
 
 type StudentSignInProps = {
     onBack: () => void;
     initialEmail?: string;
+    onSignedIn?: (result: StudentAuthResponse) => void | Promise<void>;
 };
 
 const LABEL_STYLE: React.CSSProperties = {
@@ -22,7 +24,7 @@ const LABEL_STYLE: React.CSSProperties = {
 
 const CODE_LENGTH = 6;
 
-const StudentSignIn = ({ onBack, initialEmail }: StudentSignInProps) => {
+const StudentSignIn = ({ onBack, initialEmail, onSignedIn }: StudentSignInProps) => {
     const router = useRouter();
     const [step, setStep] = useState<"email" | "code">("email");
     const [email, setEmail] = useState(initialEmail || "");
@@ -105,6 +107,10 @@ const StudentSignIn = ({ onBack, initialEmail }: StudentSignInProps) => {
         setLoading(true);
         try {
             const result = await verifyStudentOtp(email, codeValue);
+            if (onSignedIn) {
+                await onSignedIn(result);
+                return;
+            }
             if (result.needsSetup) {
                 router.replace("/student/setup");
             } else {

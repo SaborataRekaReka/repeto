@@ -189,7 +189,7 @@ const DashboardPage = () => {
     }, [router, completePlatformAccessPayment, refreshUser]);
 
     return (
-        <GravityLayout title="Дашборд">
+        <GravityLayout title="Главное">
             <div className="repeto-tochka-dash">
             {isAccessExpired && (
                 <section className="repeto-platform-access-alert">

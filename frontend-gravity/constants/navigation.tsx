@@ -1,6 +1,6 @@
 export const navigation = [
     {
-        title: "Дашборд",
+        title: "Главное",
         icon: "dashboard",
         url: "/dashboard",
     },

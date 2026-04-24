@@ -101,7 +101,7 @@ const sidebarAnimatedIconPaths = {
 } as const;
 
 const menuItems: MenuItem[] = [
-    { title: "Дашборд", icon: House as IconData, url: "/dashboard" },
+    { title: "Главное", icon: House as IconData, url: "/dashboard" },
     {
         title: "Ученики",
         icon: Persons as IconData,
@@ -146,7 +146,7 @@ const bottomMenuItems: MenuItem[] = [
 ];
 
 const mobileNavItems: MenuItem[] = [
-    { title: "Дашборд", icon: House as IconData, url: "/dashboard" },
+    { title: "Главное", icon: House as IconData, url: "/dashboard" },
     { title: "Ученики", icon: Persons as IconData, url: "/students" },
     { title: "Расписание", icon: Calendar as IconData, url: "/schedule" },
     { title: "Финансы", icon: CreditCard as IconData, url: "/finance" },
