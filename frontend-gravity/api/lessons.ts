@@ -58,7 +58,7 @@ function extractLessonNote(raw: RawLesson): string | undefined {
   if (typeof raw.notes === 'string') {
     const notes = raw.notes;
     if (isSystemLessonNoteContent(notes)) return undefined;
-    const normalized = notes.trim();
+    const normalized = (notes as string).trim();
     return normalized.length > 0 ? normalized : undefined;
   }
 
