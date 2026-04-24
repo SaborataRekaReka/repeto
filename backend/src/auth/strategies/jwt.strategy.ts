@@ -7,19 +7,18 @@ import {
   normalizePlatformAccess,
 } from '../../common/utils/platform-access';
 import { resolveUserRole } from '../../common/utils/admin-access';
-
-const jwtSecret = process.env.JWT_SECRET;
-if (!jwtSecret) {
-  throw new Error('JWT_SECRET is required for JWT strategy');
-}
+import { AppConfigService } from '../../config/app-config.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    cfg: AppConfigService,
+  ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: jwtSecret,
+      secretOrKey: cfg.jwtSecret,
     });
   }
 

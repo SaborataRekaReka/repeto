@@ -30,6 +30,7 @@ import {
   normalizePlatformAccess,
 } from '../common/utils/platform-access';
 import { resolveUserRole } from '../common/utils/admin-access';
+import { AppConfigService } from '../config/app-config.service';
 
 const REGISTRATION_CODE_LENGTH = 6;
 const REGISTRATION_CODE_TTL_MINUTES = 15;
@@ -93,6 +94,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly cfg: AppConfigService,
   ) {}
 
   async requestRegisterCode(dto: RegisterDto) {
@@ -518,8 +520,7 @@ export class AuthService {
       },
     });
 
-    const frontendUrl =
-      process.env.NODE_ENV === 'production'
+    const frontendUrl = this.cfg.isProduction
         ? this.resolveFrontendUrl('')
         : this.resolveFrontendUrl('http://localhost:3300');
     if (!frontendUrl) {
@@ -593,8 +594,8 @@ export class AuthService {
 
   private hashRegistrationCode(code: string) {
     const secret =
-      process.env.AUTH_REGISTRATION_CODE_SECRET ||
-      process.env.JWT_SECRET ||
+      this.cfg.authRegistrationCodeSecret ||
+      this.cfg.jwtSecret ||
       'repeto-dev-registration-code';
     return crypto.createHmac('sha256', secret).update(code).digest('hex');
   }
@@ -729,10 +730,8 @@ export class AuthService {
   }
 
   private getYookassaCredentials() {
-    const shopId =
-      (process.env.YUKASSA_PLATFORM_SHOP_ID || process.env.YUKASSA_SHOP_ID || '').trim();
-    const secretKey =
-      (process.env.YUKASSA_PLATFORM_SECRET_KEY || process.env.YUKASSA_SECRET_KEY || '').trim();
+    const shopId = (this.cfg.yukassaPlatformShopId || this.cfg.yukassaShopId || '').trim();
+    const secretKey = (this.cfg.yukassaPlatformSecretKey || this.cfg.yukassaSecretKey || '').trim();
 
     if (!shopId || !secretKey) {
       throw new BadRequestException(
@@ -754,13 +753,7 @@ export class AuthService {
   }
 
   private resolveFrontendUrl(fallback: string) {
-    const raw = process.env.FRONTEND_URL || '';
-    const primary =
-      raw
-        .split(',')
-        .map((value) => value.trim())
-        .find(Boolean) || fallback;
-
+    const primary = this.cfg.allowedOrigins[0] || fallback;
     return primary.replace(/\/+$/, '');
   }
 
@@ -948,17 +941,10 @@ export class AuthService {
     html: string;
     text: string;
   }) {
-    const host = (process.env.SMTP_HOST || '').trim();
-    const user = (process.env.SMTP_USER || '').trim();
-    const pass = process.env.SMTP_PASS || '';
-    const hasSmtpHints = Boolean(
-      host ||
-      user ||
-      pass ||
-      process.env.SMTP_PORT ||
-      process.env.SMTP_SECURE ||
-      process.env.SMTP_FROM_EMAIL,
-    );
+    const host = (this.cfg.smtpHost || '').trim();
+    const user = (this.cfg.smtpUser || '').trim();
+    const pass = this.cfg.smtpPass || '';
+    const hasSmtpHints = Boolean(host || user || pass || this.cfg.smtpPort || this.cfg.smtpFromEmail);
 
     if (!hasSmtpHints) {
       return false;
@@ -969,12 +955,9 @@ export class AuthService {
       return false;
     }
 
-    const parsedPort = Number.parseInt(process.env.SMTP_PORT || '465', 10);
-    const port = Number.isFinite(parsedPort) ? parsedPort : 465;
-    const secure = this.resolveSmtpSecure(port, process.env.SMTP_SECURE);
-    const from =
-      (process.env.SMTP_FROM_EMAIL || '').trim() ||
-      `Repeto <${user}>`;
+    const port = Number.isFinite(this.cfg.smtpPort) ? this.cfg.smtpPort : 465;
+    const secure = this.resolveSmtpSecure(port, this.cfg.smtpSecure ? 'true' : 'false');
+    const from = this.cfg.smtpFromEmail.trim() || `Repeto <${user}>`;
 
     const transporter = nodemailer.createTransport({
       host,
@@ -1003,12 +986,12 @@ export class AuthService {
     html: string;
     text: string;
   }) {
-    const apiKey = process.env.RESEND_API_KEY;
+    const apiKey = this.cfg.resendApiKey;
     if (!apiKey) {
       return false;
     }
 
-    const from = process.env.RESEND_FROM_EMAIL || 'Repeto <noreply@repeto.ru>';
+    const from = this.cfg.resendFromEmail;
 
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -1046,7 +1029,7 @@ export class AuthService {
     const role = resolveUserRole(userEmail);
     const accessToken = this.jwtService.sign(
       { sub: userId, role },
-      { expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || '15m' },
+      { expiresIn: this.cfg.jwtAccessExpiresIn },
     );
 
     const refreshTokenValue = uuidv4();

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import Redis from 'ioredis';
+import { AppConfigService } from '../config/app-config.service';
 import { TelegramService } from './telegram.service';
 import { MaxService } from './max.service';
 import { MessengerDeliveryService } from './messenger-delivery.service';
@@ -15,7 +16,8 @@ import { BotPollerService } from './bot-poller.service';
     BotPollerService,
     {
       provide: 'REDIS',
-      useFactory: () => new Redis(process.env.REDIS_URL || 'redis://localhost:6379'),
+      inject: [AppConfigService],
+      useFactory: (cfg: AppConfigService) => new Redis(cfg.redisUrl),
     },
   ],
   exports: [TelegramService, MaxService, MessengerDeliveryService, BotPollerService],

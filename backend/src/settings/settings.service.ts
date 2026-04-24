@@ -12,6 +12,7 @@ import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import { PrismaService } from '../prisma/prisma.service';
+import { AppConfigService } from '../config/app-config.service';
 import { FilesService } from '../files/files.service';
 import { getPrimaryFrontendUrl } from '../common/utils/frontend-url';
 import {
@@ -82,6 +83,7 @@ export class SettingsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly filesService: FilesService,
+    private readonly cfg: AppConfigService,
   ) {}
 
   private normalizeSlug(raw?: string | null) {
@@ -244,7 +246,7 @@ export class SettingsService {
   }
 
   private isProductionEnv() {
-    return process.env.NODE_ENV === 'production';
+    return this.cfg.isProduction;
   }
 
   private getEnvValue(prodKey: string, devKey?: string) {
@@ -281,7 +283,7 @@ export class SettingsService {
   }
 
   private getYandexStateSecret() {
-    const secret = process.env.YANDEX_DISK_STATE_SECRET || process.env.JWT_SECRET;
+    const secret = this.cfg.yandexDiskStateSecret || this.cfg.jwtSecret;
     if (!secret) {
       throw new InternalServerErrorException(
         'YANDEX_DISK_STATE_SECRET or JWT_SECRET must be configured',

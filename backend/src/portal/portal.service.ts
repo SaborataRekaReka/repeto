@@ -11,6 +11,7 @@ import * as fs from 'fs';
 import * as crypto from 'crypto';
 import { Readable } from 'stream';
 import { PrismaService } from '../prisma/prisma.service';
+import { AppConfigService } from '../config/app-config.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { TelegramService } from '../messenger/telegram.service';
 import { MaxService } from '../messenger/max.service';
@@ -34,6 +35,7 @@ export class PortalService {
     private notificationsService: NotificationsService,
     private telegramService: TelegramService,
     private maxService: MaxService,
+    private cfg: AppConfigService,
   ) {}
 
   private formatPortalDateLabel(value: Date) {
@@ -104,7 +106,7 @@ export class PortalService {
   }
 
   private isProductionEnv() {
-    return process.env.NODE_ENV === 'production';
+    return this.cfg.isProduction;
   }
 
   private getEnvValue(prodKey: string, devKey?: string) {

@@ -7,6 +7,7 @@ import { google, calendar_v3 } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { AppConfigService } from '../config/app-config.service';
 import { getPrimaryFrontendUrl } from '../common/utils/frontend-url';
 
 interface GoogleTokens {
@@ -21,12 +22,15 @@ interface GoogleTokens {
 export class GoogleCalendarService {
   private readonly logger = new Logger(GoogleCalendarService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cfg: AppConfigService,
+  ) {}
 
   // ── OAuth helpers ──
 
   private isProductionEnv() {
-    return process.env.NODE_ENV === 'production';
+    return this.cfg.isProduction;
   }
 
   private getEnvValue(prodKey: string, devKey?: string) {

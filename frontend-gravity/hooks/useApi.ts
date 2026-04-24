@@ -200,3 +200,16 @@ export function useApi<T>(
 
   return { data, error, loading, mutate, refetch };
 }
+
+/**
+ * Purge all cache entries whose key starts with `prefix`.
+ * Call after mutations that affect a whole resource collection,
+ * e.g. `invalidateByPrefix('/lessons')` after createLesson().
+ */
+export function invalidateByPrefix(prefix: string): void {
+  for (const key of Array.from(CACHE.keys())) {
+    if (key === prefix || key.startsWith(prefix + '?') || key.startsWith(prefix + '/')) {
+      CACHE.delete(key);
+    }
+  }
+}

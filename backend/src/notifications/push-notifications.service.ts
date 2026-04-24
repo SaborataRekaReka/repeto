@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AppConfigService } from '../config/app-config.service';
 import * as webpush from 'web-push';
 
 type StoredPushSubscription = {
@@ -21,15 +22,19 @@ type PushPayload = {
 @Injectable()
 export class PushNotificationsService {
   private readonly logger = new Logger(PushNotificationsService.name);
-  private readonly publicKey =
-    process.env.WEB_PUSH_PUBLIC_KEY || process.env.VAPID_PUBLIC_KEY || '';
-  private readonly privateKey =
-    process.env.WEB_PUSH_PRIVATE_KEY || process.env.VAPID_PRIVATE_KEY || '';
-  private readonly subject =
-    process.env.WEB_PUSH_SUBJECT || process.env.VAPID_SUBJECT || 'mailto:support@repeto.ru';
-  private readonly configured = Boolean(this.publicKey && this.privateKey);
+  private readonly publicKey: string;
+  private readonly privateKey: string;
+  private readonly subject: string;
+  private readonly configured: boolean;
 
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cfg: AppConfigService,
+  ) {
+    this.publicKey = this.cfg.vapidPublicKey || '';
+    this.privateKey = this.cfg.vapidPrivateKey || '';
+    this.subject = this.cfg.vapidSubject;
+    this.configured = Boolean(this.publicKey && this.privateKey);
     if (this.configured) {
       webpush.setVapidDetails(this.subject, this.publicKey, this.privateKey);
     } else {

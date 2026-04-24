@@ -1,9 +1,14 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { AppConfigService } from '../config/app-config.service';
 
 @Injectable()
 export class TelegramService {
   private readonly logger = new Logger(TelegramService.name);
-  private readonly botToken = process.env.TELEGRAM_BOT_TOKEN || '';
+  private readonly botToken: string;
+
+  constructor(private readonly cfg: AppConfigService) {
+    this.botToken = this.cfg.telegramBotToken || '';
+  }
 
   get isConfigured(): boolean {
     return !!this.botToken;

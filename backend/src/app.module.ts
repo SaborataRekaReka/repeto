@@ -3,6 +3,7 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { APP_GUARD } from '@nestjs/core';
 import { join } from 'path';
+import { AppConfigModule } from './config/app-config.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { StudentsModule } from './students/students.module';
@@ -24,10 +25,13 @@ import { StudentAuthModule } from './student-auth/student-auth.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AdminModule } from './admin/admin.module';
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 @Module({
   imports: [
+    AppConfigModule,
     ThrottlerModule.forRoot(
-      process.env.NODE_ENV === 'production'
+      isProduction
         ? [
             { name: 'global', ttl: 60000, limit: 600 },
             { name: 'auth', ttl: 60000, limit: 10 },

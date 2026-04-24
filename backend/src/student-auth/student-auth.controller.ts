@@ -15,6 +15,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Request, Response } from 'express';
 import { Public } from '../common/decorators';
+import { AppConfigService } from '../config/app-config.service';
 import { CurrentStudent } from './current-student.decorator';
 import { RequestStudentOtpDto, VerifyStudentOtpDto } from './dto';
 import { StudentAuthGuard } from './student-auth.guard';
@@ -23,7 +24,10 @@ import { StudentAuthService } from './student-auth.service';
 @ApiTags('StudentAuth')
 @Controller('student-auth')
 export class StudentAuthController {
-  constructor(private readonly service: StudentAuthService) {}
+  constructor(
+    private readonly service: StudentAuthService,
+    private readonly cfg: AppConfigService,
+  ) {}
 
   @Public()
   @Throttle({ auth: { ttl: 60000, limit: 5 } })
@@ -113,7 +117,7 @@ export class StudentAuthController {
   private setRefreshCookie(res: Response, token: string) {
     res.cookie('student_refresh_token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: this.cfg.isProduction,
       sameSite: 'lax',
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       path: '/',
@@ -121,11 +125,11 @@ export class StudentAuthController {
   }
 
   private assertTestingAccess(req: Request) {
-    if (process.env.NODE_ENV === 'production') {
+    if (this.cfg.isProduction) {
       throw new ForbiddenException('Testing endpoint is disabled in production');
     }
 
-    const expectedKey = String(process.env.E2E_TEST_HARNESS_KEY || '').trim();
+    const expectedKey = (this.cfg.e2eTestHarnessKey || '').trim();
     if (!expectedKey) {
       return;
     }

@@ -1,4 +1,6 @@
-import { useApi } from './useApi';
+import { writeFileSync } from 'fs';
+
+const useLessons = `import { useApi } from './useApi';
 import { mapLesson, createLesson, updateLesson, updateLessonStatus, deleteLesson } from '@/api/lessons';
 import type { RawLesson } from '@/api/lessons';
 
@@ -24,9 +26,17 @@ export function useLessons(params?: {
 }
 
 export function useLesson(id: string | undefined) {
-  const result = useApi<RawLesson>(id ? `/lessons/${id}` : null);
+  const result = useApi<RawLesson>(id ? \`/lessons/\${id}\` : null);
   return {
     ...result,
     data: result.data ? mapLesson(result.data) : undefined,
   };
 }
+`;
+
+writeFileSync(
+  'c:/projects/dev/repeto/app/frontend-gravity/hooks/useLessons.ts',
+  useLessons,
+  'utf8',
+);
+console.log('useLessons.ts written');

@@ -7,6 +7,7 @@ import { CloudProvider, FileType, Prisma } from '@prisma/client';
 import { OAuth2Client } from 'google-auth-library';
 import { drive_v3, google } from 'googleapis';
 import { PrismaService } from '../prisma/prisma.service';
+import { AppConfigService } from '../config/app-config.service';
 import { UpdateFileShareDto } from './dto';
 
 type YandexResource = {
@@ -43,7 +44,10 @@ type GoogleDriveTokens = {
 
 @Injectable()
 export class FilesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cfg: AppConfigService,
+  ) {}
 
   private normalizeYandexPath(raw?: string | null) {
     const value = (raw || '').trim();
@@ -83,7 +87,7 @@ export class FilesService {
   }
 
   private isProductionEnv() {
-    return process.env.NODE_ENV === 'production';
+    return this.cfg.isProduction;
   }
 
   private getEnvValue(prodKey: string, devKey?: string) {
