@@ -1,5 +1,10 @@
 import type { NextPage } from "next";
-import TutorProfilePage from "@/templates/TutorProfile/ProfilePage";
+import dynamic from "next/dynamic";
+
+const TutorProfilePage = dynamic(
+    () => import("@/templates/TutorProfile/ProfilePage"),
+    { ssr: false }
+);
 
 const Profile: NextPage = () => {
     return <TutorProfilePage />;

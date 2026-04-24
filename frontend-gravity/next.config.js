@@ -1,4 +1,8 @@
 /** @type {import('next').NextConfig} */
+const withBundleAnalyzer = process.env.ANALYZE === 'true'
+    ? require('@next/bundle-analyzer')({ enabled: true })
+    : (cfg) => cfg;
+
 const apiBase = process.env.NEXT_PUBLIC_API_URL || '/api';
 const apiOrigin = apiBase.replace(/\/api$/, '');
 const hasAbsoluteApiOrigin = /^https?:\/\//.test(apiOrigin);
@@ -44,4 +48,4 @@ const nextConfig = {
     },
 };
 
-module.exports = nextConfig;
+module.exports = withBundleAnalyzer(nextConfig);

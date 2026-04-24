@@ -177,26 +177,25 @@ export class FinanceService {
   async getIncomeByStudents(userId: string, period: 'month' | 'quarter' | 'year' = 'month', limit = 5) {
     const from = this.getPeriodStart(period);
 
-    const students = await this.prisma.student.findMany({
-      where: { userId, status: 'ACTIVE' },
-      include: {
-        payments: {
-          where: { status: 'PAID', date: { gte: from } },
-          select: { amount: true },
-        },
-      },
-    });
+    type Row = { studentId: string; studentName: string; subject: string; total: bigint };
 
-    return students
-      .map((s) => ({
-        studentId: s.id,
-        studentName: s.name,
-        subject: s.subject,
-        total: s.payments.reduce((sum, p) => sum + p.amount, 0),
-      }))
-      .filter((s) => s.total > 0)
-      .sort((a, b) => b.total - a.total)
-      .slice(0, limit);
+    const rows = await this.prisma.$queryRaw<Row[]>`
+      SELECT s.id AS "studentId", s.name AS "studentName", s.subject,
+             COALESCE(SUM(p.amount), 0) AS total
+      FROM students s
+      LEFT JOIN payments p ON p.student_id = s.id
+        AND p.user_id = ${userId}
+        AND p.status  = 'PAID'
+        AND p.date   >= ${from}
+      WHERE s.user_id = ${userId}
+        AND s.status  = 'ACTIVE'
+      GROUP BY s.id, s.name, s.subject
+      HAVING COALESCE(SUM(p.amount), 0) > 0
+      ORDER BY total DESC
+      LIMIT ${limit}
+    `;
+
+    return rows.map((r) => ({ ...r, total: Number(r.total) }));
   }
 
   private async calculateStatsForRange(userId: string, from: Date, to: Date) {
