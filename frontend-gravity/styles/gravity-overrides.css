@@ -251,8 +251,10 @@ body {
     display: flex;
     flex-direction: column;
     z-index: 100;
-    overflow: visible;
-    transition: width 0.36s cubic-bezier(0.22, 1, 0.36, 1);
+    overflow: hidden;
+    contain: paint;
+    will-change: width;
+    transition: width 0.22s ease;
 }
 
 .repeto-sidebar--collapsed {
@@ -394,9 +396,9 @@ body {
     opacity: 1;
     overflow: hidden;
     transition:
-        opacity 0.22s ease,
-        max-height 0.32s cubic-bezier(0.22, 1, 0.36, 1),
-        padding 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+        opacity 0.16s ease,
+        max-height 0.22s ease,
+        padding 0.22s ease;
 }
 
 .repeto-sidebar__section--navigation .repeto-sidebar__section-head {
@@ -404,9 +406,9 @@ body {
     opacity: 1;
     overflow: hidden;
     transition:
-        opacity 0.22s ease,
-        max-height 0.32s cubic-bezier(0.22, 1, 0.36, 1),
-        padding 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+        opacity 0.16s ease,
+        max-height 0.22s ease,
+        padding 0.22s ease;
 }
 
 .repeto-sidebar__collapse-btn {
@@ -498,7 +500,7 @@ body {
     border: none;
     background: none;
     width: 100%;
-    transition: all 0.2s ease;
+    transition: background-color 0.14s ease, color 0.14s ease;
     white-space: nowrap;
     overflow: hidden;
 }
@@ -524,9 +526,9 @@ body {
     max-width: 260px;
     transform: translateX(0);
     transition:
-        opacity 0.24s ease,
-        max-width 0.32s cubic-bezier(0.22, 1, 0.36, 1),
-        transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+        opacity 0.14s ease,
+        max-width 0.22s ease,
+        transform 0.22s ease;
 }
 
 .repeto-sidebar__item-rail-label {
@@ -599,7 +601,7 @@ body {
     color: var(--g-color-text-secondary);
     font-size: 13px;
     font-weight: 500;
-    transition: all 0.15s;
+    transition: background-color 0.14s ease, color 0.14s ease;
     white-space: nowrap;
     overflow: hidden;
 }
@@ -641,7 +643,8 @@ body {
     min-height: 100vh;
     padding: 0 32px 28px;
     background: var(--repeto-bg);
-    transition: margin-left 0.36s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: margin-left;
+    transition: margin-left 0.22s ease;
 }
 
 .repeto-content--sidebar-collapsed {
@@ -1298,7 +1301,9 @@ body {
     border: 1px solid var(--g-color-line-generic);
     border-radius: 16px;
     box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
-    transition: width 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+    contain: paint;
+    will-change: width;
+    transition: width 0.2s ease;
 }
 
 .repeto-context-sidebar__inner {
@@ -1682,6 +1687,20 @@ body {
     margin-left: 0;
     padding-top: 72px;
     position: relative;
+    background: var(--repeto-bg);
+    backface-visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .repeto-sidebar,
+    .repeto-context-sidebar,
+    .repeto-content,
+    .repeto-sidebar__section--quick .repeto-sidebar__section-head,
+    .repeto-sidebar__section--navigation .repeto-sidebar__section-head,
+    .repeto-sidebar__item-text {
+        transition: none !important;
+        animation: none !important;
+    }
 }
 
 .repeto-content--flat.repeto-content--sidebar-collapsed {
