@@ -3470,6 +3470,7 @@
     gap: var(--repeto-col-gap, 2px);
     min-height: 88px;
     height: 100%;
+    width: 100%;
     align-content: stretch;
 }
 
@@ -3580,6 +3581,167 @@
 }
 
 /* END DASHBOARD — Week load widget */
+
+/* =====================================================================
+   DASHBOARD — Responsive hardening pass (2026-04-24)
+   Stabilizes tablet/mobile layout for PWA to avoid block sticking,
+   overlap, and horizontal overflow caused by historical overrides.
+   ===================================================================== */
+
+.repeto-tochka-dash .repeto-dashboard-grid,
+.repeto-tochka-dash .repeto-dashboard-grid > *,
+.repeto-tochka-dash .repeto-dashboard-grid__main > *,
+.repeto-tochka-dash .repeto-dashboard-grid__aside > *,
+.repeto-tochka-dash .repeto-two-col > * {
+    min-width: 0;
+}
+
+.repeto-tochka-dash .repeto-platform-access-alert {
+    min-width: 0;
+}
+
+@media (max-width: 1200px) {
+    .repeto-tochka-dash .repeto-dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+
+    .repeto-tochka-dash .repeto-dashboard-grid__main,
+    .repeto-tochka-dash .repeto-dashboard-grid__aside,
+    .repeto-tochka-dash .repeto-two-col {
+        gap: 12px;
+    }
+
+    .repeto-tochka-dash .repeto-stat-cards,
+    .repeto-tochka-dash .repeto-task-tiles {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .repeto-tochka-dash .repeto-two-col {
+        grid-template-columns: 1fr;
+    }
+
+    .repeto-tochka-dash .repeto-platform-access-alert {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 14px;
+    }
+
+    .repeto-tochka-dash .repeto-platform-access-alert__button {
+        width: 100%;
+    }
+}
+
+@media (max-width: 960px) {
+    .repeto-tochka-dash {
+        padding-bottom: calc(8px + env(safe-area-inset-bottom));
+    }
+
+    .repeto-tochka-dash .repeto-stat-cards,
+    .repeto-tochka-dash .repeto-task-tiles {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .repeto-tochka-dash .repeto-task-tile {
+        min-height: 0;
+    }
+
+    .repeto-tochka-dash .repeto-insight-banner {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        padding: 14px;
+    }
+
+    .repeto-tochka-dash .repeto-insight-banner__content {
+        padding-right: 0;
+    }
+
+    .repeto-tochka-dash .repeto-insight-banner__cta {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .repeto-tochka-dash .repeto-card-header {
+        padding: 14px 14px 8px !important;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: flex-start;
+    }
+
+    .repeto-tochka-dash .repeto-card-body {
+        padding: 0 14px 14px !important;
+    }
+
+    .repeto-tochka-dash .repeto-week-load__body {
+        grid-template-columns: 1fr;
+        gap: 14px;
+        padding: 12px 14px 14px !important;
+    }
+
+    .repeto-tochka-dash .repeto-week-load__aside {
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: stretch;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    .repeto-tochka-dash .repeto-week-load__legend {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 8px 12px;
+    }
+
+    .repeto-tochka-dash .repeto-week-load__summary,
+    .repeto-tochka-dash .repeto-week-load__cta {
+        width: 100%;
+    }
+
+    .repeto-tochka-dash .repeto-recent-payments-ops .repeto-portal-balance-operation-row {
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 8px 10px;
+        align-items: start;
+    }
+
+    .repeto-tochka-dash .repeto-recent-payments-ops .repeto-portal-balance-operation-row__copy {
+        min-width: 0;
+    }
+
+    .repeto-tochka-dash .repeto-recent-payments-ops .repeto-portal-balance-operation-row__title,
+    .repeto-tochka-dash .repeto-recent-payments-ops .repeto-portal-balance-operation-row__subtitle,
+    .repeto-tochka-dash .repeto-recent-payments-ops__balance {
+        overflow-wrap: anywhere;
+    }
+
+    .repeto-tochka-dash .repeto-recent-payments-ops .repeto-portal-balance-operation-row__amount {
+        grid-column: 1 / -1;
+        justify-self: end;
+        margin-top: 2px;
+    }
+}
+
+@media (max-width: 720px) {
+    .repeto-tochka-dash .repeto-task-tile,
+    .repeto-tochka-dash .repeto-stat-card {
+        padding: 12px 12px;
+    }
+
+    .repeto-tochka-dash .repeto-income-card__periods {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .repeto-tochka-dash .repeto-week-load__legend {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .repeto-tochka-dash .repeto-week-load__tick {
+        font-size: 9px;
+    }
+}
 
 
 

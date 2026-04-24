@@ -10287,13 +10287,19 @@ body {
         right: 0;
         bottom: 0;
         z-index: 160;
-        display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
+        display: flex;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: none;
         background: var(--g-color-base-float);
         border-top: 1px solid var(--g-color-line-generic);
         box-shadow: 0 -6px 18px rgba(18, 22, 30, 0.08);
         padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
         gap: 2px;
+    }
+
+    .repeto-mobile-nav::-webkit-scrollbar {
+        display: none;
     }
 
     .repeto-mobile-nav__item {
@@ -10303,6 +10309,8 @@ body {
         justify-content: center;
         gap: 3px;
         min-height: 50px;
+        min-width: calc(20% - 0.4px);
+        flex: 0 0 calc(20% - 0.4px);
         border-radius: 10px;
         color: var(--g-color-text-secondary);
         font-size: 10px;
