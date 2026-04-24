@@ -3,6 +3,10 @@ import { Icon } from "@gravity-ui/uikit";
 import type { IconData } from "@gravity-ui/uikit";
 import type { AnimationItem } from "lottie-web";
 
+// Module-level cache: src → loaded animation data (JSON object)
+// Persists across component remounts (page navigations)
+const lottieDataCache = new Map<string, object>();
+
 type AnimatedSidebarIconProps = {
     src: string;
     play: boolean;
@@ -64,12 +68,30 @@ const AnimatedSidebarIcon = ({
                 return;
             }
 
+            // Use cached data if available to avoid re-fetch on navigation
+            let cachedData = lottieDataCache.get(src);
+            if (!cachedData) {
+                try {
+                    const resp = await fetch(src);
+                    if (!resp.ok) throw new Error("fetch failed");
+                    cachedData = await resp.json() as object;
+                    lottieDataCache.set(src, cachedData);
+                } catch {
+                    if (!cancelled) setLoadFailed(true);
+                    return;
+                }
+            }
+
+            if (cancelled || !containerRef.current) {
+                return;
+            }
+
             loadedAnimation = lottie.loadAnimation({
                 container: containerRef.current,
                 renderer: "svg",
                 loop: false,
                 autoplay: false,
-                path: src,
+                animationData: cachedData,
                 rendererSettings: {
                     preserveAspectRatio: "xMidYMid meet",
                     progressiveLoad: true,
@@ -91,7 +113,6 @@ const AnimatedSidebarIcon = ({
         setIsReady(false);
         setLoadFailed(false);
         void init();
-
         return () => {
             cancelled = true;
             setIsReady(false);
