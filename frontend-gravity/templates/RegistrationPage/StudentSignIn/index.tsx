@@ -227,7 +227,9 @@ const StudentSignIn = ({ onBack, initialEmail, onSignedIn }: StudentSignInProps)
                                             ? "var(--g-color-base-simple-hover)"
                                             : "var(--g-color-base-background)",
                                         outline: "none",
-                                        boxShadow: isFocused ? "0 0 0 3px rgba(174, 122, 255, 0.18)" : "none",
+                                        boxShadow: isFocused
+                                            ? "0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent)"
+                                            : "none",
                                     }}
                                     aria-label={`Цифра кода ${index + 1}`}
                                 />

@@ -92,7 +92,7 @@ const TutorProfilePage = () => {
                                         />
                                         <Bar
                                             dataKey="lessons"
-                                            fill="#AE7AFF"
+                                            fill="var(--accent)"
                                             radius={[8, 8, 0, 0]}
                                         />
                                     </BarChart>

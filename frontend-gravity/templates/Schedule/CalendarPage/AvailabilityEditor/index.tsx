@@ -41,10 +41,10 @@ const AvailabilityEditor = () => {
     // Рабочие часы — нейтральная сетка. Акцент (accent) оставлен только для
     // header-иконки и активной «сегодня»-метки в календаре; сама карта занятости
     // больше не перекрашивает половину экрана в зелёный.
-    const workHoursActiveBg = isDarkTheme
-        ? "var(--g-color-base-generic)"
-        : "var(--g-color-base-generic)";
+    const workHoursActiveBg = "#dcfce7";
     const workHoursIdleBg = "transparent";
+    const workHoursDayActiveBg = "#22c55e";
+    const workHoursDayActiveText = "#ffffff";
     const headerIconBg = isDarkTheme
         ? "var(--g-color-base-brand-light)"
         : accent[100];
@@ -263,9 +263,14 @@ const AvailabilityEditor = () => {
     };
 
     return (
-        <Card view="outlined" style={{ marginBottom: 24, overflow: "hidden", background: "var(--g-color-base-float)" }}>
+        <Card
+            view="outlined"
+            className="repeto-availability-card"
+            style={{ marginBottom: 24, overflow: "hidden", background: "#ffffff" }}
+        >
             {/* ── Header (toggle) ── */}
             <div
+                className="repeto-availability-card__header"
                 onClick={() => setOpen((v) => !v)}
                 style={{
                     display: "flex",
@@ -316,9 +321,8 @@ const AvailabilityEditor = () => {
                 <>
                     {/* ── Availability grid ── */}
                     <div
-                        className="repeto-scroll-x"
+                        className="repeto-scroll-x repeto-availability-card__body"
                         style={{
-                            borderTop: "1px solid var(--g-color-line-generic)",
                             overflowX: "auto",
                         }}
                         onDragStart={(e) => e.preventDefault()}
@@ -352,7 +356,11 @@ const AvailabilityEditor = () => {
                             </div>
 
                             {/* Day rows */}
-                            {DAY_NAMES.map((dayName, di) => (
+                            {DAY_NAMES.map((dayName, di) => {
+                                const dayIsActive = HOURS.every((hour) =>
+                                    cells.has(`${di}-${hour}` as CellKey)
+                                );
+                                return (
                                 <div key={di} style={{ display: "flex" }}>
                                     <div
                                         onClick={() => toggleDay(di)}
@@ -365,7 +373,8 @@ const AvailabilityEditor = () => {
                                             justifyContent: "center",
                                             fontSize: 11,
                                             fontWeight: 700,
-                                            color: "var(--g-color-text-hint)",
+                                            color: dayIsActive ? workHoursDayActiveText : "var(--g-color-text-hint)",
+                                            background: dayIsActive ? workHoursDayActiveBg : "transparent",
                                             cursor: "pointer",
                                             borderTop: "1px solid var(--g-color-line-generic)",
                                             userSelect: "none",
@@ -396,7 +405,7 @@ const AvailabilityEditor = () => {
                                         );
                                     })}
                                 </div>
-                            ))}
+                            )})}
                         </div>
                     </div>
 

@@ -10,7 +10,7 @@ type DetailsProps = {
 const Details = ({ visible, onClose }: DetailsProps) => {
     return (
         <AppDialog open={visible} onClose={onClose} size="s">
-            <div className="relative -mx-[14px] -mt-[10px] px-5 pt-5 before:absolute before:top-0 before:left-0 before:right-0 before:h-[10.4375rem] before:bg-[#7030D9] md:before:h-[8rem]">
+            <div className="relative -mx-[14px] -mt-[10px] px-5 pt-5 before:absolute before:top-0 before:left-0 before:right-0 before:h-[10.4375rem] before:bg-[var(--accent)] md:before:h-[8rem]">
                 <div className="relative z-1 card-title border-white text-white">
                     Transaction details
                 </div>

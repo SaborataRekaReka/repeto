@@ -15,6 +15,7 @@ import PageOverlay from "@/components/PageOverlay";
 import AppDialog from "@/components/AppDialog";
 import CreatePaymentModal from "@/components/CreatePaymentModal";
 import StudentNameWithBadge from "@/components/StudentNameWithBadge";
+import PillTabs from "@/components/PillTabs";
 import { deletePayment, usePayments } from "@/hooks/usePayments";
 import { getMethodLabel, getStatusLabel } from "@/mocks/finance-tutor";
 import type { Payment } from "@/types/finance";
@@ -132,23 +133,16 @@ const PaymentsListPage = () => {
                 </div>
 
                 <div className="repeto-sl-tabs-row">
-                    <div className="repeto-sl-pills">
-                        {filterTabs.map((t) => {
-                            const count = t.value === "all" ? stats.total : stats.paid;
-                            return (
-                                <button
-                                    key={t.value}
-                                    className={`repeto-sl-pill${tab === t.value ? " repeto-sl-pill--active" : ""}`}
-                                    onClick={() => setTab(t.value)}
-                                >
-                                    {t.label}
-                                    {count > 0 && (
-                                        <span className="repeto-sl-pill__count">{count}</span>
-                                    )}
-                                </button>
-                            );
-                        })}
-                    </div>
+                    <PillTabs
+                        value={tab}
+                        onChange={(v) => setTab(v)}
+                        options={filterTabs.map((t) => ({
+                            value: t.value,
+                            label: t.label,
+                            count: t.value === "all" ? stats.total : stats.paid,
+                        }))}
+                        ariaLabel="Фильтр оплат"
+                    />
                 </div>
 
                 {deleteError && (

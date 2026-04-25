@@ -3,8 +3,8 @@
     --landing-text: #ffffff;
     --landing-subtext: rgba(255, 255, 255, 0.92);
     --landing-button-ghost: rgba(255, 255, 255, 0.18);
-    --landing-button-primary: #8840f5;
-    --landing-button-primary-hover: #7630e0;
+    --landing-button-primary: var(--accent);
+    --landing-button-primary-hover: var(--accent-hover);
     --landing-section-bg: #f4f6fb;
     --landing-border: rgba(15, 23, 40, 0.1);
 
@@ -13,17 +13,17 @@
     --lp-mid:   #263447;
     --lp-body:  #44576c;
     --lp-muted: #6b7f97;
-    --lp-brand: #8840f5;
+    --lp-brand: var(--accent);
     --lp-inner: 1200px;
 
     /* ─ Button tokens ─ */
     --btn-radius: 14px;
-    --btn-primary-bg: #8840f5;
-    --btn-primary-bg-hover: #7030d9;
+    --btn-primary-bg: var(--accent);
+    --btn-primary-bg-hover: var(--accent-hover);
     --btn-primary-color: #ffffff;
-    --btn-ghost-border: rgba(136, 64, 245, 0.28);
-    --btn-ghost-color: #8840f5;
-    --btn-ghost-bg-hover: rgba(136, 64, 245, 0.06);
+    --btn-ghost-border: color-mix(in srgb, var(--accent) 28%, transparent);
+    --btn-ghost-color: var(--accent);
+    --btn-ghost-bg-hover: color-mix(in srgb, var(--accent) 8%, transparent);
 
     font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -215,7 +215,7 @@
 
 .headerButtonPrimary {
     background: #ffffff;
-    color: #7030d9;
+    color: var(--accent-pressed);
 }
 
 .headerButtonPrimary:hover {
@@ -415,87 +415,8 @@
     object-fit: cover;
 }
 
-.section,
-.sectionAlt {
+.section {
     padding: 72px 20px;
-}
-
-.sectionAlt {
-    background: var(--landing-section-bg);
-}
-
-.sectionInner {
-    max-width: var(--lp-inner);
-    margin: 0 auto;
-}
-
-.sectionTitle {
-    margin: 0;
-    color: var(--lp-ink);
-    font-size: clamp(34px, 4vw, 54px);
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    line-height: 1.02;
-}
-
-.grid4,
-.grid3 {
-    margin-top: 28px;
-    display: grid;
-    gap: 14px;
-}
-
-.grid4 {
-    grid-template-columns: repeat(4, minmax(170px, 1fr));
-}
-
-.grid3 {
-    grid-template-columns: repeat(3, minmax(170px, 1fr));
-}
-
-.featureCard,
-.pricingCard,
-.faqItem {
-    border-radius: 16px;
-    border: 1px solid var(--landing-border);
-    background: #ffffff;
-    padding: 20px;
-    box-shadow: 0 12px 28px rgba(31, 15, 58, 0.06);
-}
-
-.featureTitle {
-    margin: 0;
-    font-size: 20px;
-    line-height: 1.2;
-    color: var(--lp-ink);
-}
-
-.featureText {
-    margin: 10px 0 0;
-    color: var(--lp-body);
-    font-size: 15px;
-    line-height: 1.5;
-}
-
-.priceValue {
-    margin: 10px 0 0;
-    color: var(--lp-brand);
-    font-size: 35px;
-    font-weight: 800;
-    line-height: 1;
-}
-
-.faqList {
-    margin-top: 28px;
-    display: grid;
-    gap: 14px;
-}
-
-.faqQuestion {
-    margin: 0;
-    color: var(--lp-ink);
-    font-size: 18px;
-    line-height: 1.3;
 }
 
 /* Features Section based on the sample block */
@@ -720,23 +641,6 @@
     pointer-events: none;
 }
 
-.integrationsCardDotPrimary,
-.integrationsCardDotSecondary {
-    width: 72px;
-    height: 72px;
-    border-radius: 50%;
-    display: inline-block;
-}
-
-.integrationsCardDotPrimary {
-    background: radial-gradient(circle at 30% 30%, #ffd96d, #f3af42 68%);
-}
-
-.integrationsCardDotSecondary {
-    margin-left: -14px;
-    background: radial-gradient(circle at 30% 30%, #8eb8ff, #4f78df 72%);
-}
-
 .integrationsCardTitle {
     margin: 24px 0 0;
     color: var(--lp-ink);
@@ -754,21 +658,15 @@
     max-width: 430px;
 }
 
-.integrationsArrow {
+.integrationsAccentShape {
     position: absolute;
-    left: 40px;
-    bottom: 34px;
-    width: 48px;
-    height: 48px;
-    border-radius: 16px;
-    background: #ffffff;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    color: #25324a;
-    font-size: 22px;
-    line-height: 1;
-    font-weight: 500;
+    right: 28px;
+    bottom: 24px;
+    width: 84px;
+    height: 84px;
+    border-radius: 24px;
+    background: radial-gradient(circle at 30% 30%, rgba(136, 64, 245, 0.26), rgba(136, 64, 245, 0.06) 72%);
+    pointer-events: none;
 }
 
 
@@ -958,17 +856,6 @@
     color: #000000;
 }
 
-.capabilitiesCardAccent {
-    position: absolute;
-    left: -20px;
-    top: 108px;
-    width: 206px;
-    height: 206px;
-    border-radius: 44% 56% 53% 47% / 56% 42% 58% 44%;
-    border: 12px solid rgba(255, 255, 255, 0.24);
-    opacity: 0.7;
-}
-
 .capabilitiesCardPreview {
     position: absolute;
     top: -14px;
@@ -1082,8 +969,8 @@
 
 .tariffCardFeatured {
     background: linear-gradient(145deg, var(--color-primary-800) 0%, var(--color-primary-500) 100%);
-    border-color: #8840f5;
-    box-shadow: 0 18px 40px rgba(136, 64, 245, 0.36);
+    border-color: var(--accent);
+    box-shadow: 0 18px 40px color-mix(in srgb, var(--accent) 38%, transparent);
 }
 
 .tariffCardHead {
@@ -1240,7 +1127,7 @@
 
 .tariffCardFeatured .tariffButtonPrimary {
     background: #ffffff;
-    color: #7030d9;
+    color: var(--accent-pressed);
 }
 
 .tariffCardFeatured .tariffButtonPrimary:hover {
@@ -1353,10 +1240,6 @@
         aspect-ratio: 962.2 / 641.46;
         margin-left: auto;
         border-radius: 18px;
-    }
-
-    .grid4 {
-        grid-template-columns: repeat(2, minmax(170px, 1fr));
     }
 
     .scheduleSectionInner,
@@ -1533,10 +1416,6 @@
         font-size: 16px;
     }
 
-    .grid3 {
-        grid-template-columns: 1fr;
-    }
-
     .integrationsTitle {
         font-size: clamp(26px, 7vw, 40px);
     }
@@ -1626,14 +1505,9 @@
     }
 
     .section,
-    .sectionAlt,
     .scheduleSection,
     .featuresContinuation {
         padding: 56px 14px;
-    }
-
-    .grid4 {
-        grid-template-columns: 1fr;
     }
 
     .featuresContinuationInner {
@@ -1677,15 +1551,6 @@
         font-size: 15px;
     }
 
-    .integrationsArrow {
-        left: 20px;
-        bottom: 20px;
-        width: 40px;
-        height: 40px;
-        border-radius: 12px;
-        font-size: 18px;
-    }
-
     .capabilitiesSection {
         padding: 24px 14px 72px;
     }
@@ -1709,13 +1574,6 @@
         width: 58px;
         height: 58px;
         border-radius: 18px;
-    }
-
-    .capabilitiesCardAccent {
-        width: 140px;
-        height: 140px;
-        border-width: 8px;
-        top: 76px;
     }
 
     .capabilitiesCardText {

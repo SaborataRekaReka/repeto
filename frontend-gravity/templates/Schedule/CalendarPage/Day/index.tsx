@@ -83,7 +83,7 @@ const Day = ({ currentDate, onLessonClick, onSlotClick, lessons = [] }: DayProps
     }, []);
 
     return (
-        <Card view="outlined" style={{ overflow: "hidden" }}>
+        <Card view="outlined" className="repeto-schedule-calendar-card" style={{ overflow: "hidden" }}>
             <div className="repeto-calendar-shell">
                 <div style={{ minWidth: 360 }}>
                     <div

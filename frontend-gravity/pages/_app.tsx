@@ -2,6 +2,9 @@ import "@/styles/globals.css";
 import "@gravity-ui/uikit/styles/styles.css";
 import "@/styles/gravity-overrides.css";
 import "@/styles/dashboard-tochka.css";
+import "@/styles/theme-tokens.css";
+import "@/styles/theme-components.css";
+import "@/styles/theme-navigation.css";
 import type { AppProps } from "next/app";
 import { Inter } from "next/font/google";
 

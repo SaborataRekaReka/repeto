@@ -108,7 +108,7 @@ const Week = ({ currentDate, onLessonClick, onSlotClick, lessons = [] }: WeekPro
     const gridHeight = HOUR_HEIGHT * 24;
 
     return (
-        <Card view="outlined" style={{ overflow: "hidden" }}>
+        <Card view="outlined" className="repeto-schedule-calendar-card" style={{ overflow: "hidden" }}>
             <div className="repeto-calendar-shell">
                 <div
                     ref={scrollRef}

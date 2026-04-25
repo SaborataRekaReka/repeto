@@ -18,6 +18,7 @@ import PageOverlay from "@/components/PageOverlay";
 import AppDialog from "@/components/AppDialog";
 import StudentAvatar from "@/components/StudentAvatar";
 import StudentNameWithBadge from "@/components/StudentNameWithBadge";
+import PillTabs from "@/components/PillTabs";
 import CreateStudentModal from "@/components/CreateStudentModal";
 import CreatePaymentModal from "@/components/CreatePaymentModal";
 import LessonPanelV2 from "@/components/LessonPanelV2";
@@ -342,9 +343,13 @@ const StudentsListPage = () => {
                 </div>
 
                 <div className="repeto-sl-tabs-row">
-                    <div className="repeto-sl-pills">
-                        {filterTabs.map((tab) => {
-                            const count =
+                    <PillTabs
+                        value={type}
+                        onChange={(v) => setType(v)}
+                        options={filterTabs.map((tab) => ({
+                            value: tab.value,
+                            label: tab.label,
+                            count:
                                 tab.value === "all"
                                     ? stats.total
                                     : tab.value === "active"
@@ -353,21 +358,10 @@ const StudentsListPage = () => {
                                     ? stats.paused
                                     : tab.value === "archived"
                                     ? stats.archived
-                                    : stats.debt;
-                            return (
-                                <button
-                                    key={tab.value}
-                                    className={`repeto-sl-pill${type === tab.value ? " repeto-sl-pill--active" : ""}`}
-                                    onClick={() => setType(tab.value)}
-                                >
-                                    {tab.label}
-                                    {count > 0 && (
-                                        <span className="repeto-sl-pill__count">{count}</span>
-                                    )}
-                                </button>
-                            );
-                        })}
-                    </div>
+                                    : stats.debt,
+                        }))}
+                        ariaLabel="Фильтр учеников"
+                    />
                 </div>
 
                 {loading ? (

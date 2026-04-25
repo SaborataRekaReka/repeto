@@ -1,0 +1,165 @@
+/* ==========================================================================
+   Theme Components Layer
+   Shared component rules centralized here to avoid scattered override edits.
+   ========================================================================== */
+
+/* Widget/card chrome: borderless + very subtle hover */
+:where(
+    .g-card,
+    .repeto-section-card,
+    .repeto-soft-card,
+    .repeto-week-load-card,
+    .repeto-finance-summary-card,
+    .repeto-balance-table-card,
+    .repeto-income-card,
+    .repeto-conversion-card,
+    .repeto-expiring-packages-card,
+    .repeto-recent-payments-card,
+    .repeto-debts-card,
+    .repeto-week-schedule-card,
+    .repeto-today-schedule-card,
+    .repeto-schedule-calendar-card,
+    .repeto-availability-card
+) {
+    border: none !important;
+    box-shadow: none !important;
+}
+
+:where(
+    .g-card:hover,
+    .repeto-section-card:hover,
+    .repeto-soft-card:hover,
+    .repeto-week-load-card:hover,
+    .repeto-finance-summary-card:hover,
+    .repeto-balance-table-card:hover,
+    .repeto-income-card:hover,
+    .repeto-conversion-card:hover,
+    .repeto-expiring-packages-card:hover,
+    .repeto-recent-payments-card:hover,
+    .repeto-debts-card:hover,
+    .repeto-week-schedule-card:hover,
+    .repeto-today-schedule-card:hover,
+    .repeto-schedule-calendar-card:hover,
+    .repeto-availability-card:hover
+) {
+    background: var(--repeto-widget-hover) !important;
+    border-color: transparent !important;
+}
+
+/* Stronger dashboard-specific overrides to beat legacy high-specificity rules. */
+.repeto-tochka-dash .g-card,
+.repeto-tochka-dash .repeto-section-card,
+.repeto-tochka-dash .repeto-soft-card,
+.repeto-tochka-dash .repeto-stat-card,
+.repeto-tochka-dash .repeto-task-tile {
+    border: none !important;
+    box-shadow: none !important;
+    background: var(--repeto-surface-elevated) !important;
+    transition: background-color 0.14s ease !important;
+}
+
+.repeto-tochka-dash .g-card:hover,
+.repeto-tochka-dash .repeto-section-card:hover,
+.repeto-tochka-dash .repeto-soft-card:hover,
+.repeto-tochka-dash .repeto-stat-card:hover,
+.repeto-tochka-dash .repeto-task-tile:hover {
+    border-color: transparent !important;
+    background: var(--repeto-widget-hover) !important;
+}
+
+/* Dashboard widget internals: remove decorative separators/dividers */
+.repeto-tochka-dash .repeto-week-lesson-row {
+    border-top: none !important;
+}
+
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-week-lesson-row {
+    border-top: none !important;
+}
+
+.repeto-tochka-dash .repeto-week-day-header {
+    border-top: none !important;
+    border-bottom: none !important;
+}
+
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-week-day-header,
+.repeto-tochka-dash .repeto-dashboard-grid__aside .repeto-week-day-header--today {
+    border-top: none !important;
+    border-bottom: none !important;
+}
+
+.repeto-tochka-dash .repeto-recent-payments-ops .repeto-portal-balance-operation-row + .repeto-portal-balance-operation-row {
+    border-top: none !important;
+}
+
+.repeto-tochka-dash .repeto-card-header {
+    border-bottom: none !important;
+}
+
+.repeto-tochka-dash .repeto-week-lesson-row:hover,
+.repeto-tochka-dash .repeto-recent-payments-ops .repeto-portal-balance-operation-row:hover {
+    background: var(--repeto-widget-hover) !important;
+}
+
+.repeto-tochka-dash .repeto-card-body > hr,
+.repeto-tochka-dash .repeto-dashboard-grid__aside hr {
+    display: none !important;
+}
+
+/* Schedule card surfaces */
+.repeto-calendar-header {
+    background: var(--repeto-surface-muted-soft);
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-calendar-header {
+    background: var(--surface-subtle);
+}
+
+.repeto-availability-card__body {
+    border-top: none !important;
+}
+
+/* Working hours widget: white surface + readable text in both themes */
+.repeto-availability-card {
+    background: #ffffff !important;
+    --g-color-text-primary: #1f2937;
+    --g-color-text-secondary: #6b7280;
+    --g-color-text-hint: #6b7280;
+    --g-color-line-generic: rgba(31, 41, 55, 0.14);
+}
+
+.repeto-availability-card__header,
+.repeto-availability-card__body {
+    background: #ffffff !important;
+}
+
+/* Context sidebar collapse: avoid squeeze/wrap during animation */
+.repeto-context-sidebar {
+    transition: opacity 0.14s ease, transform 0.16s ease !important;
+    will-change: opacity, transform;
+}
+
+.repeto-context-sidebar__inner {
+    width: var(--repeto-shell-context-sidebar-width);
+    min-width: var(--repeto-shell-context-sidebar-width);
+    max-width: var(--repeto-shell-context-sidebar-width);
+    overflow-x: hidden;
+    scrollbar-gutter: stable;
+}
+
+.repeto-context-sidebar__item,
+.repeto-context-sidebar__item-text {
+    white-space: nowrap;
+}
+
+.repeto-context-sidebar__item-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.repeto-context-sidebar--collapsed {
+    width: var(--repeto-shell-context-sidebar-width) !important;
+    opacity: 0;
+    transform: translateX(-10px);
+    visibility: hidden;
+    pointer-events: none;
+}

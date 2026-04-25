@@ -63,7 +63,7 @@ const Menu = ({ visible }: MenuProps) => {
                                 }`}
                                 style={{
                                     backgroundColor:
-                                        link.counterColor || "#AE7AFF",
+                                        link.counterColor || "var(--accent)",
                                 }}
                             >
                                 {counter}

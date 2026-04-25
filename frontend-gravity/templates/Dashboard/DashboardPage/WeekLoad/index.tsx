@@ -397,18 +397,12 @@ const WeekLoad = () => {
                     <aside className="repeto-week-load__aside">
                         <div className="repeto-week-load__aside-head">
                             <div className="repeto-week-load__title-group">
-                                <Text variant="subheader-2">Нагрузка по слотам</Text>
+                                <Text variant="subheader-2">Ваша нагрузка</Text>
                                 <Text variant="caption-2" color="secondary">
                                     {periodLabel}
                                 </Text>
                             </div>
-                            <Link
-                                href="/schedule"
-                                className="repeto-card-chevron repeto-week-load__aside-chevron"
-                                aria-label="Открыть расписание"
-                            >
-                                <Icon data={ChevronRight as IconData} size={18} />
-                            </Link>
+
                         </div>
 
                         <ul className="repeto-week-load__legend">

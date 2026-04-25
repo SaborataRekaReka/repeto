@@ -85,7 +85,7 @@ const Month = ({ currentDate, onLessonClick, lessons = [] }: MonthProps) => {
     }
 
     return (
-        <Card view="outlined" style={{ overflow: "hidden" }}>
+        <Card view="outlined" className="repeto-schedule-calendar-card" style={{ overflow: "hidden" }}>
             <div className="repeto-calendar-shell">
                 <div className="repeto-calendar-shell__inner">
                     {/* Day-of-week header */}

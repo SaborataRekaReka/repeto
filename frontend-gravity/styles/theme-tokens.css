@@ -1,0 +1,41 @@
+/* ==========================================================================
+   Theme Tokens Layer
+   Loaded after legacy styles to centralize project-wide color decisions.
+   ========================================================================== */
+
+:root {
+    /* Brand */
+    --accent: #ae7aff;
+    --accent-hover: #9b68ef;
+    --accent-pressed: #7e49e2;
+    --repeto-on-brand: #ffffff;
+
+    /* Hover / states */
+    --repeto-widget-hover: color-mix(in srgb, var(--surface-card) 98%, var(--text-primary) 2%);
+    --repeto-table-row-hover: color-mix(in srgb, var(--text-primary) 10%, transparent);
+    --repeto-surface-elevated-hover: color-mix(in srgb, var(--surface-card) 97%, var(--text-primary) 3%);
+
+    /* Active navigation state (both themes share the same logic) */
+    --repeto-nav-active-bg: var(--accent);
+    --repeto-nav-active-bg-hover: var(--accent-hover);
+    --repeto-nav-active-line: transparent;
+    --repeto-nav-active-text: var(--repeto-on-brand);
+    --repeto-nav-active-icon: var(--repeto-on-brand);
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) {
+    --accent: #ae7aff;
+    --accent-hover: #c4a5ff;
+    --accent-pressed: #9b68ef;
+    --repeto-on-brand: #ffffff;
+
+    --repeto-widget-hover: color-mix(in srgb, var(--surface-card) 94%, var(--text-primary) 6%);
+    --repeto-table-row-hover: color-mix(in srgb, var(--text-primary) 18%, transparent);
+    --repeto-surface-elevated-hover: color-mix(in srgb, var(--surface-card) 92%, var(--text-primary) 8%);
+
+    --repeto-nav-active-bg: var(--accent);
+    --repeto-nav-active-bg-hover: var(--accent-hover);
+    --repeto-nav-active-line: transparent;
+    --repeto-nav-active-text: var(--repeto-on-brand);
+    --repeto-nav-active-icon: var(--repeto-on-brand);
+}

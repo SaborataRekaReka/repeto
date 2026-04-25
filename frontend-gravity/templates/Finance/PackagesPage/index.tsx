@@ -17,6 +17,7 @@ import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 import StudentAvatar from "@/components/StudentAvatar";
 import CreatePackageModal from "@/components/CreatePackageModal";
 import { usePackages } from "@/hooks/usePackages";
+import PillTabs from "@/components/PillTabs";
 import { getPackageStatusLabel } from "@/mocks/packages";
 import type { LessonPackage } from "@/types/package";
 
@@ -177,30 +178,23 @@ const PackagesPage = () => {
                 </div>
 
                 <div className="repeto-sl-tabs-row">
-                    <div className="repeto-sl-pills">
-                        {filterTabs.map((t) => {
-                            const count =
+                    <PillTabs
+                        value={tab}
+                        onChange={(v) => setTab(v)}
+                        options={filterTabs.map((t) => ({
+                            value: t.value,
+                            label: t.label,
+                            count:
                                 t.value === "all"
                                     ? statusStats.total
                                     : t.value === "active"
                                     ? statusStats.active
                                     : t.value === "completed"
                                     ? statusStats.completed
-                                    : statusStats.expired;
-                            return (
-                                <button
-                                    key={t.value}
-                                    className={`repeto-sl-pill${tab === t.value ? " repeto-sl-pill--active" : ""}`}
-                                    onClick={() => setTab(t.value)}
-                                >
-                                    {t.label}
-                                    {count > 0 && (
-                                        <span className="repeto-sl-pill__count">{count}</span>
-                                    )}
-                                </button>
-                            );
-                        })}
-                    </div>
+                                    : statusStats.expired,
+                        }))}
+                        ariaLabel="Фильтр пакетов"
+                    />
                 </div>
 
                 {loading ? (

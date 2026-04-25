@@ -61,7 +61,7 @@ const WeekSchedule = ({ onLessonClick, refreshKey }: Props) => {
                 </div>
             ) : (
                 <div>
-                    {days.map((date, dayIdx) => {
+                    {days.map((date) => {
                         const d = new Date(date + "T00:00:00");
                         const dayLabel = `${dayNames[d.getDay()]}, ${d.getDate()} ${d.toLocaleDateString("ru-RU", { month: "short" })}`;
                         const isToday =
@@ -69,9 +69,6 @@ const WeekSchedule = ({ onLessonClick, refreshKey }: Props) => {
 
                         return (
                             <div key={date}>
-                                {dayIdx > 0 && (
-                                    <div style={{ height: 1, background: "var(--g-color-line-generic)" }} />
-                                )}
                                 <div
                                     className={isToday ? "repeto-week-day-header repeto-week-day-header--today" : "repeto-week-day-header"}
                                 >

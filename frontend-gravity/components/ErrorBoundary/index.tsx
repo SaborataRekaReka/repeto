@@ -51,8 +51,8 @@ export class ErrorBoundary extends React.Component<
                             fontSize: 14,
                             borderRadius: 8,
                             border: "none",
-                            backgroundColor: "#AE7AFF",
-                            color: "#fff",
+                            backgroundColor: "var(--accent)",
+                            color: "var(--repeto-on-brand, #fff)",
                             cursor: "pointer",
                         }}
                     >

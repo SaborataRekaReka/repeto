@@ -1023,14 +1023,17 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
             {contextSidebarVisible && (
                 <aside className={`repeto-context-sidebar ${contextSidebarExpanded ? "" : "repeto-context-sidebar--collapsed"}`}>
                     <div className="repeto-context-sidebar__inner">
-                        <button
-                            type="button"
-                            className="repeto-context-sidebar__collapse-btn"
-                            aria-label="Свернуть меню раздела"
-                            onClick={toggleContextSidebar}
-                        >
-                            <GIcon data={ChevronsLeft as IconData} size={18} />
-                        </button>
+                        <div className="repeto-context-sidebar__header-row">
+                            <span className="repeto-context-sidebar__section-label">Быстрые действия</span>
+                            <button
+                                type="button"
+                                className="repeto-context-sidebar__collapse-btn"
+                                aria-label="Свернуть меню раздела"
+                                onClick={toggleContextSidebar}
+                            >
+                                <GIcon data={ChevronsLeft as IconData} size={16} />
+                            </button>
+                        </div>
 
                         {hasPageContextSidebar && shellContextSidebar?.sidebarHeader && (
                             <div className="repeto-context-sidebar__meta">{shellContextSidebar.sidebarHeader}</div>

@@ -1,0 +1,62 @@
+/* ==========================================================================
+   Navigation Theme Layer (loaded last)
+   Single source of truth for active sidebar states across light/dark themes.
+   ========================================================================== */
+
+:where(
+    .repeto-sidebar__item--active,
+    .repeto-sidebar--flat .repeto-sidebar__item--main.repeto-sidebar__item--active,
+    .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--main.repeto-sidebar__item--active,
+    .repeto-context-sidebar__item--active
+) {
+    background: var(--repeto-nav-active-bg) !important;
+    color: var(--repeto-nav-active-text) !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+}
+
+:where(
+    .repeto-sidebar__item--active:hover,
+    .repeto-sidebar--flat .repeto-sidebar__item--main.repeto-sidebar__item--active:hover,
+    .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--main.repeto-sidebar__item--active:hover,
+    .repeto-context-sidebar__item--active:hover
+) {
+    background: var(--repeto-nav-active-bg-hover) !important;
+    color: var(--repeto-nav-active-text) !important;
+}
+
+:where(
+    .repeto-sidebar__item--active .repeto-sidebar__item-text,
+    .repeto-sidebar__item--active .repeto-sidebar__item-rail-label,
+    .repeto-context-sidebar__item--active .repeto-context-sidebar__item-text,
+    .repeto-context-sidebar__item--active .repeto-context-sidebar__item-icon
+) {
+    color: var(--repeto-nav-active-text) !important;
+}
+
+:where(
+    .repeto-sidebar__item--active .repeto-sidebar__item-icon .g-icon,
+    .repeto-context-sidebar__item--active .repeto-context-sidebar__item-icon .g-icon,
+    .repeto-sidebar__item--active .repeto-animated-sidebar-icon__fallback .g-icon,
+    .repeto-context-sidebar__item--active .repeto-animated-sidebar-icon__fallback .g-icon
+) {
+    color: var(--repeto-nav-active-icon) !important;
+}
+
+:where(
+    .repeto-sidebar__item--active .repeto-sidebar__item-icon .g-icon svg [stroke],
+    .repeto-context-sidebar__item--active .repeto-context-sidebar__item-icon .g-icon svg [stroke],
+    .repeto-sidebar__item--active .repeto-animated-sidebar-icon__canvas :is(path, circle, ellipse, line, polyline, polygon, rect),
+    .repeto-context-sidebar__item--active .repeto-animated-sidebar-icon__canvas :is(path, circle, ellipse, line, polyline, polygon, rect)
+) {
+    stroke: var(--repeto-nav-active-icon) !important;
+}
+
+:where(
+    .repeto-sidebar__item--active .repeto-sidebar__item-icon .g-icon svg [fill]:not([fill="none"]),
+    .repeto-context-sidebar__item--active .repeto-context-sidebar__item-icon .g-icon svg [fill]:not([fill="none"]),
+    .repeto-sidebar__item--active .repeto-animated-sidebar-icon__canvas [fill]:not([fill="none"]),
+    .repeto-context-sidebar__item--active .repeto-animated-sidebar-icon__canvas [fill]:not([fill="none"])
+) {
+    fill: var(--repeto-nav-active-icon) !important;
+}
