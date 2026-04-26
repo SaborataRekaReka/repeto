@@ -427,30 +427,37 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
         if (!isMobileViewport || !activeMobileNavUrl) return;
 
         const nav = mobileNavRef.current;
-        const activeItem = mobileNavItemRefs.current[activeMobileNavUrl];
-        if (!nav || !activeItem) return;
+        if (!nav) return;
 
         const maxScrollLeft = nav.scrollWidth - nav.clientWidth;
         if (maxScrollLeft <= 0) return;
 
-        const scrollPadding = 18;
-        const itemLeft = activeItem.offsetLeft;
-        const itemRight = itemLeft + activeItem.offsetWidth;
-        const visibleLeft = nav.scrollLeft + scrollPadding;
-        const visibleRight = nav.scrollLeft + nav.clientWidth - scrollPadding;
+        const activeIndex = mobileNavItems.findIndex((item) => item.url === activeMobileNavUrl);
+        if (activeIndex < 0) return;
 
-        if (itemLeft >= visibleLeft && itemRight <= visibleRight) {
+        // Find the next item element (one to the right of the active one).
+        const nextItem =
+            activeIndex < mobileNavItems.length - 1
+                ? mobileNavItemRefs.current[mobileNavItems[activeIndex + 1].url]
+                : null;
+
+        if (!nextItem) {
+            // Active is the last item — scroll all the way to the right end.
+            nav.scrollTo({ left: maxScrollLeft, behavior: "smooth" });
             return;
         }
 
-        const nextLeft = itemLeft < visibleLeft
-            ? itemLeft - scrollPadding
-            : itemRight - nav.clientWidth + scrollPadding;
+        // Reveal the next item: scroll until its right edge is visible with a small padding.
+        const scrollPadding = 8;
+        const nextItemRight = nextItem.offsetLeft + nextItem.offsetWidth;
+        const targetLeft = nextItemRight - nav.clientWidth + scrollPadding;
 
-        nav.scrollTo({
-            left: Math.max(0, Math.min(maxScrollLeft, nextLeft)),
-            behavior: "smooth",
-        });
+        if (targetLeft > nav.scrollLeft) {
+            nav.scrollTo({
+                left: Math.min(maxScrollLeft, targetLeft),
+                behavior: "smooth",
+            });
+        }
     }, [activeMobileNavUrl, isMobileViewport]);
 
     const openPublicPage = useCallback(() => {
