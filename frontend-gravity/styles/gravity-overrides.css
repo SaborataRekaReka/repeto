@@ -173,7 +173,7 @@ html body.g-root_theme_dark {
     --repeto-line-soft: #f0f0f0;
     --repeto-status-success: #22c55e;
     --repeto-on-brand: #ffffff;
-    --repeto-widget-hover: color-mix(in srgb, var(--surface-card) 97%, var(--text-primary) 3%);
+    --repeto-widget-hover: color-mix(in srgb, var(--surface-card) 90%, var(--text-primary) 10%);
     --repeto-table-row-hover: color-mix(in srgb, var(--text-primary) 10%, transparent);
     --repeto-nav-text: var(--text-secondary);
     --repeto-nav-icon: var(--text-secondary);
@@ -256,7 +256,7 @@ html body.g-root_theme_dark {
     --repeto-line-soft: var(--border-strong);
     --repeto-status-success: #73d8a8;
     --repeto-on-brand: #ffffff;
-    --repeto-widget-hover: color-mix(in srgb, var(--surface-card) 94%, var(--text-primary) 6%);
+    --repeto-widget-hover: color-mix(in srgb, var(--surface-card) 82%, var(--text-primary) 18%);
     --repeto-table-row-hover: color-mix(in srgb, var(--text-primary) 18%, transparent);
     --repeto-nav-text: var(--text-secondary);
     --repeto-nav-icon: var(--text-secondary);
@@ -1324,20 +1324,8 @@ body {
     color: var(--repeto-on-brand);
 }
 
-.repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--main.repeto-sidebar__item--active .repeto-sidebar__item-icon .g-icon svg [stroke] {
-    stroke: var(--repeto-on-brand) !important;
-}
-
-.repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--main.repeto-sidebar__item--active .repeto-sidebar__item-icon .g-icon svg [fill]:not([fill="none"]) {
-    fill: var(--repeto-on-brand) !important;
-}
-
 .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--main.repeto-sidebar__item--active .repeto-animated-sidebar-icon__canvas :is(path, circle, ellipse, line, polyline, polygon, rect) {
     stroke: var(--repeto-on-brand) !important;
-}
-
-.repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--main.repeto-sidebar__item--active .repeto-animated-sidebar-icon__canvas [fill]:not([fill="none"]) {
-    fill: var(--repeto-on-brand) !important;
 }
 
 .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--main:hover {
@@ -1364,11 +1352,13 @@ body {
 
 .repeto-context-sidebar__inner {
     height: 100%;
+    min-width: var(--repeto-shell-context-sidebar-width);
     padding: 14px 12px 24px;
     display: flex;
     flex-direction: column;
     gap: 12px;
     overflow-y: auto;
+    overflow-x: hidden;
     opacity: 1;
     transition: opacity 0.18s ease;
 }
@@ -1496,20 +1486,8 @@ body {
     color: currentColor;
 }
 
-.repeto-context-sidebar__item-icon .g-icon svg [stroke] {
-    stroke: currentColor !important;
-}
-
-.repeto-context-sidebar__item-icon .g-icon svg [fill]:not([fill="none"]) {
-    fill: currentColor !important;
-}
-
 .repeto-context-sidebar .repeto-animated-sidebar-icon__canvas :is(path, circle, ellipse, line, polyline, polygon, rect) {
     stroke: currentColor !important;
-}
-
-.repeto-context-sidebar .repeto-animated-sidebar-icon__canvas [fill]:not([fill="none"]) {
-    fill: currentColor !important;
 }
 
 .repeto-context-sidebar .repeto-animated-sidebar-icon__fallback .g-icon {

@@ -41,9 +41,13 @@ const AvailabilityEditor = () => {
     // Рабочие часы — нейтральная сетка. Акцент (accent) оставлен только для
     // header-иконки и активной «сегодня»-метки в календаре; сама карта занятости
     // больше не перекрашивает половину экрана в зелёный.
-    const workHoursActiveBg = "#dcfce7";
+    const workHoursActiveBg = isDarkTheme
+        ? "color-mix(in srgb, var(--accent) 34%, transparent)"
+        : "#dcfce7";
     const workHoursIdleBg = "transparent";
-    const workHoursDayActiveBg = "#22c55e";
+    const workHoursDayActiveBg = isDarkTheme
+        ? "var(--accent)"
+        : "#22c55e";
     const workHoursDayActiveText = "#ffffff";
     const headerIconBg = isDarkTheme
         ? "var(--g-color-base-brand-light)"
@@ -266,7 +270,7 @@ const AvailabilityEditor = () => {
         <Card
             view="outlined"
             className="repeto-availability-card"
-            style={{ marginBottom: 24, overflow: "hidden", background: "#ffffff" }}
+            style={{ marginBottom: 24, overflow: "hidden" }}
         >
             {/* ── Header (toggle) ── */}
             <div

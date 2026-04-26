@@ -163,3 +163,377 @@
     visibility: hidden;
     pointer-events: none;
 }
+
+/* Dashboard tasks: adaptive count, mobile stack, and restored lavender color. */
+.repeto-tochka-dash .repeto-task-tiles[data-count="1"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.repeto-tochka-dash .repeto-task-tiles[data-count="2"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.repeto-tochka-dash .repeto-task-tiles[data-count="3"] {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.repeto-tochka-dash .repeto-task-panel .repeto-task-tile,
+.repeto-tochka-dash .repeto-task-stack__card,
+.repeto-tochka-dash .repeto-task-mobile-modal .repeto-task-tile {
+    background: #E2DDF6 !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.repeto-tochka-dash .repeto-task-panel .repeto-task-tile:hover,
+.repeto-tochka-dash .repeto-task-mobile-modal .repeto-task-tile:hover {
+    background: #D8D0F1 !important;
+}
+
+.repeto-tochka-dash .repeto-task-panel .repeto-task-tile__kicker,
+.repeto-tochka-dash .repeto-task-mobile-modal .repeto-task-tile__kicker {
+    color: #6f6880 !important;
+}
+
+.repeto-tochka-dash .repeto-task-panel .repeto-task-tile__title,
+.repeto-tochka-dash .repeto-task-mobile-modal .repeto-task-tile__title {
+    color: #181521 !important;
+}
+
+.repeto-tochka-dash .repeto-task-panel .repeto-task-tile__meta,
+.repeto-tochka-dash .repeto-task-mobile-modal .repeto-task-tile__meta {
+    color: #5c556f !important;
+}
+
+.repeto-task-stack {
+    display: none;
+}
+
+@media (max-width: 768px), (max-height: 520px) and (pointer: coarse) {
+    .repeto-tochka-dash .repeto-task-tiles {
+        display: none !important;
+    }
+
+    .repeto-tochka-dash .repeto-task-panel {
+        margin-bottom: 14px;
+    }
+
+    .repeto-task-stack {
+        position: relative;
+        display: block;
+        width: 100%;
+        min-height: 102px;
+        padding: 0 0 12px;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .repeto-task-stack[data-count="1"] {
+        padding-bottom: 0;
+    }
+
+    .repeto-task-stack__layer {
+        position: absolute;
+        left: 12px;
+        right: 12px;
+        height: 72px;
+        border-radius: 14px;
+        background: #D7CFF1;
+        pointer-events: none;
+    }
+
+    .repeto-task-stack__layer--second {
+        bottom: 4px;
+        transform: translateY(8px);
+    }
+
+    .repeto-task-stack__layer--third {
+        left: 24px;
+        right: 24px;
+        bottom: 0;
+        background: #CEC3EC;
+        transform: translateY(14px);
+    }
+
+    .repeto-task-stack__card {
+        position: relative;
+        z-index: 1;
+        min-height: 92px;
+        padding: 14px 16px;
+        border-radius: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .repeto-task-mobile-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 240;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: max(22px, env(safe-area-inset-top)) 16px 16px;
+    }
+
+    .repeto-task-mobile-modal__backdrop {
+        position: fixed;
+        inset: 0;
+        border: 0;
+        padding: 0;
+        background: rgba(18, 20, 27, 0.64);
+        backdrop-filter: blur(6px);
+    }
+
+    .repeto-task-mobile-modal__panel {
+        position: relative;
+        z-index: 1;
+        width: min(392px, 100%);
+        max-height: min(720px, calc(100dvh - 36px));
+        overflow-y: auto;
+        border-radius: 18px;
+        background: var(--repeto-surface-elevated, #fff);
+        padding: 16px;
+        box-shadow: none;
+    }
+
+    .repeto-task-mobile-modal__head {
+        min-height: 36px;
+        display: grid;
+        grid-template-columns: 36px minmax(0, 1fr) 36px;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+
+    .repeto-task-mobile-modal__title {
+        grid-column: 2;
+        margin: 0;
+        text-align: center;
+        font-size: 16px;
+        line-height: 22px;
+        font-weight: 600;
+        color: var(--g-color-text-primary);
+    }
+
+    .repeto-task-mobile-modal__close {
+        grid-column: 3;
+        width: 36px;
+        height: 36px;
+        border: 0;
+        border-radius: 12px;
+        background: transparent;
+        color: var(--g-color-text-primary);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+
+    .repeto-task-mobile-modal__list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .repeto-task-mobile-modal .repeto-task-tile {
+        min-height: 96px;
+    }
+}
+
+/* Schedule surfaces. */
+.repeto-calendar-header {
+    background: #ffffff !important;
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-calendar-header {
+    background: var(--surface-subtle, #312b35) !important;
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-availability-card,
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-availability-card__body {
+    background: var(--surface-card, #2a252c) !important;
+    --g-color-text-primary: var(--text-primary, #f4effa);
+    --g-color-text-secondary: var(--text-secondary, #b9afca);
+    --g-color-text-hint: var(--text-tertiary, #9d90b2);
+    --g-color-line-generic: rgba(255, 255, 255, 0.12);
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-availability-card__header {
+    background: var(--surface-subtle, #312b35) !important;
+}
+
+/* Finance monthly segment chart color roles. */
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--cancelled {
+    --segment-bg: #F7DADA;
+    --segment-marker: #D84D4D;
+    --segment-bar: #D84D4D;
+}
+
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--received {
+    --segment-bg: #DDF8EF;
+    --segment-marker: #3F9180;
+    --segment-bar: #3F9180;
+}
+
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--planned {
+    --segment-bg: #E2DDF6;
+    --segment-marker: #835DE1;
+    --segment-bar: #835DE1;
+}
+
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--debt {
+    --segment-bg: #FBEFD2;
+    --segment-marker: #B7791F;
+    --segment-bar: #B7791F;
+}
+
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item {
+    background: var(--segment-bg, var(--t-surface)) !important;
+}
+
+.repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__bar {
+    background: var(--segment-bar, var(--segment-marker, var(--t-brand))) !important;
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--cancelled {
+    --segment-bg: color-mix(in srgb, #D84D4D 24%, var(--t-surface));
+    --segment-marker: #F08F9A;
+    --segment-bar: #F08F9A;
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--received {
+    --segment-bg: color-mix(in srgb, #3F9180 28%, var(--t-surface));
+    --segment-marker: #8ADAB8;
+    --segment-bar: #8ADAB8;
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--planned {
+    --segment-bg: color-mix(in srgb, var(--accent) 28%, var(--t-surface));
+    --segment-marker: var(--accent);
+    --segment-bar: var(--accent);
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--debt {
+    --segment-bg: color-mix(in srgb, #B7791F 30%, var(--t-surface));
+    --segment-marker: #F6C76D;
+    --segment-bar: #F6C76D;
+}
+
+/* Booking selected date/time must be visibly active. */
+.repeto-bk-cal-day--selected,
+.repeto-bk-time-slot--active {
+    background: var(--g-color-base-brand, #835DE1) !important;
+    color: var(--g-color-text-light-primary, #ffffff) !important;
+}
+
+.repeto-bk-time-slot--active:hover,
+.repeto-bk-cal-day--selected:hover:not(:disabled) {
+    background: var(--g-color-base-brand-hover, #7945EB) !important;
+    color: var(--g-color-text-light-primary, #ffffff) !important;
+}
+
+/* Flat modal chrome for lp2 and shared Gravity dialogs. */
+.lp2:not(.lp2--homework),
+.repeto-app-dialog {
+    box-shadow: none !important;
+}
+
+.lp2__topbar,
+.lp2__bottombar,
+.repeto-app-dialog .g-dialog-header,
+.repeto-app-dialog .g-dialog-footer {
+    border-top: 0 !important;
+    border-bottom: 0 !important;
+}
+
+.repeto-app-dialog .g-dialog-body {
+    background: var(--g-color-base-float) !important;
+}
+
+/* Keep phone landscape on the mobile shell. */
+@media (max-height: 520px) and (pointer: coarse) {
+    .repeto-top-header,
+    .repeto-sidebar,
+    .repeto-context-sidebar {
+        display: none !important;
+    }
+
+    .repeto-content--flat {
+        margin-left: 0 !important;
+        padding-top: 0 !important;
+    }
+
+    .repeto-mobile-nav {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 160;
+        display: flex !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        scrollbar-width: none;
+        scroll-padding-inline: 18px;
+        background: var(--g-color-base-float);
+        border-top: 1px solid var(--g-color-line-generic);
+        box-shadow: 0 -6px 18px rgba(18, 22, 30, 0.08);
+        padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+        gap: 2px;
+    }
+
+    .repeto-mobile-nav::-webkit-scrollbar {
+        display: none;
+    }
+
+    .repeto-mobile-nav__item {
+        min-width: calc(20% - 0.4px) !important;
+        flex: 0 0 calc(20% - 0.4px) !important;
+    }
+}
+
+@media (max-width: 768px), (max-height: 520px) and (pointer: coarse) {
+    .repeto-mobile-nav {
+        scroll-padding-inline: 18px;
+    }
+}
+
+/* Public tutor widget: simple left-aligned mobile layout. */
+@media (max-width: 560px) {
+    .repeto-tp-widget__head {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        text-align: left !important;
+        gap: 12px !important;
+    }
+
+    .repeto-tp-widget__avatar {
+        width: 76px !important;
+        height: 76px !important;
+        max-height: 76px !important;
+        align-self: flex-start !important;
+    }
+
+    .repeto-tp-widget__stats {
+        justify-content: flex-start !important;
+    }
+
+    .repeto-tp-widget__meta-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .repeto-tp-widget__policy {
+        margin-left: 0;
+        align-self: flex-start;
+        text-align: left;
+    }
+
+    .repeto-tp-widget__switcher {
+        top: 6px;
+        right: 6px;
+    }
+}

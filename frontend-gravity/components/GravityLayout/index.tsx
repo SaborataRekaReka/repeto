@@ -299,7 +299,7 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
             return;
         }
 
-        const mediaQuery = window.matchMedia("(max-width: 768px)");
+        const mediaQuery = window.matchMedia("(max-width: 768px), (max-height: 520px) and (pointer: coarse)");
         const syncViewport = () => {
             setIsMobileViewport(mediaQuery.matches);
         };
@@ -367,6 +367,8 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
     const [hoveredSidebarIconKey, setHoveredSidebarIconKey] = useState<string | null>(null);
     const topHeaderSearchRef = useRef<HTMLDivElement>(null);
     const mobileSearchRef = useRef<HTMLDivElement>(null);
+    const mobileNavRef = useRef<HTMLElement>(null);
+    const mobileNavItemRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
     const useTopHeaderSearch = useFlatLayout && !isMobileViewport;
     const useRailSidebar = useFlatLayout && !isMobileViewport;
 
@@ -412,6 +414,35 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
         : [];
     const mobileSearchActive = isMobileViewport && searchOpen;
     const notificationsActive = pathname === "/notifications" || pathname.startsWith("/notifications/");
+    const activeMobileNavUrl = useMemo(() => {
+        const active = mobileNavItems.find(
+            (item) =>
+                pathname === item.url ||
+                (item.url !== "/dashboard" && pathname.startsWith(item.url + "/")),
+        );
+        return active?.url || null;
+    }, [pathname]);
+
+    useEffect(() => {
+        if (!isMobileViewport || !activeMobileNavUrl) return;
+
+        const nav = mobileNavRef.current;
+        const activeItem = mobileNavItemRefs.current[activeMobileNavUrl];
+        if (!nav || !activeItem) return;
+
+        const navRect = nav.getBoundingClientRect();
+        const itemRect = activeItem.getBoundingClientRect();
+        const nextLeft =
+            nav.scrollLeft +
+            itemRect.left -
+            navRect.left -
+            (navRect.width - itemRect.width) / 2;
+
+        nav.scrollTo({
+            left: Math.max(0, nextLeft),
+            behavior: "smooth",
+        });
+    }, [activeMobileNavUrl, isMobileViewport]);
 
     const openPublicPage = useCallback(() => {
         setProfileMenuOpen(false);
@@ -1408,16 +1439,17 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                 </>
             )}
 
-            <nav className="repeto-mobile-nav" aria-label="Мобильная навигация">
+            <nav ref={mobileNavRef} className="repeto-mobile-nav" aria-label="Мобильная навигация">
                 {mobileNavItems.map((item) => {
-                    const isActive =
-                        pathname === item.url ||
-                        (item.url !== "/dashboard" && pathname.startsWith(item.url + "/"));
+                    const isActive = activeMobileNavUrl === item.url;
 
                     return (
                         <Link
                             key={item.url}
                             href={item.url}
+                            ref={(node) => {
+                                mobileNavItemRefs.current[item.url] = node;
+                            }}
                             className={`repeto-mobile-nav__item ${isActive ? "repeto-mobile-nav__item--active" : ""}`}
                         >
                             <span className="repeto-mobile-nav__icon">
