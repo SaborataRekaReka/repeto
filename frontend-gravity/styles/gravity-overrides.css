@@ -906,10 +906,16 @@ body {
     position: relative;
     width: 100%;
     max-width: 560px;
+    z-index: 0;
 }
 
 .repeto-top-header__search--expanded {
     display: block;
+    isolation: isolate;
+}
+
+.repeto-top-header__search--expanded:focus-within {
+    z-index: 1450;
 }
 
 .repeto-top-header__search-field {
@@ -976,6 +982,7 @@ body {
     right: 0;
     width: auto;
     margin-top: 6px;
+    z-index: 1451;
 }
 
 .repeto-top-header__profile-dropdown {
@@ -1219,8 +1226,8 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 44px;
-    padding: 0;
+    min-height: 76px;
+    padding: 6px;
     border-bottom: 0;
 }
 
@@ -1233,24 +1240,30 @@ body {
 }
 
 .repeto-sidebar__context-expand-btn {
-    width: 20px;
-    height: 20px;
+    width: 100%;
+    min-height: 64px;
     border: none;
-    border-radius: 0;
+    border-radius: 12px;
     background: transparent;
     color: var(--text-tertiary);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    padding: 0;
+    padding: 8px 2px;
     opacity: 0.92;
-    transition: color 0.15s ease, opacity 0.15s ease;
+    transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 }
 
 .repeto-sidebar__context-expand-btn:hover {
+    background: var(--repeto-nav-hover-bg);
     color: var(--text-primary);
     opacity: 1;
+}
+
+.repeto-sidebar__context-expand-btn .g-icon {
+    width: 22px;
+    height: 22px;
 }
 
 .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__nav {
