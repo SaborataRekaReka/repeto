@@ -379,7 +379,7 @@ jobs:
           fi
 
       - name: Deploy on VPS
-        timeout-minutes: 12
+        timeout-minutes: 15
         shell: bash
         env:
           PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
@@ -395,261 +395,25 @@ jobs:
           ssh_port="${PROD_SSH_PORT:-22}"
           target="$SELECTED_USER@$ssh_host"
 
+          # Single-line remote command — avoids heredoc quoting/indentation issues entirely.
+          # The deploy script is pulled from git on the VPS itself (no heredoc needed).
+          remote_cmd="cd '$APP_PATH' \
+            && GIT_TERMINAL_PROMPT=0 git fetch --depth=1 origin main \
+            && git checkout main \
+            && git reset --hard origin/main \
+            && chmod +x scripts/deploy-vps.sh \
+            && DEPLOY_STARTED_EPOCH=\$(date -u +%s) bash scripts/deploy-vps.sh"
+
           if [ "$AUTH_MODE" = "key" ]; then
-            ssh -i ~/.ssh/id_ed25519 -p "$ssh_port" -o BatchMode=yes -o ConnectTimeout=10 "$target" "APP_PATH='$APP_PATH' bash -se" <<'EOF'
-          set -euo pipefail
-          cd "$APP_PATH"
-          git remote set-url origin https://github.com/SaborataRekaReka/repeto.git || true
-          GIT_TERMINAL_PROMPT=0 git fetch --depth=1 origin main
-          git checkout main
-          git reset --hard origin/main
-          echo "Deploying commit: $(git rev-parse --short=12 HEAD)"
-          git log -1 --pretty='format:%h %s (%ci)'
-          deploy_started_epoch="$(date -u +%s)"
-          echo "Deploy diagnostics: user=$(whoami) host=$(hostname) app_path=$(pwd) started_epoch=$deploy_started_epoch"
-          echo "Docker context: $(docker context show 2>/dev/null || echo unknown)"
-          docker compose version || true
-          echo "Compose state before deploy:"
-          docker compose -f docker-compose.prod.yml ps || true
-
-          if [ ! -s backend/.env ]; then
-            echo "::error::backend/.env is missing or empty on VPS"
-            exit 1
-          fi
-
-          db_url="$(grep '^DATABASE_URL=' backend/.env | head -n1 | cut -d= -f2- | tr -d '\r')"
-          if [ -z "$db_url" ]; then
-            echo "::error::DATABASE_URL is missing in backend/.env"
-            exit 1
-          fi
-
-          normalized_db_url="$(echo "$db_url" | sed -E 's#(://[^@]+@)(localhost|127\.0\.0\.1)(:[0-9]+)?/#\1postgres:5432/#')"
-          if [ "$normalized_db_url" != "$db_url" ]; then
-            awk -v value="$normalized_db_url" 'BEGIN{done=0} /^DATABASE_URL=/{print "DATABASE_URL=" value; done=1; next} {print} END{if(!done) print "DATABASE_URL=" value}' backend/.env > backend/.env.tmp
-            mv backend/.env.tmp backend/.env
-            db_url="$normalized_db_url"
-            echo "DATABASE_URL host normalized to postgres:5432 for docker deploy"
-          fi
-
-          db_url_body="${db_url#*://}"
-          db_creds_host="${db_url_body%%/*}"
-          db_name_raw="${db_url_body#*/}"
-          db_name_raw="${db_name_raw%%\?*}"
-          db_creds_raw="${db_creds_host%@*}"
-          db_user_raw="${db_creds_raw%%:*}"
-          db_pass_raw="${db_creds_raw#*:}"
-
-          if [ "$db_user_raw" = "$db_creds_raw" ]; then
-            db_pass_raw=""
-          fi
-
-          url_decode() {
-            local data="${1//+/ }"
-            printf '%b' "${data//%/\\x}"
-          }
-
-          db_user="$(url_decode "$db_user_raw")"
-          db_pass="$(url_decode "$db_pass_raw")"
-          db_name="$(url_decode "$db_name_raw")"
-
-          if [ -z "$db_user" ] || [ -z "$db_pass" ] || [ -z "$db_name" ]; then
-            echo "::error::Failed to parse non-empty DB credentials from DATABASE_URL"
-            exit 1
-          fi
-
-          export POSTGRES_USER="$db_user"
-          export POSTGRES_PASSWORD="$db_pass"
-          export POSTGRES_DB="$db_name"
-
-          db_user_sql="$(printf '%s' "$db_user" | sed 's/"/""/g')"
-          db_pass_sql="$(printf '%s' "$db_pass" | sed "s/'/''/g")"
-
-          if ! docker compose -f docker-compose.prod.yml up -d postgres; then
-            echo "Failed to start postgres service before credential sync"
-            docker compose -f docker-compose.prod.yml ps || true
-            docker compose -f docker-compose.prod.yml logs --no-color --tail=120 postgres || true
-            exit 1
-          fi
-
-          if ! docker compose -f docker-compose.prod.yml exec -T postgres sh -lc "psql -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\" -v ON_ERROR_STOP=1 -c \"ALTER ROLE \\\"$db_user_sql\\\" WITH LOGIN PASSWORD '$db_pass_sql';\""; then
-            echo "Failed to sync postgres role password from DATABASE_URL"
-            docker compose -f docker-compose.prod.yml ps || true
-            docker compose -f docker-compose.prod.yml logs --no-color --tail=120 postgres || true
-            exit 1
-          fi
-
-          echo "Clearing old images to ensure fresh build from latest source..."
-          # Remove all known name variants (old: app-*, new: repeto-*)
-          docker rmi repeto-frontend repeto-backend app-frontend app-backend 2>/dev/null || true
-          docker builder prune -f --filter type=exec.cachemount 2>/dev/null || true
-
-          echo "Building frontend with --no-cache to guarantee new CSS/JS is picked up..."
-          if ! docker compose -f docker-compose.prod.yml build --no-cache frontend backend; then
-            echo "docker compose build failed. Dumping diagnostics..."
-            exit 1
-          fi
-
-          if ! docker compose -f docker-compose.prod.yml up -d --force-recreate backend frontend nginx --remove-orphans; then
-            echo "docker compose up failed. Dumping diagnostics..."
-            docker compose -f docker-compose.prod.yml ps || true
-            docker compose -f docker-compose.prod.yml logs --no-color --tail=200 backend postgres redis nginx || true
-            exit 1
-          fi
-
-          backend_cid="$(docker compose -f docker-compose.prod.yml ps -q backend || true)"
-          frontend_cid="$(docker compose -f docker-compose.prod.yml ps -q frontend || true)"
-          if [ -z "$backend_cid" ] || [ -z "$frontend_cid" ]; then
-            echo "::error::Cannot resolve backend/frontend container IDs after deploy"
-            docker compose -f docker-compose.prod.yml ps || true
-            exit 1
-          fi
-
-          backend_started_at="$(docker inspect -f '{{.State.StartedAt}}' "$backend_cid" 2>/dev/null || true)"
-          frontend_started_at="$(docker inspect -f '{{.State.StartedAt}}' "$frontend_cid" 2>/dev/null || true)"
-          backend_started_epoch="$(date -u -d "$backend_started_at" +%s 2>/dev/null || echo 0)"
-          frontend_started_epoch="$(date -u -d "$frontend_started_at" +%s 2>/dev/null || echo 0)"
-          echo "Container start check: backend=$backend_started_at ($backend_started_epoch), frontend=$frontend_started_at ($frontend_started_epoch), deploy_started=$deploy_started_epoch"
-
-          if [ "$backend_started_epoch" -lt "$deploy_started_epoch" ] || [ "$frontend_started_epoch" -lt "$deploy_started_epoch" ]; then
-            echo "::error::Deploy finished without recreating backend/frontend containers in current compose project"
-            docker compose -f docker-compose.prod.yml ps || true
-            exit 1
-          fi
-
-          docker compose -f docker-compose.prod.yml exec -T nginx nginx -t
-          docker compose -f docker-compose.prod.yml exec -T nginx nginx -s reload
-          if [ -n "$frontend_cid" ]; then
-            docker exec "$frontend_cid" sh -lc 'echo "Frontend BUILD_ID: $(cat /app/.next/BUILD_ID 2>/dev/null || echo n/a)"'
-          fi
-          docker compose -f docker-compose.prod.yml ps
-          EOF
+            ssh -i ~/.ssh/id_ed25519 -p "$ssh_port" -o BatchMode=yes -o ConnectTimeout=30 \
+              -o ServerAliveInterval=30 -o ServerAliveCountMax=20 \
+              "$target" "$remote_cmd"
           else
-            sshpass -p "$PROD_SSH_PASSWORD" ssh -p "$ssh_port" -o PreferredAuthentications=password -o PubkeyAuthentication=no -o NumberOfPasswordPrompts=1 -o BatchMode=no -o ConnectTimeout=10 "$target" "APP_PATH='$APP_PATH' bash -se" <<'EOF'
-          set -euo pipefail
-          cd "$APP_PATH"
-          git remote set-url origin https://github.com/SaborataRekaReka/repeto.git || true
-          GIT_TERMINAL_PROMPT=0 git fetch --depth=1 origin main
-          git checkout main
-          git reset --hard origin/main
-          echo "Deploying commit: $(git rev-parse --short=12 HEAD)"
-          git log -1 --pretty='format:%h %s (%ci)'
-          deploy_started_epoch="$(date -u +%s)"
-          echo "Deploy diagnostics: user=$(whoami) host=$(hostname) app_path=$(pwd) started_epoch=$deploy_started_epoch"
-          echo "Docker context: $(docker context show 2>/dev/null || echo unknown)"
-          docker compose version || true
-          echo "Compose state before deploy:"
-          docker compose -f docker-compose.prod.yml ps || true
-
-          if [ ! -s backend/.env ]; then
-            echo "::error::backend/.env is missing or empty on VPS"
-            exit 1
-          fi
-
-          db_url="$(grep '^DATABASE_URL=' backend/.env | head -n1 | cut -d= -f2- | tr -d '\r')"
-          if [ -z "$db_url" ]; then
-            echo "::error::DATABASE_URL is missing in backend/.env"
-            exit 1
-          fi
-
-          normalized_db_url="$(echo "$db_url" | sed -E 's#(://[^@]+@)(localhost|127\.0\.0\.1)(:[0-9]+)?/#\1postgres:5432/#')"
-          if [ "$normalized_db_url" != "$db_url" ]; then
-            awk -v value="$normalized_db_url" 'BEGIN{done=0} /^DATABASE_URL=/{print "DATABASE_URL=" value; done=1; next} {print} END{if(!done) print "DATABASE_URL=" value}' backend/.env > backend/.env.tmp
-            mv backend/.env.tmp backend/.env
-            db_url="$normalized_db_url"
-            echo "DATABASE_URL host normalized to postgres:5432 for docker deploy"
-          fi
-
-          db_url_body="${db_url#*://}"
-          db_creds_host="${db_url_body%%/*}"
-          db_name_raw="${db_url_body#*/}"
-          db_name_raw="${db_name_raw%%\?*}"
-          db_creds_raw="${db_creds_host%@*}"
-          db_user_raw="${db_creds_raw%%:*}"
-          db_pass_raw="${db_creds_raw#*:}"
-
-          if [ "$db_user_raw" = "$db_creds_raw" ]; then
-            db_pass_raw=""
-          fi
-
-          url_decode() {
-            local data="${1//+/ }"
-            printf '%b' "${data//%/\\x}"
-          }
-
-          db_user="$(url_decode "$db_user_raw")"
-          db_pass="$(url_decode "$db_pass_raw")"
-          db_name="$(url_decode "$db_name_raw")"
-
-          if [ -z "$db_user" ] || [ -z "$db_pass" ] || [ -z "$db_name" ]; then
-            echo "::error::Failed to parse non-empty DB credentials from DATABASE_URL"
-            exit 1
-          fi
-
-          export POSTGRES_USER="$db_user"
-          export POSTGRES_PASSWORD="$db_pass"
-          export POSTGRES_DB="$db_name"
-
-          db_user_sql="$(printf '%s' "$db_user" | sed 's/"/""/g')"
-          db_pass_sql="$(printf '%s' "$db_pass" | sed "s/'/''/g")"
-
-          if ! docker compose -f docker-compose.prod.yml up -d postgres; then
-            echo "Failed to start postgres service before credential sync"
-            docker compose -f docker-compose.prod.yml ps || true
-            docker compose -f docker-compose.prod.yml logs --no-color --tail=120 postgres || true
-            exit 1
-          fi
-
-          if ! docker compose -f docker-compose.prod.yml exec -T postgres sh -lc "psql -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\" -v ON_ERROR_STOP=1 -c \"ALTER ROLE \\\"$db_user_sql\\\" WITH LOGIN PASSWORD '$db_pass_sql';\""; then
-            echo "Failed to sync postgres role password from DATABASE_URL"
-            docker compose -f docker-compose.prod.yml ps || true
-            docker compose -f docker-compose.prod.yml logs --no-color --tail=120 postgres || true
-            exit 1
-          fi
-
-          echo "Clearing old images to ensure fresh build from latest source..."
-          docker rmi repeto-frontend repeto-backend app-frontend app-backend 2>/dev/null || true
-          docker builder prune -f --filter type=exec.cachemount 2>/dev/null || true
-
-          echo "Building frontend with --no-cache to guarantee new CSS/JS is picked up..."
-          if ! docker compose -f docker-compose.prod.yml build --no-cache frontend backend; then
-            echo "docker compose build failed. Dumping diagnostics..."
-            exit 1
-          fi
-
-          if ! docker compose -f docker-compose.prod.yml up -d --force-recreate backend frontend nginx --remove-orphans; then
-            echo "docker compose up failed. Dumping diagnostics..."
-            docker compose -f docker-compose.prod.yml ps || true
-            docker compose -f docker-compose.prod.yml logs --no-color --tail=200 backend postgres redis nginx || true
-            exit 1
-          fi
-
-          backend_cid="$(docker compose -f docker-compose.prod.yml ps -q backend || true)"
-          frontend_cid="$(docker compose -f docker-compose.prod.yml ps -q frontend || true)"
-          if [ -z "$backend_cid" ] || [ -z "$frontend_cid" ]; then
-            echo "::error::Cannot resolve backend/frontend container IDs after deploy"
-            docker compose -f docker-compose.prod.yml ps || true
-            exit 1
-          fi
-
-          backend_started_at="$(docker inspect -f '{{.State.StartedAt}}' "$backend_cid" 2>/dev/null || true)"
-          frontend_started_at="$(docker inspect -f '{{.State.StartedAt}}' "$frontend_cid" 2>/dev/null || true)"
-          backend_started_epoch="$(date -u -d "$backend_started_at" +%s 2>/dev/null || echo 0)"
-          frontend_started_epoch="$(date -u -d "$frontend_started_at" +%s 2>/dev/null || echo 0)"
-          echo "Container start check: backend=$backend_started_at ($backend_started_epoch), frontend=$frontend_started_at ($frontend_started_epoch), deploy_started=$deploy_started_epoch"
-
-          if [ "$backend_started_epoch" -lt "$deploy_started_epoch" ] || [ "$frontend_started_epoch" -lt "$deploy_started_epoch" ]; then
-            echo "::error::Deploy finished without recreating backend/frontend containers in current compose project"
-            docker compose -f docker-compose.prod.yml ps || true
-            exit 1
-          fi
-
-          docker compose -f docker-compose.prod.yml exec -T nginx nginx -t
-          docker compose -f docker-compose.prod.yml exec -T nginx nginx -s reload
-          if [ -n "$frontend_cid" ]; then
-            docker exec "$frontend_cid" sh -lc 'echo "Frontend BUILD_ID: $(cat /app/.next/BUILD_ID 2>/dev/null || echo n/a)"'
-          fi
-          docker compose -f docker-compose.prod.yml ps
-          EOF
+            sshpass -p "$PROD_SSH_PASSWORD" ssh -p "$ssh_port" \
+              -o PreferredAuthentications=password -o PubkeyAuthentication=no \
+              -o NumberOfPasswordPrompts=1 -o BatchMode=no -o ConnectTimeout=30 \
+              -o ServerAliveInterval=30 -o ServerAliveCountMax=20 \
+              "$target" "$remote_cmd"
           fi
 
       - name: Verify frontend build is live on repeto.ru
@@ -668,20 +432,15 @@ jobs:
           ssh_port="${PROD_SSH_PORT:-22}"
           target="$SELECTED_USER@$ssh_host"
 
+          get_build_id_cmd="cd '$APP_PATH' && docker compose -f docker-compose.prod.yml exec -T frontend sh -c 'cat /app/.next/BUILD_ID'"
+
           if [ "$AUTH_MODE" = "key" ]; then
-            remote_build_id="$(ssh -i ~/.ssh/id_ed25519 -p "$ssh_port" -o BatchMode=yes -o ConnectTimeout=10 "$target" "APP_PATH='$APP_PATH' bash -se" <<'EOF'
-          set -euo pipefail
-          cd "$APP_PATH"
-          docker compose -f docker-compose.prod.yml exec -T frontend sh -lc 'cat /app/.next/BUILD_ID'
-          EOF
-          )"
+            remote_build_id="$(ssh -i ~/.ssh/id_ed25519 -p "$ssh_port" -o BatchMode=yes -o ConnectTimeout=15 "$target" "$get_build_id_cmd")"
           else
-            remote_build_id="$(sshpass -p "$PROD_SSH_PASSWORD" ssh -p "$ssh_port" -o PreferredAuthentications=password -o PubkeyAuthentication=no -o NumberOfPasswordPrompts=1 -o BatchMode=no -o ConnectTimeout=10 "$target" "APP_PATH='$APP_PATH' bash -se" <<'EOF'
-          set -euo pipefail
-          cd "$APP_PATH"
-          docker compose -f docker-compose.prod.yml exec -T frontend sh -lc 'cat /app/.next/BUILD_ID'
-          EOF
-          )"
+            remote_build_id="$(sshpass -p "$PROD_SSH_PASSWORD" ssh -p "$ssh_port" \
+              -o PreferredAuthentications=password -o PubkeyAuthentication=no \
+              -o NumberOfPasswordPrompts=1 -o BatchMode=no -o ConnectTimeout=15 \
+              "$target" "$get_build_id_cmd")"
           fi
 
           public_build_id="$(curl -fsSL https://repeto.ru/ | sed -n 's/.*"buildId":"\([^"]*\)".*/\1/p' | head -n1)"
@@ -735,85 +494,21 @@ jobs:
 
       - name: Check backend health on VPS
         shell: bash
-        env:
-          PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
-          PROD_SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
-          PROD_SSH_PASSWORD: ${{ secrets.PROD_SSH_PASSWORD }}
-          SELECTED_USER: ${{ steps.resolve_ssh.outputs.selected_user }}
-          AUTH_MODE: ${{ steps.resolve_ssh.outputs.auth_mode }}
-          APP_PATH: ${{ steps.resolve_path.outputs.app_path }}
         run: |
           set -euo pipefail
-
-          ssh_host="${PROD_SSH_HOST:-repeto.ru}"
-          ssh_port="${PROD_SSH_PORT:-22}"
-          target="$SELECTED_USER@$ssh_host"
-
-          if [ "$AUTH_MODE" = "key" ]; then
-            ssh -i ~/.ssh/id_ed25519 -p "$ssh_port" -o BatchMode=yes -o ConnectTimeout=10 "$target" "APP_PATH='$APP_PATH' bash -se" <<'EOF'
-          set -euo pipefail
-          cd "$APP_PATH"
-
-          healthy="false"
-          for attempt in $(seq 1 36); do
-            backend_cid="$(docker compose -f docker-compose.prod.yml ps -q backend || true)"
-            if [ -n "$backend_cid" ]; then
-              health_status="$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$backend_cid" 2>/dev/null || true)"
-              if [ "$health_status" = "healthy" ]; then
-                healthy="true"
-                break
-              fi
+          # Backend health is waited for inside deploy-vps.sh (up to 3 min).
+          # This step does a final external check via the public API endpoint.
+          for attempt in $(seq 1 12); do
+            status="$(curl -s -o /dev/null -w "%{http_code}" https://repeto.ru/api/health || true)"
+            echo "  attempt $attempt/12: https://repeto.ru/api/health -> $status"
+            if [ "$status" = "200" ]; then
+              echo "Backend is reachable and healthy."
+              exit 0
             fi
             sleep 5
           done
-
-          if [ "$healthy" != "true" ]; then
-            echo "Backend healthcheck failed. Dumping diagnostics..."
-            docker compose -f docker-compose.prod.yml ps
-            docker compose -f docker-compose.prod.yml logs --no-color --tail=200 backend || true
-            docker compose -f docker-compose.prod.yml logs --no-color --tail=120 postgres || true
-
-            backend_cid="$(docker compose -f docker-compose.prod.yml ps -q backend || true)"
-            if [ -n "$backend_cid" ]; then
-              docker inspect --format='{{json .State.Health}}' "$backend_cid" || true
-            fi
-
-            exit 1
-          fi
-          EOF
-          else
-            sshpass -p "$PROD_SSH_PASSWORD" ssh -p "$ssh_port" -o PreferredAuthentications=password -o PubkeyAuthentication=no -o NumberOfPasswordPrompts=1 -o BatchMode=no -o ConnectTimeout=10 "$target" "APP_PATH='$APP_PATH' bash -se" <<'EOF'
-          set -euo pipefail
-          cd "$APP_PATH"
-
-          healthy="false"
-          for attempt in $(seq 1 36); do
-            backend_cid="$(docker compose -f docker-compose.prod.yml ps -q backend || true)"
-            if [ -n "$backend_cid" ]; then
-              health_status="$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$backend_cid" 2>/dev/null || true)"
-              if [ "$health_status" = "healthy" ]; then
-                healthy="true"
-                break
-              fi
-            fi
-            sleep 5
-          done
-
-          if [ "$healthy" != "true" ]; then
-            echo "Backend healthcheck failed. Dumping diagnostics..."
-            docker compose -f docker-compose.prod.yml ps
-            docker compose -f docker-compose.prod.yml logs --no-color --tail=200 backend || true
-            docker compose -f docker-compose.prod.yml logs --no-color --tail=120 postgres || true
-
-            backend_cid="$(docker compose -f docker-compose.prod.yml ps -q backend || true)"
-            if [ -n "$backend_cid" ]; then
-              docker inspect --format='{{json .State.Health}}' "$backend_cid" || true
-            fi
-
-            exit 1
-          fi
-          EOF
-          fi
+          echo "::error::Backend /api/health did not return 200 after 60s"
+          exit 1
 
       - name: Verify production endpoints
         if: ${{ false }}
