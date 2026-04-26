@@ -369,6 +369,7 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
     const mobileSearchRef = useRef<HTMLDivElement>(null);
     const mobileNavRef = useRef<HTMLElement>(null);
     const mobileNavItemRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
+    const previousMobileNavIndexRef = useRef<number | null>(null);
     const useTopHeaderSearch = useFlatLayout && !isMobileViewport;
     const useRailSidebar = useFlatLayout && !isMobileViewport;
 
@@ -424,40 +425,54 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
     }, [pathname]);
 
     useEffect(() => {
-        if (!isMobileViewport || !activeMobileNavUrl) return;
+        if (!isMobileViewport || !activeMobileNavUrl) {
+            previousMobileNavIndexRef.current = null;
+            return;
+        }
 
         const nav = mobileNavRef.current;
         if (!nav) return;
 
-        const maxScrollLeft = nav.scrollWidth - nav.clientWidth;
-        if (maxScrollLeft <= 0) return;
-
         const activeIndex = mobileNavItems.findIndex((item) => item.url === activeMobileNavUrl);
         if (activeIndex < 0) return;
 
-        // Find the next item element (one to the right of the active one).
-        const nextItem =
-            activeIndex < mobileNavItems.length - 1
-                ? mobileNavItemRefs.current[mobileNavItems[activeIndex + 1].url]
-                : null;
+        const previousIndex = previousMobileNavIndexRef.current;
+        previousMobileNavIndexRef.current = activeIndex;
 
-        if (!nextItem) {
-            // Active is the last item — scroll all the way to the right end.
-            nav.scrollTo({ left: maxScrollLeft, behavior: "smooth" });
-            return;
-        }
+        const maxScrollLeft = nav.scrollWidth - nav.clientWidth;
+        if (maxScrollLeft <= 0) return;
 
-        // Reveal the next item: scroll until its right edge is visible with a small padding.
-        // Use getBoundingClientRect because nav is position:fixed — offsetLeft is relative to body, not nav.
         const scrollPadding = 8;
         const navRect = nav.getBoundingClientRect();
-        const nextItemRect = nextItem.getBoundingClientRect();
-        const nextItemRight = nextItemRect.right - navRect.left + nav.scrollLeft;
-        const targetLeft = nextItemRight - nav.clientWidth + scrollPadding;
+        const moveDirection = previousIndex === null ? 0 : Math.sign(activeIndex - previousIndex);
+        let targetLeft = nav.scrollLeft;
 
-        if (targetLeft > nav.scrollLeft) {
+        if (activeIndex === 0) {
+            // Active is the last item — scroll all the way to the right end.
+            targetLeft = 0;
+        } else if (activeIndex === mobileNavItems.length - 1) {
+            targetLeft = maxScrollLeft;
+        } else if (moveDirection < 0) {
+            const previousItem = mobileNavItemRefs.current[mobileNavItems[activeIndex - 1].url];
+            if (previousItem) {
+                const previousItemRect = previousItem.getBoundingClientRect();
+                const previousItemLeft = previousItemRect.left - navRect.left + nav.scrollLeft;
+                targetLeft = previousItemLeft - scrollPadding;
+            }
+        } else {
+            const nextItem = mobileNavItemRefs.current[mobileNavItems[activeIndex + 1].url];
+            if (nextItem) {
+                const nextItemRect = nextItem.getBoundingClientRect();
+                const nextItemRight = nextItemRect.right - navRect.left + nav.scrollLeft;
+                targetLeft = nextItemRight - nav.clientWidth + scrollPadding;
+            }
+        }
+
+        // Use getBoundingClientRect because nav is position:fixed — offsetLeft is relative to body, not nav.
+        const clampedLeft = Math.max(0, Math.min(maxScrollLeft, targetLeft));
+        if (Math.abs(clampedLeft - nav.scrollLeft) > 1) {
             nav.scrollTo({
-                left: Math.min(maxScrollLeft, targetLeft),
+                left: clampedLeft,
                 behavior: "smooth",
             });
         }
