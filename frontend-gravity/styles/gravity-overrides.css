@@ -852,6 +852,10 @@ body {
     transition: none;
 }
 
+.repeto-top-header--search-open {
+    z-index: 2200;
+}
+
 .repeto-top-header--with-sidebar {
     left: 0;
 }
@@ -982,7 +986,7 @@ body {
     right: 0;
     width: auto;
     margin-top: 6px;
-    z-index: 1451;
+    z-index: 2201;
 }
 
 .repeto-top-header__profile-dropdown {
@@ -1226,8 +1230,8 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 76px;
-    padding: 6px;
+    min-height: 92px;
+    padding: 12px 6px 8px;
     border-bottom: 0;
 }
 
@@ -1264,6 +1268,10 @@ body {
 .repeto-sidebar__context-expand-btn .g-icon {
     width: 22px;
     height: 22px;
+}
+
+.repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__context-expand-btn {
+    margin-top: 8px;
 }
 
 .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__nav {

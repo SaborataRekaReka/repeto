@@ -555,13 +555,14 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
     } ${shouldShowSidebar ? "repeto-content--with-sidebar" : "repeto-content--no-sidebar"} ${
         contextSidebarExpanded ? "repeto-content--with-context-sidebar" : "repeto-content--with-context-sidebar-collapsed"
     }`;
+    const topHeaderSearchOpen = useTopHeaderSearch && topHeaderSearchFocused && Boolean(trimmedSearch);
     const topHeaderCls = `repeto-top-header ${
         shouldShowSidebar
             ? isCollapsed
                 ? "repeto-top-header--with-sidebar-collapsed"
                 : "repeto-top-header--with-sidebar"
             : "repeto-top-header--no-sidebar"
-    }`;
+    } ${topHeaderSearchOpen ? "repeto-top-header--search-open" : ""}`;
 
     useEffect(() => {
         const { body } = document;
