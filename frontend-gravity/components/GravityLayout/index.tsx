@@ -448,8 +448,11 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
         }
 
         // Reveal the next item: scroll until its right edge is visible with a small padding.
+        // Use getBoundingClientRect because nav is position:fixed — offsetLeft is relative to body, not nav.
         const scrollPadding = 8;
-        const nextItemRight = nextItem.offsetLeft + nextItem.offsetWidth;
+        const navRect = nav.getBoundingClientRect();
+        const nextItemRect = nextItem.getBoundingClientRect();
+        const nextItemRight = nextItemRect.right - navRect.left + nav.scrollLeft;
         const targetLeft = nextItemRight - nav.clientWidth + scrollPadding;
 
         if (targetLeft > nav.scrollLeft) {
