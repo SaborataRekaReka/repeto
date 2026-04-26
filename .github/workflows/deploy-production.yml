@@ -479,9 +479,17 @@ jobs:
           fi
 
           echo "Clearing old images to ensure fresh build from latest source..."
-          docker rmi repeto-frontend repeto-backend 2>/dev/null || true
+          # Remove all known name variants (old: app-*, new: repeto-*)
+          docker rmi repeto-frontend repeto-backend app-frontend app-backend 2>/dev/null || true
+          docker builder prune -f --filter type=exec.cachemount 2>/dev/null || true
 
-          if ! docker compose -f docker-compose.prod.yml up -d --build --force-recreate backend frontend nginx --remove-orphans; then
+          echo "Building frontend with --no-cache to guarantee new CSS/JS is picked up..."
+          if ! docker compose -f docker-compose.prod.yml build --no-cache frontend backend; then
+            echo "docker compose build failed. Dumping diagnostics..."
+            exit 1
+          fi
+
+          if ! docker compose -f docker-compose.prod.yml up -d --force-recreate backend frontend nginx --remove-orphans; then
             echo "docker compose up failed. Dumping diagnostics..."
             docker compose -f docker-compose.prod.yml ps || true
             docker compose -f docker-compose.prod.yml logs --no-color --tail=200 backend postgres redis nginx || true
@@ -599,9 +607,16 @@ jobs:
           fi
 
           echo "Clearing old images to ensure fresh build from latest source..."
-          docker rmi repeto-frontend repeto-backend 2>/dev/null || true
+          docker rmi repeto-frontend repeto-backend app-frontend app-backend 2>/dev/null || true
+          docker builder prune -f --filter type=exec.cachemount 2>/dev/null || true
 
-          if ! docker compose -f docker-compose.prod.yml up -d --build --force-recreate backend frontend nginx --remove-orphans; then
+          echo "Building frontend with --no-cache to guarantee new CSS/JS is picked up..."
+          if ! docker compose -f docker-compose.prod.yml build --no-cache frontend backend; then
+            echo "docker compose build failed. Dumping diagnostics..."
+            exit 1
+          fi
+
+          if ! docker compose -f docker-compose.prod.yml up -d --force-recreate backend frontend nginx --remove-orphans; then
             echo "docker compose up failed. Dumping diagnostics..."
             docker compose -f docker-compose.prod.yml ps || true
             docker compose -f docker-compose.prod.yml logs --no-color --tail=200 backend postgres redis nginx || true
