@@ -8023,7 +8023,7 @@ body {
     }
 }
 
-    @media (max-width: 768px) {
+    @media (max-width: 768px), (max-height: 520px) and (pointer: coarse) {
 
     .repeto-header__search--mobile {
         width: 100%;

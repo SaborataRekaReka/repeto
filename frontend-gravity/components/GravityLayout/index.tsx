@@ -430,16 +430,25 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
         const activeItem = mobileNavItemRefs.current[activeMobileNavUrl];
         if (!nav || !activeItem) return;
 
-        const navRect = nav.getBoundingClientRect();
-        const itemRect = activeItem.getBoundingClientRect();
-        const nextLeft =
-            nav.scrollLeft +
-            itemRect.left -
-            navRect.left -
-            (navRect.width - itemRect.width) / 2;
+        const maxScrollLeft = nav.scrollWidth - nav.clientWidth;
+        if (maxScrollLeft <= 0) return;
+
+        const scrollPadding = 18;
+        const itemLeft = activeItem.offsetLeft;
+        const itemRight = itemLeft + activeItem.offsetWidth;
+        const visibleLeft = nav.scrollLeft + scrollPadding;
+        const visibleRight = nav.scrollLeft + nav.clientWidth - scrollPadding;
+
+        if (itemLeft >= visibleLeft && itemRight <= visibleRight) {
+            return;
+        }
+
+        const nextLeft = itemLeft < visibleLeft
+            ? itemLeft - scrollPadding
+            : itemRight - nav.clientWidth + scrollPadding;
 
         nav.scrollTo({
-            left: Math.max(0, nextLeft),
+            left: Math.max(0, Math.min(maxScrollLeft, nextLeft)),
             behavior: "smooth",
         });
     }, [activeMobileNavUrl, isMobileViewport]);
