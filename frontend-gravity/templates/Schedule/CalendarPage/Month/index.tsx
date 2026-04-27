@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { Text, Card } from "@gravity-ui/uikit";
 import LessonBlock from "../LessonBlock";
 import { toLocalDateKey } from "@/lib/dates";
-import type { Lesson } from "@/types/schedule";
+import type { Lesson, MonthDay } from "@/types/schedule";
 
 type MonthProps = {
     currentDate: Date;
