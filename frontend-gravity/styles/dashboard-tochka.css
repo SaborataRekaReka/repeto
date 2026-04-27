@@ -2021,11 +2021,14 @@
 .repeto-tochka-finance a.repeto-stat-card {
     text-decoration: none;
     color: inherit;
-    transition: border-color 120ms ease, transform 120ms ease;
+    border: none !important;
+    box-shadow: none !important;
+    transition: background-color 0.14s ease;
 }
 .repeto-tochka-finance a.repeto-stat-card:hover {
-    border-color: var(--t-divider);
-    transform: translateY(-1px);
+    border-color: transparent !important;
+    transform: none !important;
+    background: var(--repeto-widget-hover) !important;
 }
 
 /* Two-column row: unify gap */
@@ -2137,7 +2140,7 @@
 .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-summary-card,
 .repeto-tochka-dash .repeto-tochka-finance .repeto-balance-table-card {
     background: var(--t-surface) !important;
-    border: 1px solid var(--t-bg-neutral2) !important;
+    border: none !important;
     border-radius: var(--t-radius, 14px) !important;
     box-shadow: none !important;
     display: flex;
@@ -2202,14 +2205,15 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
-    border: var(--t-border, 1px solid var(--t-bg-neutral2));
+    border: none;
     border-radius: var(--t-radius, 14px);
     background: var(--t-surface);
     box-shadow: none;
-    transition: border-color 0.15s ease;
+    transition: background-color 0.14s ease;
 }
 .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-summary-card--discrete .repeto-finance-summary-card__metric:hover {
-    border-color: var(--t-bg-neutral3, var(--t-border-strong-soft));
+    border-color: transparent;
+    background: var(--repeto-widget-hover);
 }
 .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-summary-card__metric-label {
     font-size: 13px;

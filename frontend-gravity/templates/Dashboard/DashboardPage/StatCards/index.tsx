@@ -27,7 +27,7 @@ const cards = [
         id: "debt",
         title: "К оплате учениками",
         key: "totalDebt" as const,
-        href: "/payments",
+        href: "/finance/payments",
         formatted: true,
         suffix: " ₽",
     },

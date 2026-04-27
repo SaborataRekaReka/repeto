@@ -27,6 +27,7 @@ type PendingRenewalPayment = {
 };
 
 const PENDING_RENEWAL_PAYMENT_KEY = "repeto:platform-access:pending-renewal";
+const SHOW_WEEK_SCHEDULE_WIDGET = false;
 
 function readPendingRenewalPayment(): PendingRenewalPayment | null {
     if (typeof window === "undefined") return null;
@@ -240,10 +241,12 @@ const DashboardPage = () => {
                                 refreshKey={scheduleRefreshKey}
                                 onLessonClick={(lesson) => setSelectedLesson(lesson)}
                             />
-                            <WeekSchedule
-                                refreshKey={scheduleRefreshKey}
-                                onLessonClick={(lesson) => setSelectedLesson(lesson)}
-                            />
+                            {SHOW_WEEK_SCHEDULE_WIDGET && (
+                                <WeekSchedule
+                                    refreshKey={scheduleRefreshKey}
+                                    onLessonClick={(lesson) => setSelectedLesson(lesson)}
+                                />
+                            )}
                             <DebtList />
                         </div>
                     </div>

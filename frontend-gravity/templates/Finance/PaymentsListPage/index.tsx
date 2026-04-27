@@ -8,7 +8,7 @@ import {
     TextInput,
     Loader,
 } from "@gravity-ui/uikit";
-import { Magnifier, TrashBin, Receipt, Persons } from "@gravity-ui/icons";
+import { Magnifier, TrashBin } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import GravityLayout from "@/components/GravityLayout";
 import PageOverlay from "@/components/PageOverlay";
@@ -20,6 +20,7 @@ import { deletePayment, usePayments } from "@/hooks/usePayments";
 import { getMethodLabel, getStatusLabel } from "@/mocks/finance-tutor";
 import type { Payment } from "@/types/finance";
 import { codedErrorMessage } from "@/lib/errorCodes";
+import FinanceSidebarTools, { financeSectionNav } from "@/templates/Finance/FinanceSidebarTools";
 
 const filterTabs: { value: string; label: string }[] = [
     { value: "all", label: "Все" },
@@ -39,7 +40,7 @@ const PaymentsListPage = () => {
     useEffect(() => {
         if (router.query.create === "1") {
             setCreateModal(true);
-            router.replace("/payments", undefined, { shallow: true });
+            router.replace("/finance/payments", undefined, { shallow: true });
         }
     }, [router.query.create]);
 
@@ -87,29 +88,30 @@ const PaymentsListPage = () => {
         }
     };
 
-    const overlayNav = [
-        { key: "create", label: "Добавить оплату", icon: Receipt as IconData },
-        { key: "debtors", label: "Найти должников", icon: Persons as IconData },
-    ];
-
-    const handleOverlayNav = (key: string) => {
-        if (key === "create") {
-            setCreateModal(true);
+    const handleFinanceSectionChange = (key: string) => {
+        if (key === "overview") {
+            void router.push("/finance");
             return;
         }
-        if (key === "debtors") {
-            router.push("/students?filter=debt");
-        }
+        void router.push("/finance/payments");
     };
 
     return (
-        <GravityLayout title="Оплаты">
+        <GravityLayout title="Финансы">
             <PageOverlay
-                title="Оплаты"
+                title="Финансы"
                 breadcrumb="Дашборд"
                 backHref="/dashboard"
-                nav={overlayNav}
-                onNavChange={handleOverlayNav}
+                nav={financeSectionNav}
+                activeNav="payments"
+                onNavChange={handleFinanceSectionChange}
+                sidebarHeader={
+                    <FinanceSidebarTools
+                        onOpenDebtors={() => {
+                            void router.push("/students?filter=debt");
+                        }}
+                    />
+                }
             >
                 <div className="repeto-sl-search-row">
                     <TextInput

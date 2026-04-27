@@ -129,7 +129,7 @@ const TaskTiles = () => {
 
         if (debtSummary.count > 0) {
             items.push({
-                href: "/payments",
+                href: "/finance/payments",
                 kicker: "Задача",
                 title: "Напомните об оплате",
                 meta: `${debtSummary.count} ${studentsWord(debtSummary.count)} · ${formatAmount(debtSummary.total)}`,

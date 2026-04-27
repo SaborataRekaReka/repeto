@@ -42,14 +42,27 @@ const statusLabel = (status: Lesson["status"]) => {
     }
 };
 
+function toMinutes(value: string): number {
+    const [hours, minutes] = value.split(":").map((part) => Number(part));
+    return (Number.isFinite(hours) ? hours : 0) * 60 + (Number.isFinite(minutes) ? minutes : 0);
+}
+
 const TodaySchedule = ({ onLessonClick, refreshKey }: TodayScheduleProps) => {
     const { data: todayLessons = [], loading, refetch } = useTodayLessons();
     const didMountRef = useRef(false);
-    const today = new Date();
-    const dayLabel = today.toLocaleDateString("ru-RU", {
-        day: "numeric",
-        month: "long",
-    });
+
+    const now = new Date();
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+    const nearestLessons = [...todayLessons]
+        .sort((left, right) => {
+            const leftDelta = toMinutes(left.startTime) - nowMinutes;
+            const rightDelta = toMinutes(right.startTime) - nowMinutes;
+            const leftScore = leftDelta >= 0 ? leftDelta : 24 * 60 + Math.abs(leftDelta);
+            const rightScore = rightDelta >= 0 ? rightDelta : 24 * 60 + Math.abs(rightDelta);
+            return leftScore - rightScore;
+        })
+        .slice(0, 5);
 
     useEffect(() => {
         if (refreshKey === undefined) return;
@@ -63,7 +76,7 @@ const TodaySchedule = ({ onLessonClick, refreshKey }: TodayScheduleProps) => {
     return (
         <Card view="outlined" style={{ overflow: "hidden", background: "var(--g-color-base-float)" }}>
             <div className="repeto-card-header">
-                <Text variant="subheader-2">Сегодня, {dayLabel}</Text>
+                <Text variant="subheader-2">Ближайшие занятия</Text>
                 <Link
                     href="/schedule"
                     className="repeto-card-chevron"
@@ -76,7 +89,7 @@ const TodaySchedule = ({ onLessonClick, refreshKey }: TodayScheduleProps) => {
                 <div style={{ padding: "32px 0", textAlign: "center" }}>
                     <Loader size="s" />
                 </div>
-            ) : todayLessons.length === 0 ? (
+            ) : nearestLessons.length === 0 ? (
                 <div style={{ padding: "32px 20px", textAlign: "center" }}>
                     <Text variant="body-1" color="secondary">
                         Занятий на сегодня нет
@@ -84,7 +97,7 @@ const TodaySchedule = ({ onLessonClick, refreshKey }: TodayScheduleProps) => {
                 </div>
             ) : (
                 <div>
-                    {todayLessons.map((lesson) => (
+                    {nearestLessons.map((lesson) => (
                         <button
                             key={lesson.id}
                             className="repeto-week-lesson-row"

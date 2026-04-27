@@ -23,10 +23,11 @@ type DebtStudent = {
 const DEBT_COLOR = "var(--finance-debt)";
 
 const DebtList = () => {
-    const { data: debtStudents = [], loading } = useDebts();
+    const { data: debtStudents = [], loading } = useDebts(5);
     const [reminderTarget, setReminderTarget] = useState<DebtStudent | null>(
         null
     );
+    const visibleDebtStudents = debtStudents.slice(0, 5);
 
     return (
         <>
@@ -34,7 +35,7 @@ const DebtList = () => {
                 <div className="repeto-card-header">
                     <Text variant="subheader-2">Задолженности</Text>
                     <Link
-                        href="/payments"
+                        href="/finance/payments"
                         className="repeto-card-chevron"
                         aria-label="Все задолженности"
                     >
@@ -45,7 +46,7 @@ const DebtList = () => {
                     <div style={{ padding: "32px 0", textAlign: "center" }}>
                         <Loader size="s" />
                     </div>
-                ) : debtStudents.length === 0 ? (
+                ) : visibleDebtStudents.length === 0 ? (
                     <div style={{ padding: "32px 20px", textAlign: "center" }}>
                         <Text variant="body-1" color="secondary">
                             Задолженностей нет
@@ -53,7 +54,7 @@ const DebtList = () => {
                     </div>
                 ) : (
                     <div>
-                        {debtStudents.map((student) => (
+                        {visibleDebtStudents.map((student) => (
                             <Link
                                 href={`/students/${student.id}`}
                                 key={student.id}

@@ -54,6 +54,8 @@ type PageOverlayProps = {
     onNavChange?: (key: string) => void;
     /** Sidebar header (above nav, below title) — e.g. avatar + info */
     sidebarHeader?: ReactNode;
+    /** Hide global primary action button ("Создать") in shell context sidebar */
+    hidePrimaryAction?: boolean;
     /** Main content area */
     children: ReactNode;
     /** Where to go when back is clicked. Defaults to router.back() */
@@ -67,6 +69,7 @@ const PageOverlay = ({
     activeNav,
     onNavChange,
     sidebarHeader,
+    hidePrimaryAction,
     children,
     backHref,
 }: PageOverlayProps) => {
@@ -138,6 +141,7 @@ const PageOverlay = ({
             activeNav,
             onNavChange,
             sidebarHeader,
+            hidePrimaryAction,
             backHref,
         });
 
@@ -152,6 +156,7 @@ const PageOverlay = ({
         onNavChange,
         shellContextSidebar,
         sidebarHeader,
+        hidePrimaryAction,
         title,
         useShellContextMode,
     ]);

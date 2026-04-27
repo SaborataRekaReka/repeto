@@ -67,7 +67,6 @@ const FilesPage = () => {
         <GravityLayout title="Материалы">
             <PageOverlay
                 title="Материалы"
-                breadcrumb="Дашборд"
                 backHref="/dashboard"
                 nav={overlayNav}
                 activeNav={tab === "access" ? "access" : "files"}

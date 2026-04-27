@@ -9,7 +9,7 @@
     .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--main.repeto-sidebar__item--active,
     .repeto-context-sidebar__item--active
 ) {
-    background: var(--repeto-nav-active-bg) !important;
+    background: transparent !important;
     color: var(--repeto-nav-active-text) !important;
     border-color: transparent !important;
     box-shadow: none !important;
@@ -21,8 +21,16 @@
     .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--main.repeto-sidebar__item--active:hover,
     .repeto-context-sidebar__item--active:hover
 ) {
-    background: var(--repeto-nav-active-bg-hover) !important;
+    background: transparent !important;
     color: var(--repeto-nav-active-text) !important;
+}
+
+:where(
+    .repeto-sidebar--flat .repeto-sidebar__section--navigation .repeto-sidebar__item--main:hover,
+    .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__section--navigation .repeto-sidebar__item--main:hover,
+    .repeto-context-sidebar__item:hover
+) {
+    background: transparent !important;
 }
 
 :where(

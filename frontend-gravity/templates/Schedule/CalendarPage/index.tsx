@@ -1,21 +1,28 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/router";
 import GravityLayout from "@/components/GravityLayout";
 import { Text, Button, Icon, Select } from "@gravity-ui/uikit";
 import PillTabs, { type PillTabOption } from "@/components/PillTabs";
 import AppIcon from "@/components/Icon";
 import {
+    ArrowChevronDown,
     ArrowChevronLeft,
     ArrowChevronRight,
+    ArrowLeft,
+    ArrowUpRight,
+    Clock,
 } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import LessonPanelV2 from "@/components/LessonPanelV2";
+import { useShellContextSidebar } from "@/components/GravityLayout/context-sidebar";
 import Month from "./Month";
 import Week from "./Week";
 import Day from "./Day";
 import ListView from "./List";
 import AvailabilityEditor from "./AvailabilityEditor";
 import { useLessons, deleteLesson } from "@/hooks/useLessons";
+import { useAvailability } from "@/hooks/useAvailability";
 import { useSettings, syncYandexCalendar, syncGoogleCalendar } from "@/hooks/useSettings";
 import { toLocalDateKey } from "@/lib/dates";
 import { codedErrorMessage } from "@/lib/errorCodes";
@@ -24,6 +31,7 @@ import type { Lesson } from "@/types/schedule";
 type CalendarViewType = "month" | "week" | "day";
 type DisplayMode = "calendar" | "list";
 type LessonStatusFilter = Lesson["status"];
+type ExportProvider = "yandex" | "google";
 
 const MONTH_NAMES = [
     "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
@@ -37,6 +45,7 @@ const MONTH_NAMES_GEN = [
     "января", "февраля", "марта", "апреля", "мая", "июня",
     "июля", "августа", "сентября", "октября", "ноября", "декабря",
 ];
+const MINI_CALENDAR_WEEKDAY_LABELS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
 const CALENDAR_VIEW_OPTIONS: { value: CalendarViewType; label: string }[] = [
     { value: "month", label: "Месяц" },
@@ -82,6 +91,117 @@ function fromIsoDate(iso: string): Date {
     return new Date(year, (month || 1) - 1, day || 1);
 }
 
+type ScheduleShellContextSyncProps = {
+    sidebarHeader: JSX.Element;
+};
+
+type ScheduleWorkHoursPanelProps = {
+    open: boolean;
+    onClose: () => void;
+};
+
+const ScheduleShellContextSync = ({
+    sidebarHeader,
+}: ScheduleShellContextSyncProps) => {
+    const shellContextSidebar = useShellContextSidebar();
+
+    useEffect(() => {
+        if (!shellContextSidebar) return;
+
+        shellContextSidebar.setShellContextSidebar({
+            title: "Расписание",
+            breadcrumb: "Дашборд",
+            sidebarHeader,
+            backHref: "/dashboard",
+        });
+
+        return () => {
+            shellContextSidebar.setShellContextSidebar(null);
+        };
+    }, [shellContextSidebar, sidebarHeader]);
+
+    return null;
+};
+
+const WORK_HOURS_PANEL_Z_INDEX = 960;
+
+const ScheduleWorkHoursPanel = ({ open, onClose }: ScheduleWorkHoursPanelProps) => {
+    const [mounted, setMounted] = useState(false);
+    const [shouldRender, setShouldRender] = useState(false);
+    const [isPanelVisible, setIsPanelVisible] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    useEffect(() => {
+        if (open) {
+            setShouldRender(true);
+            const raf = requestAnimationFrame(() => {
+                requestAnimationFrame(() => setIsPanelVisible(true));
+            });
+            return () => cancelAnimationFrame(raf);
+        }
+
+        setIsPanelVisible(false);
+        return undefined;
+    }, [open]);
+
+    const handleTransitionEnd = useCallback(() => {
+        if (!isPanelVisible) {
+            setShouldRender(false);
+        }
+    }, [isPanelVisible]);
+
+    const handleClose = useCallback(() => {
+        setIsPanelVisible(false);
+        setTimeout(() => onClose(), 350);
+    }, [onClose]);
+
+    useEffect(() => {
+        if (!open) return;
+
+        const handler = (event: KeyboardEvent) => {
+            if (event.key === "Escape") {
+                handleClose();
+            }
+        };
+
+        document.addEventListener("keydown", handler);
+        return () => document.removeEventListener("keydown", handler);
+    }, [handleClose, open]);
+
+    if (!mounted || (!shouldRender && !open) || typeof document === "undefined") {
+        return null;
+    }
+
+    return createPortal(
+        <div
+            className={`lp2 repeto-schedule-workhours-panel${isPanelVisible ? " lp2--open" : ""}`}
+            style={{ zIndex: WORK_HOURS_PANEL_Z_INDEX }}
+            onTransitionEnd={handleTransitionEnd}
+            role="dialog"
+            aria-modal="false"
+            aria-label="Рабочие часы"
+        >
+            <div className="lp2__topbar">
+                <button type="button" className="lp2__back" onClick={handleClose} aria-label="Назад">
+                    <Icon data={ArrowLeft as IconData} size={18} />
+                </button>
+                <div className="lp2__topbar-actions" />
+            </div>
+
+            <div className="lp2__scroll">
+                <div className="lp2__center">
+                    <h1 className="lp2__page-title">Рабочие часы</h1>
+                    <AvailabilityEditor embedded />
+                </div>
+            </div>
+        </div>,
+        document.body,
+    );
+};
+
 const CalendarPage = () => {
     const router = useRouter();
     const [displayMode, setDisplayMode] = useState<DisplayMode>("calendar");
@@ -91,14 +211,27 @@ const CalendarPage = () => {
     const [createSlot, setCreateSlot] = useState<{ date: string; time: string } | null>(null);
     const [editLesson, setEditLesson] = useState<Lesson | null>(null);
     const [currentDate, setCurrentDate] = useState(new Date());
+    const [availabilityModalOpen, setAvailabilityModalOpen] = useState(false);
     const [selectedStatuses, setSelectedStatuses] = useState<LessonStatusFilter[]>(ALL_STATUS_VALUES);
     const [isExporting, setIsExporting] = useState(false);
+    const [exportMenuOpen, setExportMenuOpen] = useState(false);
     const [exportStatus, setExportStatus] = useState<{ type: "ok" | "error"; text: string } | null>(null);
     const [optimisticRemovedLessonIds, setOptimisticRemovedLessonIds] = useState<string[]>([]);
+    const exportMenuRef = useRef<HTMLDivElement | null>(null);
 
+    const { data: availabilitySlots = [] } = useAvailability();
     const { data: settings, loading: settingsLoading } = useSettings();
     const hasYandexCalendar = !!settings?.hasYandexCalendar;
     const hasGoogleCalendar = !!settings?.hasGoogleCalendar;
+
+    const availabilityTotalHours = useMemo(() => {
+        const hourCells = new Set<string>();
+        for (const slot of availabilitySlots) {
+            const hour = parseInt(slot.startTime.split(":")[0], 10);
+            hourCells.add(`${slot.dayOfWeek}-${hour}`);
+        }
+        return hourCells.size;
+    }, [availabilitySlots]);
 
     const handleEdit = useCallback((lesson: Lesson) => {
         setCreateSlot(null);
@@ -112,10 +245,45 @@ const CalendarPage = () => {
         setCreateModal(true);
     }, []);
 
+    const runProviderExport = useCallback(async (provider: ExportProvider) => {
+        const isYandex = provider === "yandex";
+        const providerLabel = isYandex ? "Яндекс" : "Google";
+        const errorCode = isYandex ? "SCHED-YDEX-EXP" : "SCHED-GCAL-EXP";
+
+        try {
+            const result = isYandex
+                ? await syncYandexCalendar()
+                : await syncGoogleCalendar();
+            const synced = Number(result?.synced || 0);
+            const countErrors = Number(result?.errors || 0);
+
+            if (countErrors > 0) {
+                return {
+                    ok: false,
+                    text: `${providerLabel}: синхронизировано ${synced}, ошибок ${countErrors}`,
+                };
+            }
+
+            return {
+                ok: true,
+                text: `${providerLabel}: синхронизировано ${synced}`,
+            };
+        } catch (error: any) {
+            return {
+                ok: false,
+                text: `${providerLabel}: ${codedErrorMessage(errorCode, error)}`,
+            };
+        }
+    }, [syncGoogleCalendar, syncYandexCalendar]);
+
     const handleQuickExport = useCallback(async () => {
         if (isExporting || settingsLoading) return;
 
-        if (!hasYandexCalendar && !hasGoogleCalendar) {
+        const connectedProviders: ExportProvider[] = [];
+        if (hasYandexCalendar) connectedProviders.push("yandex");
+        if (hasGoogleCalendar) connectedProviders.push("google");
+
+        if (connectedProviders.length === 0) {
             await router.push("/settings?tab=integrations");
             return;
         }
@@ -126,31 +294,12 @@ const CalendarPage = () => {
         const success: string[] = [];
         const errors: string[] = [];
 
-        if (hasYandexCalendar) {
-            try {
-                const result = await syncYandexCalendar();
-                const countErrors = result?.errors || 0;
-                success.push(
-                    countErrors > 0
-                        ? `Яндекс: ${result.synced}, ошибок ${countErrors}`
-                        : `Яндекс: ${result.synced}`
-                );
-            } catch (error: any) {
-                errors.push(`Яндекс: ${codedErrorMessage("SCHED-YDEX-EXP", error)}`);
-            }
-        }
-
-        if (hasGoogleCalendar) {
-            try {
-                const result = await syncGoogleCalendar();
-                const countErrors = result?.errors || 0;
-                success.push(
-                    countErrors > 0
-                        ? `Google: ${result.synced}, ошибок ${countErrors}`
-                        : `Google: ${result.synced}`
-                );
-            } catch (error: any) {
-                errors.push(`Google: ${codedErrorMessage("SCHED-GCAL-EXP", error)}`);
+        for (const provider of connectedProviders) {
+            const result = await runProviderExport(provider);
+            if (result.ok) {
+                success.push(result.text);
+            } else {
+                errors.push(result.text);
             }
         }
 
@@ -177,8 +326,54 @@ const CalendarPage = () => {
         hasYandexCalendar,
         isExporting,
         router,
+        runProviderExport,
         settingsLoading,
     ]);
+
+    const handleProviderExport = useCallback(async (provider: ExportProvider) => {
+        if (isExporting || settingsLoading) return;
+
+        const isProviderConnected = provider === "yandex"
+            ? hasYandexCalendar
+            : hasGoogleCalendar;
+
+        if (!isProviderConnected) {
+            await router.push("/settings?tab=integrations");
+            return;
+        }
+
+        setIsExporting(true);
+        setExportStatus(null);
+
+        const result = await runProviderExport(provider);
+        setExportStatus({
+            type: result.ok ? "ok" : "error",
+            text: result.ok ? `Экспорт завершен. ${result.text}` : result.text,
+        });
+
+        setIsExporting(false);
+    }, [
+        hasGoogleCalendar,
+        hasYandexCalendar,
+        isExporting,
+        router,
+        runProviderExport,
+        settingsLoading,
+    ]);
+
+    const handleSidebarMiniCalendarSelect = useCallback((date: Date) => {
+        setDisplayMode("calendar");
+        setCalendarView("day");
+        setCurrentDate(new Date(date.getFullYear(), date.getMonth(), date.getDate()));
+    }, []);
+
+    const handleSidebarMiniCalendarMonthShift = useCallback((direction: -1 | 1) => {
+        setCurrentDate((previousDate) => {
+            const nextDate = new Date(previousDate);
+            nextDate.setMonth(nextDate.getMonth() + direction);
+            return nextDate;
+        });
+    }, []);
 
     useEffect(() => {
         if (router.query.create === "1") {
@@ -219,6 +414,21 @@ const CalendarPage = () => {
         void router.replace({ pathname: "/schedule", query: nextQuery }, undefined, { shallow: true });
         void handleQuickExport();
     }, [handleQuickExport, router, router.query, settingsLoading]);
+
+    useEffect(() => {
+        if (!exportMenuOpen) return;
+
+        const handleDocumentClick = (event: MouseEvent) => {
+            if (!exportMenuRef.current) return;
+            if (!(event.target instanceof Node)) return;
+            if (!exportMenuRef.current.contains(event.target)) {
+                setExportMenuOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleDocumentClick);
+        return () => document.removeEventListener("mousedown", handleDocumentClick);
+    }, [exportMenuOpen]);
 
     const dateRange = useMemo(() => {
         const d = currentDate;
@@ -346,11 +556,181 @@ const CalendarPage = () => {
         return `${currentDate.getDate()} ${MONTH_NAMES_GEN[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
     };
 
+    const scheduleSidebarMonthLabel = `${MONTH_NAMES[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+    const scheduleSidebarMiniCalendarCells = useMemo(() => {
+        const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        const firstWeekdayIndex = (monthStart.getDay() + 6) % 7;
+        const gridStart = new Date(monthStart);
+        gridStart.setDate(monthStart.getDate() - firstWeekdayIndex);
+
+        const todayKey = toLocalDateKey(new Date());
+        const selectedDateKey = toLocalDateKey(currentDate);
+
+        return Array.from({ length: 42 }, (_, index) => {
+            const date = new Date(gridStart);
+            date.setDate(gridStart.getDate() + index);
+
+            const dateKey = toLocalDateKey(date);
+            return {
+                key: `${dateKey}-${index}`,
+                date,
+                dayNumber: date.getDate(),
+                isOutsideMonth: date.getMonth() !== currentDate.getMonth(),
+                isToday: dateKey === todayKey,
+                isSelected: dateKey === selectedDateKey,
+            };
+        });
+    }, [currentDate]);
+
+    const scheduleSidebarHeader = useMemo(
+        () => (
+            <div className="repeto-schedule-sidebar-tools">
+                <button
+                    type="button"
+                    className="repeto-schedule-sidebar-tools__workhours"
+                    onClick={() => setAvailabilityModalOpen(true)}
+                >
+                    <span className="repeto-schedule-sidebar-tools__workhours-icon" aria-hidden="true">
+                        <Icon data={Clock as IconData} size={14} />
+                    </span>
+                    <span className="repeto-schedule-sidebar-tools__workhours-title">Рабочие часы</span>
+                    <span className="repeto-schedule-sidebar-tools__workhours-summary">· {availabilityTotalHours} ч/неделю</span>
+                </button>
+
+                <div className="repeto-schedule-sidebar-calendar" aria-label="Календарь расписания">
+                <div className="repeto-schedule-sidebar-calendar__header">
+                    <span className="repeto-schedule-sidebar-calendar__title">{scheduleSidebarMonthLabel}</span>
+                    <div className="repeto-schedule-sidebar-calendar__nav">
+                        <button
+                            type="button"
+                            className="repeto-schedule-sidebar-calendar__nav-btn"
+                            aria-label="Предыдущий месяц"
+                            onClick={() => handleSidebarMiniCalendarMonthShift(-1)}
+                        >
+                            <Icon data={ArrowChevronLeft as IconData} size={14} />
+                        </button>
+                        <button
+                            type="button"
+                            className="repeto-schedule-sidebar-calendar__nav-btn"
+                            aria-label="Следующий месяц"
+                            onClick={() => handleSidebarMiniCalendarMonthShift(1)}
+                        >
+                            <Icon data={ArrowChevronRight as IconData} size={14} />
+                        </button>
+                    </div>
+                </div>
+
+                <div className="repeto-schedule-sidebar-calendar__weekdays" aria-hidden="true">
+                    {MINI_CALENDAR_WEEKDAY_LABELS.map((weekdayLabel) => (
+                        <span key={weekdayLabel} className="repeto-schedule-sidebar-calendar__weekday">{weekdayLabel}</span>
+                    ))}
+                </div>
+
+                <div className="repeto-schedule-sidebar-calendar__grid">
+                    {scheduleSidebarMiniCalendarCells.map((cell) => (
+                        <button
+                            key={cell.key}
+                            type="button"
+                            className={`repeto-schedule-sidebar-calendar__day${cell.isOutsideMonth ? " repeto-schedule-sidebar-calendar__day--outside" : ""}${cell.isToday ? " repeto-schedule-sidebar-calendar__day--today" : ""}${cell.isSelected ? " repeto-schedule-sidebar-calendar__day--selected" : ""}`}
+                            aria-pressed={cell.isSelected}
+                            aria-label={`Открыть ${cell.dayNumber} ${MONTH_NAMES_GEN[cell.date.getMonth()]}`}
+                            onClick={() => handleSidebarMiniCalendarSelect(cell.date)}
+                        >
+                            {cell.dayNumber}
+                        </button>
+                    ))}
+                </div>
+                </div>
+
+                <div
+                    className={`repeto-schedule-export${exportMenuOpen ? " repeto-schedule-export--open" : ""}`}
+                    ref={exportMenuRef}
+                >
+                    <button
+                        type="button"
+                        className="repeto-schedule-sidebar-tools__export"
+                        onClick={() => setExportMenuOpen((open) => !open)}
+                        disabled={isExporting || settingsLoading}
+                        aria-expanded={exportMenuOpen}
+                        aria-haspopup="menu"
+                    >
+                        <span className="repeto-schedule-sidebar-tools__export-main">
+                            <Icon data={ArrowUpRight as IconData} size={14} />
+                            <span>
+                                {isExporting
+                                    ? "Экспорт..."
+                                    : settingsLoading
+                                        ? "Проверяем интеграции..."
+                                        : "Экспорт расписания"}
+                            </span>
+                        </span>
+                        <Icon
+                            data={ArrowChevronDown as IconData}
+                            size={14}
+                            className="repeto-schedule-sidebar-tools__export-chevron"
+                        />
+                    </button>
+
+                    {exportMenuOpen && (
+                        <div
+                            className="repeto-schedule-export-menu"
+                            role="menu"
+                            aria-label="Экспорт расписания"
+                        >
+                            <button
+                                type="button"
+                                className="repeto-schedule-export-menu__item"
+                                onClick={() => {
+                                    setExportMenuOpen(false);
+                                    void handleProviderExport("yandex");
+                                }}
+                                disabled={isExporting}
+                            >
+                                <span className="repeto-schedule-export-menu__logo" aria-hidden="true">
+                                    <img src="/images/yandex.svg" alt="" />
+                                </span>
+                                <span className="repeto-schedule-export-menu__text">Яндекс Календарь</span>
+                            </button>
+
+                            <button
+                                type="button"
+                                className="repeto-schedule-export-menu__item"
+                                onClick={() => {
+                                    setExportMenuOpen(false);
+                                    void handleProviderExport("google");
+                                }}
+                                disabled={isExporting}
+                            >
+                                <span className="repeto-schedule-export-menu__logo" aria-hidden="true">
+                                    <img src="/images/google.svg" alt="" />
+                                </span>
+                                <span className="repeto-schedule-export-menu__text">Гугл календарь</span>
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        ),
+        [
+            availabilityTotalHours,
+            exportMenuOpen,
+            handleProviderExport,
+            handleSidebarMiniCalendarMonthShift,
+            handleSidebarMiniCalendarSelect,
+            isExporting,
+            scheduleSidebarMiniCalendarCells,
+            scheduleSidebarMonthLabel,
+            settingsLoading,
+        ],
+    );
+
     return (
         <GravityLayout title="Расписание">
-            <div className="repeto-schedule-page">
-                <AvailabilityEditor />
+            <ScheduleShellContextSync
+                sidebarHeader={scheduleSidebarHeader}
+            />
 
+            <div className="repeto-schedule-page">
                 {/* ── Toolbar ── */}
                 <div className="repeto-schedule-toolbar">
                     <div className="repeto-schedule-toolbar__display">
@@ -482,6 +862,11 @@ const CalendarPage = () => {
                     />
                 )}
             </div>
+
+            <ScheduleWorkHoursPanel
+                open={availabilityModalOpen}
+                onClose={() => setAvailabilityModalOpen(false)}
+            />
 
             {/* ── Modals ── */}
             <LessonPanelV2

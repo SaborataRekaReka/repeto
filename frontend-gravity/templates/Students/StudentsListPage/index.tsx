@@ -179,7 +179,7 @@ const StudentsListPage = () => {
 
     const handlePaymentModalCreated = async () => {
         paymentSubmittedRef.current = true;
-        await router.push("/payments");
+        await router.push("/finance/payments");
     };
 
     const handleLessonModalSaved = async () => {

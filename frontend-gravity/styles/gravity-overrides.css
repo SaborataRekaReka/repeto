@@ -139,9 +139,9 @@ html body.g-root_theme_dark {
     --accent-pressed: #7e49e2;
     --accent-soft: color-mix(in srgb, var(--accent) 18%, transparent);
     --repeto-bg: var(--surface-page);
-    --repeto-shell-sidebar-width: 288px;
-    --repeto-shell-sidebar-collapsed-width: 88px;
-    --repeto-shell-context-sidebar-width: 280px;
+    --repeto-shell-sidebar-width: 52px;
+    --repeto-shell-sidebar-collapsed-width: 52px;
+    --repeto-shell-context-sidebar-width: 260px;
     --repeto-shell-content-gap: 0px;
     --repeto-card-radius: 14px;
     --repeto-card-shadow: none;
@@ -318,7 +318,7 @@ body {
     background: var(--repeto-surface-elevated) !important;
     transition: background 0.2s ease !important;
 }
-.g-card:hover {
+.g-card:hover:not(.repeto-settings-section-card) {
     box-shadow: none !important;
     transform: none !important;
     background: var(--repeto-widget-hover) !important;
@@ -842,14 +842,19 @@ body {
 .repeto-top-header {
     position: fixed;
     top: 0;
-    left: 0;
+    left: calc(var(--repeto-shell-sidebar-collapsed-width) + var(--repeto-shell-context-sidebar-width));
     right: 0;
-    height: 72px;
+    height: 56px;
     display: flex;
     align-items: center;
-    background: var(--repeto-surface-elevated);
+    background: var(--surface-card);
+    border-bottom: 1px solid var(--border-subtle);
     z-index: 140;
     transition: none;
+}
+
+body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
+    left: var(--repeto-shell-sidebar-collapsed-width);
 }
 
 .repeto-top-header--search-open {
@@ -857,11 +862,11 @@ body {
 }
 
 .repeto-top-header--with-sidebar {
-    left: 0;
+    left: calc(var(--repeto-shell-sidebar-collapsed-width) + var(--repeto-shell-context-sidebar-width));
 }
 
 .repeto-top-header--with-sidebar-collapsed {
-    left: 0;
+    left: calc(var(--repeto-shell-sidebar-collapsed-width) + var(--repeto-shell-context-sidebar-width));
 }
 
 .repeto-top-header--no-sidebar {
@@ -874,7 +879,7 @@ body {
     display: flex;
     align-items: center;
     gap: 16px;
-    padding: 0 24px 0 16px;
+    padding: 0 16px;
     box-sizing: border-box;
 }
 
@@ -888,7 +893,7 @@ body {
 }
 
 .repeto-top-header__brand {
-    display: inline-flex;
+    display: none;
     align-items: center;
     text-decoration: none;
     flex-shrink: 0;
@@ -909,7 +914,7 @@ body {
 .repeto-top-header__search {
     position: relative;
     width: 100%;
-    max-width: 460px;
+    max-width: 520px;
     z-index: 0;
 }
 
@@ -967,7 +972,7 @@ body {
 }
 
 .repeto-top-header__search-input .g-text-input__control {
-    height: 38px;
+    height: 34px;
     padding: 0 14px;
     font-size: 14px;
     font-weight: 400;
@@ -998,9 +1003,9 @@ body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 38px;
-    height: 38px;
-    border-radius: 9px;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
     text-decoration: none;
     color: var(--text-primary);
     transition: background 0.16s ease, color 0.16s ease;
@@ -1032,14 +1037,14 @@ body {
     align-items: center;
     justify-content: flex-start;
     gap: 8px;
-    height: 38px;
+    height: 34px;
     max-width: 280px;
     padding: 0 10px 0 8px;
     border: none;
     border-radius: 10px;
     background: transparent;
     color: var(--text-primary);
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 500;
     line-height: 1;
     cursor: pointer;
@@ -1168,14 +1173,14 @@ body {
 }
 
 .repeto-sidebar--flat {
-    top: 84px;
-    left: 16px;
-    bottom: 16px;
+    top: 0;
+    left: 0;
+    bottom: 0;
     width: var(--repeto-shell-sidebar-collapsed-width);
-    background: var(--surface-card);
-    border-radius: 16px;
-    box-shadow: var(--repeto-panel-shadow);
-    border: none;
+    background: var(--surface-subtle);
+    border-radius: 0;
+    box-shadow: none;
+    border-right: 1px solid var(--border-subtle);
     z-index: 150;
     --repeto-main-menu-text: var(--repeto-nav-text);
     --repeto-main-menu-icon: var(--repeto-nav-icon);
@@ -1233,7 +1238,7 @@ body {
     align-items: flex-end;
     justify-content: center;
     min-height: 56px;
-    padding: 0 0 4px;
+    padding: 0;
     border-bottom: 0;
 }
 
@@ -1246,11 +1251,11 @@ body {
 }
 
 .repeto-sidebar__context-expand-btn {
-    width: 20px;
-    height: 20px;
-    min-height: 20px;
+    width: 34px;
+    height: 34px;
+    min-height: 34px;
     border: none;
-    border-radius: 0;
+    border-radius: 8px;
     background: transparent;
     color: var(--text-tertiary);
     display: inline-flex;
@@ -1263,7 +1268,7 @@ body {
 }
 
 .repeto-sidebar__context-expand-btn:hover {
-    background: transparent;
+    background: var(--surface-sunken);
     color: var(--text-primary);
     opacity: 1;
 }
@@ -1279,7 +1284,7 @@ body {
 
 .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__nav {
     padding: 8px 6px 14px;
-    gap: 10px;
+    gap: 8px;
 }
 
 .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__section--navigation {
@@ -1296,18 +1301,18 @@ body {
 }
 
 .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__section-list {
-    gap: 6px;
+    gap: 4px;
 }
 
 .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--rail {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    padding: 8px 2px;
-    min-height: 64px;
+    gap: 0;
+    padding: 0;
+    min-height: 40px;
     text-align: center;
-    border-radius: 12px;
+    border-radius: 8px;
 }
 
 .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--rail .repeto-sidebar__item-icon {
@@ -1321,7 +1326,7 @@ body {
 }
 
 .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item-rail-label {
-    display: block;
+    display: none;
     max-width: 76px;
     overflow: hidden;
     white-space: nowrap;
@@ -1339,41 +1344,42 @@ body {
 }
 
 .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--main.repeto-sidebar__item--active {
-    background: var(--accent);
+    background: transparent;
     border-color: transparent;
-    color: var(--repeto-on-brand);
+    color: var(--repeto-main-menu-active-text);
 }
 
 .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--main.repeto-sidebar__item--active:hover {
-    background: var(--accent-hover);
-    color: var(--repeto-on-brand);
+    background: transparent;
+    color: var(--repeto-main-menu-active-text);
 }
 
 .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--main.repeto-sidebar__item--active .repeto-sidebar__item-icon .g-icon {
-    color: var(--repeto-on-brand);
+    color: var(--repeto-main-menu-active-icon);
 }
 
 .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--main.repeto-sidebar__item--active .repeto-animated-sidebar-icon__canvas :is(path, circle, ellipse, line, polyline, polygon, rect) {
-    stroke: var(--repeto-on-brand) !important;
+    stroke: var(--repeto-main-menu-active-icon) !important;
 }
 
 .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--main:hover {
-    background: var(--repeto-main-menu-hover-bg);
+    background: transparent;
     color: var(--repeto-main-menu-hover-text);
 }
 
 .repeto-context-sidebar {
     position: fixed;
-    top: 84px;
-    left: calc(16px + var(--repeto-shell-sidebar-collapsed-width) + 8px);
-    bottom: 16px;
+    top: 0;
+    left: var(--repeto-shell-sidebar-collapsed-width);
+    bottom: 0;
     width: var(--repeto-shell-context-sidebar-width);
     z-index: 145;
     overflow: hidden;
     background: var(--surface-card);
     border: none;
-    border-radius: 16px;
-    box-shadow: var(--repeto-panel-shadow);
+    border-right: 1px solid var(--border-subtle);
+    border-radius: 0;
+    box-shadow: none;
     contain: paint;
     will-change: width;
     transition: width 0.2s ease;
@@ -1382,7 +1388,7 @@ body {
 .repeto-context-sidebar__inner {
     height: 100%;
     min-width: var(--repeto-shell-context-sidebar-width);
-    padding: 14px 12px 24px;
+    padding: 18px 12px 18px;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -1390,6 +1396,22 @@ body {
     overflow-x: hidden;
     opacity: 1;
     transition: opacity 0.18s ease;
+}
+
+.repeto-context-sidebar__brand {
+    display: inline-flex;
+    align-items: center;
+    width: 100%;
+    min-height: 34px;
+    padding: 0 0 14px;
+    text-decoration: none;
+    border-bottom: 1px solid var(--border-subtle);
+    flex-shrink: 0;
+}
+
+.repeto-context-sidebar__brand .repeto-logo--full {
+    width: 118px;
+    max-width: 118px;
 }
 
 .repeto-context-sidebar--collapsed {
@@ -1417,8 +1439,20 @@ body {
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: var(--g-color-text-secondary);
-    opacity: 0.7;
+    color: var(--text-secondary);
+    opacity: 1;
+}
+
+.repeto-context-sidebar__header-title {
+    min-width: 0;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding-right: 8px;
 }
 
 .repeto-context-sidebar__collapse-btn {
@@ -1512,9 +1546,9 @@ body {
     border: 1px solid transparent;
     background: transparent;
     color: var(--text-primary);
-    border-radius: 10px;
-    min-height: 42px;
-    padding: 6px 10px;
+    border-radius: 8px;
+    min-height: 36px;
+    padding: 6px 8px;
     display: inline-flex;
     align-items: center;
     gap: 10px;
@@ -1523,25 +1557,48 @@ body {
     transition: background 0.15s ease, color 0.15s ease;
 }
 
+.repeto-context-sidebar__item--quick:first-child,
+.repeto-context-sidebar__item--create {
+    min-height: 36px;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    background: var(--accent);
+    color: var(--repeto-on-brand);
+    font-weight: 600;
+}
+
+.repeto-context-sidebar__item--quick:first-child:hover,
+.repeto-context-sidebar__item--create:hover {
+    background: var(--accent-hover);
+    color: var(--repeto-on-brand);
+}
+
+.repeto-context-sidebar__item--quick:first-child .repeto-context-sidebar__item-icon,
+.repeto-context-sidebar__item--create .repeto-context-sidebar__item-icon {
+    width: 18px;
+    height: 18px;
+}
+
 .repeto-context-sidebar__item:hover {
-    background: var(--repeto-main-menu-hover-bg);
+    background: transparent;
     color: var(--repeto-main-menu-hover-text);
 }
 
 .repeto-context-sidebar__item--active {
-    background: var(--repeto-main-menu-active-bg);
-    border-color: var(--repeto-nav-active-line);
+    background: transparent;
+    border-color: transparent;
     color: var(--repeto-main-menu-active-text);
     font-weight: 600;
 }
 
 .repeto-context-sidebar__item--active:hover {
-    background: var(--repeto-main-menu-active-bg-hover);
+    background: transparent;
 }
 
 .repeto-context-sidebar__item-icon {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1562,7 +1619,7 @@ body {
 }
 
 .repeto-context-sidebar__item-text {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 500;
     line-height: 1.25;
     color: currentColor;
@@ -1701,7 +1758,7 @@ body {
 }
 
 .repeto-sidebar--flat .repeto-sidebar__item--main:hover {
-    background: var(--repeto-main-menu-hover-bg);
+    background: transparent;
     color: var(--repeto-main-menu-hover-text);
 }
 
@@ -1710,8 +1767,8 @@ body {
 }
 
 .repeto-sidebar--flat .repeto-sidebar__item--main.repeto-sidebar__item--active {
-    background: var(--repeto-main-menu-active-bg);
-    border-color: var(--repeto-nav-active-line);
+    background: transparent;
+    border-color: transparent;
     color: var(--repeto-main-menu-active-text);
 }
 
@@ -1728,7 +1785,7 @@ body {
 }
 
 .repeto-sidebar--flat .repeto-sidebar__item--main.repeto-sidebar__item--active:hover {
-    background: var(--repeto-main-menu-active-bg-hover);
+    background: transparent;
     color: var(--repeto-main-menu-active-text);
 }
 
@@ -1823,7 +1880,7 @@ body {
 
 .repeto-content--flat {
     margin-left: 0;
-    padding-top: 72px;
+    padding-top: 56px;
     position: relative;
     background: var(--repeto-bg);
     backface-visibility: hidden;
@@ -1847,7 +1904,7 @@ body {
 
 .repeto-content--flat.repeto-content--no-sidebar {
     margin-left: 0;
-    padding: 72px 0 0;
+    padding: 56px 0 0;
 }
 
 @media (min-width: 769px) {
@@ -2155,6 +2212,30 @@ body {
 
 .repeto-settings-avatar-trigger:hover {
     box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 36%, transparent);
+}
+
+.repeto-settings-account-avatar-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.repeto-settings-avatar-trigger--account {
+    width: 72px;
+    height: 72px;
+    margin: 0;
+    border: none;
+    background: transparent;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.repeto-settings-account-avatar-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
 }
 
 .repeto-settings-avatar-fallback {
@@ -7029,6 +7110,15 @@ body {
         grid-template-columns: 1fr;
     }
 
+    .repeto-settings-account-avatar-row {
+        margin-bottom: 14px;
+    }
+
+    .repeto-settings-avatar-trigger--account {
+        width: 64px;
+        height: 64px;
+    }
+
     .repeto-settings-actions-row {
         flex-direction: column;
         align-items: stretch;
@@ -10602,4 +10692,5 @@ body {
         width: 100%;
     }
 }
+
 

@@ -1,8 +1,17 @@
-import type { NextPage } from "next";
-import PaymentsListPage from "@/templates/Finance/PaymentsListPage";
+import type { GetServerSideProps, NextPage } from "next";
 
-const Payments: NextPage = () => {
-    return <PaymentsListPage />;
+export const getServerSideProps: GetServerSideProps = async (context) => {
+    const queryIndex = context.resolvedUrl.indexOf("?");
+    const querySuffix = queryIndex >= 0 ? context.resolvedUrl.slice(queryIndex) : "";
+
+    return {
+        redirect: {
+            destination: `/finance/payments${querySuffix}`,
+            permanent: false,
+        },
+    };
 };
 
-export default Payments;
+const PaymentsRedirectPage: NextPage = () => null;
+
+export default PaymentsRedirectPage;

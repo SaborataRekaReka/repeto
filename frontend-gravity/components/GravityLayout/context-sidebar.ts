@@ -16,6 +16,7 @@ export type ShellContextSidebarConfig = {
     activeNav?: string;
     onNavChange?: (key: string) => void;
     sidebarHeader?: ReactNode;
+    hidePrimaryAction?: boolean;
     backHref?: string;
 };
 

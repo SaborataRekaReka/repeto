@@ -66,6 +66,11 @@ type VerifyRegistrationCodeResult = {
 type StartPlatformAccessPaymentResult = {
   requiresPayment: boolean;
   amountRub: number;
+  baseAmountRub?: number;
+  creditAmountRub?: number;
+  sourcePlanId?: PlanId | null;
+  sourceBillingCycle?: BillingCycle | null;
+  remainingDays?: number;
   planId: PlanId;
   billingCycle: BillingCycle;
   paymentId?: string;
@@ -76,6 +81,8 @@ type StartPlatformAccessPaymentResult = {
 type CompletePlatformAccessPaymentResult = {
   user: User;
   amountRub: number;
+  baseAmountRub?: number;
+  creditAmountRub?: number;
   planId: PlanId;
   billingCycle: BillingCycle;
 };

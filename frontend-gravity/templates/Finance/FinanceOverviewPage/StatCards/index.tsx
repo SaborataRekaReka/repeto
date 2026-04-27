@@ -30,7 +30,7 @@ const StatCards = () => {
         {
             id: "income",
             title: "Доход за месяц",
-            href: "/payments",
+            href: "/finance/payments",
             value: loading ? "—" : formatCurrencyValue(stats?.totalIncome ?? 0),
             metaText: !loading ? formatTrendValue(stats?.incomeChangePercent ?? 0) : null,
             metaPositive: (stats?.incomeChangePercent ?? 0) >= 0,
@@ -48,7 +48,7 @@ const StatCards = () => {
         {
             id: "debt",
             title: "К оплате учениками",
-            href: "/payments",
+            href: "/finance/payments",
             value: loading ? "—" : formatCurrencyValue(stats?.totalDebt ?? 0),
             metaText: !loading ? formatTrendValue(stats?.debtChangePercent ?? 0) : null,
             // Для долга рост — это плохо.

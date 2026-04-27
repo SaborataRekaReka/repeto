@@ -1,0 +1,830 @@
+/* Yandex-like shell layout, with Repeto brand colors preserved. */
+:root {
+    --repeto-shell-sidebar-width: 52px;
+    --repeto-shell-sidebar-collapsed-width: 52px;
+    --repeto-shell-context-sidebar-width: 260px;
+    --repeto-shell-page-top-inset: 10px;
+}
+
+/* Upgrade plan modal: payment-step summary card. */
+.repeto-upgrade-plan-modal {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.repeto-upgrade-plan-modal__step {
+    display: inline-flex;
+    align-self: flex-start;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 16px;
+}
+
+.repeto-upgrade-plan-modal__plans {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.repeto-upgrade-plan-modal__plan {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--surface-page);
+}
+
+.repeto-upgrade-plan-modal__plan--next {
+    background: color-mix(in srgb, var(--accent-soft) 62%, var(--surface-page));
+}
+
+.repeto-upgrade-plan-modal__cycle-switcher {
+    display: inline-flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.repeto-upgrade-plan-modal__summary {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: var(--surface-subtle);
+}
+
+.repeto-upgrade-plan-modal__summary-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.repeto-upgrade-plan-modal__summary-row--total {
+    padding-top: 8px;
+    border-top: 1px solid var(--border-subtle);
+}
+
+@media (max-width: 640px) {
+    .repeto-upgrade-plan-modal__plans {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (min-width: 769px) {
+    .repeto-top-header {
+        left: calc(var(--repeto-shell-sidebar-collapsed-width) + var(--repeto-shell-context-sidebar-width)) !important;
+        height: 56px !important;
+        background: var(--surface-card) !important;
+        border-bottom: 1px solid var(--border-subtle) !important;
+    }
+
+    body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
+        left: var(--repeto-shell-sidebar-collapsed-width) !important;
+    }
+
+    .repeto-top-header__inner {
+        padding: 0 16px !important;
+    }
+
+    .repeto-top-header__brand {
+        display: none !important;
+    }
+
+    .repeto-top-header__search-input .g-text-input,
+    .repeto-top-header__search-input .g-text-input__content {
+        background: var(--repeto-control-surface) !important;
+        border-color: transparent !important;
+        border-radius: var(--repeto-control-radius) !important;
+    }
+
+    .repeto-top-header__search-input .g-text-input__control {
+        height: 34px !important;
+    }
+
+    .repeto-top-header__icon-btn,
+    .repeto-top-header__profile-trigger {
+        height: 34px !important;
+    }
+
+    .repeto-top-header__icon-btn {
+        width: 34px !important;
+        border-radius: 8px !important;
+    }
+
+    .repeto-sidebar--flat.repeto-sidebar--rail {
+        top: 0 !important;
+        left: 0 !important;
+        bottom: 0 !important;
+        width: var(--repeto-shell-sidebar-collapsed-width) !important;
+        background: var(--surface-subtle) !important;
+        border-right: 1px solid var(--border-subtle) !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+    }
+
+    .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__logo--rail-slot {
+        min-height: 56px !important;
+        padding: 0 !important;
+    }
+
+    .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__nav {
+        padding: 8px 6px 14px !important;
+        gap: 8px !important;
+    }
+
+    .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--rail {
+        min-height: 40px !important;
+        padding: 0 !important;
+        border-radius: 8px !important;
+    }
+
+    .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item-rail-label {
+        display: none !important;
+    }
+
+    .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--main.repeto-sidebar__item--active {
+        background: var(--accent) !important;
+        color: var(--repeto-on-brand) !important;
+        border-radius: 10px !important;
+    }
+
+    .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--main.repeto-sidebar__item--active:hover {
+        background: var(--accent-hover) !important;
+        color: var(--repeto-on-brand) !important;
+    }
+
+    .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--main.repeto-sidebar__item--active .repeto-sidebar__item-icon .g-icon,
+    .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--main.repeto-sidebar__item--active .repeto-animated-sidebar-icon__fallback .g-icon {
+        color: var(--repeto-on-brand) !important;
+    }
+
+    .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--main.repeto-sidebar__item--active .repeto-animated-sidebar-icon__canvas :is(path, circle, ellipse, line, polyline, polygon, rect) {
+        stroke: var(--repeto-on-brand) !important;
+    }
+
+    .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--main.repeto-sidebar__item--active .repeto-animated-sidebar-icon__canvas [fill]:not([fill="none"]) {
+        fill: var(--repeto-on-brand) !important;
+    }
+
+    .repeto-sidebar__context-expand-btn {
+        width: 34px !important;
+        height: 34px !important;
+        min-height: 34px !important;
+        border-radius: 8px !important;
+    }
+
+    .repeto-sidebar__context-expand-btn:hover {
+        background: var(--surface-sunken) !important;
+    }
+
+    .repeto-context-sidebar {
+        top: 0 !important;
+        left: var(--repeto-shell-sidebar-collapsed-width) !important;
+        bottom: 0 !important;
+        width: var(--repeto-shell-context-sidebar-width) !important;
+        background: var(--surface-card) !important;
+        border-right: 1px solid var(--border-subtle) !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+    }
+
+    .repeto-context-sidebar__inner {
+        padding: 18px 12px !important;
+        overflow: hidden !important;
+    }
+
+    .repeto-context-sidebar__brand {
+        display: inline-flex !important;
+        align-items: center !important;
+        width: 100% !important;
+        min-height: 34px !important;
+        padding: 0 0 14px !important;
+        text-decoration: none !important;
+        border-bottom: 1px solid var(--border-subtle) !important;
+        flex-shrink: 0 !important;
+    }
+
+    .repeto-context-sidebar__brand .repeto-logo--full {
+        width: 118px !important;
+        max-width: 118px !important;
+    }
+
+    .repeto-context-sidebar__header-row {
+        min-height: 28px !important;
+        padding: 0 !important;
+    }
+
+    .repeto-context-sidebar__header-title {
+        min-width: 0 !important;
+        font-size: 18px !important;
+        font-weight: 600 !important;
+        line-height: 1.2 !important;
+        color: var(--text-primary) !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+        padding-right: 8px !important;
+    }
+
+    .repeto-context-sidebar__section-label,
+    .repeto-context-sidebar__heading-breadcrumb,
+    .repeto-context-sidebar__section-title--hidden {
+        display: none !important;
+    }
+
+    .repeto-context-sidebar__body {
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 12px !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        scrollbar-width: none !important;
+    }
+
+    .repeto-context-sidebar__body::-webkit-scrollbar {
+        display: none !important;
+    }
+
+    .repeto-context-sidebar__section {
+        gap: 6px !important;
+    }
+
+    .repeto-context-sidebar__section-title {
+        padding: 0 2px !important;
+        text-transform: none !important;
+        letter-spacing: 0 !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        color: var(--text-secondary) !important;
+        opacity: 1 !important;
+    }
+
+    .repeto-context-sidebar__item {
+        min-height: 36px !important;
+        padding: 6px 8px !important;
+        border-radius: 8px !important;
+    }
+
+    .repeto-context-sidebar__item:hover {
+        background: transparent !important;
+    }
+
+    .repeto-context-sidebar__item--create {
+        justify-content: center !important;
+        margin-bottom: 8px !important;
+        background: var(--accent) !important;
+        color: var(--repeto-on-brand) !important;
+        font-weight: 600 !important;
+    }
+
+    .repeto-context-sidebar__item--create:hover {
+        background: var(--accent-hover) !important;
+        color: var(--repeto-on-brand) !important;
+    }
+
+    .repeto-context-sidebar__item--create:focus-visible {
+        outline: 2px solid var(--accent-soft) !important;
+        outline-offset: 2px !important;
+    }
+
+    .repeto-context-sidebar__primary-action {
+        width: 100% !important;
+    }
+
+    .repeto-context-create-menu__popup {
+        z-index: 180 !important;
+    }
+
+    .repeto-context-create-menu {
+        width: 236px !important;
+        max-height: none !important;
+        padding: 6px !important;
+        border: 1px solid var(--border-subtle) !important;
+        border-radius: 12px !important;
+        background: var(--surface-card) !important;
+        box-shadow: var(--shadow-sm) !important;
+    }
+
+    .repeto-context-create-menu .repeto-quick-actions-menu__item {
+        min-height: 36px !important;
+        border-radius: 8px !important;
+        padding: 7px 8px !important;
+        font-size: 14px !important;
+        font-weight: 500 !important;
+    }
+
+    .repeto-context-create-menu .repeto-quick-actions-menu__item:hover,
+    .repeto-context-create-menu .repeto-quick-actions-menu__item:focus-visible {
+        background: var(--surface-subtle) !important;
+    }
+
+    .repeto-context-create-menu .repeto-quick-actions-menu__item-icon {
+        width: 24px !important;
+        height: 24px !important;
+        color: var(--accent) !important;
+    }
+
+    .repeto-schedule-sidebar-tools {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+
+    .repeto-schedule-sidebar-tools__workhours {
+        width: 100% !important;
+        min-height: 36px !important;
+        border: 1px solid var(--border-subtle) !important;
+        border-radius: 10px !important;
+        background: var(--surface-page) !important;
+        color: var(--text-primary) !important;
+        padding: 8px 10px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        cursor: pointer !important;
+        text-align: left !important;
+    }
+
+    .repeto-schedule-sidebar-tools__workhours:hover {
+        background: var(--surface-subtle) !important;
+    }
+
+    .repeto-schedule-sidebar-tools__workhours-icon {
+        width: 18px !important;
+        height: 18px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        color: var(--accent) !important;
+        flex-shrink: 0 !important;
+    }
+
+    .repeto-schedule-sidebar-tools__workhours-title {
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        line-height: 18px !important;
+    }
+
+    .repeto-schedule-sidebar-tools__workhours-summary {
+        margin-left: auto !important;
+        font-size: 12px !important;
+        font-weight: 500 !important;
+        line-height: 16px !important;
+        color: var(--text-secondary) !important;
+    }
+
+    .repeto-schedule-sidebar-tools__export {
+        width: 100% !important;
+        min-height: 34px !important;
+        border: 1px solid var(--border-subtle) !important;
+        border-radius: 8px !important;
+        background: var(--surface-page) !important;
+        color: var(--text-primary) !important;
+        padding: 7px 10px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 6px !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        cursor: pointer !important;
+        text-align: left !important;
+    }
+
+    .repeto-schedule-sidebar-tools__export:hover {
+        background: var(--surface-subtle) !important;
+    }
+
+    .repeto-schedule-sidebar-tools__export-main {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+    }
+
+    .repeto-schedule-sidebar-tools__export-chevron {
+        color: var(--text-secondary) !important;
+        transition: transform 0.18s ease !important;
+    }
+
+    .repeto-schedule-export {
+        position: relative !important;
+    }
+
+    .repeto-schedule-export--open .repeto-schedule-sidebar-tools__export-chevron {
+        transform: rotate(180deg) !important;
+    }
+
+    .repeto-schedule-sidebar-tools__export:disabled {
+        opacity: 0.6 !important;
+        cursor: default !important;
+    }
+
+    .repeto-schedule-export-menu {
+        position: absolute !important;
+        top: calc(100% + 6px) !important;
+        left: 0 !important;
+        right: 0 !important;
+        z-index: 25 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 2px !important;
+        padding: 6px !important;
+        border-radius: 10px !important;
+        border: 1px solid var(--border-subtle) !important;
+        background: var(--surface-card) !important;
+        box-shadow: var(--shadow-sm) !important;
+    }
+
+    .repeto-schedule-export-menu__item {
+        width: 100% !important;
+        border: none !important;
+        border-radius: 8px !important;
+        background: transparent !important;
+        color: var(--text-primary) !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        text-align: left !important;
+        padding: 8px 10px !important;
+        cursor: pointer !important;
+    }
+
+    .repeto-schedule-export-menu__item:hover {
+        background: var(--surface-subtle) !important;
+    }
+
+    .repeto-schedule-export-menu__item:disabled {
+        opacity: 0.62 !important;
+        cursor: default !important;
+    }
+
+    .repeto-schedule-export-menu__logo {
+        width: 18px !important;
+        height: 18px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex-shrink: 0 !important;
+    }
+
+    .repeto-schedule-export-menu__logo img {
+        width: 18px !important;
+        height: 18px !important;
+        display: block !important;
+        object-fit: contain !important;
+    }
+
+    .repeto-schedule-export-menu__text {
+        font-size: 13px !important;
+        font-weight: 500 !important;
+        line-height: 18px !important;
+    }
+
+    .repeto-schedule-sidebar-calendar {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+        padding: 8px !important;
+        border-radius: 10px !important;
+        border: 1px solid var(--border-subtle) !important;
+        background: var(--surface-page) !important;
+    }
+
+    .repeto-schedule-sidebar-calendar__header {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 8px !important;
+    }
+
+    .repeto-schedule-sidebar-calendar__title {
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        line-height: 18px !important;
+        color: var(--text-primary) !important;
+    }
+
+    .repeto-schedule-sidebar-calendar__nav {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 4px !important;
+    }
+
+    .repeto-schedule-sidebar-calendar__nav-btn {
+        width: 24px !important;
+        height: 24px !important;
+        border: none !important;
+        border-radius: 6px !important;
+        background: transparent !important;
+        color: var(--text-secondary) !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        cursor: pointer !important;
+    }
+
+    .repeto-schedule-sidebar-calendar__nav-btn:hover {
+        background: var(--surface-subtle) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .repeto-schedule-sidebar-calendar__weekdays {
+        display: grid !important;
+        grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+        gap: 2px !important;
+    }
+
+    .repeto-schedule-sidebar-calendar__weekday {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        height: 16px !important;
+        font-size: 10px !important;
+        font-weight: 600 !important;
+        line-height: 1 !important;
+        color: var(--text-tertiary) !important;
+    }
+
+    .repeto-schedule-sidebar-calendar__grid {
+        display: grid !important;
+        grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+        gap: 2px !important;
+    }
+
+    .repeto-schedule-sidebar-calendar__day {
+        width: 100% !important;
+        height: 26px !important;
+        border: none !important;
+        border-radius: 6px !important;
+        background: transparent !important;
+        color: var(--text-primary) !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 12px !important;
+        font-weight: 500 !important;
+        line-height: 1 !important;
+        cursor: pointer !important;
+    }
+
+    .repeto-schedule-sidebar-calendar__day:hover {
+        background: var(--surface-subtle) !important;
+    }
+
+    .repeto-schedule-sidebar-calendar__day--outside {
+        color: var(--text-tertiary) !important;
+        opacity: 0.68 !important;
+    }
+
+    .repeto-schedule-sidebar-calendar__day--today {
+        box-shadow: inset 0 0 0 1px var(--accent) !important;
+    }
+
+    .repeto-schedule-sidebar-calendar__day--selected {
+        background: var(--accent) !important;
+        color: var(--repeto-on-brand) !important;
+        font-weight: 600 !important;
+    }
+
+    .repeto-context-sidebar__item--active {
+        background: transparent !important;
+        border-color: transparent !important;
+        color: var(--text-primary) !important;
+    }
+
+    .repeto-context-sidebar__footer {
+        flex-shrink: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 10px !important;
+        padding-top: 12px !important;
+        border-top: 1px solid var(--border-subtle) !important;
+    }
+
+    .repeto-context-sidebar__quota-card {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+        padding: 12px !important;
+        border-radius: 12px !important;
+        background: var(--accent-soft) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .repeto-context-sidebar__quota-track {
+        height: 6px !important;
+        border-radius: 999px !important;
+        background: color-mix(in srgb, var(--surface-card) 80%, transparent) !important;
+        overflow: hidden !important;
+    }
+
+    .repeto-context-sidebar__quota-fill {
+        display: block !important;
+        height: 100% !important;
+        border-radius: inherit !important;
+        background: var(--accent) !important;
+    }
+
+    .repeto-context-sidebar__quota-text {
+        font-size: 13px !important;
+        line-height: 18px !important;
+        font-weight: 600 !important;
+        text-align: center !important;
+    }
+
+    .repeto-context-sidebar__utility-btn {
+        width: 100% !important;
+        min-height: 36px !important;
+        border: none !important;
+        border-radius: 10px !important;
+        background: var(--surface-subtle) !important;
+        color: var(--text-primary) !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 8px !important;
+        padding: 8px 10px !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        cursor: pointer !important;
+    }
+
+    .repeto-context-sidebar__utility-btn:hover {
+        background: var(--surface-sunken) !important;
+    }
+
+    .repeto-context-sidebar__utility-btn--plain {
+        background: transparent !important;
+        color: var(--text-secondary) !important;
+    }
+
+    .repeto-context-sidebar__utility-btn--plain:hover {
+        background: var(--surface-subtle) !important;
+        color: var(--text-primary) !important;
+    }
+
+    .repeto-context-sidebar__install-hint {
+        margin: -4px 2px 0 !important;
+        color: var(--text-tertiary) !important;
+        font-size: 12px !important;
+        line-height: 16px !important;
+        text-align: center !important;
+    }
+
+    .repeto-content--flat {
+        padding-top: 56px !important;
+    }
+
+    /* The page title row inside content duplicates top header in Yandex shell. */
+    body.repeto-shell-rail-open .repeto-content--flat > .repeto-header--flat {
+        display: none !important;
+    }
+
+    .page-overlay--shell .page-overlay__content {
+        padding-top: var(--repeto-shell-page-top-inset) !important;
+    }
+
+    body.repeto-shell-rail-open .repeto-content--flat > .repeto-header--flat + :not(.page-overlay) {
+        margin-top: var(--repeto-shell-page-top-inset) !important;
+    }
+
+    .repeto-settings-content--shell {
+        width: 100% !important;
+        max-width: none !important;
+    }
+
+    .repeto-settings-sidebar-header {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 10px !important;
+        margin-bottom: 2px !important;
+    }
+
+    .repeto-settings-sidebar-profile {
+        display: grid !important;
+        grid-template-columns: 44px minmax(0, 1fr) !important;
+        align-items: center !important;
+        gap: 10px !important;
+        padding: 8px !important;
+        border: 1px solid var(--border-subtle) !important;
+        border-radius: 10px !important;
+        background: var(--surface-page) !important;
+    }
+
+    .repeto-settings-avatar-trigger--compact {
+        width: 44px !important;
+        height: 44px !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        background: transparent !important;
+        flex-shrink: 0 !important;
+    }
+
+    .repeto-settings-sidebar-profile__meta {
+        min-width: 0 !important;
+    }
+
+    .repeto-settings-sidebar-profile .repeto-settings-profile-name {
+        display: block !important;
+        margin-top: 0 !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+    }
+
+    .repeto-settings-sidebar-profile .repeto-settings-profile-email {
+        display: block !important;
+        margin-top: 2px !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+    }
+
+    .repeto-settings-sidebar-theme {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        gap: 4px !important;
+        padding: 4px !important;
+        border: 1px solid var(--border-subtle) !important;
+        border-radius: 10px !important;
+        background: var(--surface-page) !important;
+    }
+
+    .repeto-settings-sidebar-theme .repeto-settings-theme-btn {
+        min-width: 0 !important;
+        height: 30px !important;
+        padding: 0 !important;
+        border-radius: 7px !important;
+        display: inline-flex !important;
+        flex-direction: row !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 0 !important;
+    }
+
+    .repeto-settings-sidebar-theme .repeto-settings-theme-btn--active {
+        background: var(--surface-card) !important;
+        color: var(--accent) !important;
+        box-shadow: none !important;
+    }
+
+    .repeto-settings-sidebar-link,
+    .repeto-settings-sidebar-logout {
+        width: 100% !important;
+        min-height: 34px !important;
+        padding: 7px 8px !important;
+        border: none !important;
+        border-radius: 8px !important;
+        background: transparent !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        line-height: 18px !important;
+        text-decoration: none !important;
+        cursor: pointer !important;
+    }
+
+    .repeto-settings-sidebar-link {
+        color: var(--text-primary) !important;
+    }
+
+    .repeto-settings-sidebar-logout {
+        color: var(--g-color-text-danger) !important;
+    }
+
+    .repeto-settings-sidebar-link:hover,
+    .repeto-settings-sidebar-logout:hover {
+        background: var(--surface-subtle) !important;
+    }
+
+    /* LP2 panels should occupy all available workspace without card chrome. */
+    .lp2:not(.lp2--homework) {
+        top: 56px !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        border-radius: 0 !important;
+        border: 0 !important;
+        box-shadow: none !important;
+    }
+
+    body.repeto-shell-rail-open .lp2:not(.lp2--homework) {
+        left: var(--repeto-shell-sidebar-collapsed-width) !important;
+    }
+
+    body.repeto-shell-context-sidebar-open .lp2:not(.lp2--homework) {
+        left: calc(var(--repeto-shell-sidebar-collapsed-width) + var(--repeto-shell-context-sidebar-width)) !important;
+    }
+}

@@ -5,6 +5,7 @@ import "@/styles/dashboard-tochka.css";
 import "@/styles/theme-tokens.css";
 import "@/styles/theme-components.css";
 import "@/styles/theme-navigation.css";
+import "@/styles/yandex-shell.css";
 import type { AppProps } from "next/app";
 import { Inter } from "next/font/google";
 
@@ -78,6 +79,20 @@ function AppContent({ Component, pageProps }: { Component: AppProps["Component"]
     const router = useRouter();
     const PageComponent = Component as any;
     const isLandingRoute = router.pathname === "/";
+
+    useEffect(() => {
+        if (isLandingRoute) return;
+        if (typeof window === "undefined") return;
+        if (!("serviceWorker" in navigator)) return;
+        if (!window.isSecureContext && window.location.hostname !== "localhost") return;
+
+        navigator.serviceWorker
+            .register("/push-sw.js", {
+                scope: "/",
+                updateViaCache: "none",
+            })
+            .catch(() => null);
+    }, [isLandingRoute]);
 
     return (
         <GravityTheme theme={theme}>

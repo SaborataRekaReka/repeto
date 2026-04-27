@@ -18,7 +18,7 @@ const BalanceTable = () => {
             <div className="repeto-card-header">
                 <Text variant="subheader-2">Баланс учеников</Text>
                 <Link
-                    href="/payments"
+                    href="/finance/payments"
                     className="repeto-card-chevron"
                     aria-label="Все оплаты"
                 >

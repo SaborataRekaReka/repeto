@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useRouter } from "next/router";
 import {
     Text,
     Button,
@@ -28,11 +29,6 @@ const filterTabs: { value: string; label: string }[] = [
     { value: "expired", label: "Истекли" },
 ];
 
-const packageTypeTabs: Array<{ value: "private" | "public"; label: string }> = [
-    { value: "private", label: "Обычные пакеты" },
-    { value: "public", label: "Публичные пакеты" },
-];
-
 function statusChipClass(status: string): string {
     if (status === "active") return "repeto-sl-cell-chip--active";
     if (status === "expired") return "repeto-sl-cell-chip--paused";
@@ -47,6 +43,7 @@ function progressColor(used: number, total: number): string {
 }
 
 const PackagesPage = () => {
+    const router = useRouter();
     const [tab, setTab] = useState<string>("all");
     const [packageType, setPackageType] = useState<"private" | "public">("private");
     const [search, setSearch] = useState<string>("");
@@ -99,10 +96,13 @@ const PackagesPage = () => {
     const hasSearch = search.trim().length > 0;
     const isPublicPackagesTab = packageType === "public";
 
-    const openCreatePackage = () => {
+    useEffect(() => {
+        if (router.query.create !== "1") return;
+
         setEditingPackage(null);
         setCreateModal(true);
-    };
+        void router.replace(router.pathname, undefined, { shallow: true });
+    }, [router, router.query.create]);
 
     const handlePackageCreated = async () => {
         setEditingPackage(null);
@@ -112,15 +112,20 @@ const PackagesPage = () => {
 
     const overlayNav = [
         {
-            key: "create",
-            label: "Новый пакет",
+            key: "private",
+            label: `Обычные (${packageTypeCounts.private})`,
+            icon: ObjectAlignJustifyVertical as IconData,
+        },
+        {
+            key: "public",
+            label: `Публичные (${packageTypeCounts.public})`,
             icon: ObjectAlignJustifyVertical as IconData,
         },
     ];
 
     const handleOverlayNav = (key: string) => {
-        if (key === "create") {
-            openCreatePackage();
+        if (key === "private" || key === "public") {
+            setPackageType(key);
         }
     };
 
@@ -131,31 +136,9 @@ const PackagesPage = () => {
                 breadcrumb="Дашборд"
                 backHref="/dashboard"
                 nav={overlayNav}
+                activeNav={packageType}
                 onNavChange={handleOverlayNav}
             >
-                <div className="repeto-packages-type-tabs" role="tablist" aria-label="Тип пакетов">
-                    {packageTypeTabs.map((typeTab) => {
-                        const isActive = packageType === typeTab.value;
-                        return (
-                            <button
-                                key={typeTab.value}
-                                type="button"
-                                role="tab"
-                                aria-selected={isActive}
-                                className={`repeto-packages-type-tab${
-                                    isActive ? " repeto-packages-type-tab--active" : ""
-                                }`}
-                                onClick={() => setPackageType(typeTab.value)}
-                            >
-                                <span>{typeTab.label}</span>
-                                <span className="repeto-packages-type-tab__count">
-                                    {packageTypeCounts[typeTab.value]}
-                                </span>
-                            </button>
-                        );
-                    })}
-                </div>
-
                 <div className="repeto-sl-search-row">
                     <TextInput
                         size="l"

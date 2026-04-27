@@ -35,7 +35,11 @@ function endTime(start: string): string {
 
 type CellKey = `${number}-${number}`; // "dayOfWeek-hour"
 
-const AvailabilityEditor = () => {
+type AvailabilityEditorProps = {
+    embedded?: boolean;
+};
+
+const AvailabilityEditor = ({ embedded = false }: AvailabilityEditorProps) => {
     const { theme } = useThemeMode();
     const isDarkTheme = theme === "dark";
     // Рабочие часы — нейтральная сетка. Акцент (accent) оставлен только для
@@ -192,6 +196,7 @@ const AvailabilityEditor = () => {
     };
 
     const totalHours = cells.size;
+    const editorOpen = embedded || open;
 
     // ── Overrides ──
     const { data: overrides = [], mutate: mutateOverrides } = useOverrides();
@@ -268,58 +273,60 @@ const AvailabilityEditor = () => {
         <Card
             view="outlined"
             className="repeto-availability-card"
-            style={{ marginBottom: 14, overflow: "hidden" }}
+            style={embedded ? { overflow: "hidden" } : { marginBottom: 14, overflow: "hidden" }}
         >
             {/* ── Header (toggle) ── */}
-            <div
-                className="repeto-availability-card__header"
-                onClick={() => setOpen((v) => !v)}
-                style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "8px 14px",
-                    cursor: "pointer",
-                    userSelect: "none",
-                }}
-            >
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div
-                        className="repeto-availability-card__header-icon"
-                        style={{
-                            width: 26,
-                            height: 26,
-                            borderRadius: 8,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            background: headerIconBg,
-                            border: "1px solid var(--g-color-line-generic)",
-                        }}
-                    >
-                        <Icon
-                            data={Clock as IconData}
-                            size={16}
-                            style={{ color: headerIconColor }}
-                        />
-                    </div>
-                    <Text variant="subheader-2" className="repeto-availability-title">
-                        Рабочие часы
-                        <span className="repeto-availability-title__summary"> · {totalHours} ч/неделю</span>
-                    </Text>
-                </div>
-                <Icon
-                    data={ArrowChevronDown as IconData}
-                    size={16}
+            {!embedded && (
+                <div
+                    className="repeto-availability-card__header"
+                    onClick={() => setOpen((v) => !v)}
                     style={{
-                        color: "var(--g-color-text-secondary)",
-                        transform: open ? "rotate(180deg)" : "rotate(0deg)",
-                        transition: "transform 0.2s",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "8px 14px",
+                        cursor: "pointer",
+                        userSelect: "none",
                     }}
-                />
-            </div>
+                >
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div
+                            className="repeto-availability-card__header-icon"
+                            style={{
+                                width: 26,
+                                height: 26,
+                                borderRadius: 8,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                background: headerIconBg,
+                                border: "1px solid var(--g-color-line-generic)",
+                            }}
+                        >
+                            <Icon
+                                data={Clock as IconData}
+                                size={16}
+                                style={{ color: headerIconColor }}
+                            />
+                        </div>
+                        <Text variant="subheader-2" className="repeto-availability-title">
+                            Рабочие часы
+                            <span className="repeto-availability-title__summary"> · {totalHours} ч/неделю</span>
+                        </Text>
+                    </div>
+                    <Icon
+                        data={ArrowChevronDown as IconData}
+                        size={16}
+                        style={{
+                            color: "var(--g-color-text-secondary)",
+                            transform: open ? "rotate(180deg)" : "rotate(0deg)",
+                            transition: "transform 0.2s",
+                        }}
+                    />
+                </div>
+            )}
 
-            {open && (
+            {editorOpen && (
                 <>
                     {/* ── Availability grid ── */}
                     <div

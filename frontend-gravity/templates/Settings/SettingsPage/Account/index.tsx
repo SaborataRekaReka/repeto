@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
     useSettings,
     updateAccount,
+    uploadAvatar,
     uploadCertificate,
     deleteCertificate,
 } from "@/hooks/useSettings";
@@ -13,6 +14,7 @@ import { codedErrorMessage } from "@/lib/errorCodes";
 import PhoneInput from "@/components/PhoneInput";
 import AppField from "@/components/AppField";
 import AppSelect from "@/components/AppSelect";
+import { getInitials } from "@/lib/formatters";
 import { resolveApiAssetUrl } from "@/lib/api";
 
 const formatOptions = [
@@ -197,6 +199,12 @@ const Account = () => {
     const [certificates, setCertificates] = useState<CertificateEntry[]>([]);
     const [certUploading, setCertUploading] = useState(false);
     const certInputRef = useRef<HTMLInputElement>(null);
+    const avatarInputRef = useRef<HTMLInputElement>(null);
+    const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
+
+    useEffect(() => {
+        setAvatarSrc(resolveApiAssetUrl(settings?.avatarUrl) || user?.avatar || null);
+    }, [settings?.avatarUrl, user?.avatar]);
 
     useEffect(() => {
         setName(settings?.name || user?.name || "");
@@ -330,6 +338,29 @@ const Account = () => {
         setPendingDeleteSubjectIndex(null);
     };
 
+    const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file || !file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) {
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (readEvent) => setAvatarSrc(readEvent.target?.result as string);
+        reader.readAsDataURL(file);
+
+        try {
+            const result = await uploadAvatar(file);
+            setAvatarSrc(resolveApiAssetUrl(result.avatarUrl) || null);
+            await Promise.all([mutateSettings(), refreshUser()]);
+        } catch (error: any) {
+            setSaveMsg(codedErrorMessage("SETT-ACC-AVATAR", error));
+        } finally {
+            if (avatarInputRef.current) {
+                avatarInputRef.current.value = "";
+            }
+        }
+    };
+
     const handleSave = async () => {
         if (saving) return;
         setSaving(true); setSaveMsg(null);
@@ -368,6 +399,38 @@ const Account = () => {
                     <Text variant="subheader-2">Профиль и контакты</Text>
                 </div>
                 <div className="repeto-settings-card__body" style={{ padding: 24 }}>
+                    <div className="repeto-settings-account-avatar-row">
+                        <button
+                            type="button"
+                            onClick={() => avatarInputRef.current?.click()}
+                            className="repeto-settings-avatar-trigger repeto-settings-avatar-trigger--account"
+                            aria-label="Изменить фото профиля"
+                        >
+                            {avatarSrc ? (
+                                <img src={avatarSrc} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                            ) : (
+                                <div className="repeto-settings-avatar-fallback">{getInitials(user?.name || "")}</div>
+                            )}
+                        </button>
+                        <div className="repeto-settings-account-avatar-meta">
+                            <Text variant="body-1" style={{ fontWeight: 600 }}>Фото профиля</Text>
+                            <Button
+                                view="outlined"
+                                size="s"
+                                onClick={() => avatarInputRef.current?.click()}
+                            >
+                                Изменить фото
+                            </Button>
+                        </div>
+                        <input
+                            ref={avatarInputRef}
+                            type="file"
+                            accept="image/*"
+                            style={{ display: "none" }}
+                            onChange={handleAvatarChange}
+                        />
+                    </div>
+
                     <div className="repeto-settings-account-grid">
                         <FormField label="ФИО">
                             <TextInput value={name} onUpdate={setName} placeholder="Смирнов Алексей Иванович" size="l" />

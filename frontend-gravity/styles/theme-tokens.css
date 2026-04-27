@@ -16,11 +16,11 @@
     --repeto-surface-elevated-hover: color-mix(in srgb, var(--surface-card) 97%, var(--text-primary) 3%);
 
     /* Active navigation state (both themes share the same logic) */
-    --repeto-nav-active-bg: var(--accent);
-    --repeto-nav-active-bg-hover: var(--accent-hover);
+    --repeto-nav-active-bg: transparent;
+    --repeto-nav-active-bg-hover: transparent;
     --repeto-nav-active-line: transparent;
-    --repeto-nav-active-text: var(--repeto-on-brand);
-    --repeto-nav-active-icon: var(--repeto-on-brand);
+    --repeto-nav-active-text: var(--text-primary);
+    --repeto-nav-active-icon: var(--text-primary);
 }
 
 :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) {
@@ -33,9 +33,9 @@
     --repeto-table-row-hover: color-mix(in srgb, var(--text-primary) 18%, transparent);
     --repeto-surface-elevated-hover: color-mix(in srgb, var(--surface-card) 92%, var(--text-primary) 8%);
 
-    --repeto-nav-active-bg: var(--accent);
-    --repeto-nav-active-bg-hover: var(--accent-hover);
+    --repeto-nav-active-bg: transparent;
+    --repeto-nav-active-bg-hover: transparent;
     --repeto-nav-active-line: transparent;
-    --repeto-nav-active-text: var(--repeto-on-brand);
-    --repeto-nav-active-icon: var(--repeto-on-brand);
+    --repeto-nav-active-text: var(--text-primary);
+    --repeto-nav-active-icon: var(--text-primary);
 }

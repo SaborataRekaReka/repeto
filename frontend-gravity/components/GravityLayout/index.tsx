@@ -32,8 +32,8 @@ import { Icon, Text, TextInput, Button, Tooltip, DropdownMenu, Avatar } from "@g
 import type { IconData } from "@gravity-ui/uikit";
 import StudentAvatar from "@/components/StudentAvatar";
 import CreateStudentModal from "@/components/CreateStudentModal";
-import CreatePaymentModal from "@/components/CreatePaymentModal";
 import LessonPanelV2 from "@/components/LessonPanelV2";
+import UpgradePlanModal from "@/components/UpgradePlanModal";
 import { useStudents } from "@/hooks/useStudents";
 import { onNotificationsChanged, useUnreadCount } from "@/hooks/useNotifications";
 import { useAuth } from "@/contexts/AuthContext";
@@ -79,7 +79,7 @@ function readContextSidebarCollapsed(): boolean {
 }
 
 function readContextSidebarOffset(open: boolean): number {
-    return open ? 400 : 112;
+    return open ? 312 : 52;
 }
 
 function shallowNavItemsEqual(a?: ShellContextNavItem[], b?: ShellContextNavItem[]): boolean {
@@ -112,6 +112,7 @@ function shallowContextSidebarEqual(
         prev.activeNav === next.activeNav &&
         prev.breadcrumb === next.breadcrumb &&
         prev.backHref === next.backHref &&
+        prev.hidePrimaryAction === next.hidePrimaryAction &&
         shallowNavItemsEqual(prev.nav, next.nav)
     );
 }
@@ -144,18 +145,48 @@ type SidebarQuickAction = {
     animatedIconPath?: string;
 };
 
+type PlatformPlanId = "start" | "profi" | "center";
+type PlatformBillingCycle = "month" | "year";
+
+type PendingPlatformPayment = {
+    paymentId: string;
+    planId: PlatformPlanId;
+    billingCycle: PlatformBillingCycle;
+    createdAt: string;
+};
+
+const PENDING_RENEWAL_PAYMENT_KEY = "repeto:platform-access:pending-renewal";
+
+function writePendingPlatformPayment(payload: PendingPlatformPayment) {
+    if (typeof window === "undefined") return;
+    try {
+        window.localStorage.setItem(PENDING_RENEWAL_PAYMENT_KEY, JSON.stringify(payload));
+    } catch {}
+}
+
+function isPlatformPlanId(value: unknown): value is PlatformPlanId {
+    return value === "start" || value === "profi" || value === "center";
+}
+
+function isPlatformBillingCycle(value: unknown): value is PlatformBillingCycle {
+    return value === "month" || value === "year";
+}
+
+function isCreateMenuDuplicateKey(key: string): boolean {
+    return ["create", "payment", "lesson"].includes(key);
+}
+
 const sidebarAnimatedIconPaths = {
     home: "/icons/sidebar-animated/home.json",
     students: "/icons/sidebar-animated/people.json",
     schedule: "/icons/sidebar-animated/calendar.json",
     finance: "/icons/sidebar-animated/wallet.json",
-    payments: "/icons/sidebar-animated/receipt.json",
     packages: "/icons/sidebar-animated/archive.json",
     files: "/icons/sidebar-animated/folder-open.json",
     quickLesson: "/icons/sidebar-animated/book-open.json",
     quickStudent: "/icons/sidebar-animated/user-add.json",
     quickPayment: "/icons/sidebar-animated/receipt-add.json",
-    quickScheduleToday: "/icons/sidebar-animated/clock.json",
+    quickPackage: "/icons/sidebar-animated/archive.json",
     quickPublic: "/icons/sidebar-animated/global.json",
     quickIntegrations: "/icons/sidebar-animated/folder-connection.json",
 } as const;
@@ -231,12 +262,6 @@ const menuItems: MenuItem[] = [
         animatedIconPath: sidebarAnimatedIconPaths.finance,
     },
     {
-        title: "Оплаты",
-        icon: Receipt as IconData,
-        url: "/payments",
-        animatedIconPath: sidebarAnimatedIconPaths.payments,
-    },
-    {
         title: "Пакеты",
         icon: ObjectAlignJustifyVertical as IconData,
         url: "/packages",
@@ -270,14 +295,13 @@ const mobileNavItems: MenuItem[] = [
     { title: "Финансы", icon: CreditCard as IconData, url: "/finance" },
     { title: "Материалы", icon: FolderOpen as IconData, url: "/files" },
     { title: "Пакеты", icon: ObjectAlignJustifyVertical as IconData, url: "/packages" },
-    { title: "Оплаты", icon: Receipt as IconData, url: "/payments" },
 ];
 
 const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = false, children }: GravityLayoutProps) => {
     const useFlatLayout = true;
     const router = useRouter();
     const pathname = router.asPath.split("?")[0];
-    const { user, logout } = useAuth();
+    const { user, logout, startPlatformAccessPayment } = useAuth();
     const { themeMode, setTheme } = useThemeMode();
     const isPlatformAccessExpired = user?.platformAccessState === "expired";
     const [isMobileViewport, setIsMobileViewport] = useState(false);
@@ -361,10 +385,14 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
     const [profileMenuOpen, setProfileMenuOpen] = useState(false);
     const [mobileProfileMenuOpen, setMobileProfileMenuOpen] = useState(false);
     const [createStudentModalOpen, setCreateStudentModalOpen] = useState(false);
-    const [createPaymentModalOpen, setCreatePaymentModalOpen] = useState(false);
     const [createLessonModalOpen, setCreateLessonModalOpen] = useState(false);
+    const [contextCreateMenuOpen, setContextCreateMenuOpen] = useState(false);
     const [mobileQuickActionsOpen, setMobileQuickActionsOpen] = useState(false);
     const [hoveredSidebarIconKey, setHoveredSidebarIconKey] = useState<string | null>(null);
+    const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+    const [upgradeError, setUpgradeError] = useState<string | null>(null);
+    const [sidebarUtilityMessage, setSidebarUtilityMessage] = useState<string | null>(null);
+    const [upgradeBusy, setUpgradeBusy] = useState(false);
     const topHeaderSearchRef = useRef<HTMLDivElement>(null);
     const mobileSearchRef = useRef<HTMLDivElement>(null);
     const mobileNavRef = useRef<HTMLElement>(null);
@@ -372,6 +400,13 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
     const previousMobileNavIndexRef = useRef<number | null>(null);
     const useTopHeaderSearch = useFlatLayout && !isMobileViewport;
     const useRailSidebar = useFlatLayout && !isMobileViewport;
+    const rawPlatformPlanId = user?.platformAccess?.planId;
+    const rawPlatformBillingCycle = user?.platformAccess?.billingCycle;
+    const platformPlanId = isPlatformPlanId(rawPlatformPlanId) ? rawPlatformPlanId : "profi";
+    const platformBillingCycle = isPlatformBillingCycle(rawPlatformBillingCycle) ? rawPlatformBillingCycle : "month";
+    const nextPlatformPlanId: PlatformPlanId = platformPlanId === "start" ? "profi" : "center";
+    const canUpgradePlan = platformPlanId !== "center";
+    const studentPlanLimit = platformPlanId === "start" ? 10 : platformPlanId === "center" ? 150 : 40;
 
     const closeMobileSearch = useCallback(() => {
         setSearchOpen(false);
@@ -410,9 +445,13 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
     }, {
         skip: !trimmedSearch,
     });
+    const { data: quotaStudentsData } = useStudents({ limit: 1 }, { skip: isPlatformAccessExpired });
     const searchResults = trimmedSearch
         ? (studentsData?.data || []).slice(0, 5)
         : [];
+    const studentsUsed = quotaStudentsData?.total || 0;
+    const studentsLeft = Math.max(studentPlanLimit - studentsUsed, 0);
+    const studentQuotaPercent = Math.max(0, Math.min(100, (studentsUsed / studentPlanLimit) * 100));
     const mobileSearchActive = isMobileViewport && searchOpen;
     const notificationsActive = pathname === "/notifications" || pathname.startsWith("/notifications/");
     const activeMobileNavUrl = useMemo(() => {
@@ -512,24 +551,55 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
         await router.push("/schedule");
     }, [router]);
 
-    const openCreatePaymentModal = useCallback(() => {
-        setCreatePaymentModalOpen(true);
-    }, []);
-
-    const handleCreatePayment = useCallback(async () => {
-        await router.push("/payments");
+    const openCreatePaymentFlow = useCallback(() => {
+        void router.push("/finance/payments?create=1");
     }, [router]);
 
+    const openCreatePackageFlow = useCallback(() => {
+        void router.push("/packages?create=1");
+    }, [router]);
+
+    const openUpgradeModal = useCallback(() => {
+        if (!canUpgradePlan || upgradeBusy) return;
+        setSidebarUtilityMessage(null);
+        setUpgradeError(null);
+        setUpgradeModalOpen(true);
+    }, [canUpgradePlan, upgradeBusy]);
+
+    const handleUpgradePlan = useCallback(async (selectedBillingCycle: PlatformBillingCycle) => {
+        if (upgradeBusy) return;
+
+        setUpgradeBusy(true);
+        setUpgradeError(null);
+        setSidebarUtilityMessage(null);
+        try {
+            const result = await startPlatformAccessPayment({
+                planId: nextPlatformPlanId,
+                billingCycle: selectedBillingCycle,
+            });
+
+            if (result.requiresPayment && result.paymentId && result.confirmationUrl) {
+                setUpgradeModalOpen(false);
+                writePendingPlatformPayment({
+                    paymentId: result.paymentId,
+                    planId: result.planId,
+                    billingCycle: result.billingCycle,
+                    createdAt: new Date().toISOString(),
+                });
+                window.location.assign(result.confirmationUrl);
+                return;
+            }
+
+            setUpgradeModalOpen(false);
+            setSidebarUtilityMessage("Тариф обновлен.");
+        } catch {
+            setUpgradeError("Не удалось открыть оплату тарифа.");
+        } finally {
+            setUpgradeBusy(false);
+        }
+    }, [nextPlatformPlanId, startPlatformAccessPayment, upgradeBusy]);
+
     const quickActionItems: SidebarQuickAction[] = [
-        {
-            id: "quick-create-lesson",
-            title: "Добавить занятие",
-            icon: CirclePlus as IconData,
-            animatedIconPath: sidebarAnimatedIconPaths.quickLesson,
-            action: () => {
-                openCreateLessonModal();
-            },
-        },
         {
             id: "quick-create-student",
             title: "Добавить ученика",
@@ -545,25 +615,25 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
             icon: Receipt as IconData,
             animatedIconPath: sidebarAnimatedIconPaths.quickPayment,
             action: () => {
-                openCreatePaymentModal();
+                openCreatePaymentFlow();
             },
         },
         {
-            id: "quick-schedule-today",
-            title: "Расписание сегодня",
+            id: "quick-create-lesson",
+            title: "Добавить занятие",
             icon: Calendar as IconData,
-            animatedIconPath: sidebarAnimatedIconPaths.quickScheduleToday,
+            animatedIconPath: sidebarAnimatedIconPaths.quickLesson,
             action: () => {
-                void router.push("/schedule?view=day");
+                openCreateLessonModal();
             },
         },
         {
-            id: "quick-schedule-export",
-            title: "Экспорт расписания",
-            icon: ArrowUpRightFromSquare as IconData,
-            animatedIconPath: overlayAnimatedIconPaths.export,
+            id: "quick-create-package",
+            title: "Создать пакет",
+            icon: ObjectAlignJustifyVertical as IconData,
+            animatedIconPath: sidebarAnimatedIconPaths.quickPackage,
             action: () => {
-                void router.push("/schedule?quickAction=export");
+                openCreatePackageFlow();
             },
         },
     ];
@@ -575,8 +645,12 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
     const shouldShowSidebar = !hideSidebar;
     const contextSidebarVisible = useRailSidebar && shouldShowSidebar;
     const contextSidebarExpanded = contextSidebarVisible && !contextSidebarCollapsed;
-    const hasPageContextSidebar = Boolean(shellContextSidebar?.nav?.length);
-    const contextSidebarNavItems = hasPageContextSidebar ? shellContextSidebar?.nav || [] : [];
+    const hasContextSidebarConfig = Boolean(shellContextSidebar);
+    const contextSidebarNavItems = shellContextSidebar?.nav || [];
+    const visibleContextSidebarNavItems = contextSidebarNavItems.filter((item) => !isCreateMenuDuplicateKey(item.key));
+    const hasVisibleContextSidebarNavItems = visibleContextSidebarNavItems.length > 0;
+    const contextSidebarTitle = shellContextSidebar?.title || title || "";
+    const showContextPrimaryAction = !shellContextSidebar?.hidePrimaryAction;
     const shellOffset = useFlatLayout && !isMobileViewport && shouldShowSidebar
         ? readContextSidebarOffset(contextSidebarExpanded)
         : undefined;
@@ -1100,10 +1174,21 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
             {contextSidebarVisible && (
                 <aside className={`repeto-context-sidebar ${contextSidebarExpanded ? "" : "repeto-context-sidebar--collapsed"}`}>
                     <div className="repeto-context-sidebar__inner">
+                        <Link href="/dashboard" className="repeto-context-sidebar__brand" aria-label="Repeto">
+                            <img
+                                className="repeto-logo repeto-logo--full"
+                                src="/brand/logo.svg"
+                                alt="Repeto"
+                            />
+                        </Link>
+
+                        <div className="repeto-context-sidebar__body">
                         <div className="repeto-context-sidebar__header-row">
-                            <span className="repeto-context-sidebar__section-label">
-                                {hasPageContextSidebar ? "Раздел" : "Быстрые действия"}
-                            </span>
+                            {contextSidebarTitle ? (
+                                <div className="repeto-context-sidebar__header-title">{contextSidebarTitle}</div>
+                            ) : (
+                                <div className="repeto-context-sidebar__header-title" />
+                            )}
                             <button
                                 type="button"
                                 className="repeto-context-sidebar__collapse-btn"
@@ -1114,31 +1199,72 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                             </button>
                         </div>
 
-                        {hasPageContextSidebar && (shellContextSidebar?.title || shellContextSidebar?.breadcrumb) && (
-                            <div className="repeto-context-sidebar__heading">
-                                {shellContextSidebar?.breadcrumb && (
-                                    <span className="repeto-context-sidebar__heading-breadcrumb">
-                                        {shellContextSidebar.breadcrumb}
-                                    </span>
+                        {showContextPrimaryAction && (
+                            <GDropdownMenu
+                                open={contextCreateMenuOpen}
+                                onOpenToggle={setContextCreateMenuOpen}
+                                popupProps={{
+                                    placement: "bottom-start",
+                                    className: "repeto-context-create-menu__popup",
+                                }}
+                                renderSwitcher={(props: any) => (
+                                    <button
+                                        type="button"
+                                        className="repeto-context-sidebar__item repeto-context-sidebar__item--quick repeto-context-sidebar__item--create repeto-context-sidebar__primary-action"
+                                        onMouseEnter={() => setHoveredSidebarIconKey("context:primary:create")}
+                                        onMouseLeave={() =>
+                                            setHoveredSidebarIconKey((prev) => (prev === "context:primary:create" ? null : prev))
+                                        }
+                                        onFocus={() => setHoveredSidebarIconKey("context:primary:create")}
+                                        onBlur={() =>
+                                            setHoveredSidebarIconKey((prev) => (prev === "context:primary:create" ? null : prev))
+                                        }
+                                        {...props}
+                                    >
+                                        <span className="repeto-context-sidebar__item-icon">
+                                            <AnimatedSidebarIcon
+                                                src={sidebarAnimatedIconPaths.quickLesson}
+                                                fallbackIcon={CirclePlus as IconData}
+                                                play={hoveredSidebarIconKey === "context:primary:create"}
+                                                size={24}
+                                            />
+                                        </span>
+                                        <span className="repeto-context-sidebar__item-text">Создать</span>
+                                        <GIcon data={ChevronDown as IconData} size={16} />
+                                    </button>
                                 )}
-                                {shellContextSidebar?.title && (
-                                    <div className="repeto-context-sidebar__heading-title">
-                                        {shellContextSidebar.title}
+                            >
+                                <div className="repeto-quick-actions-menu repeto-context-create-menu">
+                                    <div className="repeto-quick-actions-menu__list">
+                                        {quickActionItems.map((item) => (
+                                            <button
+                                                key={item.id}
+                                                type="button"
+                                                className="repeto-quick-actions-menu__item"
+                                                onClick={() => {
+                                                    setContextCreateMenuOpen(false);
+                                                    item.action();
+                                                }}
+                                            >
+                                                <span className="repeto-quick-actions-menu__item-icon" aria-hidden="true">
+                                                    <GIcon data={item.icon} size={24} />
+                                                </span>
+                                                <span className="repeto-quick-actions-menu__item-text">{item.title}</span>
+                                            </button>
+                                        ))}
                                     </div>
-                                )}
-                            </div>
+                                </div>
+                            </GDropdownMenu>
                         )}
 
-                        {hasPageContextSidebar && shellContextSidebar?.sidebarHeader && (
+                        {hasContextSidebarConfig && shellContextSidebar?.sidebarHeader && (
                             <div className="repeto-context-sidebar__meta">{shellContextSidebar.sidebarHeader}</div>
                         )}
 
-                        {hasPageContextSidebar ? (
-                            <>
+                        {hasVisibleContextSidebarNavItems ? (
                                 <div className="repeto-context-sidebar__section">
-                                    <span className="repeto-context-sidebar__section-title">Навигация раздела</span>
                                     <div className="repeto-context-sidebar__list">
-                                        {contextSidebarNavItems.map((item) => {
+                                        {visibleContextSidebarNavItems.map((item) => {
                                             const iconKey = `context:${item.key}`;
                                             const resolvedIcon = resolveContextNavIcon(item);
                                             const resolvedAnimatedIconPath = resolveContextNavAnimatedIconPath(item);
@@ -1179,83 +1305,39 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                                         })}
                                     </div>
                                 </div>
-
-                                <div className="repeto-context-sidebar__section">
-                                    <span className="repeto-context-sidebar__section-title">Быстрые действия</span>
-                                    <div className="repeto-context-sidebar__list">
-                                        {quickActionItems.map((item) => {
-                                            const iconKey = `context:quick:${item.id}`;
-                                            return (
-                                                <button
-                                                    key={item.id}
-                                                    type="button"
-                                                    className="repeto-context-sidebar__item"
-                                                    onMouseEnter={() => setHoveredSidebarIconKey(iconKey)}
-                                                    onMouseLeave={() =>
-                                                        setHoveredSidebarIconKey((prev) => (prev === iconKey ? null : prev))
-                                                    }
-                                                    onFocus={() => setHoveredSidebarIconKey(iconKey)}
-                                                    onBlur={() =>
-                                                        setHoveredSidebarIconKey((prev) => (prev === iconKey ? null : prev))
-                                                    }
-                                                    onClick={item.action}
-                                                >
-                                                    <span className="repeto-context-sidebar__item-icon">
-                                                        {item.animatedIconPath ? (
-                                                            <AnimatedSidebarIcon
-                                                                src={item.animatedIconPath}
-                                                                fallbackIcon={item.icon}
-                                                                play={hoveredSidebarIconKey === iconKey}
-                                                                size={24}
-                                                            />
-                                                        ) : (
-                                                            <GIcon data={item.icon} size={22} />
-                                                        )}
-                                                    </span>
-                                                    <span className="repeto-context-sidebar__item-text">{item.title}</span>
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            </>
                         ) : (
-                            <div className="repeto-context-sidebar__list">
-                                {quickActionItems.map((item) => {
-                                    const iconKey = `context:quick:${item.id}`;
-                                    return (
-                                        <button
-                                            key={item.id}
-                                            type="button"
-                                            className="repeto-context-sidebar__item"
-                                            onMouseEnter={() => setHoveredSidebarIconKey(iconKey)}
-                                            onMouseLeave={() =>
-                                                setHoveredSidebarIconKey((prev) => (prev === iconKey ? null : prev))
-                                            }
-                                            onFocus={() => setHoveredSidebarIconKey(iconKey)}
-                                            onBlur={() =>
-                                                setHoveredSidebarIconKey((prev) => (prev === iconKey ? null : prev))
-                                            }
-                                            onClick={item.action}
-                                        >
-                                            <span className="repeto-context-sidebar__item-icon">
-                                                {item.animatedIconPath ? (
-                                                    <AnimatedSidebarIcon
-                                                        src={item.animatedIconPath}
-                                                        fallbackIcon={item.icon}
-                                                        play={hoveredSidebarIconKey === iconKey}
-                                                        size={24}
-                                                    />
-                                                ) : (
-                                                    <GIcon data={item.icon} size={22} />
-                                                )}
-                                            </span>
-                                            <span className="repeto-context-sidebar__item-text">{item.title}</span>
-                                        </button>
-                                    );
-                                })}
-                            </div>
+                            <div className="repeto-context-sidebar__empty-space" aria-hidden="true" />
                         )}
+                        </div>
+
+                        <div className="repeto-context-sidebar__footer">
+                            <div className="repeto-context-sidebar__quota-card" aria-label="Лимит учеников по тарифу">
+                                <div className="repeto-context-sidebar__quota-track" aria-hidden="true">
+                                    <span
+                                        className="repeto-context-sidebar__quota-fill"
+                                        style={{ width: `${studentQuotaPercent}%` }}
+                                    />
+                                </div>
+                                <div className="repeto-context-sidebar__quota-text">
+                                    Осталось {studentsLeft} из {studentPlanLimit} учеников
+                                </div>
+                            </div>
+
+                            <button
+                                type="button"
+                                className="repeto-context-sidebar__utility-btn"
+                                onClick={openUpgradeModal}
+                                disabled={upgradeBusy || !canUpgradePlan}
+                            >
+                                {canUpgradePlan
+                                    ? (upgradeBusy ? "Открываем..." : "Повысить тариф")
+                                    : "Максимальный тариф"}
+                            </button>
+
+                            {sidebarUtilityMessage && (
+                                <div className="repeto-context-sidebar__install-hint">{sidebarUtilityMessage}</div>
+                            )}
+                        </div>
                     </div>
                 </aside>
             )}
@@ -1354,7 +1436,7 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                                         <GIcon data={ArrowLeft as IconData} size={18} />
                                     </GButton>
                                 )}
-                                {title && !hideHeaderTitle && (
+                                {title && !hideHeaderTitle && !contextSidebarVisible && (
                                     <h1 className="repeto-page-title">{title}</h1>
                                 )}
                             </>
@@ -1581,16 +1663,27 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                 onCreated={handleCreateStudent}
             />
 
-            <CreatePaymentModal
-                visible={createPaymentModalOpen}
-                onClose={() => setCreatePaymentModalOpen(false)}
-                onCreated={handleCreatePayment}
-            />
-
             <LessonPanelV2
                 open={createLessonModalOpen}
                 onClose={() => setCreateLessonModalOpen(false)}
                 onSaved={handleCreateLesson}
+            />
+
+            <UpgradePlanModal
+                visible={upgradeModalOpen}
+                loading={upgradeBusy}
+                error={upgradeError}
+                currentPlanId={platformPlanId}
+                currentBillingCycle={platformBillingCycle}
+                targetPlanId={nextPlatformPlanId}
+                activatedAt={user?.platformAccess?.activatedAt || null}
+                expiresAt={user?.platformAccess?.expiresAt || null}
+                onClose={() => {
+                    if (upgradeBusy) return;
+                    setUpgradeModalOpen(false);
+                    setUpgradeError(null);
+                }}
+                onSubmit={handleUpgradePlan}
             />
         </>
         </ShellContextSidebarProviderContext.Provider>

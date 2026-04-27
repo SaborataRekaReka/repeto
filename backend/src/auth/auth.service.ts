@@ -59,6 +59,15 @@ type YookassaPaymentStatus = {
   };
 };
 
+type PlatformAccessCharge = {
+  amountRub: number;
+  baseAmountRub: number;
+  creditAmountRub: number;
+  sourcePlanId: RegistrationPlanId | null;
+  sourceBillingCycle: RegistrationBillingCycle | null;
+  remainingDays: number;
+};
+
 const REGISTRATION_PLANS: Record<RegistrationPlanId, RegistrationPlanConfig> = {
   [RegistrationPlanId.START]: {
     id: RegistrationPlanId.START,
@@ -334,19 +343,29 @@ export class AuthService {
       this.resolveBillingCycle(dto.billingCycle) ||
       this.resolveBillingCycle(currentAccess?.billingCycle) ||
       RegistrationBillingCycle.MONTH;
-    const amountRub = this.resolveRegistrationAmount(planId, billingCycle);
+    const charge = this.resolvePlatformAccessCharge({
+      currentAccess,
+      planId,
+      billingCycle,
+    });
+    const amountRub = charge.amountRub;
 
     if (amountRub <= 0) {
       const updatedUser = await this.activatePlatformAccessForUser(user.id, {
         planId,
         billingCycle,
-        amountRub,
+        amountRub: charge.baseAmountRub,
         paymentId: null,
       });
 
       return {
         requiresPayment: false,
         amountRub,
+        baseAmountRub: charge.baseAmountRub,
+        creditAmountRub: charge.creditAmountRub,
+        sourcePlanId: charge.sourcePlanId,
+        sourceBillingCycle: charge.sourceBillingCycle,
+        remainingDays: charge.remainingDays,
         planId,
         billingCycle,
         user: this.sanitizeUser(updatedUser),
@@ -360,6 +379,8 @@ export class AuthService {
       planId,
       billingCycle,
       amountRub,
+      baseAmountRub: charge.baseAmountRub,
+      creditAmountRub: charge.creditAmountRub,
       returnUrl: this.getDashboardRenewUrl(),
     });
 
@@ -371,6 +392,11 @@ export class AuthService {
     return {
       requiresPayment: true,
       amountRub,
+      baseAmountRub: charge.baseAmountRub,
+      creditAmountRub: charge.creditAmountRub,
+      sourcePlanId: charge.sourcePlanId,
+      sourceBillingCycle: charge.sourceBillingCycle,
+      remainingDays: charge.remainingDays,
       planId,
       billingCycle,
       paymentId: payment.id,
@@ -398,6 +424,9 @@ export class AuthService {
     const paymentEmail = String(metadata.email || '').trim().toLowerCase();
     const planId = this.resolvePlanId(metadata.planId);
     const billingCycle = this.resolveBillingCycle(metadata.billingCycle);
+    const chargeAmountRub = this.parseMetadataAmount(metadata.chargeAmountRub);
+    const baseAmountRub = this.parseMetadataAmount(metadata.baseAmountRub);
+    const creditAmountRub = this.parseMetadataAmount(metadata.creditAmountRub);
 
     if (
       paymentSource !== 'platform_access_renewal' ||
@@ -409,7 +438,21 @@ export class AuthService {
       throw new BadRequestException('Платеж не соответствует вашему аккаунту.');
     }
 
-    const amountRub = this.resolveRegistrationAmount(planId, billingCycle);
+    const fallbackBaseAmountRub = this.resolveRegistrationAmount(planId, billingCycle);
+    const resolvedBaseAmountRub =
+      baseAmountRub !== null ? baseAmountRub : fallbackBaseAmountRub;
+    const amountRub = chargeAmountRub !== null ? chargeAmountRub : fallbackBaseAmountRub;
+    const resolvedCreditAmountRub = Math.max(
+      0,
+      creditAmountRub !== null
+        ? creditAmountRub
+        : resolvedBaseAmountRub - amountRub,
+    );
+
+    if (amountRub < 0 || resolvedBaseAmountRub < 0) {
+      throw new BadRequestException('Неверные данные платежа.');
+    }
+
     const paidAmountRub = this.parseYookassaAmount(payment.amount?.value);
     if (paidAmountRub !== amountRub) {
       throw new BadRequestException('Сумма платежа не совпадает с выбранным тарифом.');
@@ -418,13 +461,15 @@ export class AuthService {
     const updatedUser = await this.activatePlatformAccessForUser(user.id, {
       planId,
       billingCycle,
-      amountRub,
+      amountRub: resolvedBaseAmountRub,
       paymentId: payment.id,
     });
 
     return {
       user: this.sanitizeUser(updatedUser),
       amountRub,
+      baseAmountRub: resolvedBaseAmountRub,
+      creditAmountRub: resolvedCreditAmountRub,
       planId,
       billingCycle,
     };
@@ -666,6 +711,94 @@ export class AuthService {
     return plan.monthlyPriceRub;
   }
 
+  private resolvePlatformAccessCharge(params: {
+    currentAccess: ReturnType<typeof normalizePlatformAccess>;
+    planId: RegistrationPlanId;
+    billingCycle: RegistrationBillingCycle;
+  }): PlatformAccessCharge {
+    const baseAmountRub = this.resolveRegistrationAmount(
+      params.planId,
+      params.billingCycle,
+    );
+
+    const sourcePlanId = this.resolvePlanId(params.currentAccess?.planId);
+    const sourceBillingCycle = this.resolveBillingCycle(
+      params.currentAccess?.billingCycle,
+    );
+
+    const fallback: PlatformAccessCharge = {
+      amountRub: baseAmountRub,
+      baseAmountRub,
+      creditAmountRub: 0,
+      sourcePlanId,
+      sourceBillingCycle,
+      remainingDays: 0,
+    };
+
+    if (!sourcePlanId || !sourceBillingCycle) {
+      return fallback;
+    }
+
+    if (this.resolvePlanRank(params.planId) <= this.resolvePlanRank(sourcePlanId)) {
+      return fallback;
+    }
+
+    const expiresAt = params.currentAccess?.expiresAt
+      ? new Date(params.currentAccess.expiresAt)
+      : null;
+
+    if (!expiresAt || !Number.isFinite(expiresAt.getTime())) {
+      return fallback;
+    }
+
+    const nowMs = Date.now();
+    const expiresAtMs = expiresAt.getTime();
+    if (expiresAtMs <= nowMs) {
+      return fallback;
+    }
+
+    let fullPeriodMs = 0;
+    const activatedAt = params.currentAccess?.activatedAt
+      ? new Date(params.currentAccess.activatedAt)
+      : null;
+
+    if (activatedAt && Number.isFinite(activatedAt.getTime())) {
+      fullPeriodMs = expiresAtMs - activatedAt.getTime();
+    }
+
+    if (fullPeriodMs <= 0) {
+      fullPeriodMs =
+        sourceBillingCycle === RegistrationBillingCycle.YEAR
+          ? 365 * 24 * 60 * 60 * 1000
+          : 30 * 24 * 60 * 60 * 1000;
+    }
+
+    const remainingMs = expiresAtMs - nowMs;
+    const ratio = Math.max(0, Math.min(1, remainingMs / fullPeriodMs));
+    const sourceAmountRub = this.resolveRegistrationAmount(
+      sourcePlanId,
+      sourceBillingCycle,
+    );
+    const creditAmountRub = Math.max(0, Math.round(sourceAmountRub * ratio));
+    const amountRub = Math.max(0, baseAmountRub - creditAmountRub);
+    const remainingDays = Number((remainingMs / (24 * 60 * 60 * 1000)).toFixed(1));
+
+    return {
+      amountRub,
+      baseAmountRub,
+      creditAmountRub,
+      sourcePlanId,
+      sourceBillingCycle,
+      remainingDays,
+    };
+  }
+
+  private resolvePlanRank(planId: RegistrationPlanId): number {
+    if (planId === RegistrationPlanId.START) return 1;
+    if (planId === RegistrationPlanId.PROFI) return 2;
+    return 3;
+  }
+
   private resolvePlanId(rawValue: unknown): RegistrationPlanId | null {
     const normalized = typeof rawValue === 'string' ? rawValue.trim().toLowerCase() : rawValue;
     if (!isPlatformPlanId(normalized)) {
@@ -775,6 +908,21 @@ export class AuthService {
     return Math.round(normalized);
   }
 
+  private parseMetadataAmount(rawValue: unknown): number | null {
+    if (typeof rawValue === 'number' && Number.isFinite(rawValue)) {
+      return Math.round(rawValue);
+    }
+
+    if (typeof rawValue === 'string') {
+      const normalized = Number.parseFloat(rawValue);
+      if (Number.isFinite(normalized)) {
+        return Math.round(normalized);
+      }
+    }
+
+    return null;
+  }
+
   private async createYookassaPayment(params: {
     source: 'registration' | 'platform_access_renewal';
     email: string;
@@ -782,6 +930,8 @@ export class AuthService {
     planId: RegistrationPlanId;
     billingCycle: RegistrationBillingCycle;
     amountRub: number;
+    baseAmountRub?: number;
+    creditAmountRub?: number;
     returnUrl: string;
   }): Promise<YookassaPaymentStatus> {
     const { shopId, secretKey } = this.getYookassaCredentials();
@@ -811,6 +961,10 @@ export class AuthService {
           email: params.email,
           planId: params.planId,
           billingCycle: params.billingCycle,
+          chargeAmountRub: params.amountRub,
+          baseAmountRub:
+            params.baseAmountRub !== undefined ? params.baseAmountRub : params.amountRub,
+          creditAmountRub: params.creditAmountRub || 0,
           ...(params.userId ? { userId: params.userId } : {}),
         },
       }),

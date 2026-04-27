@@ -58,7 +58,7 @@ const IncomeChart = () => {
             <header className="repeto-tochka-income__header">
                 <span className="repeto-tochka-income__title">{view.title}</span>
                 <Link
-                    href="/payments"
+                    href="/finance/payments"
                     className="repeto-card-chevron"
                     aria-label="Все оплаты"
                 >

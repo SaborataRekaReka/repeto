@@ -20,11 +20,6 @@ export const navigation = [
         url: "/finance",
     },
     {
-        title: "Оплаты",
-        icon: "card",
-        url: "/payments",
-    },
-    {
         title: "Пакеты",
         icon: "layers",
         url: "/packages",

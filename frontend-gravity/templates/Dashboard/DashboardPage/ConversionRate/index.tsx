@@ -39,7 +39,7 @@ const ConversionRate = () => {
                     </Text>
                 </div>
                 <Link
-                    href="/payments"
+                    href="/finance/payments"
                     className="repeto-card-chevron"
                     aria-label="Все оплаты"
                 >

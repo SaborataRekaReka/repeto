@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMediaQuery } from "react-responsive";
 import { Card, Text, Button, Icon, Checkbox, Loader } from "@gravity-ui/uikit";
-import { FolderOpen, PersonPlus, Ellipsis, ArrowUpRightFromSquare, ArrowsRotateRight } from "@gravity-ui/icons";
+import { FolderOpen, PersonPlus, Ellipsis, ArrowUpRightFromSquare, ArrowsRotateRight, ArrowLeft } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import { useStudents } from "@/hooks/useStudents";
 import StudentAvatar from "@/components/StudentAvatar";
@@ -21,18 +21,6 @@ const getChildItems = (allFiles: FileItem[], parentId: string | null) =>
         if (a.type !== b.type) return a.type === "folder" ? -1 : 1;
         return a.name.localeCompare(b.name, "ru");
     });
-
-const getBreadcrumbPath = (allFiles: FileItem[], itemId: string | null) => {
-    const path: FileItem[] = [];
-    let currentId = itemId;
-    while (currentId) {
-        const current = allFiles.find((f) => f.id === currentId);
-        if (!current) break;
-        path.unshift(current);
-        currentId = current.parentId;
-    }
-    return path;
-};
 
 const countChildren = (allFiles: FileItem[], folderId: string) =>
     allFiles.filter((f) => f.parentId === folderId).length;
@@ -117,7 +105,6 @@ const FileBrowser = ({ files, cloudConnections, onUpdated }: FileBrowserProps) =
     }, [currentFolderId, files]);
 
     const items = useMemo(() => getChildItems(files, currentFolderId), [files, currentFolderId]);
-    const breadcrumbPath = useMemo(() => getBreadcrumbPath(files, currentFolderId), [files, currentFolderId]);
     const currentFolder = useMemo(
         () => files.find((f) => f.id === currentFolderId) || null,
         [files, currentFolderId],
@@ -148,18 +135,6 @@ const FileBrowser = ({ files, cloudConnections, onUpdated }: FileBrowserProps) =
         return byProvider;
     }, [files]);
     const activeProvider = currentFolder?.cloudProvider || selectedProvider || connectedClouds[0]?.provider || null;
-    const breadcrumbs = useMemo(() => {
-        if (!activeProvider) return breadcrumbPath;
-
-        return breadcrumbPath.filter((item, index) => {
-            const isProviderRootCrumb =
-                index === 0 &&
-                item.parentId === null &&
-                item.cloudProvider === activeProvider;
-
-            return !isProviderRootCrumb;
-        });
-    }, [breadcrumbPath, activeProvider]);
     const activeCloud = useMemo(
         () => connectedClouds.find((cloud) => cloud.provider === activeProvider) || null,
         [connectedClouds, activeProvider],
@@ -249,6 +224,12 @@ const FileBrowser = ({ files, cloudConnections, onUpdated }: FileBrowserProps) =
         setSelectedProvider(provider);
         const rootFolderId = rootFolderByProvider.get(provider);
         setCurrentFolderId(rootFolderId || null);
+        setSelectedItems(new Set());
+        setMenuOpenId(null);
+    };
+
+    const handleNavigateUp = () => {
+        setCurrentFolderId(currentFolder?.parentId || null);
         setSelectedItems(new Set());
         setMenuOpenId(null);
     };
@@ -474,49 +455,14 @@ const FileBrowser = ({ files, cloudConnections, onUpdated }: FileBrowserProps) =
                 </Text>
             )}
 
-            {/* Breadcrumbs */}
-            <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 16, flexWrap: "wrap" }}>
-                <button
-                    onClick={() => { setCurrentFolderId(null); setSelectedItems(new Set()); }}
-                    style={{
-                        background: "none", border: "none", cursor: "pointer",
-                        fontWeight: 600, fontSize: 14,
-                        color: currentFolderId === null ? "var(--g-color-text-primary)" : "var(--g-color-text-secondary)",
-                    }}
-                >
-                    Материалы
-                </button>
-                {currentFolderId !== null && activeProvider && (
-                    <>
-                        <span style={{ color: "var(--g-color-text-secondary)" }}>/</span>
-                        <button
-                            onClick={() => handleSwitchProvider(activeProvider)}
-                            style={{
-                                background: "none", border: "none", cursor: "pointer",
-                                fontWeight: 600, fontSize: 14,
-                                color: "var(--g-color-text-secondary)",
-                            }}
-                        >
-                            {getProviderLabel(activeProvider)}
-                        </button>
-                    </>
-                )}
-                {breadcrumbs.map((bc) => (
-                    <span key={bc.id} style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                        <span style={{ color: "var(--g-color-text-secondary)" }}>/</span>
-                        <button
-                            onClick={() => { void handleNavigate(bc); }}
-                            style={{
-                                background: "none", border: "none", cursor: "pointer",
-                                fontWeight: 600, fontSize: 14,
-                                color: bc.id === currentFolderId ? "var(--g-color-text-primary)" : "var(--g-color-text-secondary)",
-                            }}
-                        >
-                            {bc.name}
-                        </button>
-                    </span>
-                ))}
-            </div>
+            {currentFolderId !== null && (
+                <div style={{ marginBottom: 12 }}>
+                    <Button view="flat" size="s" onClick={handleNavigateUp}>
+                        <Icon data={ArrowLeft as IconData} size={14} />
+                        Назад
+                    </Button>
+                </div>
+            )}
 
             {/* Sync button */}
             {connectedClouds.length > 0 && (

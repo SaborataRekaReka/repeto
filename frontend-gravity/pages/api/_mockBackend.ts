@@ -47,8 +47,8 @@ type MockUser = {
   platformAccessState: 'active' | 'expired' | 'missing';
   platformAccess: {
     status: 'active';
-    planId: 'profi';
-    billingCycle: 'month';
+    planId: 'start' | 'profi' | 'center';
+    billingCycle: 'month' | 'year';
     activatedAt: string;
     expiresAt: string;
     amountRub: number;
@@ -291,6 +291,30 @@ type MockState = {
 const globalForMock = globalThis as typeof globalThis & {
   __repetoMockState?: MockState;
 };
+
+const PLATFORM_PLAN_RANK = {
+  start: 1,
+  profi: 2,
+  center: 3,
+} as const;
+
+const PLATFORM_PLAN_PRICES = {
+  start: { month: 0, year: 0 },
+  profi: { month: 300, year: 250 * 12 },
+  center: { month: 1500, year: 1250 * 12 },
+} as const;
+
+function isPlatformPlanId(value: unknown): value is keyof typeof PLATFORM_PLAN_PRICES {
+  return value === 'start' || value === 'profi' || value === 'center';
+}
+
+function isPlatformBillingCycle(value: unknown): value is 'month' | 'year' {
+  return value === 'month' || value === 'year';
+}
+
+function resolvePlanPriceRub(planId: keyof typeof PLATFORM_PLAN_PRICES, billingCycle: 'month' | 'year') {
+  return PLATFORM_PLAN_PRICES[planId][billingCycle];
+}
 
 function toMethod(value: string | undefined): HttpMethod {
   return (value || 'GET').toUpperCase() as HttpMethod;
@@ -1311,22 +1335,130 @@ function handleAuth(
   }
 
   if (second === 'platform-access' && third === 'start-payment' && method === 'POST') {
+    const requestedPlanId = isPlatformPlanId(body.planId)
+      ? body.planId
+      : state.user.platformAccess.planId;
+    const requestedBillingCycle = isPlatformBillingCycle(body.billingCycle)
+      ? body.billingCycle
+      : state.user.platformAccess.billingCycle;
+
+    const baseAmountRub = resolvePlanPriceRub(requestedPlanId, requestedBillingCycle);
+
+    const sourcePlanId = state.user.platformAccess.planId;
+    const sourceBillingCycle = state.user.platformAccess.billingCycle;
+    const sourceRank = PLATFORM_PLAN_RANK[sourcePlanId];
+    const targetRank = PLATFORM_PLAN_RANK[requestedPlanId];
+
+    const now = new Date();
+    const expiresAt = parseDate(state.user.platformAccess.expiresAt);
+    const activatedAt = parseDate(state.user.platformAccess.activatedAt);
+
+    let creditAmountRub = 0;
+    let remainingDays = 0;
+
+    if (targetRank > sourceRank && expiresAt && expiresAt > now) {
+      const remainingMs = expiresAt.getTime() - now.getTime();
+      const fallbackPeriodMs =
+        sourceBillingCycle === 'year'
+          ? 365 * MS_IN_DAY
+          : 30 * MS_IN_DAY;
+
+      const fullPeriodMs =
+        activatedAt && expiresAt.getTime() > activatedAt.getTime()
+          ? expiresAt.getTime() - activatedAt.getTime()
+          : fallbackPeriodMs;
+
+      const ratio = Math.max(0, Math.min(1, remainingMs / fullPeriodMs));
+      const sourceAmountRub = resolvePlanPriceRub(sourcePlanId, sourceBillingCycle);
+      creditAmountRub = Math.max(0, Math.round(sourceAmountRub * ratio));
+      remainingDays = Number((remainingMs / MS_IN_DAY).toFixed(1));
+    }
+
+    const amountRub = Math.max(0, baseAmountRub - creditAmountRub);
+
+    if (amountRub <= 0) {
+      const activatedDate = new Date();
+      state.user.platformAccess = {
+        status: 'active',
+        planId: requestedPlanId,
+        billingCycle: requestedBillingCycle,
+        activatedAt: activatedDate.toISOString(),
+        expiresAt: addDays(
+          activatedDate,
+          requestedBillingCycle === 'year' ? 365 : 30,
+        ).toISOString(),
+        amountRub: baseAmountRub,
+      };
+      state.user.platformAccessState = 'active';
+
+      res.status(200).json({
+        requiresPayment: false,
+        amountRub,
+        baseAmountRub,
+        creditAmountRub,
+        sourcePlanId,
+        sourceBillingCycle,
+        remainingDays,
+        planId: requestedPlanId,
+        billingCycle: requestedBillingCycle,
+        user: state.user,
+      });
+      return true;
+    }
+
+    const paymentId = `mock_${requestedPlanId}_${requestedBillingCycle}_${amountRub}_${Date.now()}`;
+
     res.status(200).json({
-      requiresPayment: false,
-      amountRub: 1490,
-      planId: 'profi',
-      billingCycle: 'month',
-      user: state.user,
+      requiresPayment: true,
+      amountRub,
+      baseAmountRub,
+      creditAmountRub,
+      sourcePlanId,
+      sourceBillingCycle,
+      remainingDays,
+      planId: requestedPlanId,
+      billingCycle: requestedBillingCycle,
+      paymentId,
+      confirmationUrl: '/dashboard?renew=1',
     });
     return true;
   }
 
   if (second === 'platform-access' && third === 'complete' && method === 'POST') {
+    const paymentId = typeof body.paymentId === 'string' ? body.paymentId : '';
+    const matched = paymentId.match(/^mock_(start|profi|center)_(month|year)_(\d+)_/i);
+
+    const planId = matched?.[1] && isPlatformPlanId(matched[1])
+      ? matched[1]
+      : state.user.platformAccess.planId;
+    const billingCycle = matched?.[2] && isPlatformBillingCycle(matched[2])
+      ? matched[2]
+      : state.user.platformAccess.billingCycle;
+    const chargedAmountRub = matched?.[3] ? Number(matched[3]) : resolvePlanPriceRub(planId, billingCycle);
+    const baseAmountRub = resolvePlanPriceRub(planId, billingCycle);
+    const creditAmountRub = Math.max(0, baseAmountRub - chargedAmountRub);
+
+    const activatedDate = new Date();
+    state.user.platformAccess = {
+      status: 'active',
+      planId,
+      billingCycle,
+      activatedAt: activatedDate.toISOString(),
+      expiresAt: addDays(
+        activatedDate,
+        billingCycle === 'year' ? 365 : 30,
+      ).toISOString(),
+      amountRub: baseAmountRub,
+    };
+    state.user.platformAccessState = 'active';
+
     res.status(200).json({
       user: state.user,
-      amountRub: 1490,
-      planId: 'profi',
-      billingCycle: 'month',
+      amountRub: chargedAmountRub,
+      baseAmountRub,
+      creditAmountRub,
+      planId,
+      billingCycle,
     });
     return true;
   }
