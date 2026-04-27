@@ -557,6 +557,15 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                 void router.push("/schedule?view=day");
             },
         },
+        {
+            id: "quick-schedule-export",
+            title: "Экспорт расписания",
+            icon: ArrowUpRightFromSquare as IconData,
+            animatedIconPath: overlayAnimatedIconPaths.export,
+            action: () => {
+                void router.push("/schedule?quickAction=export");
+            },
+        },
     ];
 
     const isCollapsed = useRailSidebar ? true : collapsed;
@@ -567,6 +576,7 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
     const contextSidebarVisible = useRailSidebar && shouldShowSidebar;
     const contextSidebarExpanded = contextSidebarVisible && !contextSidebarCollapsed;
     const hasPageContextSidebar = Boolean(shellContextSidebar?.nav?.length);
+    const contextSidebarNavItems = hasPageContextSidebar ? shellContextSidebar?.nav || [] : [];
     const shellOffset = useFlatLayout && !isMobileViewport && shouldShowSidebar
         ? readContextSidebarOffset(contextSidebarExpanded)
         : undefined;
@@ -844,7 +854,7 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                                 onClick={toggleContextSidebar}
                                 aria-label="Развернуть меню раздела"
                             >
-                                <GIcon data={ChevronsRight as IconData} size={18} />
+                                <GIcon data={ChevronsRight as IconData} size={14} />
                             </button>
                         </div>
                     ) : null
@@ -968,6 +978,7 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                                                 ? "repeto-sidebar__item--active"
                                                 : ""
                                         }`}
+                                        aria-current={isActive ? "page" : undefined}
                                     >
                                         <span className="repeto-sidebar__item-icon">
                                             {item.animatedIconPath ? (
@@ -1090,7 +1101,9 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                 <aside className={`repeto-context-sidebar ${contextSidebarExpanded ? "" : "repeto-context-sidebar--collapsed"}`}>
                     <div className="repeto-context-sidebar__inner">
                         <div className="repeto-context-sidebar__header-row">
-                            <span className="repeto-context-sidebar__section-label">Быстрые действия</span>
+                            <span className="repeto-context-sidebar__section-label">
+                                {hasPageContextSidebar ? "Раздел" : "Быстрые действия"}
+                            </span>
                             <button
                                 type="button"
                                 className="repeto-context-sidebar__collapse-btn"
@@ -1101,52 +1114,114 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                             </button>
                         </div>
 
+                        {hasPageContextSidebar && (shellContextSidebar?.title || shellContextSidebar?.breadcrumb) && (
+                            <div className="repeto-context-sidebar__heading">
+                                {shellContextSidebar?.breadcrumb && (
+                                    <span className="repeto-context-sidebar__heading-breadcrumb">
+                                        {shellContextSidebar.breadcrumb}
+                                    </span>
+                                )}
+                                {shellContextSidebar?.title && (
+                                    <div className="repeto-context-sidebar__heading-title">
+                                        {shellContextSidebar.title}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         {hasPageContextSidebar && shellContextSidebar?.sidebarHeader && (
                             <div className="repeto-context-sidebar__meta">{shellContextSidebar.sidebarHeader}</div>
                         )}
 
-                        <div className="repeto-context-sidebar__list">
-                            {hasPageContextSidebar
-                                ? (shellContextSidebar?.nav || []).map((item) => {
-                                    const iconKey = `context:${item.key}`;
-                                    const resolvedIcon = resolveContextNavIcon(item);
-                                    const resolvedAnimatedIconPath = resolveContextNavAnimatedIconPath(item);
-                                    const isActive = shellContextSidebar?.activeNav === item.key;
+                        {hasPageContextSidebar ? (
+                            <>
+                                <div className="repeto-context-sidebar__section">
+                                    <span className="repeto-context-sidebar__section-title">Навигация раздела</span>
+                                    <div className="repeto-context-sidebar__list">
+                                        {contextSidebarNavItems.map((item) => {
+                                            const iconKey = `context:${item.key}`;
+                                            const resolvedIcon = resolveContextNavIcon(item);
+                                            const resolvedAnimatedIconPath = resolveContextNavAnimatedIconPath(item);
+                                            const isActive = shellContextSidebar?.activeNav === item.key;
 
-                                    return (
-                                        <button
-                                            key={item.key}
-                                            type="button"
-                                            className={`repeto-context-sidebar__item ${
-                                                isActive ? "repeto-context-sidebar__item--active" : ""
-                                            }`}
-                                            onMouseEnter={() => setHoveredSidebarIconKey(iconKey)}
-                                            onMouseLeave={() =>
-                                                setHoveredSidebarIconKey((prev) => (prev === iconKey ? null : prev))
-                                            }
-                                            onFocus={() => setHoveredSidebarIconKey(iconKey)}
-                                            onBlur={() =>
-                                                setHoveredSidebarIconKey((prev) => (prev === iconKey ? null : prev))
-                                            }
-                                            onClick={() => shellContextSidebar?.onNavChange?.(item.key)}
-                                        >
-                                            <span className="repeto-context-sidebar__item-icon">
-                                                {resolvedAnimatedIconPath ? (
-                                                    <AnimatedSidebarIcon
-                                                        src={resolvedAnimatedIconPath}
-                                                        fallbackIcon={resolvedIcon}
-                                                        play={hoveredSidebarIconKey === iconKey}
-                                                        size={24}
-                                                    />
-                                                ) : (
-                                                    <GIcon data={resolvedIcon} size={22} />
-                                                )}
-                                            </span>
-                                            <span className="repeto-context-sidebar__item-text">{item.label}</span>
-                                        </button>
-                                    );
-                                })
-                                : quickActionItems.map((item) => {
+                                            return (
+                                                <button
+                                                    key={item.key}
+                                                    type="button"
+                                                    className={`repeto-context-sidebar__item ${
+                                                        isActive ? "repeto-context-sidebar__item--active" : ""
+                                                    }`}
+                                                    onMouseEnter={() => setHoveredSidebarIconKey(iconKey)}
+                                                    onMouseLeave={() =>
+                                                        setHoveredSidebarIconKey((prev) => (prev === iconKey ? null : prev))
+                                                    }
+                                                    onFocus={() => setHoveredSidebarIconKey(iconKey)}
+                                                    onBlur={() =>
+                                                        setHoveredSidebarIconKey((prev) => (prev === iconKey ? null : prev))
+                                                    }
+                                                    onClick={() => shellContextSidebar?.onNavChange?.(item.key)}
+                                                >
+                                                    <span className="repeto-context-sidebar__item-icon">
+                                                        {resolvedAnimatedIconPath ? (
+                                                            <AnimatedSidebarIcon
+                                                                src={resolvedAnimatedIconPath}
+                                                                fallbackIcon={resolvedIcon}
+                                                                play={hoveredSidebarIconKey === iconKey}
+                                                                size={24}
+                                                            />
+                                                        ) : (
+                                                            <GIcon data={resolvedIcon} size={22} />
+                                                        )}
+                                                    </span>
+                                                    <span className="repeto-context-sidebar__item-text">{item.label}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                <div className="repeto-context-sidebar__section">
+                                    <span className="repeto-context-sidebar__section-title">Быстрые действия</span>
+                                    <div className="repeto-context-sidebar__list">
+                                        {quickActionItems.map((item) => {
+                                            const iconKey = `context:quick:${item.id}`;
+                                            return (
+                                                <button
+                                                    key={item.id}
+                                                    type="button"
+                                                    className="repeto-context-sidebar__item"
+                                                    onMouseEnter={() => setHoveredSidebarIconKey(iconKey)}
+                                                    onMouseLeave={() =>
+                                                        setHoveredSidebarIconKey((prev) => (prev === iconKey ? null : prev))
+                                                    }
+                                                    onFocus={() => setHoveredSidebarIconKey(iconKey)}
+                                                    onBlur={() =>
+                                                        setHoveredSidebarIconKey((prev) => (prev === iconKey ? null : prev))
+                                                    }
+                                                    onClick={item.action}
+                                                >
+                                                    <span className="repeto-context-sidebar__item-icon">
+                                                        {item.animatedIconPath ? (
+                                                            <AnimatedSidebarIcon
+                                                                src={item.animatedIconPath}
+                                                                fallbackIcon={item.icon}
+                                                                play={hoveredSidebarIconKey === iconKey}
+                                                                size={24}
+                                                            />
+                                                        ) : (
+                                                            <GIcon data={item.icon} size={22} />
+                                                        )}
+                                                    </span>
+                                                    <span className="repeto-context-sidebar__item-text">{item.title}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="repeto-context-sidebar__list">
+                                {quickActionItems.map((item) => {
                                     const iconKey = `context:quick:${item.id}`;
                                     return (
                                         <button
@@ -1179,7 +1254,8 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                                         </button>
                                     );
                                 })}
-                        </div>
+                            </div>
+                        )}
                     </div>
                 </aside>
             )}

@@ -23,6 +23,9 @@ const MONTH_NAMES_GEN = [
 const HOUR_HEIGHT = 60;
 const TIME_COL = 56;
 const HOURS_24 = Array.from({ length: 24 }, (_, i) => i);
+const DAY_COMPACT_SINGLE_AREA_PCT = 32;
+const DAY_COMPACT_LANE_PCT = 24;
+const OVERLAP_GAP_PCT = 1;
 
 function pad(n: number) {
     return String(n).padStart(2, "0");
@@ -42,7 +45,132 @@ function normalizeTime(value: string) {
 
 function parseTimeToMinutes(value: string) {
     const [hh, mm] = normalizeTime(value).split(":").map(Number);
+    if (!Number.isFinite(hh) || !Number.isFinite(mm)) return 0;
     return hh * 60 + mm;
+}
+
+type PositionedLesson = {
+    lesson: Lesson;
+    top: number;
+    blockHeight: number;
+    leftPct: number;
+    widthPct: number;
+    useCompact: boolean;
+};
+
+type LessonSegment = {
+    lesson: Lesson;
+    startMin: number;
+    endMin: number;
+};
+
+function toLessonSegment(lesson: Lesson): LessonSegment {
+    const startMin = parseTimeToMinutes(lesson.startTime);
+    const rawEnd = parseTimeToMinutes(lesson.endTime);
+    const endMin = rawEnd > startMin ? rawEnd : startMin + 30;
+
+    return {
+        lesson,
+        startMin,
+        endMin,
+    };
+}
+
+function layoutOverlapGroup(group: LessonSegment[]): PositionedLesson[] {
+    if (group.length === 0) return [];
+
+    const ordered = [...group].sort((left, right) => {
+        if (left.startMin !== right.startMin) return left.startMin - right.startMin;
+        if (left.endMin !== right.endMin) return left.endMin - right.endMin;
+        return left.lesson.id.localeCompare(right.lesson.id);
+    });
+
+    const columnEndMins: number[] = [];
+    const withColumns = ordered.map((segment) => {
+        let column = columnEndMins.findIndex((endMin) => segment.startMin >= endMin);
+        if (column === -1) {
+            column = columnEndMins.length;
+            columnEndMins.push(segment.endMin);
+        } else {
+            columnEndMins[column] = segment.endMin;
+        }
+
+        return {
+            ...segment,
+            column,
+        };
+    });
+
+    const totalColumns = Math.max(1, columnEndMins.length);
+    const gapPct = totalColumns > 1 ? OVERLAP_GAP_PCT : 0;
+    const compactAreaPct = Math.min(
+        100,
+        Math.max(
+            DAY_COMPACT_SINGLE_AREA_PCT,
+            totalColumns * DAY_COMPACT_LANE_PCT + (totalColumns - 1) * OVERLAP_GAP_PCT
+        )
+    );
+    const widthPct = (compactAreaPct - gapPct * (totalColumns - 1)) / totalColumns;
+
+    return withColumns.map((segment) => {
+        const height = ((segment.endMin - segment.startMin) / 60) * HOUR_HEIGHT;
+        const blockHeight = Math.max(height - 2, 20);
+
+        return {
+            lesson: segment.lesson,
+            top: (segment.startMin / 60) * HOUR_HEIGHT,
+            blockHeight,
+            leftPct: segment.column * (widthPct + gapPct),
+            widthPct,
+            useCompact: blockHeight < 52,
+        };
+    });
+}
+
+function buildPositionedLessons(lessons: Lesson[]): PositionedLesson[] {
+    const segments = lessons
+        .map(toLessonSegment)
+        .sort((left, right) => {
+            if (left.startMin !== right.startMin) return left.startMin - right.startMin;
+            if (left.endMin !== right.endMin) return left.endMin - right.endMin;
+            return left.lesson.id.localeCompare(right.lesson.id);
+        });
+
+    const positioned: PositionedLesson[] = [];
+    let currentGroup: LessonSegment[] = [];
+    let currentGroupMaxEnd = -1;
+
+    const flushGroup = () => {
+        if (currentGroup.length === 0) return;
+        positioned.push(...layoutOverlapGroup(currentGroup));
+        currentGroup = [];
+        currentGroupMaxEnd = -1;
+    };
+
+    for (const segment of segments) {
+        if (currentGroup.length === 0) {
+            currentGroup.push(segment);
+            currentGroupMaxEnd = segment.endMin;
+            continue;
+        }
+
+        if (segment.startMin >= currentGroupMaxEnd) {
+            flushGroup();
+            currentGroup.push(segment);
+            currentGroupMaxEnd = segment.endMin;
+            continue;
+        }
+
+        currentGroup.push(segment);
+        currentGroupMaxEnd = Math.max(currentGroupMaxEnd, segment.endMin);
+    }
+
+    flushGroup();
+
+    return positioned.sort((left, right) => {
+        if (left.top !== right.top) return left.top - right.top;
+        return left.leftPct - right.leftPct;
+    });
 }
 
 const Day = ({ currentDate, onLessonClick, onSlotClick, lessons = [] }: DayProps) => {
@@ -52,6 +180,10 @@ const Day = ({ currentDate, onLessonClick, onSlotClick, lessons = [] }: DayProps
     const dayLessons = useMemo(
         () => lessons.filter((l) => l.date === iso),
         [lessons, iso]
+    );
+    const positionedLessons = useMemo(
+        () => buildPositionedLessons(dayLessons),
+        [dayLessons]
     );
 
     const now = new Date();
@@ -195,6 +327,7 @@ const Day = ({ currentDate, onLessonClick, onSlotClick, lessons = [] }: DayProps
                     {/* ── Day column ── */}
                     <div
                         onClick={handleSlotClick}
+                        className="repeto-calendar-slot-column"
                         style={{
                             flex: 1,
                             minWidth: 304,
@@ -239,33 +372,31 @@ const Day = ({ currentDate, onLessonClick, onSlotClick, lessons = [] }: DayProps
                         ))}
 
                         {/* Lesson blocks */}
-                        {dayLessons.map((lesson) => {
-                            const startMin = parseTimeToMinutes(lesson.startTime);
-                            const endMin = parseTimeToMinutes(lesson.endTime);
-                            const top = (startMin / 60) * HOUR_HEIGHT;
-                            const height = ((endMin - startMin) / 60) * HOUR_HEIGHT;
-                            const blockHeight = Math.max(height - 2, 20);
-                            const useCompact = blockHeight < 52;
-
+                        {positionedLessons.map((positioned) => {
+                            const laneWidth = `calc(${positioned.widthPct}% - 8px)`;
                             return (
                                 <div
-                                    key={lesson.id}
+                                    key={positioned.lesson.id}
                                     onClick={(event) => event.stopPropagation()}
                                     style={{
                                         position: "absolute",
-                                        top,
-                                        left: 4,
-                                        right: 4,
-                                        height: blockHeight,
-                                        maxWidth: 500,
+                                        top: positioned.top,
+                                        left: `calc(${positioned.leftPct}% + 4px)`,
+                                        width: laneWidth,
+                                        maxWidth: laneWidth,
+                                        height: positioned.blockHeight,
                                         zIndex: 2,
                                     }}
                                 >
                                     <LessonBlock
-                                        lesson={lesson}
-                                        compact={useCompact}
-                                        showTime={!useCompact}
+                                        lesson={positioned.lesson}
+                                        compact={positioned.useCompact}
+                                        showTime={!positioned.useCompact}
                                         onClick={onLessonClick}
+                                        style={{
+                                            width: "100%",
+                                            maxWidth: "100%",
+                                        }}
                                     />
                                 </div>
                             );

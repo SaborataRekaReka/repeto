@@ -14,6 +14,25 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+### Run Frontend Without Backend (Mock Mode)
+
+You can run the UI locally without Nest API by enabling the built-in mock API mode.
+
+1. Create `app/frontend-gravity/.env.local` with:
+
+```bash
+NEXT_PUBLIC_MOCK_MODE=true
+```
+
+2. Start the app:
+
+```bash
+npm run dev
+```
+
+When `NEXT_PUBLIC_MOCK_MODE=true`, all `/api/*` calls are served by the local mock handler in `pages/api/_mockBackend.ts`.
+This is useful for UI work, layout polishing, and interaction testing when backend is unavailable.
+
 You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
 
 [API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.

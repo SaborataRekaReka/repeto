@@ -2,18 +2,43 @@ import { useMemo } from "react";
 import { Text, Card } from "@gravity-ui/uikit";
 import LessonBlock from "../LessonBlock";
 import { toLocalDateKey } from "@/lib/dates";
-import type { Lesson, MonthDay } from "@/types/schedule";
+import type { Lesson } from "@/types/schedule";
 
 type MonthProps = {
     currentDate: Date;
     onLessonClick?: (lesson: Lesson) => void;
+    onMoreClick?: (date: string) => void;
     lessons?: Lesson[];
+};
+
+type MonthCell = MonthDay & {
+    isoDate: string;
 };
 
 const DAY_NAMES = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 const MAX_VISIBLE_LESSONS = 3;
 
-function generateMonthGrid(currentDate: Date, allLessons: Lesson[]): MonthDay[] {
+function normalizeTime(value: string) {
+    return value.length === 4 ? `0${value}` : value;
+}
+
+function parseTimeToMinutes(value: string) {
+    const [hh, mm] = normalizeTime(value).split(":").map(Number);
+    if (!Number.isFinite(hh) || !Number.isFinite(mm)) return 0;
+    return hh * 60 + mm;
+}
+
+function sortLessonsByTime(items: Lesson[]) {
+    return [...items].sort((left, right) => {
+        const byStart = parseTimeToMinutes(left.startTime) - parseTimeToMinutes(right.startTime);
+        if (byStart !== 0) return byStart;
+        const byEnd = parseTimeToMinutes(left.endTime) - parseTimeToMinutes(right.endTime);
+        if (byEnd !== 0) return byEnd;
+        return left.id.localeCompare(right.id);
+    });
+}
+
+function generateMonthGrid(currentDate: Date, allLessons: Lesson[]): MonthCell[] {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const firstDay = new Date(year, month, 1);
@@ -23,7 +48,7 @@ function generateMonthGrid(currentDate: Date, allLessons: Lesson[]): MonthDay[] 
     if (startDow === 0) startDow = 7;
     const prefixDays = startDow - 1;
 
-    const days: MonthDay[] = [];
+    const days: MonthCell[] = [];
 
     const prevMonthLast = new Date(year, month, 0);
     for (let i = prefixDays - 1; i >= 0; i--) {
@@ -33,9 +58,10 @@ function generateMonthGrid(currentDate: Date, allLessons: Lesson[]): MonthDay[] 
         days.push({
             day: d,
             month: "",
-            year,
+            year: dt.getFullYear(),
             isCurrentMonth: false,
-            lessons: allLessons.filter((l) => l.date === iso),
+            lessons: sortLessonsByTime(allLessons.filter((l) => l.date === iso)),
+            isoDate: iso,
         });
     }
 
@@ -45,9 +71,10 @@ function generateMonthGrid(currentDate: Date, allLessons: Lesson[]): MonthDay[] 
         days.push({
             day: d,
             month: "",
-            year,
+            year: dt.getFullYear(),
             isCurrentMonth: true,
-            lessons: allLessons.filter((l) => l.date === iso),
+            lessons: sortLessonsByTime(allLessons.filter((l) => l.date === iso)),
+            isoDate: iso,
         });
     }
 
@@ -59,16 +86,17 @@ function generateMonthGrid(currentDate: Date, allLessons: Lesson[]): MonthDay[] 
             days.push({
                 day: d,
                 month: "",
-                year,
+                year: dt.getFullYear(),
                 isCurrentMonth: false,
-                lessons: allLessons.filter((l) => l.date === iso),
+                lessons: sortLessonsByTime(allLessons.filter((l) => l.date === iso)),
+                isoDate: iso,
             });
         }
     }
     return days;
 }
 
-const Month = ({ currentDate, onLessonClick, lessons = [] }: MonthProps) => {
+const Month = ({ currentDate, onLessonClick, onMoreClick, lessons = [] }: MonthProps) => {
     const monthDays = useMemo(
         () => generateMonthGrid(currentDate, lessons),
         [currentDate, lessons]
@@ -76,10 +104,8 @@ const Month = ({ currentDate, onLessonClick, lessons = [] }: MonthProps) => {
 
     const now = new Date();
     const todayIso = toLocalDateKey(now);
-    const currentMonth = currentDate.getMonth();
-    const currentYear = currentDate.getFullYear();
 
-    const weeks: MonthDay[][] = [];
+    const weeks: MonthCell[][] = [];
     for (let i = 0; i < monthDays.length; i += 7) {
         weeks.push(monthDays.slice(i, i + 7));
     }
@@ -100,6 +126,7 @@ const Month = ({ currentDate, onLessonClick, lessons = [] }: MonthProps) => {
                         {DAY_NAMES.map((name) => (
                             <div
                                 key={name}
+                                className="repeto-month-dow"
                                 style={{
                                     padding: "10px 8px",
                                     textAlign: "center",
@@ -109,11 +136,11 @@ const Month = ({ currentDate, onLessonClick, lessons = [] }: MonthProps) => {
                             >
                                 <Text
                                     variant="caption-2"
-                                    color="secondary"
                                     style={{
                                         textTransform: "uppercase",
-                                        fontWeight: 500,
+                                        fontWeight: 600,
                                         letterSpacing: 0.5,
+                                        color: "var(--g-color-text-primary)",
                                     }}
                                 >
                                     {name}
@@ -136,54 +163,47 @@ const Month = ({ currentDate, onLessonClick, lessons = [] }: MonthProps) => {
                             }}
                         >
                     {week.map((item, di) => {
-                        const cellDate = new Date(
-                            currentYear,
-                            item.isCurrentMonth
-                                ? currentMonth
-                                : di < 3 ? currentMonth - 1 : currentMonth + 1,
-                            item.day
-                        );
-                        const cellIso = toLocalDateKey(cellDate);
+                        const cellIso = item.isoDate;
                         const isToday = cellIso === todayIso;
                         const extra = item.lessons.length - MAX_VISIBLE_LESSONS;
 
                         return (
                             <div
                                 key={di}
+                                className={`repeto-month-cell${!item.isCurrentMonth ? " repeto-month-cell--outside" : ""}${isToday ? " repeto-month-cell--today" : ""}`}
                                 style={{
-                                    minHeight: 110,
+                                    minHeight: 98,
                                     minWidth: 0,
                                     overflow: "hidden",
-                                    padding: "6px 4px 4px",
+                                    padding: "6px 6px 6px",
                                     borderLeft:
                                         di > 0
                                             ? "1px solid var(--g-color-line-generic)"
                                             : "none",
-                                    background: isToday
-                                        ? "var(--g-color-base-brand-hover-alt)"
-                                        : "transparent",
                                 }}
                             >
                                 {/* Day number */}
                                 <div
                                     style={{
                                         display: "flex",
-                                        justifyContent: "center",
-                                        marginBottom: 4,
+                                        justifyContent: "flex-start",
+                                        marginBottom: 6,
+                                        paddingLeft: 1,
                                     }}
                                 >
                                     <div
                                         style={{
-                                            width: 26,
-                                            height: 26,
+                                            minWidth: 22,
+                                            height: 22,
+                                            padding: "0 6px",
                                             display: "flex",
                                             alignItems: "center",
                                             justifyContent: "center",
-                                            borderRadius: "50%",
+                                            borderRadius: 999,
                                             background: "transparent",
                                             border: isToday
-                                                ? "1.5px solid var(--g-color-base-brand)"
-                                                : "1.5px solid transparent",
+                                                ? "1px solid var(--g-color-base-brand)"
+                                                : "1px solid transparent",
                                         }}
                                     >
                                         <Text
@@ -195,7 +215,7 @@ const Month = ({ currentDate, onLessonClick, lessons = [] }: MonthProps) => {
                                                     ? "var(--g-color-text-brand)"
                                                     : item.isCurrentMonth
                                                       ? "var(--g-color-text-primary)"
-                                                      : "var(--g-color-text-hint)",
+                                                      : "var(--g-color-text-secondary)",
                                             }}
                                         >
                                             {item.day}
@@ -205,10 +225,13 @@ const Month = ({ currentDate, onLessonClick, lessons = [] }: MonthProps) => {
 
                                 {/* Lessons */}
                                 <div
+                                    className="repeto-month-cell__lessons"
                                     style={{
                                         display: "flex",
                                         flexDirection: "column",
-                                        gap: 2,
+                                        gap: 3,
+                                        width: "100%",
+                                        boxSizing: "border-box",
                                     }}
                                 >
                                     {item.lessons
@@ -222,17 +245,27 @@ const Month = ({ currentDate, onLessonClick, lessons = [] }: MonthProps) => {
                                             />
                                         ))}
                                     {extra > 0 && (
-                                        <Text
-                                            variant="caption-2"
-                                            color="secondary"
+                                        <button
+                                            type="button"
+                                            onClick={() => onMoreClick?.(cellIso)}
+                                            className="repeto-calendar-more-btn"
                                             style={{
-                                                textAlign: "center",
+                                                border: "none",
+                                                background: "var(--repeto-surface-muted-soft)",
+                                                width: "100%",
+                                                fontSize: 12,
+                                                lineHeight: "18px",
+                                                color: "var(--g-color-text-secondary)",
+                                                fontWeight: 500,
                                                 cursor: "pointer",
-                                                padding: "1px 0",
+                                                padding: "2px 8px",
+                                                borderRadius: 6,
+                                                transition: "background 0.15s ease, color 0.15s ease",
+                                                boxSizing: "border-box",
                                             }}
                                         >
-                                            +{extra} ещё
-                                        </Text>
+                                            Ещё {extra}
+                                        </button>
                                     )}
                                 </div>
                             </div>

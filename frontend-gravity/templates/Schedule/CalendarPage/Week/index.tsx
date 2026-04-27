@@ -8,6 +8,7 @@ type WeekProps = {
     currentDate: Date;
     onLessonClick?: (lesson: Lesson) => void;
     onSlotClick?: (slot: { date: string; time: string }) => void;
+    onMoreClick?: (date: string) => void;
     lessons?: Lesson[];
 };
 
@@ -17,6 +18,20 @@ const TIME_COL = 56; // px, time label column width
 const DAY_COL_MIN = 110;
 const WEEK_MIN_WIDTH = TIME_COL + DAY_COL_MIN * 7;
 const HOURS_24 = Array.from({ length: 24 }, (_, i) => i);
+const WEEK_COMPACT_SINGLE_AREA_PCT = 86;
+const WEEK_COMPACT_LANE_PCT = 42;
+const OVERLAP_GAP_PCT = 1;
+const WEEK_SLOT_BG = "var(--repeto-surface-muted-soft)";
+const WEEK_SLOT_TEXT = "var(--g-color-text-primary)";
+
+const WEEK_STATUS_DOT: Record<Lesson["status"], string> = {
+    planned: "var(--g-color-text-info)",
+    completed: "var(--g-color-text-positive)",
+    cancelled_student: "var(--g-color-text-secondary)",
+    cancelled_tutor: "var(--g-color-text-secondary)",
+    no_show: "var(--g-color-text-warning)",
+    reschedule_pending: "var(--g-color-text-warning)",
+};
 
 function pad(n: number) {
     return String(n).padStart(2, "0");
@@ -36,7 +51,159 @@ function normalizeTime(value: string) {
 
 function parseTimeToMinutes(value: string) {
     const [hh, mm] = normalizeTime(value).split(":").map(Number);
+    if (!Number.isFinite(hh) || !Number.isFinite(mm)) return 0;
     return hh * 60 + mm;
+}
+
+function surnameOnly(fullName: string) {
+    const parts = fullName.trim().split(/\s+/);
+    return parts[0] || "";
+}
+
+type PositionedLesson = {
+    lesson: Lesson;
+    top: number;
+    blockHeight: number;
+    leftPct: number;
+    widthPct: number;
+    useCompact: boolean;
+    extraCount: number;
+};
+
+type LessonSegment = {
+    lesson: Lesson;
+    startMin: number;
+    endMin: number;
+    extraCount: number;
+};
+
+function toLessonSegment(lesson: Lesson): LessonSegment {
+    const startMin = parseTimeToMinutes(lesson.startTime);
+    const rawEnd = parseTimeToMinutes(lesson.endTime);
+    const endMin = rawEnd > startMin ? rawEnd : startMin + 30;
+
+    return {
+        lesson,
+        startMin,
+        endMin,
+        extraCount: 0,
+    };
+}
+
+function collapseSameTimeSegments(segments: LessonSegment[]): LessonSegment[] {
+    if (segments.length === 0) return [];
+
+    const collapsed: LessonSegment[] = [];
+    for (const segment of segments) {
+        const last = collapsed[collapsed.length - 1];
+        if (last && last.startMin === segment.startMin && last.endMin === segment.endMin) {
+            last.extraCount += 1;
+            continue;
+        }
+        collapsed.push({ ...segment });
+    }
+
+    return collapsed;
+}
+
+function layoutOverlapGroup(group: LessonSegment[]): PositionedLesson[] {
+    if (group.length === 0) return [];
+
+    const ordered = [...group].sort((left, right) => {
+        if (left.startMin !== right.startMin) return left.startMin - right.startMin;
+        if (left.endMin !== right.endMin) return left.endMin - right.endMin;
+        return left.lesson.id.localeCompare(right.lesson.id);
+    });
+
+    const columnEndMins: number[] = [];
+    const withColumns = ordered.map((segment) => {
+        let column = columnEndMins.findIndex((endMin) => segment.startMin >= endMin);
+        if (column === -1) {
+            column = columnEndMins.length;
+            columnEndMins.push(segment.endMin);
+        } else {
+            columnEndMins[column] = segment.endMin;
+        }
+
+        return {
+            ...segment,
+            column,
+        };
+    });
+
+    const totalColumns = Math.max(1, columnEndMins.length);
+    const gapPct = totalColumns > 1 ? OVERLAP_GAP_PCT : 0;
+    const compactAreaPct = Math.min(
+        100,
+        Math.max(
+            WEEK_COMPACT_SINGLE_AREA_PCT,
+            totalColumns * WEEK_COMPACT_LANE_PCT + (totalColumns - 1) * OVERLAP_GAP_PCT
+        )
+    );
+    const widthPct = (compactAreaPct - gapPct * (totalColumns - 1)) / totalColumns;
+
+    return withColumns.map((segment) => {
+        const height = ((segment.endMin - segment.startMin) / 60) * HOUR_HEIGHT;
+        const minHeight = segment.extraCount > 0 ? 36 : 20;
+        const blockHeight = Math.max(height - 2, minHeight);
+
+        return {
+            lesson: segment.lesson,
+            top: (segment.startMin / 60) * HOUR_HEIGHT,
+            blockHeight,
+            leftPct: segment.column * (widthPct + gapPct),
+            widthPct,
+            useCompact: blockHeight < 52,
+            extraCount: segment.extraCount,
+        };
+    });
+}
+
+function buildPositionedLessons(lessons: Lesson[]): PositionedLesson[] {
+    const sortedSegments = lessons
+        .map(toLessonSegment)
+        .sort((left, right) => {
+            if (left.startMin !== right.startMin) return left.startMin - right.startMin;
+            if (left.endMin !== right.endMin) return left.endMin - right.endMin;
+            return left.lesson.id.localeCompare(right.lesson.id);
+        });
+    const segments = collapseSameTimeSegments(sortedSegments);
+
+    const positioned: PositionedLesson[] = [];
+    let currentGroup: LessonSegment[] = [];
+    let currentGroupMaxEnd = -1;
+
+    const flushGroup = () => {
+        if (currentGroup.length === 0) return;
+        positioned.push(...layoutOverlapGroup(currentGroup));
+        currentGroup = [];
+        currentGroupMaxEnd = -1;
+    };
+
+    for (const segment of segments) {
+        if (currentGroup.length === 0) {
+            currentGroup.push(segment);
+            currentGroupMaxEnd = segment.endMin;
+            continue;
+        }
+
+        if (segment.startMin >= currentGroupMaxEnd) {
+            flushGroup();
+            currentGroup.push(segment);
+            currentGroupMaxEnd = segment.endMin;
+            continue;
+        }
+
+        currentGroup.push(segment);
+        currentGroupMaxEnd = Math.max(currentGroupMaxEnd, segment.endMin);
+    }
+
+    flushGroup();
+
+    return positioned.sort((left, right) => {
+        if (left.top !== right.top) return left.top - right.top;
+        return left.leftPct - right.leftPct;
+    });
 }
 
 type DayColumn = {
@@ -71,7 +238,7 @@ function getWeekDays(currentDate: Date): DayColumn[] {
     });
 }
 
-const Week = ({ currentDate, onLessonClick, onSlotClick, lessons = [] }: WeekProps) => {
+const Week = ({ currentDate, onLessonClick, onSlotClick, onMoreClick, lessons = [] }: WeekProps) => {
     const scrollRef = useRef<HTMLDivElement>(null);
 
     const handleSlotClick = (event: MouseEvent<HTMLDivElement>, date: string) => {
@@ -224,6 +391,7 @@ const Week = ({ currentDate, onLessonClick, onSlotClick, lessons = [] }: WeekPro
                             <div
                                 key={day.date}
                                 onClick={(event) => handleSlotClick(event, day.date)}
+                                className="repeto-calendar-slot-column"
                                 style={{
                                     flex: 1,
                                     minWidth: DAY_COL_MIN,
@@ -259,32 +427,124 @@ const Week = ({ currentDate, onLessonClick, onSlotClick, lessons = [] }: WeekPro
                                         }}
                                     />
                                 ))}
-                                {day.lessons.map((lesson) => {
-                                    const startMin = parseTimeToMinutes(lesson.startTime);
-                                    const endMin = parseTimeToMinutes(lesson.endTime);
-                                    const top = (startMin / 60) * HOUR_HEIGHT;
-                                    const height = ((endMin - startMin) / 60) * HOUR_HEIGHT;
-                                    const blockHeight = Math.max(height - 2, 20);
-                                    const useCompact = blockHeight < 52;
+
+                                {buildPositionedLessons(day.lessons).map((positioned) => {
+                                    const hasMore = positioned.extraCount > 0;
+                                    const slotHoverBg = `color-mix(in srgb, ${WEEK_SLOT_BG} 95%, var(--g-color-text-primary) 5%)`;
+                                    const statusDot = WEEK_STATUS_DOT[positioned.lesson.status];
                                     return (
                                         <div
-                                            key={lesson.id}
+                                            key={positioned.lesson.id}
                                             onClick={(event) => event.stopPropagation()}
                                             style={{
                                                 position: "absolute",
-                                                top,
-                                                left: 2,
-                                                right: 2,
-                                                height: blockHeight,
+                                                top: positioned.top,
+                                                left: `calc(${positioned.leftPct}% + 2px)`,
+                                                width: `calc(${positioned.widthPct}% - 4px)`,
+                                                height: positioned.blockHeight,
                                                 zIndex: 2,
                                             }}
                                         >
-                                            <LessonBlock
-                                                lesson={lesson}
-                                                compact={useCompact}
-                                                showTime={!useCompact}
-                                                onClick={onLessonClick}
-                                            />
+                                            <div
+                                                style={{
+                                                    height: "100%",
+                                                    display: "flex",
+                                                    flexDirection: "column",
+                                                    gap: hasMore ? 2 : 0,
+                                                }}
+                                            >
+                                                <div style={{ flex: 1, minHeight: 0 }}>
+                                                    {hasMore ? (
+                                                        <button
+                                                            type="button"
+                                                            onClick={(event) => {
+                                                                event.stopPropagation();
+                                                                onLessonClick?.(positioned.lesson);
+                                                            }}
+                                                            onMouseEnter={(event) => {
+                                                                event.currentTarget.style.background = slotHoverBg;
+                                                            }}
+                                                            onMouseLeave={(event) => {
+                                                                event.currentTarget.style.background = WEEK_SLOT_BG;
+                                                            }}
+                                                            style={{
+                                                                width: "100%",
+                                                                height: "100%",
+                                                                minHeight: 22,
+                                                                display: "flex",
+                                                                alignItems: "center",
+                                                                gap: 6,
+                                                                padding: "3px 8px",
+                                                                borderRadius: 6,
+                                                                border: "none",
+                                                                background: WEEK_SLOT_BG,
+                                                                textAlign: "left",
+                                                                cursor: "pointer",
+                                                                overflow: "hidden",
+                                                                transition: "background 0.15s ease",
+                                                            }}
+                                                        >
+                                                            <span
+                                                                style={{
+                                                                    width: 6,
+                                                                    height: 6,
+                                                                    borderRadius: "50%",
+                                                                    background: statusDot,
+                                                                    flexShrink: 0,
+                                                                }}
+                                                            />
+                                                            <Text
+                                                                variant="caption-2"
+                                                                ellipsis
+                                                                style={{ color: WEEK_SLOT_TEXT, fontWeight: 500 }}
+                                                            >
+                                                                {positioned.lesson.subject} · {surnameOnly(positioned.lesson.studentName)}
+                                                            </Text>
+                                                        </button>
+                                                    ) : (
+                                                        <LessonBlock
+                                                            lesson={positioned.lesson}
+                                                            compact={false}
+                                                            showTime
+                                                            onClick={onLessonClick}
+                                                            style={{ height: "100%" }}
+                                                        />
+                                                    )}
+                                                </div>
+                                                {hasMore && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={(event) => {
+                                                            event.stopPropagation();
+                                                            onMoreClick?.(day.date);
+                                                        }}
+                                                        onMouseEnter={(event) => {
+                                                            event.currentTarget.style.background = "color-mix(in srgb, var(--repeto-surface-muted-soft) 88%, var(--g-color-text-primary) 12%)";
+                                                            event.currentTarget.style.color = "var(--g-color-text-primary)";
+                                                        }}
+                                                        onMouseLeave={(event) => {
+                                                            event.currentTarget.style.background = "var(--repeto-surface-muted-soft)";
+                                                            event.currentTarget.style.color = "var(--g-color-text-secondary)";
+                                                        }}
+                                                        style={{
+                                                            alignSelf: "stretch",
+                                                            border: "none",
+                                                            background: "var(--repeto-surface-muted-soft)",
+                                                            color: "var(--g-color-text-secondary)",
+                                                            fontSize: 12,
+                                                            fontWeight: 500,
+                                                            lineHeight: "18px",
+                                                            textAlign: "left",
+                                                            padding: "2px 8px",
+                                                            borderRadius: 6,
+                                                            cursor: "pointer",
+                                                            transition: "background 0.15s ease, color 0.15s ease",
+                                                        }}
+                                                    >
+                                                        Ещё {positioned.extraCount}
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     );
                                 })}

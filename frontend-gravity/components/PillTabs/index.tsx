@@ -4,6 +4,7 @@ export type PillTabOption<T extends string = string> = {
     value: T;
     label: string;
     count?: number | string;
+    icon?: React.ReactNode;
 };
 
 type PillTabsProps<T extends string> = {
@@ -44,6 +45,11 @@ function PillTabs<T extends string>({
                             if (!active) onChange(opt.value);
                         }}
                     >
+                        {opt.icon ? (
+                            <span className="repeto-pill-tab__icon" aria-hidden>
+                                {opt.icon}
+                            </span>
+                        ) : null}
                         <span className="repeto-pill-tab__label">{opt.label}</span>
                         {opt.count !== undefined && opt.count !== null && opt.count !== "" && (
                             <span className="repeto-pill-tab__count">{opt.count}</span>

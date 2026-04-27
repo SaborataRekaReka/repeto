@@ -10,7 +10,7 @@ test.describe('Настройки', () => {
     await page.waitForLoadState('networkidle');
 
     // Секции должны быть видны
-    const sections = ['Аккаунт', 'Безопасность', 'Уведомления', 'Политики', 'Интеграции'];
+    const sections = ['Аккаунт', 'Публичная страница', 'Безопасность', 'Уведомления', 'Политики', 'Интеграции'];
     let visibleSections = 0;
     for (const section of sections) {
       const el = page.getByText(section).first();
@@ -23,7 +23,7 @@ test.describe('Настройки', () => {
     await page.goto('/settings');
     await page.waitForLoadState('networkidle');
 
-    const sections = ['Безопасность', 'Уведомления', 'Политики', 'Интеграции', 'Аккаунт'];
+    const sections = ['Публичная страница', 'Безопасность', 'Уведомления', 'Политики', 'Интеграции', 'Аккаунт'];
     for (const section of sections) {
       const tab = page.getByText(section).first();
       if (await tab.isVisible()) {
@@ -63,17 +63,20 @@ test.describe('Настройки', () => {
     await page.goto('/settings');
     await page.waitForLoadState('networkidle');
 
-    const publicPageSection = page.getByText('Публичная страница').first();
-    if (await publicPageSection.isVisible().catch(() => false)) {
-      const slugInput = page.getByPlaceholder('slug').first();
-      if (await slugInput.isVisible()) {
-        await slugInput.fill('');
-        await slugInput.blur();
+    const publicPageTab = page.getByRole('button', { name: 'Публичная страница' }).first();
+    if (await publicPageTab.isVisible().catch(() => false)) {
+      await publicPageTab.click();
+      await page.waitForTimeout(300);
 
-        await expect(page.getByText('Адрес свободен').first()).toBeVisible({ timeout: 10000 });
-        const currentValue = await slugInput.inputValue();
-        expect(currentValue.length).toBeGreaterThan(0);
-      }
+      const slugInput = page.getByPlaceholder('slug').first();
+      await expect(slugInput).toBeVisible();
+
+      await slugInput.fill('');
+      await slugInput.blur();
+
+      await expect(page.getByText('Адрес свободен').first()).toBeVisible({ timeout: 10000 });
+      const currentValue = await slugInput.inputValue();
+      expect(currentValue.length).toBeGreaterThan(0);
     }
   });
 

@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { Alert, Card, Text, Button, Icon, TextInput, TextArea, Select, Switch, Loader } from "@gravity-ui/uikit";
+import { Alert, Card, Text, Button, Icon, TextInput, TextArea } from "@gravity-ui/uikit";
 import { Plus, TrashBin, ChevronDown, FileArrowUp } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import { useAuth } from "@/contexts/AuthContext";
@@ -180,7 +180,6 @@ const Account = () => {
     const [whatsapp, setWhatsapp] = useState("");
     const [vk, setVk] = useState("");
     const [website, setWebsite] = useState("");
-    const [tagline, setTagline] = useState("");
     const [about, setAbout] = useState("");
     const [paymentRequisites, setPaymentRequisites] = useState("");
     const [paymentCardNumber, setPaymentCardNumber] = useState("");
@@ -193,7 +192,6 @@ const Account = () => {
     const [pendingDeleteSubjectIndex, setPendingDeleteSubjectIndex] = useState<number | null>(null);
     const [saving, setSaving] = useState(false);
     const [saveMsg, setSaveMsg] = useState<string | null>(null);
-    const [showPublicPackages, setShowPublicPackages] = useState(true);
     const [education, setEducation] = useState<EducationEntry[]>([]);
     const [experience, setExperience] = useState("");
     const [certificates, setCertificates] = useState<CertificateEntry[]>([]);
@@ -211,10 +209,8 @@ const Account = () => {
         setPaymentSbpPhone(getSavedPaymentSbpPhone(settings));
         setVk(settings?.vk || "");
         setWebsite(settings?.website || "");
-        setTagline(settings?.tagline || "");
         setOfflineAddress(settings?.offlineAddress || "");
         setFormat(settings?.format || "online");
-        setShowPublicPackages(settings?.showPublicPackages !== false);
         setExperience(settings?.experience || "");
         const eduData = settings?.education as EducationEntry[] | null;
         if (eduData && Array.isArray(eduData) && eduData.length > 0) {
@@ -254,7 +250,7 @@ const Account = () => {
         }
     }, [settings?.name, settings?.email, settings?.phone, settings?.whatsapp, settings?.aboutText,
         settings?.paymentRequisites, settings?.paymentCardNumber, settings?.paymentSbpPhone,
-        settings?.vk, settings?.website, settings?.tagline,
+        settings?.vk, settings?.website,
         settings?.format, settings?.offlineAddress, settings?.subjectDetails, settings?.subjects,
         user?.id, user?.name, user?.email, user?.phone, user?.whatsapp]);
 
@@ -347,9 +343,8 @@ const Account = () => {
                 paymentRequisites: paymentRequisites.trim(),
                 paymentCardNumber: paymentCardNumber.trim(),
                 paymentSbpPhone: paymentSbpPhone.trim(),
-                vk: vk.trim(), website: website.trim(), tagline: tagline.trim(),
+                vk: vk.trim(), website: website.trim(),
                 format, offlineAddress: offlineAddress.trim(),
-                showPublicPackages,
                 education: education.filter((e) => e.institution.trim()),
                 experience: experience.trim(),
             });
@@ -370,7 +365,7 @@ const Account = () => {
             {/* Account data */}
             <Card className="repeto-settings-section-card" view="outlined">
                 <div className="repeto-settings-card__header" style={{ padding: "20px 24px", borderBottom: "1px solid var(--g-color-line-generic)" }}>
-                    <Text variant="subheader-2">Данные аккаунта</Text>
+                    <Text variant="subheader-2">Профиль и контакты</Text>
                 </div>
                 <div className="repeto-settings-card__body" style={{ padding: 24 }}>
                     <div className="repeto-settings-account-grid">
@@ -395,21 +390,9 @@ const Account = () => {
                         <FormField label="Сайт">
                             <TextInput value={website} onUpdate={setWebsite} placeholder="https://my-site.ru" size="l" />
                         </FormField>
-                        <FormField label="Подзаголовок (для публичной страницы)" full>
-                            <TextInput value={tagline} onUpdate={setTagline} placeholder="Репетитор по математике и физике" size="l" />
-                        </FormField>
                         <FormField label="О себе" full>
                             <TextArea value={about} onUpdate={setAbout} placeholder="Подробная информация о вашем опыте, подходе, достижениях..." rows={4} size="l" />
                         </FormField>
-                        <div style={{ gridColumn: "1 / -1", display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 8 }}>
-                            <div>
-                                <Text variant="body-1" style={{ fontWeight: 600, display: "block" }}>Показывать публичные пакеты</Text>
-                                <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 2 }}>
-                                    Если выключено, раздел с пакетами не отображается на публичной странице и в записи.
-                                </Text>
-                            </div>
-                            <Switch checked={showPublicPackages} onUpdate={setShowPublicPackages} size="m" />
-                        </div>
                     </div>
                 </div>
             </Card>

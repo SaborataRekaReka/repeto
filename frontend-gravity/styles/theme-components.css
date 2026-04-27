@@ -365,29 +365,29 @@
     background: var(--surface-subtle, #312b35) !important;
 }
 
-/* Finance monthly segment chart color roles. */
+/* Finance monthly segment chart color roles — purple scale (matches adjacent IncomeByStudents chart). */
 .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--cancelled {
-    --segment-bg: #F7DADA;
-    --segment-marker: #D84D4D;
-    --segment-bar: #D84D4D;
+    --segment-bg: #f0ecff;
+    --segment-marker: #c4a5ff;
+    --segment-bar: #c4a5ff;
 }
 
 .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--received {
-    --segment-bg: #DDF8EF;
-    --segment-marker: #3F9180;
-    --segment-bar: #3F9180;
+    --segment-bg: #d8ccff;
+    --segment-marker: #7030d9;
+    --segment-bar: #7030d9;
 }
 
 .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--planned {
-    --segment-bg: #E2DDF6;
-    --segment-marker: #835DE1;
-    --segment-bar: #835DE1;
+    --segment-bg: #e6dfff;
+    --segment-marker: #9b68ef;
+    --segment-bar: #9b68ef;
 }
 
 .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--debt {
-    --segment-bg: #FBEFD2;
-    --segment-marker: #B7791F;
-    --segment-bar: #B7791F;
+    --segment-bg: #f5f0ff;
+    --segment-marker: #b89aef;
+    --segment-bar: #b89aef;
 }
 
 .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item {
@@ -399,15 +399,15 @@
 }
 
 :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--cancelled {
-    --segment-bg: color-mix(in srgb, #D84D4D 24%, var(--t-surface));
-    --segment-marker: #F08F9A;
-    --segment-bar: #F08F9A;
+    --segment-bg: color-mix(in srgb, #c4a5ff 20%, var(--t-surface));
+    --segment-marker: #c4a5ff;
+    --segment-bar: #c4a5ff;
 }
 
 :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--received {
-    --segment-bg: color-mix(in srgb, #3F9180 28%, var(--t-surface));
-    --segment-marker: #8ADAB8;
-    --segment-bar: #8ADAB8;
+    --segment-bg: color-mix(in srgb, var(--accent) 38%, var(--t-surface));
+    --segment-marker: #e0cfff;
+    --segment-bar: #e0cfff;
 }
 
 :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--planned {
@@ -417,9 +417,9 @@
 }
 
 :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--debt {
-    --segment-bg: color-mix(in srgb, #B7791F 30%, var(--t-surface));
-    --segment-marker: #F6C76D;
-    --segment-bar: #F6C76D;
+    --segment-bg: color-mix(in srgb, #b89aef 22%, var(--t-surface));
+    --segment-marker: #d6bbff;
+    --segment-bar: #d6bbff;
 }
 
 /* Booking selected date/time must be visibly active. */
