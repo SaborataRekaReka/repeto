@@ -194,7 +194,7 @@ const ScheduleWorkHoursPanel = ({ open, onClose }: ScheduleWorkHoursPanelProps) 
             </div>
 
             <div className="lp2__scroll">
-                <div className="lp2__center">
+                <div className="lp2__center lp2__center--workhours">
                     <h1 className="lp2__page-title">Рабочие часы</h1>
                     <AvailabilityEditor embedded />
                 </div>
@@ -581,7 +581,7 @@ const CalendarPage = () => {
                         <Icon data={Clock as IconData} size={14} />
                     </span>
                     <span className="repeto-schedule-sidebar-tools__workhours-title">Рабочие часы</span>
-                    <span className="repeto-schedule-sidebar-tools__workhours-summary">· {availabilityTotalHours} ч/неделю</span>
+                    <span className="repeto-schedule-sidebar-tools__workhours-summary">· {availabilityTotalHours} ч/нед.</span>
                 </button>
 
                 <div className="repeto-schedule-sidebar-calendar" aria-label="Календарь расписания">
@@ -742,7 +742,7 @@ const CalendarPage = () => {
                     <div className="repeto-schedule-toolbar__filter">
                         <Select
                             className="repeto-schedule-filter-select"
-                            popupClassName="repeto-schedule-filter-popup"
+                            popupClassName="app-select-popup"
                             size="m"
                             width="max"
                             multiple

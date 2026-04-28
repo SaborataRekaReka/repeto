@@ -263,6 +263,7 @@ const ProfileTab = ({
                         options={subjectOptions}
                         value={[student.subject]}
                         onUpdate={([v]) => persist({ subject: v } as any)}
+                        popupClassName="app-select-popup"
                         size="l"
                         width="max"
                     />
@@ -307,6 +308,7 @@ const ProfileTab = ({
                     options={statusOptions}
                     value={[student.status]}
                     onUpdate={([v]) => persist({ status: v as StudentStatus } as any)}
+                    popupClassName="app-select-popup"
                     size="l"
                     width="max"
                 />

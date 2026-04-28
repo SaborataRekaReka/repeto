@@ -342,9 +342,10 @@
     .repeto-schedule-sidebar-tools__workhours {
         width: 100% !important;
         min-height: 38px !important;
-        border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--border-subtle)) !important;
+        border: none !important;
         border-radius: 10px !important;
         background: color-mix(in srgb, var(--accent-soft) 54%, var(--surface-page)) !important;
+        box-shadow: none !important;
         color: var(--text-primary) !important;
         padding: 8px 10px !important;
         display: inline-flex !important;
@@ -393,9 +394,10 @@
     .repeto-schedule-sidebar-tools__export {
         width: 100% !important;
         min-height: 36px !important;
-        border: 1px solid var(--border-subtle) !important;
+        border: none !important;
         border-radius: 10px !important;
         background: var(--surface-page) !important;
+        box-shadow: none !important;
         color: var(--text-primary) !important;
         padding: 8px 10px !important;
         display: inline-flex !important;
@@ -443,6 +445,11 @@
 
     .repeto-schedule-export {
         width: 100% !important;
+    }
+
+    .repeto-schedule-export > * {
+        width: 100% !important;
+        display: block !important;
     }
 
     .repeto-schedule-sidebar-tools__export:disabled {

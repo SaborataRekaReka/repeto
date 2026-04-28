@@ -367,6 +367,7 @@ const HomeworkModal = ({
                                     options={lessonOptions}
                                     hasClear
                                     placeholder="Без привязки"
+                                    popupClassName="app-select-popup"
                                     width="max"
                                 />
                             </AppField>

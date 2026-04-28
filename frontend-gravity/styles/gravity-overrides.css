@@ -1968,7 +1968,9 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     width: min(380px, calc(100vw - 24px));
     max-height: min(72vh, 460px);
     overflow-y: auto;
-    background: #f3f2f7;
+    background: color-mix(in srgb, var(--surface-card) 90%, var(--surface-subtle));
+    color: var(--text-primary);
+    border: 1px solid color-mix(in srgb, var(--border-subtle) 82%, transparent);
     border-radius: 34px;
     box-shadow: none;
     padding: 10px;
@@ -2003,12 +2005,12 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 
 .repeto-quick-actions-menu__item:hover,
 .repeto-quick-actions-menu__item:focus-visible {
-    background: #e9e8ef;
+    background: var(--surface-subtle);
     outline: none;
 }
 
 .repeto-quick-actions-menu__item:active {
-    background: #e0dee8;
+    background: var(--surface-sunken);
 }
 
 .repeto-quick-actions-menu__item--disabled,
@@ -2045,7 +2047,7 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 
 .repeto-quick-actions-menu {
     scrollbar-width: thin;
-    scrollbar-color: #b8bcc6 transparent;
+    scrollbar-color: var(--repeto-scrollbar-thumb) transparent;
 }
 
 .repeto-quick-actions-menu::-webkit-scrollbar {
@@ -2057,7 +2059,7 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 }
 
 .repeto-quick-actions-menu::-webkit-scrollbar-thumb {
-    background: #b8bcc6;
+    background: var(--repeto-scrollbar-thumb);
     border-radius: 999px;
 }
 
@@ -7944,6 +7946,11 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     padding: 32px 32px 48px;
 }
 
+.lp2__center--workhours {
+    max-width: 1040px;
+    width: min(100%, 1040px);
+}
+
 .lp2__center--homework {
     max-width: none;
     width: 100%;
@@ -9282,6 +9289,11 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
         padding: 20px 16px 40px;
     }
 
+    .lp2__center--workhours {
+        max-width: none;
+        width: 100%;
+    }
+
     .lp2__bottombar {
         padding: 12px 16px;
     }
@@ -9436,10 +9448,10 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     .repeto-mobile-fab {
         width: 56px;
         height: 56px;
-        border: none;
+        border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border-subtle));
         border-radius: 20px;
-        background: color-mix(in srgb, var(--text-primary) 84%, black);
-        color: var(--repeto-on-brand);
+        background: var(--surface-card);
+        color: var(--accent);
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -9450,7 +9462,7 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 
     .repeto-mobile-fab:hover {
         transform: translateY(-1px);
-        background: color-mix(in srgb, var(--text-primary) 90%, black);
+        background: var(--surface-subtle);
     }
 
     body.repeto-page-overlay-open .repeto-mobile-fab-wrap {

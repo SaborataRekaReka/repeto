@@ -190,6 +190,7 @@ const sidebarAnimatedIconPaths = {
     quickStudent: "/icons/sidebar-animated/user-add.json",
     quickPayment: "/icons/sidebar-animated/receipt-add.json",
     quickPackage: "/icons/sidebar-animated/box.json",
+    quickExport: "/icons/sidebar-animated/export.json",
     quickPublic: "/icons/sidebar-animated/global.json",
     quickIntegrations: "/icons/sidebar-animated/folder-connection.json",
 } as const;
@@ -625,6 +626,12 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
         void router.push("/packages?create=1");
     }, [router]);
 
+    const openScheduleExportFlow = useCallback(() => {
+        void router.push("/schedule?quickAction=export");
+    }, [router]);
+
+    const shouldShowScheduleExportQuickAction = pathname === "/schedule" || pathname.startsWith("/schedule/");
+
     const openUpgradeModal = useCallback(() => {
         if (!canUpgradePlan || upgradeBusy) return;
         setSidebarUtilityMessage(null);
@@ -702,6 +709,17 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                 openCreatePackageFlow();
             },
         },
+        ...(shouldShowScheduleExportQuickAction
+            ? [{
+                id: "quick-export-schedule",
+                title: "Экспорт расписания",
+                icon: ArrowUpRightFromSquare as IconData,
+                animatedIconPath: sidebarAnimatedIconPaths.quickExport,
+                action: () => {
+                    openScheduleExportFlow();
+                },
+            }]
+            : []),
     ];
 
     const isCollapsed = useRailSidebar ? true : collapsed;
