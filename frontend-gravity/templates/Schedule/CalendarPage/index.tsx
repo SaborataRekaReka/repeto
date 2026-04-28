@@ -1,12 +1,12 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/router";
 import GravityLayout from "@/components/GravityLayout";
-import { Text, Button, Icon, Select } from "@gravity-ui/uikit";
+import { Text, Button, Icon, Select, DropdownMenu } from "@gravity-ui/uikit";
 import PillTabs, { type PillTabOption } from "@/components/PillTabs";
 import AppIcon from "@/components/Icon";
+import AnimatedSidebarIcon from "@/components/AnimatedSidebarIcon";
 import {
-    ArrowChevronDown,
     ArrowChevronLeft,
     ArrowChevronRight,
     ArrowLeft,
@@ -32,6 +32,8 @@ type CalendarViewType = "month" | "week" | "day";
 type DisplayMode = "calendar" | "list";
 type LessonStatusFilter = Lesson["status"];
 type ExportProvider = "yandex" | "google";
+
+const GDropdownMenu = DropdownMenu as any;
 
 const MONTH_NAMES = [
     "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
@@ -215,9 +217,9 @@ const CalendarPage = () => {
     const [selectedStatuses, setSelectedStatuses] = useState<LessonStatusFilter[]>(ALL_STATUS_VALUES);
     const [isExporting, setIsExporting] = useState(false);
     const [exportMenuOpen, setExportMenuOpen] = useState(false);
+    const [isExportIconActive, setIsExportIconActive] = useState(false);
     const [exportStatus, setExportStatus] = useState<{ type: "ok" | "error"; text: string } | null>(null);
     const [optimisticRemovedLessonIds, setOptimisticRemovedLessonIds] = useState<string[]>([]);
-    const exportMenuRef = useRef<HTMLDivElement | null>(null);
 
     const { data: availabilitySlots = [] } = useAvailability();
     const { data: settings, loading: settingsLoading } = useSettings();
@@ -414,21 +416,6 @@ const CalendarPage = () => {
         void router.replace({ pathname: "/schedule", query: nextQuery }, undefined, { shallow: true });
         void handleQuickExport();
     }, [handleQuickExport, router, router.query, settingsLoading]);
-
-    useEffect(() => {
-        if (!exportMenuOpen) return;
-
-        const handleDocumentClick = (event: MouseEvent) => {
-            if (!exportMenuRef.current) return;
-            if (!(event.target instanceof Node)) return;
-            if (!exportMenuRef.current.contains(event.target)) {
-                setExportMenuOpen(false);
-            }
-        };
-
-        document.addEventListener("mousedown", handleDocumentClick);
-        return () => document.removeEventListener("mousedown", handleDocumentClick);
-    }, [exportMenuOpen]);
 
     const dateRange = useMemo(() => {
         const d = currentDate;
@@ -642,72 +629,79 @@ const CalendarPage = () => {
                 </div>
                 </div>
 
-                <div
-                    className={`repeto-schedule-export${exportMenuOpen ? " repeto-schedule-export--open" : ""}`}
-                    ref={exportMenuRef}
-                >
-                    <button
-                        type="button"
-                        className="repeto-schedule-sidebar-tools__export"
-                        onClick={() => setExportMenuOpen((open) => !open)}
-                        disabled={isExporting || settingsLoading}
-                        aria-expanded={exportMenuOpen}
-                        aria-haspopup="menu"
+                <div className="repeto-schedule-export">
+                    <GDropdownMenu
+                        open={exportMenuOpen}
+                        onOpenToggle={setExportMenuOpen}
+                        popupProps={{
+                            placement: "bottom-start",
+                            className: "repeto-schedule-export-menu__popup",
+                        }}
+                        renderSwitcher={(props: any) => (
+                            <button
+                                type="button"
+                                className="repeto-schedule-sidebar-tools__export"
+                                disabled={isExporting || settingsLoading}
+                                onMouseEnter={() => setIsExportIconActive(true)}
+                                onMouseLeave={() => setIsExportIconActive(false)}
+                                onFocus={() => setIsExportIconActive(true)}
+                                onBlur={() => setIsExportIconActive(false)}
+                                {...props}
+                            >
+                                <span className="repeto-schedule-sidebar-tools__export-main">
+                                    <span className="repeto-schedule-sidebar-tools__export-icon" aria-hidden="true">
+                                        <AnimatedSidebarIcon
+                                            src="/icons/sidebar-animated/export.json"
+                                            fallbackIcon={ArrowUpRight as IconData}
+                                            play={isExportIconActive || exportMenuOpen}
+                                            size={18}
+                                        />
+                                    </span>
+                                    <span>
+                                        {isExporting
+                                            ? "Экспорт..."
+                                            : settingsLoading
+                                                ? "Проверяем интеграции..."
+                                                : "Экспорт расписания"}
+                                    </span>
+                                </span>
+                            </button>
+                        )}
                     >
-                        <span className="repeto-schedule-sidebar-tools__export-main">
-                            <Icon data={ArrowUpRight as IconData} size={14} />
-                            <span>
-                                {isExporting
-                                    ? "Экспорт..."
-                                    : settingsLoading
-                                        ? "Проверяем интеграции..."
-                                        : "Экспорт расписания"}
-                            </span>
-                        </span>
-                        <Icon
-                            data={ArrowChevronDown as IconData}
-                            size={14}
-                            className="repeto-schedule-sidebar-tools__export-chevron"
-                        />
-                    </button>
+                        <div className="repeto-quick-actions-menu repeto-context-create-menu repeto-schedule-export-menu">
+                            <div className="repeto-quick-actions-menu__list">
+                                <button
+                                    type="button"
+                                    className="repeto-quick-actions-menu__item"
+                                    onClick={() => {
+                                        setExportMenuOpen(false);
+                                        void handleProviderExport("yandex");
+                                    }}
+                                    disabled={isExporting}
+                                >
+                                    <span className="repeto-quick-actions-menu__item-icon repeto-schedule-export-menu__provider-icon" aria-hidden="true">
+                                        <img src="/images/yandex.svg" alt="" />
+                                    </span>
+                                    <span className="repeto-quick-actions-menu__item-text">Яндекс Календарь</span>
+                                </button>
 
-                    {exportMenuOpen && (
-                        <div
-                            className="repeto-schedule-export-menu"
-                            role="menu"
-                            aria-label="Экспорт расписания"
-                        >
-                            <button
-                                type="button"
-                                className="repeto-schedule-export-menu__item"
-                                onClick={() => {
-                                    setExportMenuOpen(false);
-                                    void handleProviderExport("yandex");
-                                }}
-                                disabled={isExporting}
-                            >
-                                <span className="repeto-schedule-export-menu__logo" aria-hidden="true">
-                                    <img src="/images/yandex.svg" alt="" />
-                                </span>
-                                <span className="repeto-schedule-export-menu__text">Яндекс Календарь</span>
-                            </button>
-
-                            <button
-                                type="button"
-                                className="repeto-schedule-export-menu__item"
-                                onClick={() => {
-                                    setExportMenuOpen(false);
-                                    void handleProviderExport("google");
-                                }}
-                                disabled={isExporting}
-                            >
-                                <span className="repeto-schedule-export-menu__logo" aria-hidden="true">
-                                    <img src="/images/google.svg" alt="" />
-                                </span>
-                                <span className="repeto-schedule-export-menu__text">Гугл календарь</span>
-                            </button>
+                                <button
+                                    type="button"
+                                    className="repeto-quick-actions-menu__item"
+                                    onClick={() => {
+                                        setExportMenuOpen(false);
+                                        void handleProviderExport("google");
+                                    }}
+                                    disabled={isExporting}
+                                >
+                                    <span className="repeto-quick-actions-menu__item-icon repeto-schedule-export-menu__provider-icon" aria-hidden="true">
+                                        <img src="/images/google.svg" alt="" />
+                                    </span>
+                                    <span className="repeto-quick-actions-menu__item-text">Гугл календарь</span>
+                                </button>
+                            </div>
                         </div>
-                    )}
+                    </GDropdownMenu>
                 </div>
             </div>
         ),
@@ -717,6 +711,7 @@ const CalendarPage = () => {
             handleProviderExport,
             handleSidebarMiniCalendarMonthShift,
             handleSidebarMiniCalendarSelect,
+            isExportIconActive,
             isExporting,
             scheduleSidebarMiniCalendarCells,
             scheduleSidebarMonthLabel,

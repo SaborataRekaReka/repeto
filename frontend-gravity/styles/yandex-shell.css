@@ -341,6 +341,57 @@
 
     .repeto-schedule-sidebar-tools__workhours {
         width: 100% !important;
+        min-height: 38px !important;
+        border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--border-subtle)) !important;
+        border-radius: 10px !important;
+        background: color-mix(in srgb, var(--accent-soft) 54%, var(--surface-page)) !important;
+        color: var(--text-primary) !important;
+        padding: 8px 10px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        cursor: pointer !important;
+        text-align: left !important;
+    }
+
+    .repeto-schedule-sidebar-tools__workhours:hover {
+        background: color-mix(in srgb, var(--accent-soft) 74%, var(--surface-page)) !important;
+    }
+
+    .repeto-schedule-sidebar-tools__workhours-icon {
+        width: 20px !important;
+        height: 20px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        color: var(--accent) !important;
+        background: color-mix(in srgb, var(--accent) 14%, transparent) !important;
+        border-radius: 999px !important;
+        flex-shrink: 0 !important;
+    }
+
+    .repeto-schedule-sidebar-tools__workhours-title {
+        min-width: 0 !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        line-height: 18px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+
+    .repeto-schedule-sidebar-tools__workhours-summary {
+        margin-left: auto !important;
+        font-size: 12px !important;
+        font-weight: 600 !important;
+        line-height: 16px !important;
+        color: var(--text-primary) !important;
+        white-space: nowrap !important;
+        flex-shrink: 0 !important;
+    }
+
+    .repeto-schedule-sidebar-tools__export {
+        width: 100% !important;
         min-height: 36px !important;
         border: 1px solid var(--border-subtle) !important;
         border-radius: 10px !important;
@@ -349,51 +400,8 @@
         padding: 8px 10px !important;
         display: inline-flex !important;
         align-items: center !important;
-        gap: 6px !important;
-        cursor: pointer !important;
-        text-align: left !important;
-    }
-
-    .repeto-schedule-sidebar-tools__workhours:hover {
-        background: var(--surface-subtle) !important;
-    }
-
-    .repeto-schedule-sidebar-tools__workhours-icon {
-        width: 18px !important;
-        height: 18px !important;
-        display: inline-flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        color: var(--accent) !important;
-        flex-shrink: 0 !important;
-    }
-
-    .repeto-schedule-sidebar-tools__workhours-title {
-        font-size: 13px !important;
-        font-weight: 600 !important;
-        line-height: 18px !important;
-    }
-
-    .repeto-schedule-sidebar-tools__workhours-summary {
-        margin-left: auto !important;
-        font-size: 12px !important;
-        font-weight: 500 !important;
-        line-height: 16px !important;
-        color: var(--text-secondary) !important;
-    }
-
-    .repeto-schedule-sidebar-tools__export {
-        width: 100% !important;
-        min-height: 34px !important;
-        border: 1px solid var(--border-subtle) !important;
-        border-radius: 8px !important;
-        background: var(--surface-page) !important;
-        color: var(--text-primary) !important;
-        padding: 7px 10px !important;
-        display: inline-flex !important;
-        align-items: center !important;
-        justify-content: space-between !important;
-        gap: 6px !important;
+        justify-content: flex-start !important;
+        gap: 8px !important;
         font-size: 13px !important;
         font-weight: 600 !important;
         cursor: pointer !important;
@@ -408,19 +416,33 @@
         display: inline-flex !important;
         align-items: center !important;
         gap: 6px !important;
+        min-width: 0 !important;
     }
 
-    .repeto-schedule-sidebar-tools__export-chevron {
-        color: var(--text-secondary) !important;
-        transition: transform 0.18s ease !important;
+    .repeto-schedule-sidebar-tools__export-icon {
+        width: 18px !important;
+        height: 18px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        color: var(--accent) !important;
+        flex-shrink: 0 !important;
+    }
+
+    .repeto-schedule-sidebar-tools__export-icon .repeto-animated-sidebar-icon__fallback .g-icon {
+        color: inherit !important;
+    }
+
+    .repeto-schedule-sidebar-tools__export-icon .repeto-animated-sidebar-icon__canvas :is(path, circle, ellipse, line, polyline, polygon, rect) {
+        stroke: currentColor !important;
+    }
+
+    .repeto-schedule-sidebar-tools__export-icon .repeto-animated-sidebar-icon__canvas [fill]:not([fill="none"]) {
+        fill: currentColor !important;
     }
 
     .repeto-schedule-export {
-        position: relative !important;
-    }
-
-    .repeto-schedule-export--open .repeto-schedule-sidebar-tools__export-chevron {
-        transform: rotate(180deg) !important;
+        width: 100% !important;
     }
 
     .repeto-schedule-sidebar-tools__export:disabled {
@@ -429,64 +451,19 @@
     }
 
     .repeto-schedule-export-menu {
-        position: absolute !important;
-        top: calc(100% + 6px) !important;
-        left: 0 !important;
-        right: 0 !important;
-        z-index: 25 !important;
-        display: flex !important;
-        flex-direction: column !important;
-        gap: 2px !important;
-        padding: 6px !important;
-        border-radius: 10px !important;
-        border: 1px solid var(--border-subtle) !important;
-        background: var(--surface-card) !important;
-        box-shadow: var(--shadow-sm) !important;
+        width: 236px !important;
+        max-height: none !important;
     }
 
-    .repeto-schedule-export-menu__item {
-        width: 100% !important;
-        border: none !important;
-        border-radius: 8px !important;
-        background: transparent !important;
-        color: var(--text-primary) !important;
-        display: inline-flex !important;
-        align-items: center !important;
-        gap: 8px !important;
-        text-align: left !important;
-        padding: 8px 10px !important;
-        cursor: pointer !important;
+    .repeto-schedule-export-menu__popup {
+        z-index: 180 !important;
     }
 
-    .repeto-schedule-export-menu__item:hover {
-        background: var(--surface-subtle) !important;
-    }
-
-    .repeto-schedule-export-menu__item:disabled {
-        opacity: 0.62 !important;
-        cursor: default !important;
-    }
-
-    .repeto-schedule-export-menu__logo {
-        width: 18px !important;
-        height: 18px !important;
-        display: inline-flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        flex-shrink: 0 !important;
-    }
-
-    .repeto-schedule-export-menu__logo img {
+    .repeto-schedule-export-menu__provider-icon img {
         width: 18px !important;
         height: 18px !important;
         display: block !important;
         object-fit: contain !important;
-    }
-
-    .repeto-schedule-export-menu__text {
-        font-size: 13px !important;
-        font-weight: 500 !important;
-        line-height: 18px !important;
     }
 
     .repeto-schedule-sidebar-calendar {
