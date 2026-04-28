@@ -79,7 +79,7 @@ const CardChart = ({
                             {months.map((m) => (
                                 <button
                                     key={m}
-                                    className={`block w-full text-left px-4 py-2 text-sm hover:bg-n-4/50 dark:hover:bg-white/10 transition-colors ${
+                                    className={`block w-full text-left px-4 py-2 text-sm hover:bg-n-4/50 dark:hover:bg-black/10 transition-colors ${
                                         m === selectedMonth
                                             ? "font-bold text-purple-1"
                                             : ""

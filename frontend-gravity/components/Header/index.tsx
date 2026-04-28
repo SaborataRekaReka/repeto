@@ -121,7 +121,7 @@ const Header = ({ back, title }: HeaderProps) => {
                                         {filteredStudents.map((s) => (
                                             <button
                                                 key={s.id}
-                                                className="flex items-center w-full px-4 py-2.5 text-left hover:bg-n-3/10 dark:hover:bg-white/5 transition-colors"
+                                                className="flex items-center w-full px-4 py-2.5 text-left hover:bg-n-3/10 dark:hover:bg-black/5 transition-colors"
                                                 onClick={() => {
                                                     router.push(`/students/${s.id}`);
                                                     setSearchOpen(false);

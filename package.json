@@ -75,7 +75,12 @@
     "test:e2e:journeys:tier2:ui:slow": "set PW_SLOW_MO=500&& npx playwright test e2e/journeys-tier2-ui.spec.ts --headed --workers=1",
     "test:e2e:journeys:tier2:auth": "npx playwright test e2e/journeys-tier2-auth.spec.ts",
     "test:e2e:journeys:tier2:auth:slow": "set PW_SLOW_MO=500&& npx playwright test e2e/journeys-tier2-auth.spec.ts --headed --workers=1",
-    "test:e2e:journeys:all": "npx playwright test e2e/journeys.spec.ts e2e/journeys-tier1.spec.ts e2e/journeys-tier2-forms.spec.ts e2e/journeys-tier2-student-card.spec.ts e2e/journeys-tier2-schedule.spec.ts e2e/journeys-tier2-dashboard.spec.ts e2e/journeys-tier2-notifications.spec.ts e2e/journeys-tier2-settings.spec.ts e2e/journeys-tier2-portal.spec.ts e2e/journeys-tier2-finance.spec.ts e2e/journeys-tier2-booking.spec.ts e2e/journeys-tier2-ui.spec.ts e2e/journeys-tier2-auth.spec.ts"
+    "test:e2e:journeys:all": "npx playwright test e2e/journeys.spec.ts e2e/journeys-tier1.spec.ts e2e/journeys-tier2-forms.spec.ts e2e/journeys-tier2-student-card.spec.ts e2e/journeys-tier2-schedule.spec.ts e2e/journeys-tier2-dashboard.spec.ts e2e/journeys-tier2-notifications.spec.ts e2e/journeys-tier2-settings.spec.ts e2e/journeys-tier2-portal.spec.ts e2e/journeys-tier2-finance.spec.ts e2e/journeys-tier2-booking.spec.ts e2e/journeys-tier2-ui.spec.ts e2e/journeys-tier2-auth.spec.ts",
+    "test:e2e:complex:v3": "npx playwright test e2e/complex-ui-v3.spec.ts",
+    "test:e2e:complex:v3:headed": "npx playwright test e2e/complex-ui-v3.spec.ts --headed --workers=1",
+    "test:e2e:contracts:complex": "npm run test:e2e:realworld && npm run test:e2e:sync && npm run test:e2e:persistence",
+    "test:e2e:contracts:complex:all": "node ./scripts/run-e2e-contracts-complex-all.js",
+    "test:e2e:full:v3": "npm run test:e2e:complex:v3 && npm run test:e2e:contracts:complex:all"
   },
   "devDependencies": {
     "@next/swc-wasm-nodejs": "^13.3.1",

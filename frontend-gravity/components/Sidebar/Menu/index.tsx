@@ -41,7 +41,7 @@ const Menu = ({ visible }: MenuProps) => {
                     return (
                     <Link
                         className={twMerge(
-                            `flex items-center h-9.5 mb-2 px-4 text-sm text-n-1 fill-n-1 dark:text-white dark:fill-white font-bold last:mb-0 transition-colors hover:bg-n-4 dark:hover:bg-n-2 ${
+                            `flex items-center h-9.5 mb-2 px-4 text-sm text-n-1 fill-n-1 dark:text-white dark:fill-white font-bold last:mb-0 transition-colors hover:bg-n-4 dark:hover:bg-black/10 ${
                                 router.pathname === link.url &&
                                 "bg-n-4 dark:bg-n-2 text-purple-1 fill-purple-1"
                             } ${visible ? "text-sm" : "xl:text-0"}`

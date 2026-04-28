@@ -25,13 +25,20 @@
 
 :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) {
     --accent: #ae7aff;
-    --accent-hover: #c4a5ff;
-    --accent-pressed: #9b68ef;
+    --accent-hover: #9b68ef;
+    --accent-pressed: #7e49e2;
     --repeto-on-brand: #ffffff;
 
-    --repeto-widget-hover: color-mix(in srgb, var(--surface-card) 94%, var(--text-primary) 6%);
-    --repeto-table-row-hover: color-mix(in srgb, var(--text-primary) 18%, transparent);
-    --repeto-surface-elevated-hover: color-mix(in srgb, var(--surface-card) 92%, var(--text-primary) 8%);
+    --g-color-base-simple-hover: color-mix(in srgb, var(--surface-subtle) 88%, #000 12%);
+    --repeto-control-surface-hover: color-mix(in srgb, var(--surface-subtle) 90%, #000 10%);
+    --repeto-control-surface-active: color-mix(in srgb, var(--surface-subtle) 84%, #000 16%);
+    --repeto-option-hover: color-mix(in srgb, var(--surface-subtle) 88%, #000 12%);
+    --repeto-widget-hover: color-mix(in srgb, var(--surface-card) 90%, #000 10%);
+    --repeto-table-row-hover: color-mix(in srgb, var(--surface-subtle) 86%, #000 14%);
+    --repeto-surface-elevated-hover: color-mix(in srgb, var(--surface-card) 88%, #000 12%);
+    --repeto-nav-hover-bg: color-mix(in srgb, var(--surface-card) 84%, #000 16%);
+    --repeto-pill-bg-hover: color-mix(in srgb, var(--repeto-pill-bg) 88%, #000 12%);
+    --repeto-section-hover: rgb(0 0 0 / 0.16);
 
     --repeto-nav-active-bg: transparent;
     --repeto-nav-active-bg-hover: transparent;

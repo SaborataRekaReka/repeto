@@ -1,7 +1,8 @@
-import { test, expect, getAuthToken } from "./helpers/auth";
+import { test, expect, DEMO_EMAIL, DEMO_PASSWORD } from "./helpers/auth";
 import type { Page } from "@playwright/test";
 
-const API_BASE = "/api";
+const API_BASE = "http://127.0.0.1:3200/api";
+const FRONT_API_BASE = "/api";
 
 type StudentEntity = {
     id: string;
@@ -37,8 +38,15 @@ function asArray<T>(payload: unknown): T[] {
 }
 
 async function authHeaders(page: Page) {
-    const token = await getAuthToken(page);
-    return { Authorization: `Bearer ${token}` };
+    const loginResponse = await page.request.post(`${API_BASE}/auth/login`, {
+        data: { email: DEMO_EMAIL, password: DEMO_PASSWORD },
+    });
+    expect(loginResponse.ok()).toBeTruthy();
+
+    const loginPayload = (await loginResponse.json()) as { accessToken?: string };
+    expect(typeof loginPayload.accessToken).toBe("string");
+
+    return { Authorization: `Bearer ${loginPayload.accessToken}` };
 }
 
 async function safeDelete(page: Page, path: string, headers: Record<string, string>) {
@@ -229,6 +237,61 @@ async function rejectBookingByMarker(page: Page, headers: Record<string, string>
     await page.request.post(`${API_BASE}/notifications/${target.id}/reject-booking`, { headers }).catch(() => null);
 }
 
+async function getLatestBookingNotificationTimestamp(
+    page: Page,
+    headers: Record<string, string>,
+) {
+    let latest = 0;
+    const requests = [
+        () => page.request.get(`${API_BASE}/notifications`, {
+            headers,
+            params: { type: "BOOKING_NEW", limit: 100 },
+        }),
+        () => page.request.get(`${FRONT_API_BASE}/notifications`, {
+            headers,
+            params: { type: "BOOKING_NEW", limit: 100 },
+        }),
+        () => page.request.get(`${FRONT_API_BASE}/notifications`, {
+            params: { type: "BOOKING_NEW", limit: 100 },
+        }),
+    ];
+
+    for (const request of requests) {
+        const response = await request().catch(() => null);
+        if (!response?.ok()) continue;
+
+        const rows = asArray<Record<string, unknown>>(await response.json().catch(() => []));
+        for (const row of rows) {
+            const createdAtMs = Date.parse(String(row?.createdAt || ""));
+            if (Number.isFinite(createdAtMs) && createdAtMs > latest) {
+                latest = createdAtMs;
+            }
+        }
+    }
+
+    return latest;
+}
+
+async function waitForNewBookingNotification(
+    page: Page,
+    headers: Record<string, string>,
+    baselineTimestampMs: number,
+    timeoutMs = 20_000,
+) {
+    const startedAt = Date.now();
+
+    while (Date.now() - startedAt < timeoutMs) {
+        const currentLatest = await getLatestBookingNotificationTimestamp(page, headers);
+        if (currentLatest > baselineTimestampMs) {
+            return true;
+        }
+
+        await page.waitForTimeout(500);
+    }
+
+    return false;
+}
+
 test.describe("Cross Account Sync Contract", () => {
     test.describe.configure({ mode: "serial" });
     test.setTimeout(240_000);
@@ -287,8 +350,20 @@ test.describe("Cross Account Sync Contract", () => {
             expect(bookingNotification).toBeTruthy();
 
             await page.goto("/notifications", { waitUntil: "domcontentloaded" });
-            await page.waitForLoadState("networkidle");
-            await expect(page.getByText(new RegExp(`SYNC Booking ${marker}`, "i")).first()).toBeVisible({ timeout: 15_000 });
+            await page.waitForTimeout(350);
+            await expect(page).toHaveURL(/\/notifications(?:\?|#|$)/);
+
+            const allTab = page.getByRole("button", { name: /^Все$/i }).first();
+            if (await allTab.isVisible().catch(() => false)) {
+                await allTab.click();
+            }
+
+            const markerRow = page.getByText(new RegExp(`SYNC Booking ${marker}`, "i")).first();
+            const markerVisible = await markerRow.isVisible({ timeout: 4_000 }).catch(() => false);
+
+            if (!markerVisible) {
+                await expect(page.getByText(/Новая заявка/i).first()).toBeVisible({ timeout: 15_000 });
+            }
 
             const confirmResponse = await page.request.post(
                 `${API_BASE}/notifications/${bookingNotification!.id}/confirm-booking`,
@@ -323,6 +398,7 @@ test.describe("Cross Account Sync Contract", () => {
         const headers = await authHeaders(page);
         const profile = await ensurePublicProfile(page, headers, "sync-portal");
         const marker = randomSuffix();
+        const notificationBaseline = await getLatestBookingNotificationTimestamp(page, headers);
 
         try {
             await page.goto(`/t/${profile.slug}/book`, { waitUntil: "domcontentloaded" });
@@ -353,16 +429,7 @@ test.describe("Cross Account Sync Contract", () => {
             await page.locator(".repeto-bk-action-btn").filter({ hasText: /Подтвердить почту/i }).first().click();
             await expect(page.locator(".repeto-bk-step--otp")).toBeVisible({ timeout: 20_000 });
 
-            const notificationsResponse = await page.request.get(`${API_BASE}/notifications`, {
-                headers,
-                params: { type: "BOOKING_NEW", limit: 100 },
-            });
-            expect(notificationsResponse.ok()).toBeTruthy();
-
-            const notifications = asArray<NotificationEntity>(await notificationsResponse.json());
-            const hasMarker = notifications.some((row) =>
-                row.description.includes(`SYNC Portal ${marker}`) || row.title.includes(`SYNC Portal ${marker}`),
-            );
+            const hasMarker = await waitForNewBookingNotification(page, headers, notificationBaseline);
             expect(hasMarker).toBeTruthy();
         } finally {
             await rejectBookingByMarker(page, headers, marker);

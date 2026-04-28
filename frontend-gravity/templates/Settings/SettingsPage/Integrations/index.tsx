@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
-import { Card, Text, Button, Label, Select, TextInput } from "@gravity-ui/uikit";
+import { Card, Text, Button, Label, TextInput } from "@gravity-ui/uikit";
 import { Calendar, FolderOpen } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import AnimatedSidebarIcon from "@/components/AnimatedSidebarIcon";
@@ -267,146 +267,140 @@ const Integrations = () => {
                 </Card>
             )}
 
-            <Card className="repeto-settings-section-card" view="outlined">
-                <div className="repeto-settings-card__header" style={{ padding: "20px 24px", borderBottom: "1px solid var(--g-color-line-generic)" }}>
+            <Card className="repeto-settings-section-card repeto-settings-integrations-panel" view="outlined">
+                <div className="repeto-settings-card__header">
                     <Text variant="subheader-2">Материалы</Text>
                 </div>
-                <div className="repeto-settings-control-row">
-                    <div className="repeto-settings-control-row__main">
-                        <AppSelect
-                            label="Диск для домашней работы"
-                            options={homeworkDefaultCloudOptions}
-                            value={[homeworkDefaultCloud]}
-                            onUpdate={(value) => {
-                                const next = value[0] as HomeworkDefaultCloud | undefined;
-                                if (next) {
-                                    setHomeworkDefaultCloud(next);
-                                }
-                            }}
+                <div className="repeto-settings-integrations-panel__body">
+                    <div className="repeto-settings-default-cloud">
+                        <div className="repeto-settings-default-cloud__main">
+                            <AppSelect
+                                label="Диск для домашней работы"
+                                options={homeworkDefaultCloudOptions}
+                                value={[homeworkDefaultCloud]}
+                                onUpdate={(value) => {
+                                    const next = value[0] as HomeworkDefaultCloud | undefined;
+                                    if (next) {
+                                        setHomeworkDefaultCloud(next);
+                                    }
+                                }}
+                                size="l"
+                                width="max"
+                            />
+                            <Text variant="caption-2" color="secondary" className="repeto-settings-default-cloud__hint">
+                                Если выбранный диск не подключен, система автоматически использует доступный.
+                            </Text>
+                        </div>
+                        <Button
+                            className="repeto-settings-default-cloud__save"
+                            view="action"
                             size="l"
-                            width="max"
-                        />
-                        <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 8 }}>
-                            Если выбранный диск не подключен, система автоматически использует доступный.
-                        </Text>
+                            disabled={savingDefaultCloud}
+                            onClick={handleSaveHomeworkDefaultCloud}
+                        >
+                            {savingDefaultCloud ? "Сохраняем..." : "Сохранить"}
+                        </Button>
                     </div>
-                    <Button
-                        view="action"
-                        size="l"
-                        disabled={savingDefaultCloud}
-                        onClick={handleSaveHomeworkDefaultCloud}
-                    >
-                        {savingDefaultCloud ? "Сохраняем..." : "Сохранить"}
-                    </Button>
+
+                    <div className="repeto-settings-integrations-list">
+                        {defs.map((def) => {
+                            const status = getStatus(def.id);
+                            const isConnected = status === "connected";
+                            return (
+                                <div key={def.id} className="repeto-settings-integration-row">
+                                    <div className="repeto-settings-integration-row__summary">
+                                        <div className="repeto-settings-integration-row__icon" style={{ background: def.iconBg }}>
+                                            <AnimatedSidebarIcon
+                                                src={def.animatedIconPath}
+                                                fallbackIcon={def.icon as IconData}
+                                                play
+                                                size={20}
+                                            />
+                                        </div>
+                                        <div className="repeto-settings-integration-row__meta">
+                                            <Text variant="body-1" className="repeto-settings-integration-row__title">{def.name}</Text>
+                                            <Text variant="caption-2" color="secondary" className="repeto-settings-integration-row__desc">{def.description}</Text>
+                                        </div>
+                                        <div className="repeto-settings-integration-row__status">
+                                            <Label theme={isConnected ? "success" : "normal"} size="s">{isConnected ? "Подключено" : "Не подключено"}</Label>
+                                        </div>
+                                        <Button
+                                            className="repeto-settings-integration-row__action"
+                                            view={isConnected ? "outlined" : "action"}
+                                            size="l"
+                                            disabled={saving}
+                                            onClick={() => isConnected ? handleDisconnect(def.id) : handleConnect(def.id)}
+                                        >
+                                            {isConnected ? "Отключить" : "Подключить"}
+                                        </Button>
+                                    </div>
+
+                                    {def.id === "yandex-calendar" && yandexCalOAuthAvailable === false && !hasYandexCalendar && (
+                                        <div className="repeto-settings-integration-row__details repeto-settings-integration-row__details--form">
+                                            <div className="repeto-settings-token-notice">
+                                                <Text variant="caption-2">Автоподключение недоступно. Используйте ручное подключение по токену.</Text>
+                                            </div>
+                                            <AppField label="OAuth-токен Яндекса">
+                                                <TextInput type="password" value={yandexCalToken} onUpdate={setYandexCalToken} placeholder="y0_AgAAAABk..." size="l" />
+                                            </AppField>
+                                            <Text variant="caption-2" color="secondary" className="repeto-settings-token-hint">
+                                                Создайте приложение на <a href="https://oauth.yandex.ru/client/new" target="_blank" rel="noopener noreferrer">oauth.yandex.ru</a> и вставьте токен.
+                                            </Text>
+                                            <div className="repeto-settings-token-actions">
+                                                <Button view="outlined" size="s" onClick={() => { setYandexCalOAuthAvailable(null); setMsg(null); }}>Отмена</Button>
+                                                <Button view="action" size="s" onClick={handleYandexCalTokenConnect} disabled={saving || !yandexCalToken.trim()}>{saving ? "Подключаем..." : "Подключить"}</Button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {def.id === "yandex-calendar" && hasYandexCalendar && (
+                                        <div className="repeto-settings-integration-row__details">
+                                            <Text variant="caption-2" color="secondary">Аккаунт: <span>{settings?.yandexCalendarEmail || "—"}</span></Text>
+                                        </div>
+                                    )}
+
+                                    {def.id === "yandex-disk" && yandexOAuthAvailable === false && !hasYandexDisk && (
+                                        <div className="repeto-settings-integration-row__details repeto-settings-integration-row__details--form">
+                                            <div className="repeto-settings-token-notice">
+                                                <Text variant="caption-2">Автоподключение недоступно. Используйте ручное подключение по токену.</Text>
+                                            </div>
+                                            <AppField label="OAuth-токен Яндекс.Диска">
+                                                <TextInput type="password" value={yandexToken} onUpdate={setYandexToken} placeholder="y0_AgAAAABk..." size="l" />
+                                            </AppField>
+                                            <Text variant="caption-2" color="secondary" className="repeto-settings-token-hint">
+                                                Создайте приложение на <a href="https://oauth.yandex.ru/client/new" target="_blank" rel="noopener noreferrer">oauth.yandex.ru</a> и вставьте токен.
+                                            </Text>
+                                            <div className="repeto-settings-token-actions">
+                                                <Button view="outlined" size="s" onClick={() => { setYandexOAuthAvailable(null); setMsg(null); }}>Отмена</Button>
+                                                <Button view="action" size="s" onClick={handleYandexTokenConnect} disabled={saving || !yandexToken.trim()}>{saving ? "Подключаем..." : "Подключить"}</Button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {def.id === "yandex-disk" && hasYandexDisk && (
+                                        <div className="repeto-settings-integration-row__details repeto-settings-integration-row__details--split">
+                                            <Text variant="caption-2" color="secondary">Аккаунт: <span>{settings?.yandexDiskEmail || "—"}</span></Text>
+                                            <Text variant="caption-2" color="secondary">Корневая папка: <span>{settings?.yandexDiskRootPath || "/"}</span></Text>
+                                        </div>
+                                    )}
+
+                                    {def.id === "google-calendar" && hasGoogleCalendar && (
+                                        <div className="repeto-settings-integration-row__details">
+                                            <Text variant="caption-2" color="secondary">Аккаунт: <span>{settings?.googleCalendarEmail || "—"}</span></Text>
+                                        </div>
+                                    )}
+
+                                    {def.id === "google-drive" && hasGoogleDrive && (
+                                        <div className="repeto-settings-integration-row__details">
+                                            <Text variant="caption-2" color="secondary">Аккаунт: <span>{settings?.googleDriveEmail || "—"}</span></Text>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
             </Card>
-
-            <div className="repeto-settings-integrations-grid">
-                {defs.map((def) => {
-                    const status = getStatus(def.id);
-                    const isConnected = status === "connected";
-                    return (
-                        <Card key={def.id} className="repeto-settings-section-card repeto-settings-widget-card" view="outlined">
-                        <div style={{ padding: "20px 24px" }}>
-                            <div className="repeto-settings-integration-card__main">
-                                <div style={{ width: 48, height: 48, borderRadius: 12, background: def.iconBg, display: "flex", alignItems: "center", justifyContent: "center", marginRight: 16, flexShrink: 0 }}>
-                                    <AnimatedSidebarIcon
-                                        src={def.animatedIconPath}
-                                        fallbackIcon={def.icon as IconData}
-                                        play
-                                        size={20}
-                                    />
-                                </div>
-                                <div className="repeto-settings-integration-card__meta">
-                                    <Text variant="body-1" style={{ fontWeight: 600, display: "block" }}>{def.name}</Text>
-                                    <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 2 }}>{def.description}</Text>
-                                    <div style={{ marginTop: 6 }}>
-                                        <Label theme={isConnected ? "success" : "normal"} size="s">{isConnected ? "Подключено" : "Не подключено"}</Label>
-                                    </div>
-                                </div>
-                                <Button
-                                    view={isConnected ? "outlined" : "action"}
-                                    size="l"
-                                    disabled={saving}
-                                    onClick={() => isConnected ? handleDisconnect(def.id) : handleConnect(def.id)}
-                                >
-                                    {isConnected ? "Отключить" : "Подключить"}
-                                </Button>
-                            </div>
-
-                            {/* Yandex Calendar token form */}
-                            {def.id === "yandex-calendar" && yandexCalOAuthAvailable === false && !hasYandexCalendar && (
-                                <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--g-color-line-generic)", maxWidth: 420 }}>
-                                    <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(255,193,7,0.1)", marginBottom: 12 }}>
-                                        <Text variant="caption-2">Автоподключение недоступно. Используйте ручное подключение по токену.</Text>
-                                    </div>
-                                    <AppField label="OAuth-токен Яндекса">
-                                        <TextInput type="password" value={yandexCalToken} onUpdate={setYandexCalToken} placeholder="y0_AgAAAABk..." size="l" />
-                                    </AppField>
-                                    <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 8 }}>
-                                        Создайте приложение на <a href="https://oauth.yandex.ru/client/new" target="_blank" rel="noopener noreferrer" style={{ color: "var(--g-color-text-brand)" }}>oauth.yandex.ru</a> и вставьте токен.
-                                    </Text>
-                                    <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
-                                        <Button view="outlined" size="s" onClick={() => { setYandexCalOAuthAvailable(null); setMsg(null); }}>Отмена</Button>
-                                        <Button view="action" size="s" onClick={handleYandexCalTokenConnect} disabled={saving || !yandexCalToken.trim()}>{saving ? "Подключаем..." : "Подключить"}</Button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Yandex Calendar connected */}
-                            {def.id === "yandex-calendar" && hasYandexCalendar && (
-                                <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--g-color-line-generic)" }}>
-                                    <Text variant="caption-2" color="secondary">Аккаунт: <span style={{ fontWeight: 600, color: "var(--g-color-text-primary)" }}>{settings?.yandexCalendarEmail || "—"}</span></Text>
-                                </div>
-                            )}
-
-                            {/* Yandex Disk token form */}
-                            {def.id === "yandex-disk" && yandexOAuthAvailable === false && !hasYandexDisk && (
-                                <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--g-color-line-generic)", maxWidth: 420 }}>
-                                    <div style={{ padding: "10px 14px", borderRadius: 8, background: "rgba(255,193,7,0.1)", marginBottom: 12 }}>
-                                        <Text variant="caption-2">Автоподключение недоступно. Используйте ручное подключение по токену.</Text>
-                                    </div>
-                                    <AppField label="OAuth-токен Яндекс.Диска">
-                                        <TextInput type="password" value={yandexToken} onUpdate={setYandexToken} placeholder="y0_AgAAAABk..." size="l" />
-                                    </AppField>
-                                    <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 8 }}>
-                                        Создайте приложение на <a href="https://oauth.yandex.ru/client/new" target="_blank" rel="noopener noreferrer" style={{ color: "var(--g-color-text-brand)" }}>oauth.yandex.ru</a> и вставьте токен.
-                                    </Text>
-                                    <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
-                                        <Button view="outlined" size="s" onClick={() => { setYandexOAuthAvailable(null); setMsg(null); }}>Отмена</Button>
-                                        <Button view="action" size="s" onClick={handleYandexTokenConnect} disabled={saving || !yandexToken.trim()}>{saving ? "Подключаем..." : "Подключить"}</Button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Yandex Disk connected */}
-                            {def.id === "yandex-disk" && hasYandexDisk && (
-                                <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--g-color-line-generic)" }}>
-                                    <Text variant="caption-2" color="secondary">Аккаунт: <span style={{ fontWeight: 600, color: "var(--g-color-text-primary)" }}>{settings?.yandexDiskEmail || "—"}</span></Text>
-                                    <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 4 }}>
-                                        Корневая папка: <span style={{ fontWeight: 600, color: "var(--g-color-text-primary)" }}>{settings?.yandexDiskRootPath || "/"}</span>
-                                    </Text>
-                                </div>
-                            )}
-
-                            {/* Google Calendar connected */}
-                            {def.id === "google-calendar" && hasGoogleCalendar && (
-                                <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--g-color-line-generic)" }}>
-                                    <Text variant="caption-2" color="secondary">Аккаунт: <span style={{ fontWeight: 600, color: "var(--g-color-text-primary)" }}>{settings?.googleCalendarEmail || "—"}</span></Text>
-                                </div>
-                            )}
-
-                            {/* Google Drive connected */}
-                            {def.id === "google-drive" && hasGoogleDrive && (
-                                <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid var(--g-color-line-generic)" }}>
-                                    <Text variant="caption-2" color="secondary">Аккаунт: <span style={{ fontWeight: 600, color: "var(--g-color-text-primary)" }}>{settings?.googleDriveEmail || "—"}</span></Text>
-                                </div>
-                            )}
-                        </div>
-                        </Card>
-                    );
-                })}
-            </div>
         </div>
     );
 };

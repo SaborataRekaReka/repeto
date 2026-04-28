@@ -73,7 +73,7 @@ const Menu = ({}: MenuProps) => {
                                         key={item.url}
                                         href={item.url}
                                         className={twMerge(
-                                            "flex items-center gap-3 px-4 py-2.5 text-sm font-bold transition-colors hover:bg-n-3/10 dark:hover:bg-white/10 dark:text-white",
+                                            "flex items-center gap-3 px-4 py-2.5 text-sm font-bold transition-colors hover:bg-n-3/10 dark:hover:bg-black/10 dark:text-white",
                                             router.pathname.startsWith(item.url) && "text-purple-1"
                                         )}
                                     >

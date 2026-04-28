@@ -54,7 +54,7 @@ const Create = ({}: CreateProps) => {
 <Menu.Items className="absolute top-full right-0 w-56 mt-2.5 py-2 border border-n-1 rounded-sm bg-white shadow-primary-4 overflow-hidden dark:bg-n-1 dark:border-white">
                     {buttons.map((button) => (
                         <Menu.Item
-                            className="flex items-center w-full h-10 mb-1.5 px-6.5 text-sm font-bold last:mb-0 transition-colors hover:bg-n-3/10 dark:hover:bg-white/20"
+                            className="flex items-center w-full h-10 mb-1.5 px-6.5 text-sm font-bold last:mb-0 transition-colors hover:bg-n-3/10 dark:hover:bg-black/10"
                             key={button.id}
                             as="button"
                             onClick={button.onClick}

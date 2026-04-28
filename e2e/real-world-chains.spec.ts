@@ -1,7 +1,7 @@
-import { test, expect, getAuthToken } from "./helpers/auth";
+import { test, expect, DEMO_EMAIL, DEMO_PASSWORD } from "./helpers/auth";
 import type { Page } from "@playwright/test";
 
-const API_BASE = "/api";
+const API_BASE = "http://127.0.0.1:3200/api";
 const HARNESS_KEY = String(process.env.E2E_TEST_HARNESS_KEY || "").trim();
 const SECOND_TUTOR_EMAIL = String(process.env.E2E_SECOND_TUTOR_EMAIL || "").trim();
 const SECOND_TUTOR_PASSWORD = String(process.env.E2E_SECOND_TUTOR_PASSWORD || "").trim();
@@ -59,8 +59,9 @@ function formatHm(date: Date) {
 }
 
 async function authHeaders(page: Page) {
-  const token = await getAuthToken(page);
-  return { Authorization: `Bearer ${token}` };
+  const token = await loginTutorWithCredentials(page, DEMO_EMAIL, DEMO_PASSWORD);
+  expect(Boolean(token)).toBeTruthy();
+  return { Authorization: `Bearer ${token!}` };
 }
 
 async function safeDelete(page: Page, path: string, headers: Record<string, string>) {

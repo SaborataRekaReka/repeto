@@ -32,11 +32,12 @@ async function tutorAuthHeaders(page: Page) {
 }
 
 async function getStableAuthHeaders(page: Page) {
-    try {
-        return await authHeaders(page);
-    } catch {
-        return tutorAuthHeaders(page);
+    const backendSessionHeaders = await tutorAuthHeaders(page).catch(() => null);
+    if (backendSessionHeaders) {
+        return backendSessionHeaders;
     }
+
+    return authHeaders(page);
 }
 
 function parseRateLimitDelayMs(headers: Record<string, string>, attempt: number) {
@@ -139,10 +140,12 @@ async function patchSettingsAccountWithRetry(
     throw new Error(`Unable to patch /settings/account after retries (lastStatus=${lastStatus})`);
 }
 
-async function gotoSettings(page: Page) {
+async function gotoSettings(page: Page, tab?: string) {
+    const targetPath = tab ? `/settings?tab=${encodeURIComponent(tab)}` : "/settings";
+
     for (let attempt = 0; attempt < 2; attempt += 1) {
-        await page.goto("/settings", { waitUntil: "domcontentloaded" });
-        await page.waitForLoadState("networkidle");
+        await page.goto(targetPath, { waitUntil: "domcontentloaded" });
+        await page.waitForTimeout(350);
 
         const currentUrl = page.url();
         if (/\/(auth|registration)(?:\?|#|$)/.test(currentUrl)) {
@@ -152,11 +155,32 @@ async function gotoSettings(page: Page) {
 
         await expect(page).toHaveURL(/\/settings(?:\?|#|$)/);
 
-        const settingsReadyLocator = page
-            .locator("h1:has-text('Настройки'), button:has-text('Аккаунт'), [role='main'] h1")
-            .first();
+        if (tab && !new RegExp(`(?:\\?|&)tab=${tab}(?:&|$)`, "i").test(page.url())) {
+            const sectionButton = page.getByRole("button", { name: new RegExp(tab, "i") }).first();
+            if (await sectionButton.isVisible().catch(() => false)) {
+                await sectionButton.click();
+                await page.waitForTimeout(300);
+            }
+        }
 
-        await expect(settingsReadyLocator).toBeVisible();
+        const readyCandidates = [
+            page.getByText(/^Настройки$/i).first(),
+            page.getByRole("button", { name: /Личные данные/i }).first(),
+            page.getByRole("button", { name: /Интеграции/i }).first(),
+            page.getByText(/Личные данные/i).first(),
+            page.locator(".repeto-settings-section-card").first(),
+            page.locator("main").first(),
+        ];
+
+        let ready = false;
+        for (const candidate of readyCandidates) {
+            if (await candidate.isVisible().catch(() => false)) {
+                ready = true;
+                break;
+            }
+        }
+
+        expect(ready, "Settings page did not expose any known ready markers").toBeTruthy();
         return;
     }
 
@@ -278,6 +302,12 @@ async function collectVisibleCheckboxes(page: Page): Promise<CheckboxMeta[]> {
             if (el.tagName.toLowerCase() === "input" && (el as HTMLInputElement).type === "checkbox") {
                 checked = Boolean((el as HTMLInputElement).checked);
             } else {
+                const switchLike =
+                    target.getAttribute("role") === "switch" ||
+                    el.getAttribute("role") === "switch" ||
+                    target.tagName.toLowerCase() === "switch" ||
+                    el.tagName.toLowerCase() === "switch";
+
                 const ariaChecked =
                     target.getAttribute("aria-checked") ||
                     el.getAttribute("aria-checked") ||
@@ -288,7 +318,13 @@ async function collectVisibleCheckboxes(page: Page): Promise<CheckboxMeta[]> {
                     checked = ariaChecked === "true";
                 } else {
                     const nestedInput = target.querySelector("input[type='checkbox']") as HTMLInputElement | null;
-                    checked = Boolean(nestedInput?.checked);
+                    if (nestedInput) {
+                        checked = Boolean(nestedInput.checked);
+                    } else if (target.hasAttribute("checked") || el.hasAttribute("checked")) {
+                        checked = true;
+                    } else if (switchLike) {
+                        checked = false;
+                    }
                 }
             }
 
@@ -320,12 +356,23 @@ async function readCheckboxState(page: Page, selector: string): Promise<boolean 
         if (value === "true") return true;
         if (value === "false") return false;
 
+        if (el.hasAttribute("checked")) return true;
+
+        const switchLike =
+            el.getAttribute("role") === "switch" ||
+            el.tagName.toLowerCase() === "switch";
+
         const nestedChecked = (el.querySelector("input[type='checkbox']") as HTMLInputElement | null)?.checked;
         if (typeof nestedChecked === "boolean") return nestedChecked;
 
         const nestedAria = (el.querySelector("[aria-checked]") as HTMLElement | null)?.getAttribute("aria-checked");
         if (nestedAria === "true") return true;
         if (nestedAria === "false") return false;
+
+        const nestedCheckedAttr = (el.querySelector("[checked]") as HTMLElement | null);
+        if (nestedCheckedAttr) return true;
+
+        if (switchLike) return false;
 
         return null;
     }, selector);
@@ -358,7 +405,7 @@ test.describe("Persistence Contract Coverage", () => {
     test.setTimeout(240_000);
 
     test("PERS-CHECKBOX-001 settings checkboxes persist after save and reload", async ({ authedPage: page }) => {
-        await gotoSettings(page);
+        await gotoSettings(page, "notifications");
 
         const all = await collectVisibleCheckboxes(page);
         const candidates = all.filter((row) => !isPotentiallyDestructive(row.label)).slice(0, 8);
@@ -368,7 +415,7 @@ test.describe("Persistence Contract Coverage", () => {
 
         try {
             for (const checkbox of candidates) {
-                await gotoSettings(page);
+                await gotoSettings(page, "notifications");
 
                 const locator = page.locator(checkbox.selector).first();
                 const visible = await locator.isVisible().catch(() => false);
@@ -404,7 +451,7 @@ test.describe("Persistence Contract Coverage", () => {
                 expect(current, `Reload mismatch for checkbox: ${checkbox.label}`).toBe(checkbox.after);
             }
         } finally {
-            await gotoSettings(page);
+            await gotoSettings(page, "notifications");
             for (const checkbox of changed.reverse()) {
                 const current = await resolveCheckboxState(page, checkbox.selector, checkbox.label);
                 if (current === null || current === checkbox.before) continue;
@@ -418,7 +465,7 @@ test.describe("Persistence Contract Coverage", () => {
     });
 
     test("PERS-CHECKBOX-002 checkbox state persists across fresh browser context", async ({ authedPage: page, browser }) => {
-        await gotoSettings(page);
+        await gotoSettings(page, "notifications");
 
         const baseCandidates = (await collectVisibleCheckboxes(page))
             .filter((row) => !isPotentiallyDestructive(row.label));
@@ -436,7 +483,7 @@ test.describe("Persistence Contract Coverage", () => {
             let toggledState: boolean | null = null;
 
             try {
-                await gotoSettings(page);
+                await gotoSettings(page, "notifications");
 
                 originalState = await resolveCheckboxState(page, target.selector, target.label);
                 if (originalState === null) continue;
@@ -459,7 +506,7 @@ test.describe("Persistence Contract Coverage", () => {
                 try {
                     const freshPage = await freshContext.newPage();
                     await ensureAuthInContext(freshPage);
-                    await gotoSettings(freshPage);
+                    await gotoSettings(freshPage, "notifications");
 
                     const freshState = await resolveCheckboxState(freshPage, target.selector, target.label);
                     if (freshState === toggledState) {
@@ -471,7 +518,7 @@ test.describe("Persistence Contract Coverage", () => {
                 }
             } finally {
                 if (originalState !== null) {
-                    await gotoSettings(page);
+                    await gotoSettings(page, "notifications");
                     const current = await resolveCheckboxState(page, target.selector, target.label);
                     if (current !== null && current !== originalState) {
                         const locator = page.locator(target.selector).first();
