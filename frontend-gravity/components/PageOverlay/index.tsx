@@ -23,6 +23,11 @@ const overlayAnimatedIconPaths = {
     people: "/icons/sidebar-animated/people.json",
     receipt: "/icons/sidebar-animated/receipt.json",
     archive: "/icons/sidebar-animated/archive.json",
+    packageBox: "/icons/sidebar-animated/box.json",
+    home: "/icons/sidebar-animated/home.json",
+    overview: "/icons/sidebar-animated/chart-square.json",
+    global: "/icons/sidebar-animated/global.json",
+    folderConnection: "/icons/sidebar-animated/folder-connection.json",
     folderOpen: "/icons/sidebar-animated/folder-open.json",
     bookOpen: "/icons/sidebar-animated/book-open.json",
     userAdd: "/icons/sidebar-animated/user-add.json",
@@ -32,6 +37,10 @@ const overlayAnimatedIconPaths = {
     noteText: "/icons/sidebar-animated/note-text.json",
     taskSquare: "/icons/sidebar-animated/task-square.json",
     export: "/icons/sidebar-animated/export.json",
+    logout: "/icons/sidebar-animated/logout.json",
+    notifications: "/icons/sidebar-animated/notification-bing.json",
+    settings: "/icons/sidebar-animated/setting.json",
+    support: "/icons/sidebar-animated/info-circle.json",
 } as const;
 
 type PageOverlayNavItem = {
@@ -182,18 +191,50 @@ const PageOverlay = ({
 
         if (key === "create") {
             if (label.includes("оплат")) return overlayAnimatedIconPaths.receiptAdd;
-            if (label.includes("пакет")) return overlayAnimatedIconPaths.archive;
+            if (label.includes("пакет")) return overlayAnimatedIconPaths.packageBox;
             return overlayAnimatedIconPaths.userAdd;
         }
         if (key === "lesson" || key === "lessons") return overlayAnimatedIconPaths.bookOpen;
         if (key === "payment" || key === "payments") return overlayAnimatedIconPaths.receipt;
+        if (key === "dashboard") return overlayAnimatedIconPaths.home;
+        if (key === "overview" || label.includes("обзор")) return overlayAnimatedIconPaths.overview;
+        if (key === "private" || key === "packages" || key === "package" || label.includes("пакет") || label.includes("обычн")) {
+            return overlayAnimatedIconPaths.packageBox;
+        }
+        if (key === "public" || key === "public-page" || label.includes("публич")) return overlayAnimatedIconPaths.global;
         if (key === "debtors") return overlayAnimatedIconPaths.people;
         if (key === "files") return overlayAnimatedIconPaths.folderOpen;
         if (key === "access") return overlayAnimatedIconPaths.userTick;
-        if (key === "profile") return overlayAnimatedIconPaths.profile;
+        if (key === "account" || key === "profile") return overlayAnimatedIconPaths.profile;
+        if (key === "integrations" || key === "integration" || label.includes("интеграц") || label.includes("integration")) {
+            return overlayAnimatedIconPaths.folderConnection;
+        }
+        if (key === "policies" || key === "policy" || label.includes("полит") || label.includes("policy")) {
+            return overlayAnimatedIconPaths.noteText;
+        }
         if (key === "notes") return overlayAnimatedIconPaths.noteText;
         if (key === "homework") return overlayAnimatedIconPaths.taskSquare;
         if (key === "export") return overlayAnimatedIconPaths.export;
+        if (key === "logout" || key === "exit" || label.includes("выйти") || label.includes("logout")) {
+            return overlayAnimatedIconPaths.logout;
+        }
+        if (key === "notifications" || key === "notification" || label.includes("уведом") || label.includes("notification")) {
+            return overlayAnimatedIconPaths.notifications;
+        }
+        if (
+            key === "settings" ||
+            key === "setup" ||
+            key === "security" ||
+            label.includes("настро") ||
+            label.includes("безопас") ||
+            label.includes("setting") ||
+            label.includes("security")
+        ) {
+            return overlayAnimatedIconPaths.settings;
+        }
+        if (key === "support" || key === "help" || key === "info" || label.includes("поддерж") || label.includes("support")) {
+            return overlayAnimatedIconPaths.support;
+        }
 
         return undefined;
     };

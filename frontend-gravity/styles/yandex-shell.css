@@ -698,8 +698,21 @@
     }
 
     .repeto-settings-content--shell {
-        width: 100% !important;
-        max-width: none !important;
+        width: min(1180px, 100%) !important;
+        max-width: 1180px !important;
+        margin: 0 auto !important;
+    }
+
+    .repeto-settings-content :is(.g-card, .repeto-settings-section-card, .repeto-settings-widget-card),
+    .repeto-settings-content :is(.g-card, .repeto-settings-section-card, .repeto-settings-widget-card):hover,
+    .repeto-settings-content :is(.g-card, .repeto-settings-section-card, .repeto-settings-widget-card):focus-within,
+    .page-overlay__content .repeto-settings-section-card:hover,
+    .page-overlay__content .repeto-settings-widget-card:hover {
+        background: transparent !important;
+        border-color: var(--repeto-line-subtle) !important;
+        box-shadow: none !important;
+        transform: none !important;
+        transition: none !important;
     }
 
     .repeto-settings-sidebar-header {
@@ -776,6 +789,34 @@
         background: var(--surface-card) !important;
         color: var(--accent) !important;
         box-shadow: none !important;
+    }
+
+    .repeto-settings-portrait-title {
+        font-size: 24px !important;
+        line-height: 30px !important;
+        font-weight: 500 !important;
+        letter-spacing: 0 !important;
+    }
+
+    .repeto-settings-portrait-row .repeto-settings-avatar-trigger--account {
+        width: 64px !important;
+        height: 64px !important;
+        box-shadow: none !important;
+    }
+
+    .repeto-settings-portrait-button.g-button {
+        height: 54px !important;
+        min-width: 136px !important;
+        border-radius: 16px !important;
+        background: #eef0f4 !important;
+        color: var(--text-primary) !important;
+        font-size: 20px !important;
+        font-weight: 400 !important;
+        box-shadow: none !important;
+    }
+
+    .repeto-settings-portrait-help {
+        color: #969eae !important;
     }
 
     .repeto-settings-sidebar-link,

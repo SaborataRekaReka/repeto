@@ -1,4 +1,4 @@
-import { Icon } from "@gravity-ui/uikit";
+import AnimatedSidebarIcon from "@/components/AnimatedSidebarIcon";
 import { Persons } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 
@@ -20,7 +20,12 @@ const FinanceSidebarTools = ({ onOpenDebtors }: FinanceSidebarToolsProps) => {
                 onClick={onOpenDebtors}
             >
                 <span className="repeto-context-sidebar__item-icon">
-                    <Icon data={Persons as IconData} size={22} />
+                    <AnimatedSidebarIcon
+                        src="/icons/sidebar-animated/people.json"
+                        fallbackIcon={Persons as IconData}
+                        play
+                        size={22}
+                    />
                 </span>
                 <span className="repeto-context-sidebar__item-text">Найти должников</span>
             </button>

@@ -47,7 +47,7 @@ const Security = () => {
             {/* Change password */}
             <Card className="repeto-settings-section-card" view="outlined">
                 <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--g-color-line-generic)" }}>
-                    <Text variant="subheader-2">Сменить пароль</Text>
+                    <Text variant="subheader-2">Пароль</Text>
                 </div>
                 <div style={{ padding: 24, maxWidth: 420 }}>
                     <div className="repeto-settings-stack">
@@ -74,10 +74,9 @@ const Security = () => {
                 </div>
             </Card>
 
-            {/* Danger zone */}
             <Card className="repeto-settings-section-card repeto-settings-section-card--danger" view="outlined">
                 <div style={{ padding: "20px 24px", borderBottom: "2px solid var(--g-color-line-danger)" }}>
-                    <Text variant="subheader-2" style={{ color: "var(--g-color-text-danger)" }}>Опасная зона</Text>
+                    <Text variant="subheader-2" style={{ color: "var(--g-color-text-danger)" }}>Удаление аккаунта</Text>
                 </div>
                 <div style={{ padding: 24 }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>

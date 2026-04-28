@@ -23,8 +23,8 @@ const MONTH_NAMES_GEN = [
 const HOUR_HEIGHT = 60;
 const TIME_COL = 56;
 const HOURS_24 = Array.from({ length: 24 }, (_, i) => i);
-const DAY_COMPACT_SINGLE_AREA_PCT = 32;
-const DAY_COMPACT_LANE_PCT = 24;
+const DAY_COMPACT_SINGLE_AREA_PCT = 100;
+const DAY_COMPACT_LANE_PCT = 100;
 const OVERLAP_GAP_PCT = 1;
 
 function pad(n: number) {

@@ -67,6 +67,18 @@
     background: var(--repeto-widget-hover) !important;
 }
 
+.repeto-settings-content :is(.g-card, .repeto-settings-section-card, .repeto-settings-widget-card),
+.repeto-settings-content :is(.g-card, .repeto-settings-section-card, .repeto-settings-widget-card):hover,
+.repeto-settings-content :is(.g-card, .repeto-settings-section-card, .repeto-settings-widget-card):focus-within,
+.page-overlay__content .repeto-settings-section-card:hover,
+.page-overlay__content .repeto-settings-widget-card:hover {
+    background: transparent !important;
+    border-color: var(--repeto-line-subtle) !important;
+    box-shadow: none !important;
+    transform: none !important;
+    transition: none !important;
+}
+
 /* Dashboard widget internals: remove decorative separators/dividers */
 .repeto-tochka-dash .repeto-week-lesson-row {
     border-top: none !important;
@@ -205,6 +217,42 @@
     color: #5c556f !important;
 }
 
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-task-panel .repeto-task-tile,
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-task-stack__card,
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-task-mobile-modal .repeto-task-tile {
+    background: #2e2a3a !important;
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-task-panel .repeto-task-tile:hover,
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-task-mobile-modal .repeto-task-tile:hover {
+    background: #393347 !important;
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-task-panel .repeto-task-tile--urgent,
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-task-mobile-modal .repeto-task-tile--urgent {
+    background: #46395a !important;
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-task-panel .repeto-task-tile--urgent:hover,
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-task-mobile-modal .repeto-task-tile--urgent:hover {
+    background: #514066 !important;
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-task-panel .repeto-task-tile__kicker,
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-task-mobile-modal .repeto-task-tile__kicker {
+    color: #c0b8d6 !important;
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-task-panel .repeto-task-tile__title,
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-task-mobile-modal .repeto-task-tile__title {
+    color: #f3f0ff !important;
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-task-panel .repeto-task-tile__meta,
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-task-mobile-modal .repeto-task-tile__meta {
+    color: #d0c8e4 !important;
+}
+
 .repeto-task-stack {
     display: none;
 }
@@ -256,6 +304,14 @@
         bottom: 0;
         background: #CEC3EC;
         transform: translateY(14px);
+    }
+
+    :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-task-stack__layer {
+        background: #3c3550;
+    }
+
+    :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-task-stack__layer--third {
+        background: #322c43;
     }
 
     .repeto-task-stack__card {

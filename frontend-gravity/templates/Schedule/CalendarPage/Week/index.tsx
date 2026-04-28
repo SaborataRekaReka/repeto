@@ -18,8 +18,8 @@ const TIME_COL = 56; // px, time label column width
 const DAY_COL_MIN = 110;
 const WEEK_MIN_WIDTH = TIME_COL + DAY_COL_MIN * 7;
 const HOURS_24 = Array.from({ length: 24 }, (_, i) => i);
-const WEEK_COMPACT_SINGLE_AREA_PCT = 86;
-const WEEK_COMPACT_LANE_PCT = 42;
+const WEEK_COMPACT_SINGLE_AREA_PCT = 100;
+const WEEK_COMPACT_LANE_PCT = 100;
 const OVERLAP_GAP_PCT = 1;
 const WEEK_SLOT_BG = "var(--repeto-surface-muted-soft)";
 const WEEK_SLOT_TEXT = "var(--g-color-text-primary)";

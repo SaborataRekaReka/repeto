@@ -22,7 +22,7 @@ const CHANNEL_OPTIONS: Array<{ value: NotificationChannelKey; content: string }>
     { value: "email", content: "Email" },
     { value: "push", content: "Push" },
     { value: "telegram", content: "Telegram" },
-    { value: "max", content: "Макс" },
+    { value: "max", content: "MAX" },
 ];
 
 const DEFAULTS = {
@@ -205,7 +205,7 @@ const Notifications = () => {
     return (
         <Card className="repeto-settings-section-card" view="outlined">
             <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--g-color-line-generic)" }}>
-                <Text variant="subheader-2">Настройки уведомлений</Text>
+                <Text variant="subheader-2">Каналы и напоминания</Text>
             </div>
             <div style={{ padding: 24 }}>
                 <div style={{ marginBottom: 24 }}>
@@ -232,7 +232,7 @@ const Notifications = () => {
                     </Text>
                     {(telegramBotUsername || maxBotUsername) && (
                         <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 4 }}>
-                            При выборе Telegram или Макс откроется бот для авторизации канала.
+                            При выборе Telegram или MAX откроется бот для авторизации канала.
                         </Text>
                     )}
                 </div>

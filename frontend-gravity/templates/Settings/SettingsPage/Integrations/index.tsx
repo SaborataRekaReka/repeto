@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
-import { Card, Text, Button, Icon, Label, Select, TextInput } from "@gravity-ui/uikit";
+import { Card, Text, Button, Label, Select, TextInput } from "@gravity-ui/uikit";
 import { Calendar, FolderOpen } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
+import AnimatedSidebarIcon from "@/components/AnimatedSidebarIcon";
 import {
     useSettings, disconnectIntegration,
     updateAccount,
@@ -15,7 +16,14 @@ import { codedErrorMessage } from "@/lib/errorCodes";
 import AppSelect from "@/components/AppSelect";
 import AppField from "@/components/AppField";
 
-type IntegrationDef = { id: string; name: string; description: string; icon: unknown; iconBg: string; };
+type IntegrationDef = {
+    id: string;
+    name: string;
+    description: string;
+    icon: unknown;
+    iconBg: string;
+    animatedIconPath: string;
+};
 type HomeworkDefaultCloud = "YANDEX_DISK" | "GOOGLE_DRIVE";
 
 const homeworkDefaultCloudOptions = [
@@ -124,10 +132,38 @@ const Integrations = () => {
     }, [router, mutate]);
 
     const defs: IntegrationDef[] = [
-        { id: "google-calendar", name: "Google Calendar", description: "Двусторонняя синхронизация расписания", icon: Calendar, iconBg: "rgba(66,133,244,0.1)" },
-        { id: "google-drive", name: "Google Drive", description: "Хранение и доступ к файлам учеников", icon: FolderOpen, iconBg: "rgba(66,133,244,0.1)" },
-        { id: "yandex-calendar", name: "Яндекс.Календарь", description: "Двусторонняя синхронизация расписания", icon: Calendar, iconBg: "rgba(252,63,29,0.1)" },
-        { id: "yandex-disk", name: "Яндекс.Диск", description: "Хранение и доступ к файлам учеников", icon: FolderOpen, iconBg: "rgba(252,63,29,0.1)" },
+        {
+            id: "google-calendar",
+            name: "Google Calendar",
+            description: "Двусторонняя синхронизация расписания",
+            icon: Calendar,
+            iconBg: "rgba(66,133,244,0.1)",
+            animatedIconPath: "/icons/sidebar-animated/calendar.json",
+        },
+        {
+            id: "google-drive",
+            name: "Google Drive",
+            description: "Хранение и доступ к файлам учеников",
+            icon: FolderOpen,
+            iconBg: "rgba(66,133,244,0.1)",
+            animatedIconPath: "/icons/sidebar-animated/folder-open.json",
+        },
+        {
+            id: "yandex-calendar",
+            name: "Яндекс.Календарь",
+            description: "Двусторонняя синхронизация расписания",
+            icon: Calendar,
+            iconBg: "rgba(252,63,29,0.1)",
+            animatedIconPath: "/icons/sidebar-animated/calendar.json",
+        },
+        {
+            id: "yandex-disk",
+            name: "Яндекс.Диск",
+            description: "Хранение и доступ к файлам учеников",
+            icon: FolderOpen,
+            iconBg: "rgba(252,63,29,0.1)",
+            animatedIconPath: "/icons/sidebar-animated/folder-open.json",
+        },
     ];
 
     const getStatus = (id: string) => {
@@ -232,13 +268,13 @@ const Integrations = () => {
             )}
 
             <Card className="repeto-settings-section-card" view="outlined">
-                <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--g-color-line-generic)" }}>
-                    <Text variant="subheader-2">Домашняя работа</Text>
+                <div className="repeto-settings-card__header" style={{ padding: "20px 24px", borderBottom: "1px solid var(--g-color-line-generic)" }}>
+                    <Text variant="subheader-2">Материалы</Text>
                 </div>
-                <div style={{ padding: 24, display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
-                    <div style={{ flex: "1 1 320px", minWidth: 280 }}>
+                <div className="repeto-settings-control-row">
+                    <div className="repeto-settings-control-row__main">
                         <AppSelect
-                            label="Диск по умолчанию для материалов домашки"
+                            label="Диск для домашней работы"
                             options={homeworkDefaultCloudOptions}
                             value={[homeworkDefaultCloud]}
                             onUpdate={(value) => {
@@ -249,7 +285,6 @@ const Integrations = () => {
                             }}
                             size="l"
                             width="max"
-                            style={{ maxWidth: 360 }}
                         />
                         <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 8 }}>
                             Если выбранный диск не подключен, система автоматически использует доступный.
@@ -266,17 +301,23 @@ const Integrations = () => {
                 </div>
             </Card>
 
-            {defs.map((def) => {
-                const status = getStatus(def.id);
-                const isConnected = status === "connected";
-                return (
-                    <Card key={def.id} className="repeto-settings-section-card" view="outlined">
+            <div className="repeto-settings-integrations-grid">
+                {defs.map((def) => {
+                    const status = getStatus(def.id);
+                    const isConnected = status === "connected";
+                    return (
+                        <Card key={def.id} className="repeto-settings-section-card repeto-settings-widget-card" view="outlined">
                         <div style={{ padding: "20px 24px" }}>
-                            <div style={{ display: "flex", alignItems: "center" }}>
+                            <div className="repeto-settings-integration-card__main">
                                 <div style={{ width: 48, height: 48, borderRadius: 12, background: def.iconBg, display: "flex", alignItems: "center", justifyContent: "center", marginRight: 16, flexShrink: 0 }}>
-                                    <Icon data={def.icon as IconData} size={20} />
+                                    <AnimatedSidebarIcon
+                                        src={def.animatedIconPath}
+                                        fallbackIcon={def.icon as IconData}
+                                        play
+                                        size={20}
+                                    />
                                 </div>
-                                <div style={{ flex: 1, marginRight: 16 }}>
+                                <div className="repeto-settings-integration-card__meta">
                                     <Text variant="body-1" style={{ fontWeight: 600, display: "block" }}>{def.name}</Text>
                                     <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 2 }}>{def.description}</Text>
                                     <div style={{ marginTop: 6 }}>
@@ -362,9 +403,10 @@ const Integrations = () => {
                                 </div>
                             )}
                         </div>
-                    </Card>
-                );
-            })}
+                        </Card>
+                    );
+                })}
+            </div>
         </div>
     );
 };

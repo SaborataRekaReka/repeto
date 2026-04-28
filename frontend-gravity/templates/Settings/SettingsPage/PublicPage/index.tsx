@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Card, Text, Button, Icon, Switch, TextInput } from "@gravity-ui/uikit";
+import AnimatedSidebarIcon from "@/components/AnimatedSidebarIcon";
+import { Card, Text, Button, Switch, TextInput } from "@gravity-ui/uikit";
 import { ArrowUpRightFromSquare, CircleCheck, Xmark } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import { useAuth } from "@/contexts/AuthContext";
@@ -236,6 +237,14 @@ const PublicPage = () => {
                 : null)
         : null;
 
+    const slugStatusAnimatedIconPath = slug && !slugTyping && slugStatus !== "checking"
+        ? (slugStatus === "available"
+            ? "/icons/sidebar-animated/user-tick.json"
+            : slugStatus === "taken" || slugStatus === "error"
+                ? "/icons/sidebar-animated/folder-cross.json"
+                : null)
+        : null;
+
     const slugStatusIconColor =
         slugStatus === "available"
             ? "var(--g-color-text-positive)"
@@ -250,7 +259,11 @@ const PublicPage = () => {
 
                 <div className="repeto-settings-card__body" style={{ padding: 24 }}>
                     <div className="repeto-settings-public-page-grid">
-                        <AppField label="Персональная ссылка" className="repeto-settings-public-slug-field">
+                        <AppField
+                            label="Персональная ссылка"
+                            className="repeto-settings-public-slug-field"
+                            style={{ gridColumn: "1 / -1" }}
+                        >
                             <TextInput
                                 size="l"
                                 value={slug}
@@ -270,22 +283,28 @@ const PublicPage = () => {
                                 }}
                                 placeholder="slug"
                                 endContent={
-                                    slugStatusIcon ? (
-                                        <Icon
-                                            data={slugStatusIcon as IconData}
-                                            size={14}
+                                    slugStatusIcon && slugStatusAnimatedIconPath ? (
+                                        <span
                                             style={{
                                                 color: slugStatusIconColor,
                                                 marginRight: 4,
+                                                display: "inline-flex",
                                             }}
-                                        />
+                                        >
+                                            <AnimatedSidebarIcon
+                                                src={slugStatusAnimatedIconPath}
+                                                fallbackIcon={slugStatusIcon as IconData}
+                                                play
+                                                size={14}
+                                            />
+                                        </span>
                                     ) : null
                                 }
                             />
                         </AppField>
 
                         <AppField
-                            label="Подзаголовок (для публичной страницы)"
+                            label="Подзаголовок"
                             style={{ gridColumn: "1 / -1" }}
                         >
                             <TextInput
@@ -327,9 +346,9 @@ const PublicPage = () => {
 
                     <div className="repeto-settings-switch-row repeto-settings-public-page-switch">
                         <div>
-                            <Text variant="body-1" style={{ fontWeight: 600, display: "block" }}>Показывать публичные пакеты</Text>
+                            <Text variant="body-1" style={{ fontWeight: 600, display: "block" }}>Пакеты на странице</Text>
                             <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 2 }}>
-                                Если выключено, раздел с пакетами не отображается на публичной странице и в записи.
+                                Раздел с пакетами будет виден на странице и в записи.
                             </Text>
                         </div>
                         <Switch checked={showPublicPackages} onUpdate={setShowPublicPackages} size="m" />
@@ -341,7 +360,12 @@ const PublicPage = () => {
                             target="_blank"
                             className="repeto-settings-public-link"
                         >
-                            <Icon data={ArrowUpRightFromSquare as IconData} size={14} />
+                            <AnimatedSidebarIcon
+                                src="/icons/sidebar-animated/global.json"
+                                fallbackIcon={ArrowUpRightFromSquare as IconData}
+                                play
+                                size={14}
+                            />
                             {`repeto.ru/t/${slug}`}
                         </Link>
                     )}

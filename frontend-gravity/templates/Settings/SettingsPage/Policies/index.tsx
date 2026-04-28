@@ -9,7 +9,7 @@ const cancelHours = [
     { value: "8", content: "8 часов" }, { value: "12", content: "12 часов" }, { value: "24", content: "24 часа" },
 ];
 const cancelActions = [
-    { value: "full", content: "Полная оплата" },
+    { value: "full", content: "100% оплаты" },
     { value: "half", content: "50% оплаты" },
     { value: "none", content: "Без штрафа" },
 ];
@@ -62,35 +62,32 @@ const Policies = () => {
             {/* Cancel policy */}
             <Card className="repeto-settings-section-card" view="outlined">
                 <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--g-color-line-generic)" }}>
-                    <Text variant="subheader-2">Политика отмен</Text>
+                    <Text variant="subheader-2">Отмены</Text>
                 </div>
                 <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 20 }}>
                     <AppSelect
-                        label="Минимальное время для бесплатной отмены"
+                        label="Бесплатная отмена до занятия"
                         options={cancelHours}
                         value={[cancelTime]}
                         onUpdate={(v) => setCancelTime(v[0])}
                         size="l"
                         width="max"
-                        style={{ maxWidth: 340 }}
                     />
                     <AppSelect
-                        label="Действие при поздней отмене"
+                        label="Поздняя отмена"
                         options={cancelActions}
                         value={[lateCancel]}
                         onUpdate={(v) => setLateCancel(v[0])}
                         size="l"
                         width="max"
-                        style={{ maxWidth: 340 }}
                     />
                     <AppSelect
-                        label="Действие при неявке (no-show)"
+                        label="Неявка ученика"
                         options={cancelActions}
                         value={[noShow]}
                         onUpdate={(v) => setNoShow(v[0])}
                         size="l"
                         width="max"
-                        style={{ maxWidth: 340 }}
                     />
                 </div>
             </Card>
@@ -98,7 +95,7 @@ const Policies = () => {
             {/* Payment defaults */}
             <Card className="repeto-settings-section-card" view="outlined">
                 <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--g-color-line-generic)" }}>
-                    <Text variant="subheader-2">Оплата по умолчанию</Text>
+                    <Text variant="subheader-2">Оплата</Text>
                 </div>
                 <div style={{ padding: 24 }}>
                     <AppSelect
@@ -108,7 +105,6 @@ const Policies = () => {
                         onUpdate={(v) => setDefaultMethod(v[0])}
                         size="l"
                         width="max"
-                        style={{ maxWidth: 340 }}
                     />
                     <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 12 }}>Валюта: ₽ (Российский рубль)</Text>
                 </div>
@@ -117,7 +113,7 @@ const Policies = () => {
             {/* Self-employed */}
             <Card className="repeto-settings-section-card" view="outlined">
                 <div style={{ padding: "20px 24px", borderBottom: "1px solid var(--g-color-line-generic)" }}>
-                    <Text variant="subheader-2">Статус чека (НПД)</Text>
+                    <Text variant="subheader-2">Чеки</Text>
                 </div>
                 <div style={{ padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
                     <div className="repeto-settings-switch-row">
