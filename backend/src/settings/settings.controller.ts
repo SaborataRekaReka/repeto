@@ -7,12 +7,14 @@ import {
   Body,
   Param,
   Query,
+  Req,
   UseInterceptors,
   UploadedFile,
   ParseFilePipe,
   FileTypeValidator,
   MaxFileSizeValidator,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators';
@@ -32,6 +34,7 @@ import {
   CompleteGoogleDriveDto,
   ConnectYandexCalendarTokenDto,
 } from './dto';
+import { getRequestMeta } from '../common/utils/request-meta';
 
 @ApiTags('Settings')
 @ApiBearerAuth()
@@ -60,9 +63,10 @@ export class SettingsController {
   @Patch('account')
   updateAccount(
     @CurrentUser('id') userId: string,
+    @Req() req: Request,
     @Body() dto: UpdateAccountDto,
   ) {
-    return this.settingsService.updateAccount(userId, dto);
+    return this.settingsService.updateAccount(userId, dto, getRequestMeta(req));
   }
 
   @Post('avatar')
@@ -135,9 +139,10 @@ export class SettingsController {
   @Post('integrations/yukassa')
   connectYukassa(
     @CurrentUser('id') userId: string,
+    @Req() req: Request,
     @Body() dto: ConnectYukassaDto,
   ) {
-    return this.settingsService.connectYukassa(userId, { shopId: dto.shopId, secretKey: dto.secretKey });
+    return this.settingsService.connectYukassa(userId, dto, getRequestMeta(req));
   }
 
   @Post('integrations/yandex-disk/start')

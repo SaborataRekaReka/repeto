@@ -5,6 +5,7 @@ import {
     useState,
     type CSSProperties,
 } from "react";
+import Link from "next/link";
 import { useRouter } from "next/router";
 import { TextInput, Button, Text, Checkbox, Icon } from "@gravity-ui/uikit";
 import { CircleCheck, Envelope, Clock } from "@gravity-ui/icons";
@@ -12,6 +13,14 @@ import type { IconData } from "@gravity-ui/uikit";
 import { useAuth } from "@/contexts/AuthContext";
 import { api, setAccessToken } from "@/lib/api";
 import { codedErrorMessage } from "@/lib/errorCodes";
+import {
+    LEGAL_DOCUMENT_HASH,
+    LEGAL_VERSION,
+    MARKETING_TEXT,
+    TUTOR_OFFER_TEXT,
+    TUTOR_PD_TEXT,
+    TUTOR_PUBLICATION_TEXT,
+} from "@/lib/legal";
 
 const LABEL_STYLE: CSSProperties = {
     display: "block",
@@ -145,7 +154,10 @@ const SignUp = ({
     const [phone, setPhone] = useState("");
     const [password, setPassword] = useState("");
     const [passwordConfirm, setPasswordConfirm] = useState("");
-    const [conditions, setConditions] = useState(false);
+    const [tutorOfferAccepted, setTutorOfferAccepted] = useState(false);
+    const [tutorPdAccepted, setTutorPdAccepted] = useState(false);
+    const [tutorPublicationAccepted, setTutorPublicationAccepted] = useState(false);
+    const [marketingAccepted, setMarketingAccepted] = useState(false);
     const [verificationEmail, setVerificationEmail] = useState("");
     const [verificationToken, setVerificationToken] = useState("");
     const [expiresInMinutes, setExpiresInMinutes] = useState<number>(15);
@@ -421,8 +433,8 @@ const SignUp = ({
             setError("Пароли не совпадают");
             return;
         }
-        if (!conditions) {
-            setError("Примите условия использования");
+        if (!tutorOfferAccepted || !tutorPdAccepted || !tutorPublicationAccepted) {
+            setError("Отметьте обязательные юридические согласия");
             return;
         }
 
@@ -433,6 +445,18 @@ const SignUp = ({
                 email: normalizedEmail,
                 phone: phone || undefined,
                 password,
+                legalVersion: LEGAL_VERSION,
+                legalDocumentHash: LEGAL_DOCUMENT_HASH,
+                consents: {
+                    tutorOfferAccepted,
+                    tutorPersonalDataAccepted: tutorPdAccepted,
+                    tutorPublicationAccepted,
+                    marketingAccepted,
+                    tutorOfferText: TUTOR_OFFER_TEXT,
+                    tutorPersonalDataText: TUTOR_PD_TEXT,
+                    tutorPublicationText: TUTOR_PUBLICATION_TEXT,
+                    marketingText: MARKETING_TEXT,
+                },
             });
             setVerificationEmail(response.email);
             setExpiresInMinutes(response.expiresInMinutes || 15);
@@ -1074,10 +1098,28 @@ const SignUp = ({
                 />
             </div>
 
-            <div style={{ marginBottom: 20 }}>
-                <Checkbox checked={conditions} onUpdate={setConditions} size="l">
-                    <span style={{ fontSize: 13, color: "var(--g-color-text-secondary)" }}>
-                        Согласен с условиями использования и политикой конфиденциальности
+            <div style={{ marginBottom: 20, display: "grid", gap: 10 }}>
+                <Checkbox checked={tutorOfferAccepted} onUpdate={setTutorOfferAccepted} size="l">
+                    <span style={{ fontSize: 13, color: "var(--g-color-text-secondary)", lineHeight: 1.4 }}>
+                        Принимаю <Link href="/legal#tutor-offer" target="_blank">Оферту для репетиторов</Link>.
+                    </span>
+                </Checkbox>
+
+                <Checkbox checked={tutorPdAccepted} onUpdate={setTutorPdAccepted} size="l">
+                    <span style={{ fontSize: 13, color: "var(--g-color-text-secondary)", lineHeight: 1.4 }}>
+                        Даю согласие на <Link href="/legal#tutor-pd-consent" target="_blank">обработку персональных данных репетитора</Link>.
+                    </span>
+                </Checkbox>
+
+                <Checkbox checked={tutorPublicationAccepted} onUpdate={setTutorPublicationAccepted} size="l">
+                    <span style={{ fontSize: 13, color: "var(--g-color-text-secondary)", lineHeight: 1.4 }}>
+                        Даю согласие на <Link href="/legal#tutor-publication-consent" target="_blank">публикацию анкеты</Link>.
+                    </span>
+                </Checkbox>
+
+                <Checkbox checked={marketingAccepted} onUpdate={setMarketingAccepted} size="l">
+                    <span style={{ fontSize: 13, color: "var(--g-color-text-secondary)", lineHeight: 1.4 }}>
+                        Согласен(на) на <Link href="/legal#marketing-consent" target="_blank">информационные и рекламные рассылки</Link> (необязательно).
                     </span>
                 </Checkbox>
             </div>

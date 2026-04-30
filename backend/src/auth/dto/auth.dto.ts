@@ -1,14 +1,17 @@
 import {
   IsEmail,
   IsEnum,
+  IsBoolean,
   IsOptional,
   IsString,
   MinLength,
   MaxLength,
   Matches,
   Length,
+  ValidateNested,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 
 const PASSWORD_REGEX = /^(?=.*[A-Za-zА-я])(?=.*\d).{8,}$/;
 const PASSWORD_MSG = 'Пароль должен содержать минимум 8 символов, включая букву и цифру';
@@ -22,6 +25,49 @@ export enum RegistrationPlanId {
 export enum RegistrationBillingCycle {
   MONTH = 'month',
   YEAR = 'year',
+}
+
+export class RegisterConsentsDto {
+  @ApiProperty({ example: true })
+  @IsBoolean()
+  tutorOfferAccepted: boolean;
+
+  @ApiProperty({ example: true })
+  @IsBoolean()
+  tutorPersonalDataAccepted: boolean;
+
+  @ApiProperty({ example: true })
+  @IsBoolean()
+  tutorPublicationAccepted: boolean;
+
+  @ApiProperty({ example: false, required: false })
+  @IsOptional()
+  @IsBoolean()
+  marketingAccepted?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  @MaxLength(3000)
+  tutorOfferText?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  @MaxLength(3000)
+  tutorPersonalDataText?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  @MaxLength(3000)
+  tutorPublicationText?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  @MaxLength(3000)
+  marketingText?: string;
 }
 
 export class RegisterDto {
@@ -47,6 +93,23 @@ export class RegisterDto {
   @IsString()
   @MaxLength(30)
   phone?: string;
+
+  @ApiProperty({ required: false, example: 'legal_v1_2026-04-29' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  legalVersion?: string;
+
+  @ApiProperty({ required: false, example: 'repeto_legal_v1_2026-04-29' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  legalDocumentHash?: string;
+
+  @ApiProperty({ type: RegisterConsentsDto })
+  @ValidateNested()
+  @Type(() => RegisterConsentsDto)
+  consents: RegisterConsentsDto;
 }
 
 export class RequestRegisterCodeDto extends RegisterDto {}

@@ -21,6 +21,7 @@ import { ThemeProvider, configure } from "@gravity-ui/uikit";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeModeProvider, useThemeMode } from "@/contexts/ThemeContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import CookieBanner from "@/components/CookieBanner";
 
 configure({ lang: "ru" });
 
@@ -106,6 +107,7 @@ function AppContent({ Component, pageProps }: { Component: AppProps["Component"]
             <PageTransitionLoader />
             <GAuthProvider>
                 <PageComponent {...pageProps} />
+                <CookieBanner />
             </GAuthProvider>
         </GravityTheme>
     );

@@ -2,7 +2,7 @@ export { UpdateAccountDto } from './update-account.dto';
 export { ChangePasswordDto } from './change-password.dto';
 export { UpdateNotificationsDto } from './update-notifications.dto';
 export { UpdatePoliciesDto } from './update-policies.dto';
-export { ConnectYukassaDto } from './connect-yukassa.dto';
+export { ConnectYukassaDto, TutorPayoutMethod } from './connect-yukassa.dto';
 export { StartYandexDiskDto } from './start-yandex-disk.dto';
 export { CompleteYandexDiskDto } from './complete-yandex-disk.dto';
 export { ConnectYandexDiskTokenDto } from './connect-yandex-disk-token.dto';

@@ -1,5 +1,6 @@
 export {
 	RegisterDto,
+	RegisterConsentsDto,
 	RequestRegisterCodeDto,
 	VerifyRegisterCodeDto,
 	StartRegistrationPaymentDto,

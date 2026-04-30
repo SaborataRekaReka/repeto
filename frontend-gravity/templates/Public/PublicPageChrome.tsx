@@ -42,6 +42,17 @@ export const PublicPageFooter = ({ className }: PublicPageFooterProps) => {
                 >
                     Repeto
                 </Link>
+                {" · "}
+                <Link
+                    href="/legal"
+                    style={{
+                        fontWeight: 600,
+                        textDecoration: "none",
+                        color: "inherit",
+                    }}
+                >
+                    Юридическая информация
+                </Link>
             </Text>
         </div>
     );

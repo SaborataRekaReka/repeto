@@ -4,8 +4,12 @@ import ToggleTheme from "./ToggleTheme";
 
 const navigations = [
     {
+        title: "Юридическая информация",
+        url: "/legal",
+    },
+    {
         title: "Политика конфиденциальности",
-        url: "/",
+        url: "/legal#privacy",
     },
 ];
 

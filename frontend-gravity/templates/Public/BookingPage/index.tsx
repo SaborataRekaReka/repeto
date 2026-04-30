@@ -30,6 +30,15 @@ import {
 import StudentSignIn from "@/templates/RegistrationPage/StudentSignIn";
 import { PublicPageFooter, PublicPageHeader } from "../PublicPageChrome";
 import StudentHeaderRight from "../StudentHeaderRight";
+import {
+    BOOKING_TERMS_CONFIRMED_TEXT,
+    CHILD_LEGAL_REPRESENTATIVE_TEXT,
+    CONTACT_TRANSFER_INFO_TEXT,
+    INITIAL_USER_AGREEMENT_TEXT,
+    INITIAL_USER_PD_TEXT,
+    LEGAL_DOCUMENT_HASH,
+    LEGAL_VERSION,
+} from "@/lib/legal";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
 
@@ -270,7 +279,13 @@ const BookingPage = ({ slug }: { slug: string }) => {
         phone: false,
         email: false,
     });
-    const [consent, setConsent] = useState(false);
+    const [lessonFor, setLessonFor] = useState<"self" | "child">("self");
+    const [bookingTermsConfirmed, setBookingTermsConfirmed] = useState(false);
+    const [childLegalRepresentativeConfirmed, setChildLegalRepresentativeConfirmed] = useState(false);
+    const [initialUserAgreementAccepted, setInitialUserAgreementAccepted] = useState(false);
+    const [initialUserPdAccepted, setInitialUserPdAccepted] = useState(false);
+    const [initialLegalGateCompleted, setInitialLegalGateCompleted] = useState(false);
+    const [hasKnownAccount, setHasKnownAccount] = useState(false);
     const [autofillHint, setAutofillHint] = useState<string | null>(null);
     const [signInOpen, setSignInOpen] = useState(false);
     const [isStudentAuthorized, setIsStudentAuthorized] = useState(false);
@@ -306,12 +321,15 @@ const BookingPage = ({ slug }: { slug: string }) => {
     const applyStudentSessionAutofill = useCallback(async () => {
         if (!getStudentAccessToken()) {
             setIsStudentAuthorized(false);
+            setInitialLegalGateCompleted(false);
             return false;
         }
 
         try {
             const setup = await studentApi<StudentSetupData>("/student-portal/setup");
             setIsStudentAuthorized(true);
+            setInitialLegalGateCompleted(true);
+            setHasKnownAccount(true);
             setName((prev) => prev || String(setup?.name || "").trim());
             setEmail((prev) => prev || String(setup?.email || "").trim());
             setPhone((prev) => prev || String(setup?.phone || "").trim());
@@ -319,6 +337,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
             return true;
         } catch {
             setIsStudentAuthorized(false);
+            setInitialLegalGateCompleted(false);
             return false;
         }
     }, []);
@@ -346,7 +365,15 @@ const BookingPage = ({ slug }: { slug: string }) => {
     useEffect(() => {
         sessionAutofillAttemptedRef.current = false;
         setAutofillHint(null);
-        setIsStudentAuthorized(Boolean(getStudentAccessToken()));
+        const hasToken = Boolean(getStudentAccessToken());
+        setIsStudentAuthorized(hasToken);
+        setInitialLegalGateCompleted(hasToken);
+        setHasKnownAccount(hasToken);
+        setInitialUserAgreementAccepted(false);
+        setInitialUserPdAccepted(false);
+        setLessonFor("self");
+        setBookingTermsConfirmed(false);
+        setChildLegalRepresentativeConfirmed(false);
     }, [slug]);
 
     useEffect(() => {
@@ -378,7 +405,15 @@ const BookingPage = ({ slug }: { slug: string }) => {
                 if (!res.ok) return;
 
                 const status = (await res.json()) as ContactStatusResponse;
-                if (!status.found) return;
+                if (!status.found) {
+                    setHasKnownAccount(false);
+                    return;
+                }
+
+                setHasKnownAccount(Boolean(status.hasAccount));
+                if (status.hasAccount) {
+                    setInitialLegalGateCompleted(true);
+                }
 
                 setTelegramLinked(status.telegramConnected);
                 setMaxLinked(status.maxConnected);
@@ -406,6 +441,8 @@ const BookingPage = ({ slug }: { slug: string }) => {
 
             setSignInOpen(false);
             sessionAutofillAttemptedRef.current = false;
+            setInitialLegalGateCompleted(true);
+            setHasKnownAccount(true);
             await applyStudentSessionAutofill();
         },
         [applyStudentSessionAutofill, router]
@@ -545,9 +582,21 @@ const BookingPage = ({ slug }: { slug: string }) => {
         if (!selectedDate || !selectedTime || (!selectedSubject && !selectedPackage)) return;
         setSubmitError(null);
 
+        const requiresInitialLegalGate = !isStudentAuthorized && !hasKnownAccount;
+
         touchAllFields();
 
         if (rawNameError || rawPhoneError || rawEmailError) {
+            return;
+        }
+
+        if (requiresInitialLegalGate && !initialLegalGateCompleted) {
+            setSubmitError("Сначала подтвердите пользовательское соглашение и согласие на обработку данных");
+            return;
+        }
+
+        if (!bookingTermsConfirmed || (lessonFor === "child" && !childLegalRepresentativeConfirmed)) {
+            setSubmitError("Подтвердите обязательные юридические согласия");
             return;
         }
 
@@ -583,6 +632,15 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                 : undefined,
                         reminderChannels: selectedReminderMethods,
                         reminderMinutesBefore: reminderMinutesBefore,
+                        legalVersion: LEGAL_VERSION,
+                        legalDocumentHash: LEGAL_DOCUMENT_HASH,
+                        consents: {
+                            lessonFor,
+                            bookingTermsConfirmed,
+                            childLegalRepresentativeConfirmed,
+                            bookingTermsText: BOOKING_TERMS_CONFIRMED_TEXT,
+                            childLegalRepresentativeText: CHILD_LEGAL_REPRESENTATIVE_TEXT,
+                        },
                     }),
                 }
             );
@@ -645,6 +703,15 @@ const BookingPage = ({ slug }: { slug: string }) => {
                         clientPhone: phone.trim(),
                         clientEmail: trimmedEmail,
                         comment: comment.trim() || undefined,
+                        legalVersion: LEGAL_VERSION,
+                        legalDocumentHash: LEGAL_DOCUMENT_HASH,
+                        consents: {
+                            lessonFor,
+                            bookingTermsConfirmed,
+                            childLegalRepresentativeConfirmed,
+                            bookingTermsText: BOOKING_TERMS_CONFIRMED_TEXT,
+                            childLegalRepresentativeText: CHILD_LEGAL_REPRESENTATIVE_TEXT,
+                        },
                     }),
                 },
             ).catch(() => null);
@@ -669,6 +736,25 @@ const BookingPage = ({ slug }: { slug: string }) => {
                   .filter(Boolean)
                   .join(" ")
             : null;
+
+    const requiresInitialLegalGate = !isStudentAuthorized && !hasKnownAccount;
+    const showInitialLegalGate = requiresInitialLegalGate && !initialLegalGateCompleted;
+
+    const handleCompleteInitialLegalGate = () => {
+        touchAllFields();
+
+        if (rawNameError || rawPhoneError || rawEmailError) {
+            return;
+        }
+
+        if (!initialUserAgreementAccepted || !initialUserPdAccepted) {
+            setSubmitError("Подтвердите обязательные юридические согласия");
+            return;
+        }
+
+        setSubmitError(null);
+        setInitialLegalGateCompleted(true);
+    };
 
     return (
         <>
@@ -990,99 +1076,201 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                 </AppField>
                             </div>
 
-                            {/* Reminder methods */}
-                            <div className="repeto-bk-reminders">
-                                <Text variant="body-2" className="repeto-bk-reminders__title">
-                                    Отправить напоминание
-                                </Text>
-                                <Text variant="body-1" color="secondary" className="repeto-bk-reminders__hint">
-                                    Можно выбрать несколько способов уведомления
-                                </Text>
-                                <div className="repeto-bk-chips">
-                                    {REMINDER_METHODS.map((method) => {
-                                        const active = selectedReminderMethods.includes(method.id);
-                                        return (
-                                            <button
-                                                key={method.id}
-                                                type="button"
-                                                className={`repeto-bk-chip${active ? " repeto-bk-chip--active" : ""}`}
-                                                onClick={() => toggleReminderMethod(method.id)}
-                                            >
-                                                {method.label}
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                                {selectedReminderMethods.length > 0 && (
-                                    <div className="repeto-bk-chips" style={{ marginTop: 8 }}>
-                                        {REMINDER_TIME_OPTIONS.map((option) => (
-                                            <button
-                                                key={option.minutes}
-                                                type="button"
-                                                className={`repeto-bk-chip repeto-bk-chip--sm${reminderMinutesBefore === option.minutes ? " repeto-bk-chip--active" : ""}`}
-                                                onClick={() => setReminderMinutesBefore(option.minutes)}
-                                            >
-                                                {option.label}
-                                            </button>
-                                        ))}
+                            {showInitialLegalGate ? (
+                                <>
+                                    <div className="repeto-bk-autofill-hint" style={{ marginBottom: 18 }}>
+                                        <Text variant="body-2" as="div">
+                                            Для первого бронирования подтвердите пользовательское соглашение и согласие на обработку персональных данных.
+                                        </Text>
                                     </div>
-                                )}
-                            </div>
 
-                            <div style={{ marginBottom: 24 }}>
-                                <Checkbox checked={consent} onUpdate={setConsent} size="l">
-                                    Я предоставляю согласие на обработку персональных данных
-                                </Checkbox>
-                            </div>
-
-                            {/* Summary */}
-                            <div className="repeto-bk-summary">
-                                <span className="repeto-bk-summary__label">Итого</span>
-                                {selectedPackage ? (
-                                    <span className="repeto-bk-summary__price">
-                                        {Number(selectedPackage.discountAmount || 0) > 0 && Number(selectedPackage.originalTotalPrice || 0) > selectedPackage.totalPrice ? (
-                                            <span className="repeto-bk-summary__old-price">
-                                                {Number(selectedPackage.originalTotalPrice || 0).toLocaleString("ru-RU")} ₽
+                                    <div style={{ marginBottom: 24, display: "grid", gap: 10 }}>
+                                        <Checkbox checked={initialUserAgreementAccepted} onUpdate={setInitialUserAgreementAccepted} size="l">
+                                            <span style={{ fontSize: 13, color: "var(--g-color-text-secondary)", lineHeight: 1.4 }}>
+                                                {INITIAL_USER_AGREEMENT_TEXT}
                                             </span>
-                                        ) : null}
-                                        <span>{selectedPackage.totalPrice.toLocaleString("ru-RU")} ₽</span>
-                                    </span>
-                                ) : (
-                                    <span className="repeto-bk-summary__label">
-                                        {selectedSubject ? `${selectedSubject.price.toLocaleString("ru-RU")} ₽` : "—"}
-                                    </span>
-                                )}
-                            </div>
+                                        </Checkbox>
 
-                            {selectedPackage && Number(selectedPackage.discountAmount || 0) > 0 && (
-                                <Text variant="body-1" color="positive" style={{ display: "block", marginBottom: 16 }}>
-                                    Вы экономите {Number(selectedPackage.discountAmount || 0).toLocaleString("ru-RU")} ₽
-                                    {Number(selectedPackage.discountPercent || 0) > 0 ? ` (${selectedPackage.discountPercent}%)` : ""}
-                                </Text>
+                                        <Checkbox checked={initialUserPdAccepted} onUpdate={setInitialUserPdAccepted} size="l">
+                                            <span style={{ fontSize: 13, color: "var(--g-color-text-secondary)", lineHeight: 1.4 }}>
+                                                {INITIAL_USER_PD_TEXT}
+                                            </span>
+                                        </Checkbox>
+                                    </div>
+
+                                    {submitError && (
+                                        <div className="repeto-bk-inline-alert">
+                                            <Alert
+                                                theme="danger"
+                                                view="filled"
+                                                corners="rounded"
+                                                title="Проверьте данные перед продолжением"
+                                                message={submitError}
+                                            />
+                                        </div>
+                                    )}
+
+                                    <Button
+                                        view="action"
+                                        size="xl"
+                                        className="repeto-bk-action-btn"
+                                        disabled={
+                                            Boolean(rawNameError || rawPhoneError || rawEmailError) ||
+                                            !initialUserAgreementAccepted ||
+                                            !initialUserPdAccepted
+                                        }
+                                        onClick={handleCompleteInitialLegalGate}
+                                    >
+                                        Продолжить к оплате
+                                    </Button>
+                                </>
+                            ) : (
+                                <>
+                                    {/* Reminder methods */}
+                                    <div className="repeto-bk-reminders">
+                                        <Text variant="body-2" className="repeto-bk-reminders__title">
+                                            Отправить напоминание
+                                        </Text>
+                                        <Text variant="body-1" color="secondary" className="repeto-bk-reminders__hint">
+                                            Можно выбрать несколько способов уведомления
+                                        </Text>
+                                        <div className="repeto-bk-chips">
+                                            {REMINDER_METHODS.map((method) => {
+                                                const active = selectedReminderMethods.includes(method.id);
+                                                return (
+                                                    <button
+                                                        key={method.id}
+                                                        type="button"
+                                                        className={`repeto-bk-chip${active ? " repeto-bk-chip--active" : ""}`}
+                                                        onClick={() => toggleReminderMethod(method.id)}
+                                                    >
+                                                        {method.label}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                        {selectedReminderMethods.length > 0 && (
+                                            <div className="repeto-bk-chips" style={{ marginTop: 8 }}>
+                                                {REMINDER_TIME_OPTIONS.map((option) => (
+                                                    <button
+                                                        key={option.minutes}
+                                                        type="button"
+                                                        className={`repeto-bk-chip repeto-bk-chip--sm${reminderMinutesBefore === option.minutes ? " repeto-bk-chip--active" : ""}`}
+                                                        onClick={() => setReminderMinutesBefore(option.minutes)}
+                                                    >
+                                                        {option.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="repeto-bk-reminders">
+                                        <Text variant="body-2" className="repeto-bk-reminders__title">
+                                            Занятие для
+                                        </Text>
+                                        <div className="repeto-bk-chips">
+                                            <button
+                                                type="button"
+                                                className={`repeto-bk-chip${lessonFor === "self" ? " repeto-bk-chip--active" : ""}`}
+                                                onClick={() => {
+                                                    setLessonFor("self");
+                                                    setChildLegalRepresentativeConfirmed(false);
+                                                }}
+                                            >
+                                                себя
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className={`repeto-bk-chip${lessonFor === "child" ? " repeto-bk-chip--active" : ""}`}
+                                                onClick={() => setLessonFor("child")}
+                                            >
+                                                ребёнка
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ marginBottom: 14, display: "grid", gap: 10 }}>
+                                        <Checkbox checked={bookingTermsConfirmed} onUpdate={setBookingTermsConfirmed} size="l">
+                                            <span style={{ fontSize: 13, color: "var(--g-color-text-secondary)", lineHeight: 1.4 }}>
+                                                {BOOKING_TERMS_CONFIRMED_TEXT}
+                                            </span>
+                                        </Checkbox>
+
+                                        {lessonFor === "child" && (
+                                            <Checkbox
+                                                checked={childLegalRepresentativeConfirmed}
+                                                onUpdate={setChildLegalRepresentativeConfirmed}
+                                                size="l"
+                                            >
+                                                <span style={{ fontSize: 13, color: "var(--g-color-text-secondary)", lineHeight: 1.4 }}>
+                                                    {CHILD_LEGAL_REPRESENTATIVE_TEXT}
+                                                </span>
+                                            </Checkbox>
+                                        )}
+                                    </div>
+
+                                    <Text variant="body-1" color="secondary" style={{ display: "block", marginBottom: 20 }}>
+                                        {CONTACT_TRANSFER_INFO_TEXT}
+                                    </Text>
+
+                                    {/* Summary */}
+                                    <div className="repeto-bk-summary">
+                                        <span className="repeto-bk-summary__label">Итого</span>
+                                        {selectedPackage ? (
+                                            <span className="repeto-bk-summary__price">
+                                                {Number(selectedPackage.discountAmount || 0) > 0 && Number(selectedPackage.originalTotalPrice || 0) > selectedPackage.totalPrice ? (
+                                                    <span className="repeto-bk-summary__old-price">
+                                                        {Number(selectedPackage.originalTotalPrice || 0).toLocaleString("ru-RU")} ₽
+                                                    </span>
+                                                ) : null}
+                                                <span>{selectedPackage.totalPrice.toLocaleString("ru-RU")} ₽</span>
+                                            </span>
+                                        ) : (
+                                            <span className="repeto-bk-summary__label">
+                                                {selectedSubject ? `${selectedSubject.price.toLocaleString("ru-RU")} ₽` : "—"}
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {selectedPackage && Number(selectedPackage.discountAmount || 0) > 0 && (
+                                        <Text variant="body-1" color="positive" style={{ display: "block", marginBottom: 16 }}>
+                                            Вы экономите {Number(selectedPackage.discountAmount || 0).toLocaleString("ru-RU")} ₽
+                                            {Number(selectedPackage.discountPercent || 0) > 0 ? ` (${selectedPackage.discountPercent}%)` : ""}
+                                        </Text>
+                                    )}
+
+                                    {(submitError || reminderError) && (
+                                        <div className="repeto-bk-inline-alert">
+                                            <Alert
+                                                theme={submitError ? "danger" : "warning"}
+                                                view="filled"
+                                                corners="rounded"
+                                                title={submitError ? "Не удалось отправить заявку" : "Проверьте данные перед отправкой"}
+                                                message={submitError || reminderError || ""}
+                                            />
+                                        </div>
+                                    )}
+
+                                    <Button
+                                        view="action"
+                                        size="xl"
+                                        className="repeto-bk-action-btn"
+                                        loading={submitting}
+                                        disabled={
+                                            Boolean(rawNameError || rawPhoneError || rawEmailError) ||
+                                            needsTelegramConnect ||
+                                            needsMaxConnect ||
+                                            needsEmailAddress ||
+                                            !bookingTermsConfirmed ||
+                                            (lessonFor === "child" && !childLegalRepresentativeConfirmed)
+                                        }
+                                        onClick={handleSubmit}
+                                    >
+                                        Подтвердить почту
+                                    </Button>
+                                </>
                             )}
-
-                            {(submitError || reminderError) && (
-                                <div className="repeto-bk-inline-alert">
-                                    <Alert
-                                        theme={submitError ? "danger" : "warning"}
-                                        view="filled"
-                                        corners="rounded"
-                                        title={submitError ? "Не удалось отправить заявку" : "Проверьте данные перед отправкой"}
-                                        message={submitError || reminderError || ""}
-                                    />
-                                </div>
-                            )}
-
-                            <Button
-                                view="action"
-                                size="xl"
-                                className="repeto-bk-action-btn"
-                                loading={submitting}
-                                disabled={Boolean(rawNameError || rawPhoneError || rawEmailError) || !consent || needsTelegramConnect || needsMaxConnect || needsEmailAddress}
-                                onClick={handleSubmit}
-                            >
-                                Подтвердить почту
-                            </Button>
 
                             <AppDialog
                                 open={signInOpen}

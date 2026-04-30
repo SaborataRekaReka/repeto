@@ -1,13 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import AnimatedSidebarIcon from "@/components/AnimatedSidebarIcon";
-import { Card, Text, Button, Switch, TextInput } from "@gravity-ui/uikit";
+import { Card, Text, Button, Switch, TextInput, Checkbox } from "@gravity-ui/uikit";
 import { ArrowUpRightFromSquare, CircleCheck, Xmark } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import { useAuth } from "@/contexts/AuthContext";
 import AppField from "@/components/AppField";
 import { codedErrorMessage } from "@/lib/errorCodes";
 import { useSettings, updateAccount, checkAccountSlug } from "@/hooks/useSettings";
+import {
+    LEGAL_DOCUMENT_HASH,
+    LEGAL_VERSION,
+    TUTOR_PUBLICATION_TEXT,
+} from "@/lib/legal";
 
 type SlugStatus = "idle" | "checking" | "available" | "taken" | "error";
 
@@ -44,6 +49,7 @@ const PublicPage = () => {
     const [saving, setSaving] = useState(false);
     const [saveMsg, setSaveMsg] = useState<string | null>(null);
     const [dirty, setDirty] = useState(false);
+    const [publicationConsentAccepted, setPublicationConsentAccepted] = useState(false);
 
     const hydratedRef = useRef(false);
     const slugRequestIdRef = useRef(0);
@@ -74,6 +80,7 @@ const PublicPage = () => {
         setSlugSuggestion("");
         setSaveMsg(null);
         setDirty(false);
+        setPublicationConsentAccepted(false);
         hydratedRef.current = true;
     }, [settings?.slug, settings?.published, settings?.showPublicPackages, settings?.tagline]);
 
@@ -198,11 +205,25 @@ const PublicPage = () => {
                 return;
             }
 
+            const needsPublicationConsent =
+                !snapshotRef.current.published && published;
+
+            if (needsPublicationConsent && !publicationConsentAccepted) {
+                setSaveMsg("Для публикации анкеты подтвердите юридическое согласие.");
+                return;
+            }
+
             await updateAccount({
                 slug: normalizedSlug,
                 published,
                 showPublicPackages,
                 tagline: tagline.trim(),
+                legalVersion: LEGAL_VERSION,
+                legalDocumentHash: LEGAL_DOCUMENT_HASH,
+                publicationConsentAccepted: needsPublicationConsent ? publicationConsentAccepted : undefined,
+                publicationConsentText: needsPublicationConsent
+                    ? TUTOR_PUBLICATION_TEXT
+                    : undefined,
             });
             await mutate();
 
@@ -214,6 +235,7 @@ const PublicPage = () => {
             };
 
             setDirty(false);
+            setPublicationConsentAccepted(false);
             setSaveMsg("Сохранено");
         } catch (error: any) {
             setSaveMsg(codedErrorMessage("SETT-PUB-SAVE", error));
@@ -249,6 +271,9 @@ const PublicPage = () => {
         slugStatus === "available"
             ? "var(--g-color-text-positive)"
             : "var(--g-color-text-danger)";
+
+    const requiresPublicationConsent =
+        !snapshotRef.current.published && published;
 
     return (
         <div className="repeto-settings-stack">
@@ -343,6 +368,20 @@ const PublicPage = () => {
                         </div>
                         <Switch checked={published} onUpdate={setPublished} size="m" />
                     </div>
+
+                    {requiresPublicationConsent && (
+                        <div style={{ marginBottom: 14 }}>
+                            <Checkbox
+                                checked={publicationConsentAccepted}
+                                onUpdate={setPublicationConsentAccepted}
+                                size="l"
+                            >
+                                <span style={{ fontSize: 13, color: "var(--g-color-text-secondary)", lineHeight: 1.4 }}>
+                                    Даю согласие на <Link href="/legal#tutor-publication-consent" target="_blank">публикацию анкеты и распространение указанных данных</Link>.
+                                </span>
+                            </Checkbox>
+                        </div>
+                    )}
 
                     <div className="repeto-settings-switch-row repeto-settings-public-page-switch">
                         <div>

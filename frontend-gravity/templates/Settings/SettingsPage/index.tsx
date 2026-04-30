@@ -42,7 +42,7 @@ const sectionNavItems = [
     {
         key: "integrations",
         label: "Интеграции",
-        description: "Календари и облачные диски",
+        description: "Календари, облачные диски и выплаты",
         icon: Display as IconData,
         animatedIconPath: settingsAnimatedIconPaths.integrations,
     },

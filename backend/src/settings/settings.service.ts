@@ -4,7 +4,7 @@ import {
   BadRequestException,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { CloudProvider, Prisma } from '@prisma/client';
+import { CloudProvider, Prisma, TaxStatus } from '@prisma/client';
 import { google } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
 import * as bcrypt from 'bcryptjs';
@@ -36,7 +36,16 @@ import {
   ChangePasswordDto,
   UpdateNotificationsDto,
   UpdatePoliciesDto,
+  ConnectYukassaDto,
+  TutorPayoutMethod,
 } from './dto';
+import {
+  DEFAULT_LEGAL_HASH,
+  DEFAULT_LEGAL_URL,
+  DEFAULT_LEGAL_VERSION,
+  LEGAL_CONSENT_TYPE,
+} from '../legal/legal.constants';
+import { LegalService } from '../legal/legal.service';
 
 @Injectable()
 export class SettingsService {
@@ -78,11 +87,237 @@ export class SettingsService {
     ю: 'yu',
     я: 'ya',
   };
+  private static readonly TUTOR_PUBLICATION_CHECKBOX_TEXT =
+    'Даю согласие на публикацию моей анкеты и распространение указанных в ней персональных данных, включая ФИО, фото, образование, документы об образовании, опыт, стоимость занятий и отзывы.';
+  private static readonly TUTOR_PAYMENT_STATUS_CHECKBOX_TEXT =
+    'Подтверждаю налоговый статус и достоверность реквизитов.';
+  private static readonly TUTOR_PAYMENT_TERMS_CHECKBOX_TEXT =
+    'Принимаю условия приёма оплат через Repeto.';
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly filesService: FilesService,
+    private readonly legalService: LegalService,
   ) {}
+
+  private static asRecord(value: unknown): Record<string, unknown> | null {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return null;
+    }
+
+    return value as Record<string, unknown>;
+  }
+
+  private getFirstEnv(...keys: string[]) {
+    for (const key of keys) {
+      const value = process.env[key];
+      if (typeof value === 'string' && value.trim().length > 0) {
+        return value.trim();
+      }
+    }
+    return '';
+  }
+
+  private parseEnvBoolean(value: string | undefined, fallback: boolean) {
+    if (typeof value !== 'string') {
+      return fallback;
+    }
+
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) {
+      return fallback;
+    }
+
+    if (['1', 'true', 'yes', 'on', 'enabled'].includes(normalized)) {
+      return true;
+    }
+
+    if (['0', 'false', 'no', 'off', 'disabled'].includes(normalized)) {
+      return false;
+    }
+
+    return fallback;
+  }
+
+  private isRepetoSafeDealEnabled() {
+    return this.parseEnvBoolean(
+      process.env.YOOKASSA_SAFE_DEAL_ENABLED || process.env.YUKASSA_SAFE_DEAL_ENABLED,
+      true,
+    );
+  }
+
+  private hasRepetoYookassaCredentials() {
+    const shopId = this.getFirstEnv(
+      'YOOKASSA_SHOP_ID',
+      'YUKASSA_SHOP_ID',
+      'YUKASSA_PLATFORM_SHOP_ID',
+    );
+    const secretKey = this.getFirstEnv(
+      'YOOKASSA_SECRET_KEY',
+      'YUKASSA_SECRET_KEY',
+      'YUKASSA_PLATFORM_SECRET_KEY',
+    );
+
+    return !!shopId && !!secretKey;
+  }
+
+  private supportsBankAccountPayout() {
+    const gatewayId = this.getFirstEnv(
+      'YOOKASSA_PAYOUT_GATEWAY_ID',
+      'YUKASSA_PAYOUT_GATEWAY_ID',
+    );
+    return !!gatewayId;
+  }
+
+  private normalizeRepetoPayoutDetails(method: TutorPayoutMethod, rawValue: string) {
+    const trimmed = rawValue.trim();
+    if (!trimmed) {
+      return { value: '', masked: '' };
+    }
+
+    if (method === TutorPayoutMethod.CARD) {
+      const normalizedCard = normalizeTutorPaymentCardNumber(trimmed);
+      if (normalizedCard) {
+        const digits = normalizedCard.match(/\d/g)?.join('') || '';
+        const last4 = digits.slice(-4);
+        return {
+          value: `card_last4:${last4}`,
+          masked: last4 ? `•••• ${last4}` : 'Карта',
+        };
+      }
+
+      const shortMasked = trimmed.length > 18 ? `${trimmed.slice(0, 18).trimEnd()}…` : trimmed;
+      return { value: trimmed, masked: shortMasked };
+    }
+
+    if (method === TutorPayoutMethod.YOOMONEY) {
+      const digits = trimmed.match(/\d/g)?.join('') || '';
+      if (digits.length >= 4) {
+        return {
+          value: trimmed,
+          masked: `${digits.slice(0, 4)}***${digits.slice(-4)}`,
+        };
+      }
+      return { value: trimmed, masked: trimmed };
+    }
+
+    const digits = trimmed.match(/\d/g)?.join('') || '';
+    if (digits.length >= 4) {
+      return { value: trimmed, masked: `••••${digits.slice(-4)}` };
+    }
+
+    return {
+      value: trimmed,
+      masked: trimmed.length > 18 ? `${trimmed.slice(0, 18).trimEnd()}…` : trimmed,
+    };
+  }
+
+  private extractRepetoPaymentProfile(paymentSettings: unknown): {
+    payoutMethod: TutorPayoutMethod;
+    payoutDetailsMasked: string;
+    paymentStatusConsentAccepted: boolean;
+    paymentTermsAccepted: boolean;
+  } | null {
+    const settings = SettingsService.asRecord(paymentSettings);
+    const profile = SettingsService.asRecord(settings?.repetoPaymentProfile);
+    if (!profile) {
+      return null;
+    }
+
+    const method = String(profile.payoutMethod || '').trim().toUpperCase();
+    if (
+      method !== TutorPayoutMethod.CARD &&
+      method !== TutorPayoutMethod.YOOMONEY &&
+      method !== TutorPayoutMethod.BANK_ACCOUNT
+    ) {
+      return null;
+    }
+
+    const payoutDetailsMasked = String(profile.payoutDetailsMasked || '').trim();
+    if (!payoutDetailsMasked) {
+      return null;
+    }
+
+    return {
+      payoutMethod: method as TutorPayoutMethod,
+      payoutDetailsMasked,
+      paymentStatusConsentAccepted: !!profile.paymentStatusConsentAccepted,
+      paymentTermsAccepted: !!profile.paymentTermsAccepted,
+    };
+  }
+
+  private mergeRepetoPaymentProfile(
+    paymentSettings: unknown,
+    profile:
+      | {
+          payoutMethod: TutorPayoutMethod;
+          payoutDetails: string;
+          payoutDetailsMasked: string;
+          paymentStatusConsentAccepted: boolean;
+          paymentTermsAccepted: boolean;
+          paymentStatusConsentText: string;
+          paymentTermsConsentText: string;
+          updatedAt: string;
+        }
+      | null,
+  ) {
+    const currentSettings = SettingsService.asRecord(paymentSettings)
+      ? { ...(paymentSettings as Record<string, unknown>) }
+      : {};
+
+    if (profile) {
+      currentSettings.repetoPaymentProfile = profile;
+    } else {
+      delete currentSettings.repetoPaymentProfile;
+    }
+
+    return Object.keys(currentSettings).length > 0 ? currentSettings : null;
+  }
+
+  private isRepetoPaymentProfileReady(
+    user: { taxStatus: TaxStatus; taxInn: string | null; taxDisplayName: string | null },
+    profile: {
+      payoutMethod: TutorPayoutMethod;
+      payoutDetailsMasked: string;
+      paymentStatusConsentAccepted: boolean;
+      paymentTermsAccepted: boolean;
+    } | null,
+  ) {
+    if (!this.isRepetoSafeDealEnabled() || !this.hasRepetoYookassaCredentials()) {
+      return false;
+    }
+
+    const allowedStatuses = new Set<TaxStatus>([
+      TaxStatus.SELF_EMPLOYED,
+      TaxStatus.SOLE_TRADER,
+      TaxStatus.LEGAL_ENTITY,
+    ]);
+
+    if (!allowedStatuses.has(user.taxStatus)) {
+      return false;
+    }
+
+    if (!String(user.taxInn || '').trim() || !String(user.taxDisplayName || '').trim()) {
+      return false;
+    }
+
+    if (!profile) {
+      return false;
+    }
+
+    if (!profile.paymentStatusConsentAccepted || !profile.paymentTermsAccepted) {
+      return false;
+    }
+
+    if (
+      profile.payoutMethod === TutorPayoutMethod.BANK_ACCOUNT &&
+      !this.supportsBankAccountPayout()
+    ) {
+      return false;
+    }
+
+    return !!profile.payoutDetailsMasked;
+  }
 
   private normalizeSlug(raw?: string | null) {
     const value = (raw || '').trim().toLowerCase();
@@ -396,10 +631,11 @@ export class SettingsService {
         offlineAddress: true,
         avatarUrl: true,
         taxStatus: true,
+        taxInn: true,
+        taxDisplayName: true,
         notificationSettings: true,
         cancelPolicySettings: true,
         paymentSettings: true,
-        yukassaShopId: true,
         yandexDiskToken: true,
         yandexDiskRootPath: true,
         yandexDiskEmail: true,
@@ -427,6 +663,8 @@ export class SettingsService {
     const paymentRequisites = extractTutorPaymentRequisites(user.paymentSettings);
     const paymentCardNumber = extractTutorPaymentCardNumber(user.paymentSettings);
     const paymentSbpPhone = extractTutorPaymentSbpPhone(user.paymentSettings);
+    const repetoPaymentProfile = this.extractRepetoPaymentProfile(user.paymentSettings);
+    const hasYukassa = this.isRepetoPaymentProfileReady(user, repetoPaymentProfile);
     const verificationSets = extractQualificationVerificationSets(user.paymentSettings);
 
     const education = normalizeEducationEntries(user.education).map((entry) => {
@@ -471,7 +709,11 @@ export class SettingsService {
       paymentRequisites,
       paymentCardNumber,
       paymentSbpPhone,
-      hasYukassa: !!user.yukassaShopId,
+      paymentPayoutMethod: repetoPaymentProfile?.payoutMethod || null,
+      paymentPayoutDetailsMasked: repetoPaymentProfile?.payoutDetailsMasked || null,
+      supportsBankAccountPayout: this.supportsBankAccountPayout(),
+      repetoPaymentsSafeDealEnabled: this.isRepetoSafeDealEnabled(),
+      hasYukassa,
       hasYandexDisk: !!user.yandexDiskToken,
       hasGoogleDrive: !!user.googleDriveToken,
       hasGoogleCalendar: !!user.googleCalendarToken,
@@ -483,7 +725,6 @@ export class SettingsService {
       yandexCalendarEmail: user.yandexCalendarEmail || '',
       yandexDiskRootPath: this.toDisplayYandexRootPath(user.yandexDiskRootPath),
       yandexDiskEmail: user.yandexDiskEmail || '',
-      yukassaShopId: undefined,
       yandexDiskToken: undefined,
       googleDriveToken: undefined,
       googleCalendarToken: undefined,
@@ -736,8 +977,21 @@ export class SettingsService {
     return this.filesService.syncFromYandexDisk(userId);
   }
 
-  async updateAccount(userId: string, dto: UpdateAccountDto) {
-    const { paymentRequisites, paymentCardNumber, paymentSbpPhone, ...restDto } = dto;
+  async updateAccount(
+    userId: string,
+    dto: UpdateAccountDto,
+    requestMeta?: { ipAddress?: string | null; userAgent?: string | null },
+  ) {
+    const {
+      paymentRequisites,
+      paymentCardNumber,
+      paymentSbpPhone,
+      legalVersion,
+      legalDocumentHash,
+      publicationConsentAccepted,
+      publicationConsentText,
+      ...restDto
+    } = dto;
     const currentUser = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -770,6 +1024,22 @@ export class SettingsService {
 
     if (nextSlug && (await this.isSlugTaken(nextSlug, userId))) {
       throw new BadRequestException('Такой адрес уже занят.');
+    }
+
+    const isFirstPublication =
+      hasPublishedInPayload && nextPublished && !currentUser.published;
+
+    if (isFirstPublication) {
+      const alreadyGranted = await this.legalService.hasGrantedConsent(
+        userId,
+        LEGAL_CONSENT_TYPE.TUTOR_PUBLICATION,
+      );
+
+      if (!publicationConsentAccepted && !alreadyGranted) {
+        throw new BadRequestException(
+          'Для публикации анкеты необходимо согласие на распространение данных',
+        );
+      }
     }
 
     const data: any = { ...restDto };
@@ -940,6 +1210,29 @@ export class SettingsService {
         verificationLabel: resolveQualificationVerificationLabel(verified),
       };
     });
+
+    if (isFirstPublication && publicationConsentAccepted) {
+      await this.legalService.recordConsents({
+        userId,
+        tutorId: userId,
+        source: 'settings_public_profile',
+        version: legalVersion || DEFAULT_LEGAL_VERSION,
+        hash: legalDocumentHash || DEFAULT_LEGAL_HASH,
+        url: DEFAULT_LEGAL_URL,
+        ipAddress: requestMeta?.ipAddress || null,
+        userAgent: requestMeta?.userAgent || null,
+        entries: [
+          {
+            consentType: LEGAL_CONSENT_TYPE.TUTOR_PUBLICATION,
+            granted: true,
+            checkboxText:
+              (publicationConsentText || '').trim() ||
+              SettingsService.TUTOR_PUBLICATION_CHECKBOX_TEXT,
+            documentAnchor: '#tutor-publication-consent',
+          },
+        ],
+      });
+    }
 
     return {
       ...updatedUser,
@@ -1170,25 +1463,184 @@ export class SettingsService {
 
   async connectYukassa(
     userId: string,
-    credentials: { shopId: string; secretKey: string },
+    dto: ConnectYukassaDto,
+    requestMeta?: { ipAddress?: string | null; userAgent?: string | null },
   ) {
-    return this.prisma.user.update({
+    if (!this.isRepetoSafeDealEnabled() || !this.hasRepetoYookassaCredentials()) {
+      throw new BadRequestException(
+        'Оплата через Repeto сейчас недоступна. Обратитесь в поддержку сервиса.',
+      );
+    }
+
+    if (!dto.paymentStatusConsentAccepted) {
+      throw new BadRequestException(
+        'Необходимо подтвердить налоговый статус и достоверность реквизитов',
+      );
+    }
+
+    if (!dto.paymentTermsAccepted) {
+      throw new BadRequestException(
+        'Необходимо принять условия приёма оплат через Repeto',
+      );
+    }
+
+    const allowedStatuses = new Set<TaxStatus>([
+      TaxStatus.SELF_EMPLOYED,
+      TaxStatus.SOLE_TRADER,
+      TaxStatus.LEGAL_ENTITY,
+    ]);
+    if (!allowedStatuses.has(dto.taxStatus)) {
+      throw new BadRequestException(
+        'Подключение выплат через Repeto доступно только для самозанятых, ИП и юридических лиц',
+      );
+    }
+
+    const normalizedInn = (dto.taxInn || '').trim();
+    if (!normalizedInn) {
+      throw new BadRequestException('Укажите ИНН для подключения выплат через Repeto');
+    }
+
+    const normalizedDisplayName = (dto.taxDisplayName || '').trim() || null;
+    if (!normalizedDisplayName) {
+      throw new BadRequestException('Укажите ФИО получателя или наименование организации');
+    }
+
+    if (
+      dto.payoutMethod === TutorPayoutMethod.BANK_ACCOUNT &&
+      !this.supportsBankAccountPayout()
+    ) {
+      throw new BadRequestException('Выплата на банковский счёт сейчас недоступна');
+    }
+
+    const payoutDetailsRaw = (dto.payoutDetails || '').trim();
+    if (!payoutDetailsRaw) {
+      throw new BadRequestException('Укажите данные для выплаты');
+    }
+
+    const normalizedPayout = this.normalizeRepetoPayoutDetails(dto.payoutMethod, payoutDetailsRaw);
+
+    const currentUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { paymentSettings: true },
+    });
+
+    const repetoPaymentProfile = {
+      payoutMethod: dto.payoutMethod,
+      payoutDetails: normalizedPayout.value,
+      payoutDetailsMasked: normalizedPayout.masked,
+      paymentStatusConsentAccepted: true,
+      paymentTermsAccepted: true,
+      paymentStatusConsentText:
+        (dto.paymentStatusConsentText || '').trim() ||
+        SettingsService.TUTOR_PAYMENT_STATUS_CHECKBOX_TEXT,
+      paymentTermsConsentText:
+        (dto.paymentTermsConsentText || '').trim() ||
+        SettingsService.TUTOR_PAYMENT_TERMS_CHECKBOX_TEXT,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const nextPaymentSettings = this.mergeRepetoPaymentProfile(
+      currentUser?.paymentSettings,
+      repetoPaymentProfile,
+    );
+
+    const updatedUser = await this.prisma.user.update({
       where: { id: userId },
       data: {
-        yukassaShopId: credentials.shopId,
-        yukassaSecretKey: credentials.secretKey,
+        yukassaShopId: null,
+        yukassaSecretKey: null,
+        taxStatus: dto.taxStatus,
+        taxInn: normalizedInn,
+        taxDisplayName: normalizedDisplayName,
+        paymentSettings:
+          nextPaymentSettings !== null
+            ? (nextPaymentSettings as Prisma.InputJsonValue)
+            : Prisma.DbNull,
       },
-      select: { yukassaShopId: true },
+      select: {
+        paymentSettings: true,
+        taxStatus: true,
+        taxInn: true,
+        taxDisplayName: true,
+      },
     });
+
+    const updatedProfile = this.extractRepetoPaymentProfile(updatedUser.paymentSettings);
+
+    await this.legalService.recordConsents({
+      userId,
+      tutorId: userId,
+      source: 'settings_integrations_yukassa',
+      version: dto.legalVersion || DEFAULT_LEGAL_VERSION,
+      hash: dto.legalDocumentHash || DEFAULT_LEGAL_HASH,
+      url: DEFAULT_LEGAL_URL,
+      ipAddress: requestMeta?.ipAddress || null,
+      userAgent: requestMeta?.userAgent || null,
+      entries: [
+        {
+          consentType: LEGAL_CONSENT_TYPE.TUTOR_PAYMENT_STATUS,
+          granted: true,
+          checkboxText:
+            (dto.paymentStatusConsentText || '').trim() ||
+            SettingsService.TUTOR_PAYMENT_STATUS_CHECKBOX_TEXT,
+          documentAnchor: '#repeto-payments',
+          metadata: {
+            taxStatus: dto.taxStatus,
+            taxInn: normalizedInn,
+            payoutMethod: dto.payoutMethod,
+            payoutDetailsMasked: normalizedPayout.masked,
+          },
+        },
+        {
+          consentType: LEGAL_CONSENT_TYPE.TUTOR_PAYMENT_TERMS,
+          granted: true,
+          checkboxText:
+            (dto.paymentTermsConsentText || '').trim() ||
+            SettingsService.TUTOR_PAYMENT_TERMS_CHECKBOX_TEXT,
+          documentAnchor: '#repeto-payments',
+          metadata: {
+            payoutMethod: dto.payoutMethod,
+            payoutDetailsMasked: normalizedPayout.masked,
+          },
+        },
+      ],
+    });
+
+    return {
+      taxStatus: updatedUser.taxStatus,
+      taxInn: updatedUser.taxInn,
+      taxDisplayName: updatedUser.taxDisplayName,
+      paymentPayoutMethod: updatedProfile?.payoutMethod || null,
+      paymentPayoutDetailsMasked: updatedProfile?.payoutDetailsMasked || null,
+      hasYukassa: this.isRepetoPaymentProfileReady(updatedUser, updatedProfile),
+    };
   }
 
   async disconnectIntegration(userId: string, type: string) {
     switch (type) {
-      case 'yukassa':
+      case 'yukassa': {
+        const currentUser = await this.prisma.user.findUnique({
+          where: { id: userId },
+          select: { paymentSettings: true },
+        });
+
+        const nextPaymentSettings = this.mergeRepetoPaymentProfile(
+          currentUser?.paymentSettings,
+          null,
+        );
+
         return this.prisma.user.update({
           where: { id: userId },
-          data: { yukassaShopId: null, yukassaSecretKey: null },
+          data: {
+            yukassaShopId: null,
+            yukassaSecretKey: null,
+            paymentSettings:
+              nextPaymentSettings !== null
+                ? (nextPaymentSettings as Prisma.InputJsonValue)
+                : Prisma.DbNull,
+          },
         });
+      }
       case 'google-calendar':
         return this.prisma.user.update({
           where: { id: userId },

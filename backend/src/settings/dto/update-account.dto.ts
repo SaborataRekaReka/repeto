@@ -128,4 +128,30 @@ export class UpdateAccountDto {
   @ApiPropertyOptional({ description: 'Certificates (JSON array)' })
   @IsOptional()
   certificates?: any;
+
+  @ApiPropertyOptional({ example: 'legal_v1_2026-04-29' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  legalVersion?: string;
+
+  @ApiPropertyOptional({ example: 'repeto_legal_v1_2026-04-29' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  legalDocumentHash?: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  publicationConsentAccepted?: boolean;
+
+  @ApiPropertyOptional({
+    example:
+      'Даю согласие на публикацию моей анкеты и распространение указанных в ней персональных данных, включая ФИО, фото, образование, документы об образовании, опыт, стоимость занятий и отзывы.',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(3000)
+  publicationConsentText?: string;
 }

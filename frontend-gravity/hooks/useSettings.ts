@@ -86,7 +86,19 @@ export async function updatePolicies(data: Record<string, unknown>) {
   return api('/settings/policies', { method: 'PATCH', body: data });
 }
 
-export async function connectYukassa(data: { shopId: string; secretKey: string }) {
+export async function connectYukassa(data: {
+  taxStatus: 'SELF_EMPLOYED' | 'SOLE_TRADER' | 'LEGAL_ENTITY';
+  taxInn: string;
+  taxDisplayName: string;
+  payoutMethod: 'CARD' | 'YOOMONEY' | 'BANK_ACCOUNT';
+  payoutDetails: string;
+  paymentStatusConsentAccepted: boolean;
+  paymentTermsAccepted: boolean;
+  paymentStatusConsentText?: string;
+  paymentTermsConsentText?: string;
+  legalVersion?: string;
+  legalDocumentHash?: string;
+}) {
   return api('/settings/integrations/yukassa', { method: 'POST', body: data });
 }
 

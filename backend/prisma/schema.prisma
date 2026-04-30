@@ -44,6 +44,8 @@ model User {
 
   // Tax / legal
   taxStatus TaxStatus @default(INDIVIDUAL) @map("tax_status")
+  taxInn    String?   @map("tax_inn")
+  taxDisplayName String? @map("tax_display_name")
 
   // Settings (embedded JSON)
   notificationSettings Json? @map("notification_settings")
@@ -121,6 +123,9 @@ model RegistrationVerification {
   phone        String?
   passwordHash String   @map("password_hash")
   codeHash     String   @map("code_hash")
+  legalVersion String?  @map("legal_version")
+  legalDocumentHash String? @map("legal_document_hash")
+  legalConsents Json?   @map("legal_consents")
   expiresAt    DateTime @map("expires_at")
   attempts     Int      @default(0)
   createdAt    DateTime @default(now()) @map("created_at")
@@ -134,6 +139,53 @@ enum TaxStatus {
   INDIVIDUAL
   SELF_EMPLOYED
   SOLE_TRADER
+  LEGAL_ENTITY
+}
+
+model LegalVersion {
+  id          String   @id @default(uuid())
+  version     String   @unique
+  title       String
+  publishedAt DateTime @map("published_at")
+  url         String
+  hash        String
+  active      Boolean  @default(false)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  consents LegalConsent[]
+
+  @@index([active, publishedAt])
+  @@map("legal_versions")
+}
+
+model LegalConsent {
+  id             String   @id @default(uuid())
+  legalVersionId String   @map("legal_version_id")
+  userId         String?  @map("user_id")
+  tutorId        String?  @map("tutor_id")
+  consentType    String   @map("consent_type")
+  occurredAt     DateTime @default(now()) @map("occurred_at")
+  ipAddress      String?  @map("ip_address")
+  userAgent      String?  @map("user_agent")
+  documentUrl    String   @map("document_url")
+  documentAnchor String?  @map("document_anchor")
+  documentVersion String  @map("document_version")
+  documentHash   String?  @map("document_hash")
+  checkboxText   String   @map("checkbox_text")
+  granted        Boolean  @default(false)
+  source         String
+  metadata       Json?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  legalVersion LegalVersion @relation(fields: [legalVersionId], references: [id], onDelete: Restrict)
+
+  @@index([userId, occurredAt])
+  @@index([tutorId, occurredAt])
+  @@index([consentType, occurredAt])
+  @@index([source, occurredAt])
+  @@map("legal_consents")
 }
 
 // ── Students ──

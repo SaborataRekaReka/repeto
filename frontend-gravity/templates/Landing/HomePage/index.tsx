@@ -16,6 +16,31 @@ const navigation = [
     { href: "#faq", label: "FAQ" },
 ];
 
+const heroMetrics = [
+    { label: "Уроков сегодня", value: "6", tone: "dark" },
+    { label: "Ожидают оплату", value: "18 400 ₽", tone: "brand" },
+    { label: "Поздних отмен", value: "2", tone: "green" },
+];
+
+const controlCards = [
+    {
+        title: "Ученики",
+        text: "Карточки, тарифы, предметы, контакты родителей и история занятий в одном месте.",
+    },
+    {
+        title: "Расписание",
+        text: "Повторяющиеся уроки, переносы, отмены и синхронизация с календарями.",
+    },
+    {
+        title: "Оплаты",
+        text: "Баланс, долги, пакеты занятий и понятная история платежей без ручных таблиц.",
+    },
+    {
+        title: "Портал",
+        text: "Родители и ученики видят расписание, домашку, остатки пакета и правила отмен.",
+    },
+];
+
 const featureBlocks = [
     {
         id: "schedule",
@@ -28,7 +53,7 @@ const featureBlocks = [
             "Двусторонняя синхронизация с Google / Яндекс.Календарём",
             "Онлайн и офлайн форматы с указанием места",
         ],
-        imageSrc: "/images/landing/sheld.png",
+        imageSrc: "/images/landing/screen-schedule.png?v=2026042903",
         imageAlt: "Расписание в Repeto",
     },
     {
@@ -42,7 +67,7 @@ const featureBlocks = [
             "СБП, наличные, перевод, ЮKassa — все способы оплаты",
             "Экспорт в Excel для налоговой отчётности",
         ],
-        imageSrc: "/images/landing/money_after_control.png",
+        imageSrc: "/images/landing/screen-finance.png?v=2026042903",
     },
     {
         id: "public-page",
@@ -53,7 +78,7 @@ const featureBlocks = [
             "Покажите предметы, формат занятий, стоимость и свободные окна",
             "Одну ссылку можно отправлять новым ученикам и родителям",
         ],
-        imageSrc: "/images/landing/public_page_rep.png",
+        imageSrc: "/images/landing/screen-public-page.png?v=2026042903",
     },
     {
         id: "cancel-policy",
@@ -65,7 +90,7 @@ const featureBlocks = [
             "Автоматическое начисление при поздней отмене",
             "Прозрачность: родитель видит причину долга",
         ],
-        imageSrc: "/images/landing/cancel_policy.png",
+        imageSrc: "/images/landing/screen-cancel-policy.png?v=2026042904",
     },
     {
         id: "reminders",
@@ -78,7 +103,7 @@ const featureBlocks = [
             "Вы видите статус доставки каждого сообщения",
             "Настраиваемое время: за 1 час, за день, за 3 дня",
         ],
-        imageSrc: "/images/landing/reminders.png",
+        imageSrc: "/images/landing/screen-reminders-settings.png?v=2026042904",
     },
     {
         id: "portal",
@@ -91,7 +116,7 @@ const featureBlocks = [
             "Родитель может отменять / переносить уроки",
             "Ребёнок сдаёт ДЗ прямо в портале",
         ],
-        imageSrc: "/images/landing/parent_portal.png",
+        imageSrc: "/images/landing/screen-student-portal.png?v=2026042904",
     },
     {
         id: "homework",
@@ -104,7 +129,7 @@ const featureBlocks = [
             "Статусы: задано → выполнено / просрочено",
             "Доступ ученика/родителя через портал",
         ],
-        imageSrc: "/images/landing/homework.png",
+        imageSrc: "/images/landing/screen-homework.png?v=2026042904",
     },
     {
         id: "files",
@@ -116,7 +141,7 @@ const featureBlocks = [
             "Общий доступ к отдельным файлам для учеников",
             "Синхронизация с Яндекс.Диском и Google Drive",
         ],
-        imageSrc: "/images/landing/files.png",
+        imageSrc: "/images/landing/screen-files.png?v=2026042904",
     },
     {
         id: "dashboard",
@@ -129,9 +154,21 @@ const featureBlocks = [
             "Средний тариф и процент отмен",
             "Экспорт данных для самозанятых",
         ],
-        imageSrc: "/images/landing/analytics.png",
+        imageSrc: "/images/landing/screen-dashboard.png?v=2026042903",
     },
 ];
+
+const realScreenFeatureIds = new Set([
+    "schedule",
+    "payments",
+    "public-page",
+    "cancel-policy",
+    "reminders",
+    "portal",
+    "homework",
+    "files",
+    "dashboard",
+]);
 
 const integrationsCards = [
     {
@@ -160,42 +197,49 @@ const capabilitiesCards = [
         title: "Публичная страница преподавателя",
         text: "Покажите предметы, формат занятий, стоимость и свободные окна. Одну ссылку можно отправлять новым ученикам и родителям.",
         tone: "dark",
+        illustrationSrc: "/images/landing/capabilities/public-page-concept-transparent.png",
     },
     {
         id: "student-page",
-        title: "Личная страница у каждого ученика",
+        title: "Кабинет ученика",
         text: "У каждого ученика свой кабинет: расписание, домашние задания, история занятий и текущий баланс всегда под рукой.",
         tone: "purple",
+        illustrationSrc: "/images/landing/capabilities/student-page-concept-transparent.png",
     },
     {
         id: "dashboard",
         title: "Дашборд",
         text: "Главные показатели за период в одном экране: доход, количество уроков, отмены и динамика без ручных таблиц.",
         tone: "gray",
+        illustrationSrc: "/images/landing/capabilities/dashboard-concept-transparent.png",
     },
     {
         id: "finance",
         title: "Раздел Финансы",
         text: "Контролируйте оплаты, долги, предоплату и остатки по пакетам в одном месте без постоянных проверок вручную.",
         tone: "soft",
+        illustrationSrc: "/images/landing/capabilities/finance-concept-transparent.png",
     },
     {
         id: "tax-export",
-        title: "Выгрузка отчётов для самозанятых",
+        title: "Выгрузка отчётов",
         text: "Подготовленные данные по оплатам можно быстро выгрузить для формирования чеков и работы с «Мой налог».",
         tone: "green",
+        illustrationSrc: "/images/landing/capabilities/tax-export-concept-transparent.png",
     },
     {
         id: "packages",
         title: "Пакеты занятий и скидки",
         text: "Настраивайте пакеты уроков, персональные скидки и спецусловия: система сама учитывает остатки и итоговую стоимость.",
         tone: "purple",
+        illustrationSrc: "/images/landing/capabilities/packages-concept-transparent.png",
     },
     {
         id: "notifications",
         title: "Уведомления и их настройка",
         text: "Гибко выбирайте каналы и время отправки: напоминания об уроках и оплатах уходят автоматически по вашим правилам.",
         tone: "gray",
+        illustrationSrc: "/images/landing/capabilities/notifications-concept-transparent.png",
     },
 ];
 
@@ -378,7 +422,7 @@ export default function LandingHomePage() {
                         <header className={styles.header}>
                             <Link href="/" className={styles.logoLink} aria-label="Repeto">
                                 <Image
-                                    src="/brand/logo_landing.svg"
+                                    src="/brand/logo.svg"
                                     width={160}
                                     height={23}
                                     alt="Repeto"
@@ -399,78 +443,106 @@ export default function LandingHomePage() {
                         </header>
 
                         <section className={styles.hero}>
+                            <p className={styles.heroKicker}>CRM и платформа для работы с учениками</p>
+
                             <h1 className={styles.heroTitle}>
-                                Перестаньте терять деньги на отменах
+                                Ученики, занятия и оплаты
                                 <br />
-                                и забытых оплатах
+                                в одной системе
                             </h1>
 
                             <p className={styles.heroSubtitle}>
-                                Repeto — журнал репетитора, который ведёт расписание, считает долги,
-                                напоминает об оплатах и даёт родителям доступ к расписанию. Вместо Excel,
-                                блокнота и десяти переписок.
+                                Repeto помогает вести расписание, считать долги, продавать пакеты,
+                                отправлять напоминания и давать родителям понятный доступ к занятиям.
                             </p>
 
                             <div className={styles.heroActions}>
-                                <a href="#pricing" className={`${styles.heroButton} ${styles.heroButtonGhost}`}>
-                                    <span className={styles.heroButtonPriceRow}>
-                                        <span className={styles.heroButtonPriceCrossed}>300 ₽</span>
-                                        250 ₽/мес
-                                    </span>
-                                    <span className={styles.heroButtonPriceDesc}>При оплате за год</span>
-                                </a>
                                 <Link href="/auth?view=signup" className={`${styles.heroButton} ${styles.heroButtonPrimary}`}>
-                                    Начать пользоваться
+                                    Начать бесплатно
                                 </Link>
+                                <a href="#features" className={`${styles.heroButton} ${styles.heroButtonGhost}`}>
+                                    Посмотреть возможности
+                                </a>
                             </div>
 
-                            <div className={styles.previewWrap}>
-                                <Image
-                                    src="/images/landing/dashboard-preview.png?v=2026041501"
-                                    width={1600}
-                                    height={1036}
-                                    alt="Интерфейс Repeto"
-                                    className={styles.previewImage}
-                                    priority
-                                    unoptimized
-                                />
+                            <p className={styles.heroTrust}>Бесплатный старт · Без карты · Для репетиторов и небольших центров</p>
+
+                            <div className={styles.productStage} aria-label="Интерфейс Repeto">
+                                <div className={styles.productHalo} aria-hidden="true" />
+                                <div className={styles.productScreen}>
+                                    <Image
+                                        src="/images/landing/screen-dashboard.png?v=2026042903"
+                                        width={1440}
+                                        height={1000}
+                                        alt="Дашборд Repeto"
+                                        className={styles.productScreenImage}
+                                        priority
+                                        unoptimized
+                                    />
+                                </div>
+
+                                <div className={`${styles.productFloatCard} ${styles.productFloatCardTop}`}>
+                                    <span className={styles.floatLabel}>Баланс ученика</span>
+                                    <strong>+4 800 ₽</strong>
+                                    <span className={styles.floatHint}>2 урока к оплате</span>
+                                </div>
+
+                                <div className={`${styles.productFloatCard} ${styles.productFloatCardBottom}`}>
+                                    <span className={styles.floatLabel}>Родительский портал</span>
+                                    <strong>Открыт доступ</strong>
+                                    <span className={styles.floatHint}>Расписание, домашка, пакет</span>
+                                </div>
+
+                                <div className={styles.productMetrics}>
+                                    {heroMetrics.map((metric) => (
+                                        <div
+                                            key={metric.label}
+                                            className={`${styles.productMetric} ${
+                                                metric.tone === "brand"
+                                                    ? styles.productMetricBrand
+                                                    : metric.tone === "green"
+                                                      ? styles.productMetricGreen
+                                                      : ""
+                                            }`}
+                                        >
+                                            <span>{metric.label}</span>
+                                            <strong>{metric.value}</strong>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         </section>
                     </div>
                 </div>
 
-                <section id="features" className={styles.scheduleSection}>
-                    <div className={styles.scheduleSectionInner}>
-                        <div className={styles.scheduleContent}>
-                            <span className={styles.scheduleTag}>{featureBlocks[0].tag}</span>
-                            <h2 className={styles.scheduleTitle}>{featureBlocks[0].title}</h2>
-                            <p className={styles.scheduleText}>{featureBlocks[0].text}</p>
-                            <ul className={styles.schedulePointList}>
-                                {featureBlocks[0].points.map((point) => (
-                                    <li key={point} className={styles.schedulePointItem}>
-                                        {point}
-                                    </li>
-                                ))}
-                            </ul>
+                <section id="features" className={styles.controlSection}>
+                    <div className={styles.controlSectionInner}>
+                        <div className={styles.controlSectionHead}>
+                            <span className={styles.scheduleTag}>Под контролем</span>
+                            <h2 className={styles.controlTitle}>Вся практика видна с первого экрана</h2>
+                            <p className={styles.controlText}>
+                                Repeto собирает рабочий день репетитора в понятную систему: кто учится,
+                                когда занятие, сколько должны и что видит родитель.
+                            </p>
                         </div>
 
-                        <div className={styles.scheduleImageWrap}>
-                            <Image
-                                src="/images/landing/sheld.png"
-                                width={960}
-                                height={640}
-                                alt={featureBlocks[0].imageAlt || featureBlocks[0].title}
-                                className={styles.scheduleImage}
-                                unoptimized
-                            />
+                        <div className={styles.controlGrid}>
+                            {controlCards.map((card, index) => (
+                                <article key={card.title} className={styles.controlCard}>
+                                    <span className={styles.controlNumber}>{String(index + 1).padStart(2, "0")}</span>
+                                    <h3>{card.title}</h3>
+                                    <p>{card.text}</p>
+                                </article>
+                            ))}
                         </div>
                     </div>
                 </section>
 
                 <section className={styles.featuresContinuation}>
                     <div className={styles.featuresContinuationInner}>
-                        {featureBlocks.slice(1).map((block, index) => {
+                        {featureBlocks.map((block, index) => {
                             const isExpandedFeatureBlock = block.id === "payments" || block.id === "public-page";
+                            const isRealScreenFeature = realScreenFeatureIds.has(block.id);
 
                             return (
                                 <article
@@ -493,17 +565,17 @@ export default function LandingHomePage() {
                                     </div>
 
                                     <div
-                                        className={`${styles.featureVisualWrap} ${
+                                        className={`${styles.featureVisualWrap} ${isRealScreenFeature ? styles.featureVisualWrapScreen : ""} ${
                                             isExpandedFeatureBlock ? styles.featureVisualWrapExpanded : ""
                                         }`}
                                     >
                                         {block.imageSrc ? (
                                             <Image
                                                 src={block.imageSrc}
-                                                width={960}
-                                                height={640}
+                                                width={isRealScreenFeature ? 1440 : 960}
+                                                height={isRealScreenFeature ? 1000 : 640}
                                                 alt={block.imageAlt || block.title}
-                                                className={`${styles.featureVisualImage} ${
+                                                className={`${styles.featureVisualImage} ${isRealScreenFeature ? styles.featureVisualImageScreen : ""} ${
                                                     isExpandedFeatureBlock ? styles.featureVisualImageExpanded : ""
                                                 }`}
                                                 unoptimized
@@ -564,7 +636,7 @@ export default function LandingHomePage() {
                         </h2>
 
                         <div className={styles.capabilitiesGrid}>
-                            {capabilitiesCards.map((card, index) => (
+                            {capabilitiesCards.map((card) => (
                                 <article
                                     key={card.id}
                                     className={`${styles.capabilitiesCard} ${
@@ -577,73 +649,16 @@ export default function LandingHomePage() {
                                         } as Record<string, string>)[card.tone] ?? styles.capabilitiesCardSoft
                                     }`}
                                 >
-                                    {index === 0 ? (
-                                        <div className={styles.capabilitiesCardPreview} aria-hidden="true">
-                                            <Image
-                                                src="/images/landing/public_page_rep.png"
-                                                width={420}
-                                                height={252}
-                                                alt=""
-                                                unoptimized
-                                            />
-                                        </div>
-                                    ) : index === 1 ? (
+                                    <div className={styles.capabilitiesIllustrationWrap} aria-hidden="true">
                                         <Image
-                                            src="/images/landing/public_student.png"
-                                            width={120}
-                                            height={70}
+                                            src={card.illustrationSrc}
+                                            width={900}
+                                            height={720}
                                             alt=""
                                             unoptimized
-                                            className={styles.capabilitiesCardStudentImg}
+                                            className={styles.capabilitiesIllustration}
                                         />
-                                    ) : index === 2 ? (
-                                        <Image
-                                            src="/images/landing/dashboard_mini.png"
-                                            width={120}
-                                            height={70}
-                                            alt=""
-                                            unoptimized
-                                            className={styles.capabilitiesCardPlainImg}
-                                        />
-                                    ) : index === 3 ? (
-                                        <Image
-                                            src="/images/landing/finance.png"
-                                            width={120}
-                                            height={70}
-                                            alt=""
-                                            unoptimized
-                                            className={styles.capabilitiesCardPlainImg}
-                                        />
-                                    ) : index === 4 ? (
-                                        <Image
-                                            src="/images/landing/nalog.png"
-                                            width={120}
-                                            height={70}
-                                            alt=""
-                                            unoptimized
-                                            className={styles.capabilitiesCardPlainImg}
-                                        />
-                                    ) : index === 5 ? (
-                                        <Image
-                                            src="/images/landing/paket_zanaty.png"
-                                            width={120}
-                                            height={70}
-                                            alt=""
-                                            unoptimized
-                                            className={styles.capabilitiesCardPlainImg}
-                                        />
-                                    ) : index === 6 ? (
-                                        <Image
-                                            src="/images/landing/notis.png"
-                                            width={120}
-                                            height={70}
-                                            alt=""
-                                            unoptimized
-                                            className={styles.capabilitiesCardPlainImg}
-                                        />
-                                    ) : (
-                                        <div className={styles.capabilitiesCardIcon} aria-hidden="true" />
-                                    )}
+                                    </div>
                                     <h3 className={styles.capabilitiesCardTitle}>{card.title}</h3>
                                     <p className={styles.capabilitiesCardText}>{card.text}</p>
                                 </article>
@@ -683,7 +698,10 @@ export default function LandingHomePage() {
                                     className={`${styles.tariffCard} ${plan.featured ? styles.tariffCardFeatured : ""}`}
                                 >
                                     <div className={styles.tariffCardHead}>
-                                        <h3 className={styles.tariffName}>{plan.name}</h3>
+                                        <div className={styles.tariffTitleRow}>
+                                            <h3 className={styles.tariffName}>{plan.name}</h3>
+                                            {plan.featured && <span className={styles.tariffBadge}>Популярный</span>}
+                                        </div>
                                         <div className={styles.tariffPriceRow}>
                                             <span className={styles.tariffPrice}>
                                                 {yearly ? plan.yearlyPrice : plan.price}
@@ -721,6 +739,20 @@ export default function LandingHomePage() {
                         </div>
                     </div>
                 </section>
+
+                <footer className={styles.siteFooter}>
+                    <div className={styles.siteFooterInner}>
+                        <span className={styles.siteFooterBrand}>Repeto</span>
+                        <div className={styles.siteFooterLinks}>
+                            <Link href="/legal" className={styles.siteFooterLink}>
+                                Юридическая информация
+                            </Link>
+                            <Link href="/legal#privacy" className={styles.siteFooterLink}>
+                                Политика конфиденциальности
+                            </Link>
+                        </div>
+                    </div>
+                </footer>
             </div>
         </>
     );

@@ -16,8 +16,42 @@ import {
   resolveQualificationVerificationLabel,
   splitExperienceLines,
 } from '../common/utils/qualification-verification';
+import {
+  DEFAULT_LEGAL_HASH,
+  DEFAULT_LEGAL_URL,
+  DEFAULT_LEGAL_VERSION,
+  LEGAL_CONSENT_TYPE,
+} from '../legal/legal.constants';
+import { LegalService } from '../legal/legal.service';
 
 type ReminderMethod = 'telegram' | 'max' | 'email' | 'push';
+
+const BOOKING_TERMS_CHECKBOX_TEXT =
+  'Ознакомлен(а) с условиями занятия, стоимостью и правилами отмены. Понимаю, что занятие проводит выбранный репетитор, а Repeto обеспечивает бронирование и оплату.';
+const CHILD_LEGAL_REPRESENTATIVE_CHECKBOX_TEXT =
+  'Подтверждаю, что являюсь родителем/законным представителем ученика либо действую с согласия законного представителя.';
+
+type BookingConsentsInput = {
+  lessonFor?: 'self' | 'child';
+  bookingTermsConfirmed?: boolean;
+  childLegalRepresentativeConfirmed?: boolean;
+  bookingTermsText?: string;
+  childLegalRepresentativeText?: string;
+
+  // Backward compatibility with old payload shape
+  bookingForChild?: boolean;
+  childPersonalDataAccepted?: boolean;
+  bookingTermsAccepted?: boolean;
+  childPersonalDataText?: string;
+};
+
+type BookingConsentsState = {
+  lessonFor: 'self' | 'child';
+  bookingTermsConfirmed: boolean;
+  childLegalRepresentativeConfirmed: boolean;
+  bookingTermsText: string;
+  childLegalRepresentativeText: string;
+};
 
 @Injectable()
 export class PublicService {
@@ -27,10 +61,45 @@ export class PublicService {
     private notifications: NotificationsService,
     private botPoller: BotPollerService,
     private studentAuth: StudentAuthService,
+    private legalService: LegalService,
   ) {}
 
   private normalizePhone(value?: string | null): string {
     return (value || '').replace(/\D/g, '');
+  }
+
+  private normalizeBookingConsents(
+    consents?: BookingConsentsInput | null,
+  ): BookingConsentsState {
+    const lessonFor = consents?.lessonFor === 'child' || consents?.bookingForChild
+      ? 'child'
+      : 'self';
+
+    return {
+      lessonFor,
+      bookingTermsConfirmed: !!(consents?.bookingTermsConfirmed ?? consents?.bookingTermsAccepted),
+      childLegalRepresentativeConfirmed: !!(
+        consents?.childLegalRepresentativeConfirmed ?? consents?.childPersonalDataAccepted
+      ),
+      bookingTermsText: (consents?.bookingTermsText || BOOKING_TERMS_CHECKBOX_TEXT).trim(),
+      childLegalRepresentativeText: (
+        consents?.childLegalRepresentativeText ||
+        consents?.childPersonalDataText ||
+        CHILD_LEGAL_REPRESENTATIVE_CHECKBOX_TEXT
+      ).trim(),
+    };
+  }
+
+  private assertRequiredBookingConsents(consents: BookingConsentsState) {
+    if (!consents.bookingTermsConfirmed) {
+      throw new BadRequestException('Необходимо подтвердить условия бронирования');
+    }
+
+    if (consents.lessonFor === 'child' && !consents.childLegalRepresentativeConfirmed) {
+      throw new BadRequestException(
+        'Для записи ребёнка необходимо подтверждение законного представителя',
+      );
+    }
   }
 
   async getBookingContactStatus(slug: string, phone?: string, email?: string) {
@@ -357,7 +426,11 @@ export class PublicService {
       maxLinkCode?: string;
       reminderChannels?: ReminderMethod[];
       reminderMinutesBefore?: number;
+      legalVersion?: string;
+      legalDocumentHash?: string;
+      consents: BookingConsentsInput;
     },
+    requestMeta?: { ipAddress: string | null; userAgent: string | null },
   ) {
     const user = await this.prisma.user.findUnique({
       where: { slug },
@@ -365,6 +438,9 @@ export class PublicService {
     });
 
     if (!user || !user.published) throw new NotFoundException('Tutor not found');
+
+    const consents = this.normalizeBookingConsents(data.consents);
+    this.assertRequiredBookingConsents(consents);
 
     let selectedPublicPackage: {
       id: string;
@@ -506,32 +582,108 @@ export class PublicService {
         });
     }
 
-    // Still attempt to pick up messenger chat IDs onto a matching existing
-    // student record (same tutor, same phone/email) for continuity.
+    // Try to match an existing student to preserve messenger continuity and,
+    // when possible, attach accountId as userId in legal consent logs.
+    let matchedStudent: {
+      id: string;
+      accountId: string | null;
+      phone: string | null;
+      email: string | null;
+      telegramChatId: string | null;
+      maxChatId: string | null;
+    } | null = null;
+
     if (normalizedClientPhone || normalizedClientEmail) {
-      const matched = await this.prisma.student.findFirst({
+      const candidates = await this.prisma.student.findMany({
         where: {
           userId: user.id,
           OR: [
             ...(normalizedClientEmail ? [{ email: normalizedClientEmail }] : []),
-            ...(normalizedClientPhone ? [{ phone: data.clientPhone }] : []),
+            ...(normalizedClientPhone
+              ? [{ phone: normalizedClientPhone }, { phone: data.clientPhone }]
+              : []),
           ],
         },
-        select: { id: true, telegramChatId: true, maxChatId: true },
+        select: {
+          id: true,
+          accountId: true,
+          phone: true,
+          email: true,
+          telegramChatId: true,
+          maxChatId: true,
+        },
+        take: 25,
       });
 
-      if (matched && (telegramChatId || maxChatId)) {
+      matchedStudent =
+        candidates.find((student) => {
+          const emailMatch =
+            !!normalizedClientEmail &&
+            !!student.email &&
+            student.email.trim().toLowerCase() === normalizedClientEmail;
+
+          const phoneMatch =
+            !!normalizedClientPhone &&
+            this.normalizePhone(student.phone) === normalizedClientPhone;
+
+          return emailMatch || phoneMatch;
+        }) || null;
+
+      if (matchedStudent && (telegramChatId || maxChatId)) {
         const updateData: Record<string, string> = {};
-        if (telegramChatId && !matched.telegramChatId) updateData.telegramChatId = telegramChatId;
-        if (maxChatId && !matched.maxChatId) updateData.maxChatId = maxChatId;
+        if (telegramChatId && !matchedStudent.telegramChatId) {
+          updateData.telegramChatId = telegramChatId;
+        }
+        if (maxChatId && !matchedStudent.maxChatId) {
+          updateData.maxChatId = maxChatId;
+        }
         if (Object.keys(updateData).length > 0) {
           await this.prisma.student.update({
-            where: { id: matched.id },
+            where: { id: matchedStudent.id },
             data: updateData,
           });
         }
       }
     }
+
+    const bookingConsentMetadata = {
+      booking_id: booking.id,
+      lesson_for: consents.lessonFor,
+      client_email: normalizedClientEmail || null,
+      client_phone: normalizedClientPhone || null,
+    };
+
+    await this.legalService.recordConsents({
+      userId: matchedStudent?.accountId || null,
+      tutorId: user.id,
+      source: 'public_booking',
+      version: data.legalVersion || DEFAULT_LEGAL_VERSION,
+      hash: data.legalDocumentHash || DEFAULT_LEGAL_HASH,
+      url: DEFAULT_LEGAL_URL,
+      ipAddress: requestMeta?.ipAddress || null,
+      userAgent: requestMeta?.userAgent || null,
+      entries: [
+        {
+          consentType: LEGAL_CONSENT_TYPE.BOOKING_TERMS_CONFIRMED,
+          granted: consents.bookingTermsConfirmed,
+          checkboxText: consents.bookingTermsText,
+          documentAnchor: '#user-offer',
+          metadata: bookingConsentMetadata,
+        },
+        ...(consents.lessonFor === 'child'
+          ? [
+              {
+                consentType:
+                  LEGAL_CONSENT_TYPE.CHILD_LEGAL_REPRESENTATIVE_CONFIRMED,
+                granted: consents.childLegalRepresentativeConfirmed,
+                checkboxText: consents.childLegalRepresentativeText,
+                documentAnchor: '#child-pd-consent',
+                metadata: bookingConsentMetadata,
+              },
+            ]
+          : []),
+      ],
+    });
 
     return {
       ...booking,

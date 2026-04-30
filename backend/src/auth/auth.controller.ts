@@ -24,6 +24,7 @@ import {
   ResetPasswordDto,
 } from './dto';
 import { Public, CurrentUser } from '../common/decorators';
+import { getRequestMeta } from '../common/utils/request-meta';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -66,9 +67,10 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async completeRegistration(
     @Body() dto: CompleteRegistrationDto,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const result = await this.authService.completeRegistration(dto);
+    const result = await this.authService.completeRegistration(dto, getRequestMeta(req));
     this.setRefreshCookie(res, result.refreshToken);
     return { user: result.user, accessToken: result.accessToken };
   }

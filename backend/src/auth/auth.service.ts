@@ -13,6 +13,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   RegisterDto,
+  RegisterConsentsDto,
   VerifyRegisterCodeDto,
   StartRegistrationPaymentDto,
   CompleteRegistrationDto,
@@ -30,11 +31,38 @@ import {
   normalizePlatformAccess,
 } from '../common/utils/platform-access';
 import { resolveUserRole } from '../common/utils/admin-access';
+import {
+  DEFAULT_LEGAL_HASH,
+  DEFAULT_LEGAL_URL,
+  DEFAULT_LEGAL_VERSION,
+  LEGAL_CONSENT_TYPE,
+} from '../legal/legal.constants';
+import { LegalService } from '../legal/legal.service';
 
 const REGISTRATION_CODE_LENGTH = 6;
 const REGISTRATION_CODE_TTL_MINUTES = 15;
 const REGISTRATION_MAX_ATTEMPTS = 5;
 const REGISTRATION_PAYMENT_TOKEN_TTL_MINUTES = 60;
+
+const TUTOR_OFFER_CHECKBOX_TEXT =
+  'Принимаю Оферту для репетиторов и подтверждаю, что оказываю занятия самостоятельно, не являюсь работником сервиса и несу ответственность за достоверность анкеты и проведение занятий.';
+const TUTOR_PD_CHECKBOX_TEXT =
+  'Даю согласие ИП Бренейзе А. В. на обработку моих персональных данных как Репетитора.';
+const TUTOR_PUBLICATION_CHECKBOX_TEXT =
+  'Даю согласие на публикацию моей анкеты и распространение указанных в ней персональных данных, включая ФИО, фото, образование, документы об образовании, опыт, стоимость занятий и отзывы.';
+const MARKETING_CHECKBOX_TEXT =
+  'Согласен(на) получать информационные и рекламные рассылки сервиса. Я могу отказаться от рассылок в любой момент.';
+
+type RegistrationConsentsState = {
+  tutorOfferAccepted: boolean;
+  tutorPersonalDataAccepted: boolean;
+  tutorPublicationAccepted: boolean;
+  marketingAccepted: boolean;
+  tutorOfferText: string;
+  tutorPersonalDataText: string;
+  tutorPublicationText: string;
+  marketingText: string;
+};
 
 type RegistrationPlanConfig = {
   id: RegistrationPlanId;
@@ -102,10 +130,13 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly legalService: LegalService,
   ) {}
 
   async requestRegisterCode(dto: RegisterDto) {
     const email = dto.email.trim().toLowerCase();
+    const legalConsents = this.normalizeRegistrationConsents(dto.consents);
+    this.assertRequiredRegistrationConsents(legalConsents);
 
     const existing = await this.prisma.user.findUnique({
       where: { email },
@@ -131,6 +162,9 @@ export class AuthService {
         phone: dto.phone ? this.normalizePhone(dto.phone) : null,
         passwordHash,
         codeHash,
+        legalVersion: dto.legalVersion || DEFAULT_LEGAL_VERSION,
+        legalDocumentHash: dto.legalDocumentHash || DEFAULT_LEGAL_HASH,
+        legalConsents: legalConsents as any,
         expiresAt,
         attempts: 0,
       },
@@ -139,6 +173,9 @@ export class AuthService {
         phone: dto.phone ? this.normalizePhone(dto.phone) : null,
         passwordHash,
         codeHash,
+        legalVersion: dto.legalVersion || DEFAULT_LEGAL_VERSION,
+        legalDocumentHash: dto.legalDocumentHash || DEFAULT_LEGAL_HASH,
+        legalConsents: legalConsents as any,
         expiresAt,
         attempts: 0,
       },
@@ -244,7 +281,10 @@ export class AuthService {
     };
   }
 
-  async completeRegistration(dto: CompleteRegistrationDto) {
+  async completeRegistration(
+    dto: CompleteRegistrationDto,
+    requestMeta?: { ipAddress?: string | null; userAgent?: string | null },
+  ) {
     const verification = await this.resolveRegistrationVerification(dto.verificationToken);
     const amountRub = this.resolveRegistrationAmount(dto.planId, dto.billingCycle);
 
@@ -316,6 +356,46 @@ export class AuthService {
       });
 
       return createdUser;
+    });
+
+    const consents = this.normalizeRegistrationConsents(
+      verification.legalConsents as unknown as RegisterConsentsDto,
+    );
+    await this.legalService.recordConsents({
+      userId: user.id,
+      tutorId: user.id,
+      source: 'tutor_registration',
+      version: verification.legalVersion || DEFAULT_LEGAL_VERSION,
+      hash: verification.legalDocumentHash || DEFAULT_LEGAL_HASH,
+      url: DEFAULT_LEGAL_URL,
+      ipAddress: requestMeta?.ipAddress || null,
+      userAgent: requestMeta?.userAgent || null,
+      entries: [
+        {
+          consentType: LEGAL_CONSENT_TYPE.TUTOR_OFFER,
+          granted: consents.tutorOfferAccepted,
+          checkboxText: consents.tutorOfferText,
+          documentAnchor: '#tutor-offer',
+        },
+        {
+          consentType: LEGAL_CONSENT_TYPE.TUTOR_PERSONAL_DATA,
+          granted: consents.tutorPersonalDataAccepted,
+          checkboxText: consents.tutorPersonalDataText,
+          documentAnchor: '#tutor-pd-consent',
+        },
+        {
+          consentType: LEGAL_CONSENT_TYPE.TUTOR_PUBLICATION,
+          granted: consents.tutorPublicationAccepted,
+          checkboxText: consents.tutorPublicationText,
+          documentAnchor: '#tutor-publication-consent',
+        },
+        {
+          consentType: LEGAL_CONSENT_TYPE.MARKETING,
+          granted: consents.marketingAccepted,
+          checkboxText: consents.marketingText,
+          documentAnchor: '#marketing-consent',
+        },
+      ],
     });
 
     const tokens = await this.generateTokens(user.id, user.email);
@@ -863,9 +943,19 @@ export class AuthService {
 
   private getYookassaCredentials() {
     const shopId =
-      (process.env.YUKASSA_PLATFORM_SHOP_ID || process.env.YUKASSA_SHOP_ID || '').trim();
+      (
+        process.env.YUKASSA_PLATFORM_SHOP_ID ||
+        process.env.YOOKASSA_SHOP_ID ||
+        process.env.YUKASSA_SHOP_ID ||
+        ''
+      ).trim();
     const secretKey =
-      (process.env.YUKASSA_PLATFORM_SECRET_KEY || process.env.YUKASSA_SECRET_KEY || '').trim();
+      (
+        process.env.YUKASSA_PLATFORM_SECRET_KEY ||
+        process.env.YOOKASSA_SECRET_KEY ||
+        process.env.YUKASSA_SECRET_KEY ||
+        ''
+      ).trim();
 
     if (!shopId || !secretKey) {
       throw new BadRequestException(
@@ -1249,6 +1339,35 @@ export class AuthService {
     }
 
     return `+${digitsOnly}`;
+  }
+
+  private normalizeRegistrationConsents(
+    consents?: Partial<RegisterConsentsDto> | null,
+  ): RegistrationConsentsState {
+    return {
+      tutorOfferAccepted: !!consents?.tutorOfferAccepted,
+      tutorPersonalDataAccepted: !!consents?.tutorPersonalDataAccepted,
+      tutorPublicationAccepted: !!consents?.tutorPublicationAccepted,
+      marketingAccepted: !!consents?.marketingAccepted,
+      tutorOfferText: (consents?.tutorOfferText || TUTOR_OFFER_CHECKBOX_TEXT).trim(),
+      tutorPersonalDataText: (consents?.tutorPersonalDataText || TUTOR_PD_CHECKBOX_TEXT).trim(),
+      tutorPublicationText: (consents?.tutorPublicationText || TUTOR_PUBLICATION_CHECKBOX_TEXT).trim(),
+      marketingText: (consents?.marketingText || MARKETING_CHECKBOX_TEXT).trim(),
+    };
+  }
+
+  private assertRequiredRegistrationConsents(consents: RegistrationConsentsState) {
+    if (!consents.tutorOfferAccepted) {
+      throw new BadRequestException('Необходимо принять Оферту для репетиторов');
+    }
+
+    if (!consents.tutorPersonalDataAccepted) {
+      throw new BadRequestException('Необходимо дать согласие на обработку персональных данных');
+    }
+
+    if (!consents.tutorPublicationAccepted) {
+      throw new BadRequestException('Необходимо дать согласие на публикацию анкеты');
+    }
   }
 
   private sanitizeUser(user: {

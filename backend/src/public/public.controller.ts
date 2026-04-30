@@ -1,12 +1,24 @@
-import { Controller, Get, Post, Param, Query, Body, Res, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Query,
+  Body,
+  Res,
+  HttpCode,
+  HttpStatus,
+  Req,
+} from '@nestjs/common';
 import { ApiTags, ApiQuery } from '@nestjs/swagger';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { Public } from '../common/decorators';
 import { PublicService } from './public.service';
 import { TelegramService } from '../messenger/telegram.service';
 import { MaxService } from '../messenger/max.service';
 import { BotPollerService } from '../messenger/bot-poller.service';
 import { StudentAuthService } from '../student-auth/student-auth.service';
+import { getRequestMeta } from '../common/utils/request-meta';
 
 @ApiTags('Public')
 @Controller('public')
@@ -53,6 +65,7 @@ export class PublicController {
   @Post('tutors/:slug/book')
   createBooking(
     @Param('slug') slug: string,
+    @Req() req: Request,
     @Body()
     body: {
       subject: string;
@@ -67,9 +80,24 @@ export class PublicController {
       maxLinkCode?: string;
       reminderChannels?: Array<'telegram' | 'max' | 'email' | 'push'>;
       reminderMinutesBefore?: number;
+      legalVersion?: string;
+      legalDocumentHash?: string;
+      consents: {
+        lessonFor?: 'self' | 'child';
+        bookingTermsConfirmed?: boolean;
+        childLegalRepresentativeConfirmed?: boolean;
+        bookingTermsText?: string;
+        childLegalRepresentativeText?: string;
+
+        // Backward compatibility for existing clients
+        bookingForChild?: boolean;
+        childPersonalDataText?: string;
+        childPersonalDataAccepted?: boolean;
+        bookingTermsAccepted?: boolean;
+      };
     },
   ) {
-    return this.publicService.createBooking(slug, body);
+    return this.publicService.createBooking(slug, body, getRequestMeta(req));
   }
 
   @Public()

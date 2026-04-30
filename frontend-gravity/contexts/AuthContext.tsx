@@ -49,6 +49,18 @@ type RegisterData = {
   password: string;
   name: string;
   phone?: string;
+  legalVersion?: string;
+  legalDocumentHash?: string;
+  consents: {
+    tutorOfferAccepted: boolean;
+    tutorPersonalDataAccepted: boolean;
+    tutorPublicationAccepted: boolean;
+    marketingAccepted?: boolean;
+    tutorOfferText?: string;
+    tutorPersonalDataText?: string;
+    tutorPublicationText?: string;
+    marketingText?: string;
+  };
 };
 
 type RequestRegistrationCodeResult = {
@@ -115,7 +127,7 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 const PUBLIC_ROUTE_PREFIXES = ['/auth', '/registration', '/t', '/student'];
-const PUBLIC_ROUTE_EXACT = ['/'];
+const PUBLIC_ROUTE_EXACT = ['/', '/legal'];
 
 let refreshInFlight: Promise<void> | null = null;
 

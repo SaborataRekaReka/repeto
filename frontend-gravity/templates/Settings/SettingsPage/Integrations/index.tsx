@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
-import { Card, Text, Button, Label, TextInput } from "@gravity-ui/uikit";
+import { Card, Text, Button, Label, TextInput, Checkbox } from "@gravity-ui/uikit";
 import { Calendar, FolderOpen } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import AnimatedSidebarIcon from "@/components/AnimatedSidebarIcon";
 import {
     useSettings, disconnectIntegration,
     updateAccount,
+    connectYukassa,
     startYandexDiskConnect, completeYandexDiskConnect, connectYandexDiskToken,
     startGoogleCalendarConnect, completeGoogleCalendarConnect,
     startGoogleDriveConnect, completeGoogleDriveConnect,
@@ -15,6 +16,14 @@ import {
 import { codedErrorMessage } from "@/lib/errorCodes";
 import AppSelect from "@/components/AppSelect";
 import AppField from "@/components/AppField";
+import {
+    LEGAL_DOCUMENT_HASH,
+    LEGAL_VERSION,
+    TUTOR_REPETO_PAYMENT_HINT_TEXT,
+    TUTOR_REPETO_PAYMENT_STATUS_TEXT,
+    TUTOR_REPETO_PAYMENT_TERMS_TEXT,
+    TUTOR_REPETO_PAYMENT_UNAVAILABLE_TEXT,
+} from "@/lib/legal";
 
 type IntegrationDef = {
     id: string;
@@ -25,10 +34,23 @@ type IntegrationDef = {
     animatedIconPath: string;
 };
 type HomeworkDefaultCloud = "YANDEX_DISK" | "GOOGLE_DRIVE";
+type TaxStatusValue = "SELF_EMPLOYED" | "SOLE_TRADER" | "LEGAL_ENTITY";
+type PayoutMethodValue = "CARD" | "YOOMONEY" | "BANK_ACCOUNT";
 
 const homeworkDefaultCloudOptions = [
     { value: "YANDEX_DISK", content: "Яндекс.Диск" },
     { value: "GOOGLE_DRIVE", content: "Google Drive" },
+];
+
+const taxStatusOptions = [
+    { value: "SELF_EMPLOYED", content: "Самозанятый" },
+    { value: "SOLE_TRADER", content: "ИП" },
+    { value: "LEGAL_ENTITY", content: "Юридическое лицо" },
+];
+
+const payoutMethodOptionsBase = [
+    { value: "CARD", content: "Банковская карта" },
+    { value: "YOOMONEY", content: "ЮMoney" },
 ];
 
 const Integrations = () => {
@@ -42,12 +64,26 @@ const Integrations = () => {
     const [savingDefaultCloud, setSavingDefaultCloud] = useState(false);
     const [msg, setMsg] = useState<string | null>(null);
     const [homeworkDefaultCloud, setHomeworkDefaultCloud] = useState<HomeworkDefaultCloud>("YANDEX_DISK");
+    const [taxStatus, setTaxStatus] = useState<TaxStatusValue>("SELF_EMPLOYED");
+    const [taxInn, setTaxInn] = useState("");
+    const [taxDisplayName, setTaxDisplayName] = useState("");
+    const [payoutMethod, setPayoutMethod] = useState<PayoutMethodValue>("CARD");
+    const [payoutDetails, setPayoutDetails] = useState("");
+    const [payoutDetailsMasked, setPayoutDetailsMasked] = useState("");
+    const [paymentStatusConsent, setPaymentStatusConsent] = useState(false);
+    const [paymentTermsConsent, setPaymentTermsConsent] = useState(false);
     const handledOAuthRef = useRef(false);
 
+    const hasYukassa = !!settings?.hasYukassa;
     const hasYandexDisk = !!settings?.hasYandexDisk;
     const hasGoogleDrive = !!settings?.hasGoogleDrive;
     const hasGoogleCalendar = !!settings?.hasGoogleCalendar;
     const hasYandexCalendar = !!settings?.hasYandexCalendar;
+    const supportsBankAccountPayout = !!settings?.supportsBankAccountPayout;
+
+    const payoutMethodOptions = supportsBankAccountPayout
+        ? [...payoutMethodOptionsBase, { value: "BANK_ACCOUNT", content: "Банковский счёт" }]
+        : payoutMethodOptionsBase;
 
     useEffect(() => {
         const value = settings?.homeworkDefaultCloud;
@@ -55,6 +91,34 @@ const Integrations = () => {
             setHomeworkDefaultCloud(value);
         }
     }, [settings?.homeworkDefaultCloud]);
+
+    useEffect(() => {
+        if (!settings) return;
+        if (settings.taxStatus === "LEGAL_ENTITY" || settings.taxStatus === "SOLE_TRADER") {
+            setTaxStatus(settings.taxStatus);
+        } else {
+            setTaxStatus("SELF_EMPLOYED");
+        }
+        setTaxInn(String(settings.taxInn || ""));
+        setTaxDisplayName(String(settings.taxDisplayName || ""));
+        if (
+            settings.paymentPayoutMethod === "CARD" ||
+            settings.paymentPayoutMethod === "YOOMONEY" ||
+            settings.paymentPayoutMethod === "BANK_ACCOUNT"
+        ) {
+            setPayoutMethod(settings.paymentPayoutMethod);
+        } else {
+            setPayoutMethod("CARD");
+        }
+        setPayoutDetails("");
+        setPayoutDetailsMasked(String(settings.paymentPayoutDetailsMasked || ""));
+    }, [
+        settings?.taxStatus,
+        settings?.taxInn,
+        settings?.taxDisplayName,
+        settings?.paymentPayoutMethod,
+        settings?.paymentPayoutDetailsMasked,
+    ]);
 
     // --- OAuth callback handling (identical logic) ---
     useEffect(() => {
@@ -259,6 +323,79 @@ const Integrations = () => {
         }
     };
 
+    const handleConnectYukassa = async () => {
+        if (!taxInn.trim()) {
+            setMsg("Укажите ИНН");
+            return;
+        }
+
+        if (!taxDisplayName.trim()) {
+            setMsg("Укажите ФИО получателя или наименование организации");
+            return;
+        }
+
+        if (payoutMethod === "BANK_ACCOUNT" && !supportsBankAccountPayout) {
+            setMsg("Выплата на банковский счёт временно недоступна");
+            return;
+        }
+
+        if (!payoutDetails.trim()) {
+            setMsg("Укажите данные для выплаты");
+            return;
+        }
+
+        if (!paymentStatusConsent) {
+            setMsg("Подтвердите налоговый статус и достоверность реквизитов");
+            return;
+        }
+
+        if (!paymentTermsConsent) {
+            setMsg("Примите условия приёма оплат через Repeto");
+            return;
+        }
+
+        setSaving(true);
+        setMsg(null);
+        try {
+            await connectYukassa({
+                taxStatus,
+                taxInn: taxInn.trim(),
+                taxDisplayName: taxDisplayName.trim(),
+                payoutMethod,
+                payoutDetails: payoutDetails.trim(),
+                paymentStatusConsentAccepted: true,
+                paymentTermsAccepted: true,
+                paymentStatusConsentText: TUTOR_REPETO_PAYMENT_STATUS_TEXT,
+                paymentTermsConsentText: TUTOR_REPETO_PAYMENT_TERMS_TEXT,
+                legalVersion: LEGAL_VERSION,
+                legalDocumentHash: LEGAL_DOCUMENT_HASH,
+            });
+            setPaymentStatusConsent(false);
+            setPaymentTermsConsent(false);
+            setPayoutDetails("");
+            await mutate();
+            setMsg("Профиль выплат через Repeto сохранён");
+        } catch (e: any) {
+            setMsg(codedErrorMessage("SETT-INT-YUKASSA-CONNECT", e));
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleDisconnectYukassa = async () => {
+        setSaving(true);
+        setMsg(null);
+        try {
+            await disconnectIntegration("yukassa");
+            await mutate();
+            setMsg("ЮKassa отключена");
+        } catch (e: any) {
+            setMsg(codedErrorMessage("SETT-INT-YUKASSA-DISCONNECT", e));
+        } finally {
+            setSaving(false);
+        }
+    };
+
     return (
         <div className="repeto-settings-stack">
             {msg && (
@@ -266,6 +403,120 @@ const Integrations = () => {
                     <Text variant="body-1" className="repeto-settings-status-message repeto-settings-status-message--neutral">{msg}</Text>
                 </Card>
             )}
+
+            <Card className="repeto-settings-section-card" view="outlined">
+                <div className="repeto-settings-card__header">
+                    <Text variant="subheader-2">Приём оплат через Repeto</Text>
+                </div>
+                <div className="repeto-settings-card__body" style={{ padding: 24, display: "grid", gap: 12 }}>
+                    <Text variant="body-1" color="secondary">
+                        {TUTOR_REPETO_PAYMENT_HINT_TEXT}
+                    </Text>
+
+                    <AppSelect
+                        label="Налоговый статус"
+                        options={taxStatusOptions}
+                        value={[taxStatus]}
+                        onUpdate={(value) => {
+                            const next = value[0] as TaxStatusValue | undefined;
+                            if (next) setTaxStatus(next);
+                        }}
+                        size="l"
+                        width="max"
+                    />
+
+                    <AppField label="ИНН" required>
+                        <TextInput
+                            size="l"
+                            value={taxInn}
+                            onUpdate={setTaxInn}
+                            placeholder="123456789012"
+                        />
+                    </AppField>
+
+                    <AppField
+                        label={taxStatus === "LEGAL_ENTITY" ? "Наименование организации" : "ФИО получателя"}
+                        required
+                    >
+                        <TextInput
+                            size="l"
+                            value={taxDisplayName}
+                            onUpdate={setTaxDisplayName}
+                            placeholder={taxStatus === "LEGAL_ENTITY" ? "ООО Репетитор Плюс" : "Иванов Иван Иванович"}
+                        />
+                    </AppField>
+
+                    <AppSelect
+                        label="Способ выплаты"
+                        options={payoutMethodOptions}
+                        value={[payoutMethod]}
+                        onUpdate={(value) => {
+                            const next = value[0] as PayoutMethodValue | undefined;
+                            if (next) setPayoutMethod(next);
+                        }}
+                        size="l"
+                        width="max"
+                    />
+
+                    <AppField label="Данные для выплаты" required>
+                        <TextInput
+                            size="l"
+                            value={payoutDetails}
+                            onUpdate={setPayoutDetails}
+                            placeholder={
+                                payoutMethod === "CARD"
+                                    ? "payment_method_token"
+                                    : payoutMethod === "YOOMONEY"
+                                        ? "4100XXXXXXXX1234"
+                                        : "р/с, БИК, к/с"
+                            }
+                        />
+                    </AppField>
+
+                    <Text variant="caption-2" color="secondary">
+                        {payoutMethod === "CARD"
+                            ? "Укажите токен или идентификатор платёжного средства ЮKassa. Полный номер карты не хранится."
+                            : payoutMethod === "YOOMONEY"
+                                ? "Укажите номер кошелька или идентификатор получателя ЮMoney."
+                                : "Укажите реквизиты банковского счёта, требуемые для выплат."}
+                    </Text>
+
+                    {!!payoutDetailsMasked && !payoutDetails && (
+                        <Text variant="caption-2" color="secondary">
+                            Сохранённые данные: {payoutDetailsMasked}
+                        </Text>
+                    )}
+
+                    <Checkbox checked={paymentStatusConsent} onUpdate={setPaymentStatusConsent} size="l">
+                        <span style={{ fontSize: 13, color: "var(--g-color-text-secondary)", lineHeight: 1.4 }}>
+                            {TUTOR_REPETO_PAYMENT_STATUS_TEXT}
+                        </span>
+                    </Checkbox>
+
+                    <Checkbox checked={paymentTermsConsent} onUpdate={setPaymentTermsConsent} size="l">
+                        <span style={{ fontSize: 13, color: "var(--g-color-text-secondary)", lineHeight: 1.4 }}>
+                            {TUTOR_REPETO_PAYMENT_TERMS_TEXT}
+                        </span>
+                    </Checkbox>
+
+                    {!hasYukassa && (
+                        <Text variant="caption-2" color="secondary">
+                            {TUTOR_REPETO_PAYMENT_UNAVAILABLE_TEXT}
+                        </Text>
+                    )}
+
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 4 }}>
+                        <Button view="action" size="l" disabled={saving} onClick={handleConnectYukassa}>
+                            {hasYukassa ? "Обновить профиль выплат" : "Сохранить профиль выплат"}
+                        </Button>
+                        {hasYukassa && (
+                            <Button view="outlined" size="l" disabled={saving} onClick={handleDisconnectYukassa}>
+                                Отключить выплаты через Repeto
+                            </Button>
+                        )}
+                    </div>
+                </div>
+            </Card>
 
             <Card className="repeto-settings-section-card repeto-settings-integrations-panel" view="outlined">
                 <div className="repeto-settings-card__header">
