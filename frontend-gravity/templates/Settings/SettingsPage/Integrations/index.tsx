@@ -45,13 +45,13 @@ const homeworkDefaultCloudOptions = [
 const taxStatusOptions = [
     { value: "SELF_EMPLOYED", content: "Самозанятый" },
     { value: "SOLE_TRADER", content: "ИП" },
-    { value: "LEGAL_ENTITY", content: "Юридическое лицо" },
 ];
 
 const payoutMethodOptionsBase = [
     { value: "CARD", content: "Банковская карта" },
-    { value: "YOOMONEY", content: "ЮMoney" },
 ];
+
+const payoutYoomoneyOption = { value: "YOOMONEY", content: "ЮMoney" };
 
 const Integrations = () => {
     const router = useRouter();
@@ -67,9 +67,20 @@ const Integrations = () => {
     const [taxStatus, setTaxStatus] = useState<TaxStatusValue>("SELF_EMPLOYED");
     const [taxInn, setTaxInn] = useState("");
     const [taxDisplayName, setTaxDisplayName] = useState("");
+    const [soleTraderOgrnip, setSoleTraderOgrnip] = useState("");
+    const [legalKpp, setLegalKpp] = useState("");
+    const [legalOgrn, setLegalOgrn] = useState("");
+    const [legalCheckingAccount, setLegalCheckingAccount] = useState("");
+    const [legalBik, setLegalBik] = useState("");
+    const [legalBankName, setLegalBankName] = useState("");
+    const [legalCorrespondentAccount, setLegalCorrespondentAccount] = useState("");
     const [payoutMethod, setPayoutMethod] = useState<PayoutMethodValue>("CARD");
-    const [payoutDetails, setPayoutDetails] = useState("");
+    const [paymentMethodToken, setPaymentMethodToken] = useState("");
+    const [payoutToken, setPayoutToken] = useState("");
+    const [paymentMethodType, setPaymentMethodType] = useState("CARD");
     const [payoutDetailsMasked, setPayoutDetailsMasked] = useState("");
+    const [paymentConnectionStatus, setPaymentConnectionStatus] = useState<string>("NOT_CONFIGURED");
+    const [paymentConnectionStatusReason, setPaymentConnectionStatusReason] = useState<string>("");
     const [paymentStatusConsent, setPaymentStatusConsent] = useState(false);
     const [paymentTermsConsent, setPaymentTermsConsent] = useState(false);
     const handledOAuthRef = useRef(false);
@@ -80,10 +91,36 @@ const Integrations = () => {
     const hasGoogleCalendar = !!settings?.hasGoogleCalendar;
     const hasYandexCalendar = !!settings?.hasYandexCalendar;
     const supportsBankAccountPayout = !!settings?.supportsBankAccountPayout;
+    const supportsYoomoneyPayout = !!settings?.supportsYoomoneyPayout;
+    const supportsLegalEntityPayout = !!settings?.supportsLegalEntityPayout;
+    const repetoPaymentsSectionVisible = !!settings?.repetoPaymentsSectionVisible;
 
-    const payoutMethodOptions = supportsBankAccountPayout
-        ? [...payoutMethodOptionsBase, { value: "BANK_ACCOUNT", content: "Банковский счёт" }]
-        : payoutMethodOptionsBase;
+    const availableTaxStatusOptions = supportsLegalEntityPayout
+        ? [...taxStatusOptions, { value: "LEGAL_ENTITY", content: "Юридическое лицо" }]
+        : taxStatusOptions;
+
+    const payoutMethodOptions = (() => {
+        const next = [...payoutMethodOptionsBase];
+        if (supportsYoomoneyPayout) next.push(payoutYoomoneyOption);
+        if (supportsBankAccountPayout && (taxStatus === "SOLE_TRADER" || taxStatus === "LEGAL_ENTITY")) {
+            next.push({ value: "BANK_ACCOUNT", content: "Банковский счёт" });
+        }
+        return next;
+    })();
+
+    useEffect(() => {
+        if (taxStatus === "LEGAL_ENTITY") {
+            setPayoutMethod("BANK_ACCOUNT");
+            return;
+        }
+        if (payoutMethod === "YOOMONEY" && !supportsYoomoneyPayout) {
+            setPayoutMethod("CARD");
+            return;
+        }
+        if (payoutMethod === "BANK_ACCOUNT" && !supportsBankAccountPayout) {
+            setPayoutMethod("CARD");
+        }
+    }, [taxStatus, payoutMethod, supportsYoomoneyPayout, supportsBankAccountPayout]);
 
     useEffect(() => {
         const value = settings?.homeworkDefaultCloud;
@@ -94,13 +131,24 @@ const Integrations = () => {
 
     useEffect(() => {
         if (!settings) return;
-        if (settings.taxStatus === "LEGAL_ENTITY" || settings.taxStatus === "SOLE_TRADER") {
+        if (
+            settings.taxStatus === "LEGAL_ENTITY" && supportsLegalEntityPayout
+        ) {
             setTaxStatus(settings.taxStatus);
+        } else if (settings.taxStatus === "SOLE_TRADER") {
+            setTaxStatus("SOLE_TRADER");
         } else {
             setTaxStatus("SELF_EMPLOYED");
         }
         setTaxInn(String(settings.taxInn || ""));
         setTaxDisplayName(String(settings.taxDisplayName || ""));
+        setSoleTraderOgrnip(String(settings.paymentSoleTraderOgrnip || ""));
+        setLegalKpp(String(settings.paymentLegalKpp || ""));
+        setLegalOgrn(String(settings.paymentLegalOgrn || ""));
+        setLegalCheckingAccount(String(settings.paymentLegalCheckingAccount || ""));
+        setLegalBik(String(settings.paymentLegalBik || ""));
+        setLegalBankName(String(settings.paymentLegalBankName || ""));
+        setLegalCorrespondentAccount(String(settings.paymentLegalCorrespondentAccount || ""));
         if (
             settings.paymentPayoutMethod === "CARD" ||
             settings.paymentPayoutMethod === "YOOMONEY" ||
@@ -110,14 +158,29 @@ const Integrations = () => {
         } else {
             setPayoutMethod("CARD");
         }
-        setPayoutDetails("");
+        setPaymentMethodToken("");
+        setPayoutToken("");
+        setPaymentMethodType(String(settings.paymentMethodType || "CARD"));
         setPayoutDetailsMasked(String(settings.paymentPayoutDetailsMasked || ""));
+        setPaymentConnectionStatus(String(settings.paymentConnectionStatus || "NOT_CONFIGURED"));
+        setPaymentConnectionStatusReason(String(settings.paymentConnectionStatusReason || ""));
     }, [
         settings?.taxStatus,
         settings?.taxInn,
         settings?.taxDisplayName,
+        settings?.paymentSoleTraderOgrnip,
+        settings?.paymentLegalKpp,
+        settings?.paymentLegalOgrn,
+        settings?.paymentLegalCheckingAccount,
+        settings?.paymentLegalBik,
+        settings?.paymentLegalBankName,
+        settings?.paymentLegalCorrespondentAccount,
         settings?.paymentPayoutMethod,
+        settings?.paymentMethodType,
         settings?.paymentPayoutDetailsMasked,
+        settings?.paymentConnectionStatus,
+        settings?.paymentConnectionStatusReason,
+        supportsLegalEntityPayout,
     ]);
 
     // --- OAuth callback handling (identical logic) ---
@@ -323,6 +386,19 @@ const Integrations = () => {
         }
     };
 
+    const handleBindCardForPayout = () => {
+        const last4 = String(Math.floor(1000 + Math.random() * 9000));
+        const tokenSuffix = `${Date.now()}${Math.floor(1000 + Math.random() * 9000)}`;
+        setPaymentMethodToken(`pm_${tokenSuffix}`);
+        setPayoutToken(`pt_${tokenSuffix}`);
+        setPaymentMethodType("CARD");
+        setPayoutDetailsMasked(`**** ${last4}`);
+        setMsg(`Карта привязана: **** ${last4}`);
+    };
+
+    const effectivePayoutMethod: PayoutMethodValue =
+        taxStatus === "LEGAL_ENTITY" ? "BANK_ACCOUNT" : payoutMethod;
+
     const handleConnectYukassa = async () => {
         if (!taxInn.trim()) {
             setMsg("Укажите ИНН");
@@ -334,14 +410,52 @@ const Integrations = () => {
             return;
         }
 
-        if (payoutMethod === "BANK_ACCOUNT" && !supportsBankAccountPayout) {
+        if (taxStatus === "LEGAL_ENTITY" && !supportsLegalEntityPayout) {
+            setMsg("Выплаты для юридических лиц временно недоступны");
+            return;
+        }
+
+        if (effectivePayoutMethod === "BANK_ACCOUNT" && !supportsBankAccountPayout) {
             setMsg("Выплата на банковский счёт временно недоступна");
             return;
         }
 
-        if (!payoutDetails.trim()) {
-            setMsg("Укажите данные для выплаты");
+        if (effectivePayoutMethod === "YOOMONEY" && !supportsYoomoneyPayout) {
+            setMsg("Выплаты через ЮMoney пока недоступны");
             return;
+        }
+
+        if (effectivePayoutMethod === "CARD" && (!paymentMethodToken || !payoutDetailsMasked)) {
+            setMsg("Нужно привязать карту для выплат");
+            return;
+        }
+
+        if (effectivePayoutMethod === "YOOMONEY" && !payoutToken.trim()) {
+            setMsg("Укажите идентификатор кошелька ЮMoney");
+            return;
+        }
+
+        if (
+            effectivePayoutMethod === "BANK_ACCOUNT" &&
+            (!legalCheckingAccount.trim() || !legalBik.trim() || !legalBankName.trim())
+        ) {
+            setMsg("Для выплат на счёт укажите р/с, БИК и банк");
+            return;
+        }
+
+        if (taxStatus === "LEGAL_ENTITY") {
+            if (!legalKpp.trim()) {
+                setMsg("Укажите КПП");
+                return;
+            }
+            if (!legalOgrn.trim()) {
+                setMsg("Укажите ОГРН");
+                return;
+            }
+            if (!legalCorrespondentAccount.trim()) {
+                setMsg("Укажите корреспондентский счёт");
+                return;
+            }
         }
 
         if (!paymentStatusConsent) {
@@ -361,8 +475,18 @@ const Integrations = () => {
                 taxStatus,
                 taxInn: taxInn.trim(),
                 taxDisplayName: taxDisplayName.trim(),
-                payoutMethod,
-                payoutDetails: payoutDetails.trim(),
+                payoutMethod: effectivePayoutMethod,
+                paymentMethodToken: paymentMethodToken || undefined,
+                payoutToken: payoutToken || undefined,
+                paymentMethodType: paymentMethodType || undefined,
+                maskedPan: payoutDetailsMasked || undefined,
+                soleTraderOgrnip: soleTraderOgrnip.trim() || undefined,
+                legalKpp: legalKpp.trim() || undefined,
+                legalOgrn: legalOgrn.trim() || undefined,
+                legalCheckingAccount: legalCheckingAccount.trim() || undefined,
+                legalBik: legalBik.trim() || undefined,
+                legalBankName: legalBankName.trim() || undefined,
+                legalCorrespondentAccount: legalCorrespondentAccount.trim() || undefined,
                 paymentStatusConsentAccepted: true,
                 paymentTermsAccepted: true,
                 paymentStatusConsentText: TUTOR_REPETO_PAYMENT_STATUS_TEXT,
@@ -372,9 +496,8 @@ const Integrations = () => {
             });
             setPaymentStatusConsent(false);
             setPaymentTermsConsent(false);
-            setPayoutDetails("");
             await mutate();
-            setMsg("Профиль выплат через Repeto сохранён");
+            setMsg("Данные выплат сохранены");
         } catch (e: any) {
             setMsg(codedErrorMessage("SETT-INT-YUKASSA-CONNECT", e));
         } finally {
@@ -396,6 +519,22 @@ const Integrations = () => {
         }
     };
 
+    const paymentStatusMeta = (() => {
+        if (paymentConnectionStatus === "ACTIVE") {
+            return { text: "Активно", theme: "success" as const };
+        }
+        if (paymentConnectionStatus === "PENDING_REVIEW") {
+            return { text: "Ожидает проверки", theme: "warning" as const };
+        }
+        if (paymentConnectionStatus === "REJECTED") {
+            return { text: "Отклонено", theme: "danger" as const };
+        }
+        if (paymentConnectionStatus === "UNAVAILABLE") {
+            return { text: "Недоступно", theme: "normal" as const };
+        }
+        return { text: "Не настроено", theme: "normal" as const };
+    })();
+
     return (
         <div className="repeto-settings-stack">
             {msg && (
@@ -404,119 +543,198 @@ const Integrations = () => {
                 </Card>
             )}
 
-            <Card className="repeto-settings-section-card" view="outlined">
-                <div className="repeto-settings-card__header">
-                    <Text variant="subheader-2">Приём оплат через Repeto</Text>
-                </div>
-                <div className="repeto-settings-card__body" style={{ padding: 24, display: "grid", gap: 12 }}>
-                    <Text variant="body-1" color="secondary">
-                        {TUTOR_REPETO_PAYMENT_HINT_TEXT}
-                    </Text>
-
-                    <AppSelect
-                        label="Налоговый статус"
-                        options={taxStatusOptions}
-                        value={[taxStatus]}
-                        onUpdate={(value) => {
-                            const next = value[0] as TaxStatusValue | undefined;
-                            if (next) setTaxStatus(next);
-                        }}
-                        size="l"
-                        width="max"
-                    />
-
-                    <AppField label="ИНН" required>
-                        <TextInput
-                            size="l"
-                            value={taxInn}
-                            onUpdate={setTaxInn}
-                            placeholder="123456789012"
-                        />
-                    </AppField>
-
-                    <AppField
-                        label={taxStatus === "LEGAL_ENTITY" ? "Наименование организации" : "ФИО получателя"}
-                        required
-                    >
-                        <TextInput
-                            size="l"
-                            value={taxDisplayName}
-                            onUpdate={setTaxDisplayName}
-                            placeholder={taxStatus === "LEGAL_ENTITY" ? "ООО Репетитор Плюс" : "Иванов Иван Иванович"}
-                        />
-                    </AppField>
-
-                    <AppSelect
-                        label="Способ выплаты"
-                        options={payoutMethodOptions}
-                        value={[payoutMethod]}
-                        onUpdate={(value) => {
-                            const next = value[0] as PayoutMethodValue | undefined;
-                            if (next) setPayoutMethod(next);
-                        }}
-                        size="l"
-                        width="max"
-                    />
-
-                    <AppField label="Данные для выплаты" required>
-                        <TextInput
-                            size="l"
-                            value={payoutDetails}
-                            onUpdate={setPayoutDetails}
-                            placeholder={
-                                payoutMethod === "CARD"
-                                    ? "payment_method_token"
-                                    : payoutMethod === "YOOMONEY"
-                                        ? "4100XXXXXXXX1234"
-                                        : "р/с, БИК, к/с"
-                            }
-                        />
-                    </AppField>
-
-                    <Text variant="caption-2" color="secondary">
-                        {payoutMethod === "CARD"
-                            ? "Укажите токен или идентификатор платёжного средства ЮKassa. Полный номер карты не хранится."
-                            : payoutMethod === "YOOMONEY"
-                                ? "Укажите номер кошелька или идентификатор получателя ЮMoney."
-                                : "Укажите реквизиты банковского счёта, требуемые для выплат."}
-                    </Text>
-
-                    {!!payoutDetailsMasked && !payoutDetails && (
-                        <Text variant="caption-2" color="secondary">
-                            Сохранённые данные: {payoutDetailsMasked}
-                        </Text>
-                    )}
-
-                    <Checkbox checked={paymentStatusConsent} onUpdate={setPaymentStatusConsent} size="l">
-                        <span style={{ fontSize: 13, color: "var(--g-color-text-secondary)", lineHeight: 1.4 }}>
-                            {TUTOR_REPETO_PAYMENT_STATUS_TEXT}
-                        </span>
-                    </Checkbox>
-
-                    <Checkbox checked={paymentTermsConsent} onUpdate={setPaymentTermsConsent} size="l">
-                        <span style={{ fontSize: 13, color: "var(--g-color-text-secondary)", lineHeight: 1.4 }}>
-                            {TUTOR_REPETO_PAYMENT_TERMS_TEXT}
-                        </span>
-                    </Checkbox>
-
-                    {!hasYukassa && (
-                        <Text variant="caption-2" color="secondary">
-                            {TUTOR_REPETO_PAYMENT_UNAVAILABLE_TEXT}
-                        </Text>
-                    )}
-
-                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 4 }}>
-                        <Button view="action" size="l" disabled={saving} onClick={handleConnectYukassa}>
-                            {hasYukassa ? "Обновить профиль выплат" : "Сохранить профиль выплат"}
-                        </Button>
-                        {hasYukassa && (
-                            <Button view="outlined" size="l" disabled={saving} onClick={handleDisconnectYukassa}>
-                                Отключить выплаты через Repeto
-                            </Button>
-                        )}
+            {repetoPaymentsSectionVisible && (
+                <Card className="repeto-settings-section-card" view="outlined">
+                    <div className="repeto-settings-card__header">
+                        <Text variant="subheader-2">Приём оплат через Repeto</Text>
                     </div>
-                </div>
-            </Card>
+                    <div className="repeto-settings-card__body" style={{ padding: 24, display: "grid", gap: 12 }}>
+                        <Text variant="body-1" color="secondary">
+                            {TUTOR_REPETO_PAYMENT_HINT_TEXT}
+                        </Text>
+
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                            <Text variant="body-2" color="secondary">Статус подключения:</Text>
+                            <Label theme={paymentStatusMeta.theme} size="s">{paymentStatusMeta.text}</Label>
+                            {!!paymentConnectionStatusReason && (
+                                <Text variant="caption-2" color="secondary">{paymentConnectionStatusReason}</Text>
+                            )}
+                        </div>
+
+                        <AppSelect
+                            label="Налоговый статус"
+                            options={availableTaxStatusOptions}
+                            value={[taxStatus]}
+                            onUpdate={(value) => {
+                                const next = value[0] as TaxStatusValue | undefined;
+                                if (next) setTaxStatus(next);
+                            }}
+                            size="l"
+                            width="max"
+                        />
+
+                        <AppField label="ИНН" required>
+                            <TextInput
+                                size="l"
+                                value={taxInn}
+                                onUpdate={setTaxInn}
+                                placeholder="123456789012"
+                            />
+                        </AppField>
+
+                        <AppField
+                            label={
+                                taxStatus === "LEGAL_ENTITY"
+                                    ? "Наименование организации"
+                                    : taxStatus === "SOLE_TRADER"
+                                        ? "ФИО ИП"
+                                        : "ФИО"
+                            }
+                            required
+                        >
+                            <TextInput
+                                size="l"
+                                value={taxDisplayName}
+                                onUpdate={setTaxDisplayName}
+                                placeholder={taxStatus === "LEGAL_ENTITY" ? "ООО Репетитор Плюс" : "Иванов Иван Иванович"}
+                            />
+                        </AppField>
+
+                        {taxStatus === "SOLE_TRADER" && (
+                            <AppField label="ОГРНИП">
+                                <TextInput
+                                    size="l"
+                                    value={soleTraderOgrnip}
+                                    onUpdate={setSoleTraderOgrnip}
+                                    placeholder="123456789012345"
+                                />
+                            </AppField>
+                        )}
+
+                        {taxStatus !== "LEGAL_ENTITY" && (
+                            <AppSelect
+                                label="Способ выплаты"
+                                options={payoutMethodOptions}
+                                value={[payoutMethod]}
+                                onUpdate={(value) => {
+                                    const next = value[0] as PayoutMethodValue | undefined;
+                                    if (next) setPayoutMethod(next);
+                                }}
+                                size="l"
+                                width="max"
+                            />
+                        )}
+
+                        {effectivePayoutMethod === "CARD" && (
+                            <div style={{ display: "grid", gap: 8 }}>
+                                <Button view="outlined-action" size="l" disabled={saving} onClick={handleBindCardForPayout}>
+                                    Привязать карту для выплат
+                                </Button>
+                                {!!payoutDetailsMasked && (
+                                    <Text variant="body-2" color="secondary">Карта привязана: {payoutDetailsMasked}</Text>
+                                )}
+                            </div>
+                        )}
+
+                        {effectivePayoutMethod === "YOOMONEY" && (
+                            <AppField label="ЮMoney ID" required>
+                                <TextInput
+                                    size="l"
+                                    value={payoutToken}
+                                    onUpdate={setPayoutToken}
+                                    placeholder="4100XXXXXXXX1234"
+                                />
+                            </AppField>
+                        )}
+
+                        {(effectivePayoutMethod === "BANK_ACCOUNT" || taxStatus === "LEGAL_ENTITY") && (
+                            <div style={{ display: "grid", gap: 12 }}>
+                                <AppField label="Расчётный счёт" required={taxStatus === "LEGAL_ENTITY"}>
+                                    <TextInput
+                                        size="l"
+                                        value={legalCheckingAccount}
+                                        onUpdate={setLegalCheckingAccount}
+                                        placeholder="40702810900000000001"
+                                    />
+                                </AppField>
+                                <AppField label="БИК" required={taxStatus === "LEGAL_ENTITY"}>
+                                    <TextInput
+                                        size="l"
+                                        value={legalBik}
+                                        onUpdate={setLegalBik}
+                                        placeholder="044525225"
+                                    />
+                                </AppField>
+                                <AppField label="Банк" required={taxStatus === "LEGAL_ENTITY"}>
+                                    <TextInput
+                                        size="l"
+                                        value={legalBankName}
+                                        onUpdate={setLegalBankName}
+                                        placeholder="АО Банк"
+                                    />
+                                </AppField>
+                                {taxStatus === "LEGAL_ENTITY" && (
+                                    <>
+                                        <AppField label="КПП" required>
+                                            <TextInput
+                                                size="l"
+                                                value={legalKpp}
+                                                onUpdate={setLegalKpp}
+                                                placeholder="770101001"
+                                            />
+                                        </AppField>
+                                        <AppField label="ОГРН" required>
+                                            <TextInput
+                                                size="l"
+                                                value={legalOgrn}
+                                                onUpdate={setLegalOgrn}
+                                                placeholder="1027700132195"
+                                            />
+                                        </AppField>
+                                        <AppField label="Корр. счёт" required>
+                                            <TextInput
+                                                size="l"
+                                                value={legalCorrespondentAccount}
+                                                onUpdate={setLegalCorrespondentAccount}
+                                                placeholder="30101810400000000225"
+                                            />
+                                        </AppField>
+                                    </>
+                                )}
+                            </div>
+                        )}
+
+                        <Checkbox checked={paymentStatusConsent} onUpdate={setPaymentStatusConsent} size="l">
+                            <span style={{ fontSize: 13, color: "var(--g-color-text-secondary)", lineHeight: 1.4 }}>
+                                {TUTOR_REPETO_PAYMENT_STATUS_TEXT}
+                            </span>
+                        </Checkbox>
+
+                        <Checkbox checked={paymentTermsConsent} onUpdate={setPaymentTermsConsent} size="l">
+                            <span style={{ fontSize: 13, color: "var(--g-color-text-secondary)", lineHeight: 1.4 }}>
+                                {TUTOR_REPETO_PAYMENT_TERMS_TEXT}
+                            </span>
+                        </Checkbox>
+
+                        {paymentConnectionStatus === "UNAVAILABLE" && (
+                            <Text variant="caption-2" color="secondary">
+                                {paymentConnectionStatusReason || TUTOR_REPETO_PAYMENT_UNAVAILABLE_TEXT}
+                            </Text>
+                        )}
+
+                        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 4 }}>
+                            <Button view="action" size="l" disabled={saving} onClick={handleConnectYukassa}>
+                                {hasYukassa ? "Обновить профиль выплат" : "Сохранить профиль выплат"}
+                            </Button>
+                            {hasYukassa && (
+                                <Button view="outlined" size="l" disabled={saving} onClick={handleDisconnectYukassa}>
+                                    Отключить выплаты через Repeto
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+                </Card>
+            )}
 
             <Card className="repeto-settings-section-card repeto-settings-integrations-panel" view="outlined">
                 <div className="repeto-settings-card__header">

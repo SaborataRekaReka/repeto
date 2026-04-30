@@ -169,52 +169,109 @@ export class SettingsService {
     return !!gatewayId;
   }
 
-  private normalizeRepetoPayoutDetails(method: TutorPayoutMethod, rawValue: string) {
-    const trimmed = rawValue.trim();
+  private supportsYoomoneyPayout() {
+    return this.parseEnvBoolean(
+      process.env.YOOKASSA_TUTOR_YOOMONEY_ENABLED || process.env.YUKASSA_TUTOR_YOOMONEY_ENABLED,
+      false,
+    );
+  }
+
+  private supportsLegalEntityPayout() {
+    return this.parseEnvBoolean(
+      process.env.YOOKASSA_LEGAL_ENTITY_PAYOUT_ENABLED ||
+        process.env.YUKASSA_LEGAL_ENTITY_PAYOUT_ENABLED,
+      false,
+    );
+  }
+
+  private isRepetoPaymentsSectionVisible() {
+    return this.parseEnvBoolean(process.env.REPETO_PAYMENTS_SETTINGS_VISIBLE, false);
+  }
+
+  private normalizeOptionalString(value: unknown, maxLength = 255) {
+    if (typeof value !== 'string') {
+      return null;
+    }
+    const trimmed = value.trim();
     if (!trimmed) {
-      return { value: '', masked: '' };
+      return null;
+    }
+    return trimmed.slice(0, maxLength);
+  }
+
+  private normalizeMaskedPan(value: unknown) {
+    const normalized = this.normalizeOptionalString(value, 64);
+    if (!normalized) {
+      return null;
     }
 
-    if (method === TutorPayoutMethod.CARD) {
-      const normalizedCard = normalizeTutorPaymentCardNumber(trimmed);
-      if (normalizedCard) {
-        const digits = normalizedCard.match(/\d/g)?.join('') || '';
-        const last4 = digits.slice(-4);
-        return {
-          value: `card_last4:${last4}`,
-          masked: last4 ? `•••• ${last4}` : 'Карта',
-        };
-      }
-
-      const shortMasked = trimmed.length > 18 ? `${trimmed.slice(0, 18).trimEnd()}…` : trimmed;
-      return { value: trimmed, masked: shortMasked };
-    }
-
-    if (method === TutorPayoutMethod.YOOMONEY) {
-      const digits = trimmed.match(/\d/g)?.join('') || '';
-      if (digits.length >= 4) {
-        return {
-          value: trimmed,
-          masked: `${digits.slice(0, 4)}***${digits.slice(-4)}`,
-        };
-      }
-      return { value: trimmed, masked: trimmed };
-    }
-
-    const digits = trimmed.match(/\d/g)?.join('') || '';
+    const digits = normalized.match(/\d/g)?.join('') || '';
     if (digits.length >= 4) {
-      return { value: trimmed, masked: `••••${digits.slice(-4)}` };
+      return `**** ${digits.slice(-4)}`;
     }
 
-    return {
-      value: trimmed,
-      masked: trimmed.length > 18 ? `${trimmed.slice(0, 18).trimEnd()}…` : trimmed,
-    };
+    return normalized;
+  }
+
+  private normalizeIsoDate(value: unknown) {
+    const normalized = this.normalizeOptionalString(value, 64);
+    if (!normalized) {
+      return null;
+    }
+
+    const date = new Date(normalized);
+    if (Number.isNaN(date.getTime())) {
+      return null;
+    }
+
+    return date.toISOString();
+  }
+
+  private resolveRepetoConnectionStatus(rawStatus: unknown):
+    | 'NOT_CONFIGURED'
+    | 'PENDING_REVIEW'
+    | 'ACTIVE'
+    | 'REJECTED'
+    | 'UNAVAILABLE'
+    | null {
+    const value = String(rawStatus || '').trim().toUpperCase();
+    if (
+      value === 'NOT_CONFIGURED' ||
+      value === 'PENDING_REVIEW' ||
+      value === 'ACTIVE' ||
+      value === 'REJECTED' ||
+      value === 'UNAVAILABLE'
+    ) {
+      return value;
+    }
+    return null;
   }
 
   private extractRepetoPaymentProfile(paymentSettings: unknown): {
     payoutMethod: TutorPayoutMethod;
-    payoutDetailsMasked: string;
+    paymentMethodToken: string | null;
+    payoutToken: string | null;
+    paymentMethodType: string | null;
+    payoutDetailsMasked: string | null;
+    payoutLast4: string | null;
+    provider: string;
+    createdAt: string | null;
+    updatedAt: string | null;
+    connectionStatus:
+      | 'NOT_CONFIGURED'
+      | 'PENDING_REVIEW'
+      | 'ACTIVE'
+      | 'REJECTED'
+      | 'UNAVAILABLE'
+      | null;
+    connectionStatusReason: string | null;
+    soleTraderOgrnip: string | null;
+    legalKpp: string | null;
+    legalOgrn: string | null;
+    legalCheckingAccount: string | null;
+    legalBik: string | null;
+    legalBankName: string | null;
+    legalCorrespondentAccount: string | null;
     paymentStatusConsentAccepted: boolean;
     paymentTermsAccepted: boolean;
   } | null {
@@ -233,14 +290,74 @@ export class SettingsService {
       return null;
     }
 
-    const payoutDetailsMasked = String(profile.payoutDetailsMasked || '').trim();
-    if (!payoutDetailsMasked) {
-      return null;
-    }
+    const paymentMethodToken =
+      this.normalizeOptionalString(profile.payment_method_token, 255) ||
+      this.normalizeOptionalString(profile.paymentMethodToken, 255) ||
+      this.normalizeOptionalString(profile.payoutDetails, 255);
+    const payoutToken =
+      this.normalizeOptionalString(profile.payout_token, 255) ||
+      this.normalizeOptionalString(profile.payoutToken, 255) ||
+      this.normalizeOptionalString(profile.payoutDetails, 255);
+    const payoutDetailsMasked =
+      this.normalizeMaskedPan(profile.masked_pan) ||
+      this.normalizeMaskedPan(profile.maskedPan) ||
+      this.normalizeMaskedPan(profile.payoutDetailsMasked);
+    const digits = (payoutDetailsMasked || '').match(/\d/g)?.join('') || '';
+    const payoutLast4 = digits.length >= 4 ? digits.slice(-4) : null;
+
+    const createdAt =
+      this.normalizeIsoDate(profile.created_at) ||
+      this.normalizeIsoDate(profile.bindingCreatedAt) ||
+      this.normalizeIsoDate(profile.createdAt);
+    const updatedAt =
+      this.normalizeIsoDate(profile.updated_at) ||
+      this.normalizeIsoDate(profile.bindingUpdatedAt) ||
+      this.normalizeIsoDate(profile.updatedAt) ||
+      createdAt;
+
+    const taxProfile = SettingsService.asRecord(profile.taxProfile);
 
     return {
       payoutMethod: method as TutorPayoutMethod,
+      paymentMethodToken,
+      payoutToken,
+      paymentMethodType:
+        this.normalizeOptionalString(profile.payment_method_type, 50) ||
+        this.normalizeOptionalString(profile.paymentMethodType, 50) ||
+        (method as string),
       payoutDetailsMasked,
+      payoutLast4,
+      provider:
+        this.normalizeOptionalString(profile.provider, 40)?.toLowerCase() || 'yookassa',
+      createdAt,
+      updatedAt,
+      connectionStatus: this.resolveRepetoConnectionStatus(
+        profile.connectionStatus || profile.status,
+      ),
+      connectionStatusReason:
+        this.normalizeOptionalString(profile.connectionStatusReason, 500) ||
+        this.normalizeOptionalString(profile.rejectionReason, 500),
+      soleTraderOgrnip:
+        this.normalizeOptionalString(taxProfile?.soleTraderOgrnip, 20) ||
+        this.normalizeOptionalString(profile.soleTraderOgrnip, 20),
+      legalKpp:
+        this.normalizeOptionalString(taxProfile?.legalKpp, 20) ||
+        this.normalizeOptionalString(profile.legalKpp, 20),
+      legalOgrn:
+        this.normalizeOptionalString(taxProfile?.legalOgrn, 20) ||
+        this.normalizeOptionalString(profile.legalOgrn, 20),
+      legalCheckingAccount:
+        this.normalizeOptionalString(taxProfile?.legalCheckingAccount, 34) ||
+        this.normalizeOptionalString(profile.legalCheckingAccount, 34),
+      legalBik:
+        this.normalizeOptionalString(taxProfile?.legalBik, 20) ||
+        this.normalizeOptionalString(profile.legalBik, 20),
+      legalBankName:
+        this.normalizeOptionalString(taxProfile?.legalBankName, 255) ||
+        this.normalizeOptionalString(profile.legalBankName, 255),
+      legalCorrespondentAccount:
+        this.normalizeOptionalString(taxProfile?.legalCorrespondentAccount, 34) ||
+        this.normalizeOptionalString(profile.legalCorrespondentAccount, 34),
       paymentStatusConsentAccepted: !!profile.paymentStatusConsentAccepted,
       paymentTermsAccepted: !!profile.paymentTermsAccepted,
     };
@@ -251,13 +368,21 @@ export class SettingsService {
     profile:
       | {
           payoutMethod: TutorPayoutMethod;
-          payoutDetails: string;
-          payoutDetailsMasked: string;
+          paymentMethodToken: string | null;
+          payoutToken: string | null;
+          paymentMethodType: string | null;
+          payoutDetailsMasked: string | null;
+          payoutLast4: string | null;
+          provider: string;
+          createdAt: string;
+          updatedAt: string;
+          connectionStatus: 'NOT_CONFIGURED' | 'PENDING_REVIEW' | 'ACTIVE' | 'REJECTED' | 'UNAVAILABLE';
+          connectionStatusReason: string | null;
+          taxProfile: Record<string, unknown>;
           paymentStatusConsentAccepted: boolean;
           paymentTermsAccepted: boolean;
           paymentStatusConsentText: string;
           paymentTermsConsentText: string;
-          updatedAt: string;
         }
       | null,
   ) {
@@ -274,49 +399,160 @@ export class SettingsService {
     return Object.keys(currentSettings).length > 0 ? currentSettings : null;
   }
 
-  private isRepetoPaymentProfileReady(
+  private getRepetoPaymentConnectionStatus(
     user: { taxStatus: TaxStatus; taxInn: string | null; taxDisplayName: string | null },
     profile: {
       payoutMethod: TutorPayoutMethod;
-      payoutDetailsMasked: string;
+      paymentMethodToken: string | null;
+      payoutToken: string | null;
+      paymentMethodType: string | null;
+      payoutDetailsMasked: string | null;
+      payoutLast4: string | null;
+      provider: string;
+      createdAt: string | null;
+      updatedAt: string | null;
+      connectionStatus:
+        | 'NOT_CONFIGURED'
+        | 'PENDING_REVIEW'
+        | 'ACTIVE'
+        | 'REJECTED'
+        | 'UNAVAILABLE'
+        | null;
+      connectionStatusReason: string | null;
       paymentStatusConsentAccepted: boolean;
       paymentTermsAccepted: boolean;
     } | null,
   ) {
     if (!this.isRepetoSafeDealEnabled() || !this.hasRepetoYookassaCredentials()) {
-      return false;
+      return {
+        status: 'UNAVAILABLE' as const,
+        reason: 'Платформа Repeto для безопасной сделки временно недоступна.',
+      };
     }
 
-    const allowedStatuses = new Set<TaxStatus>([
-      TaxStatus.SELF_EMPLOYED,
-      TaxStatus.SOLE_TRADER,
-      TaxStatus.LEGAL_ENTITY,
-    ]);
-
-    if (!allowedStatuses.has(user.taxStatus)) {
-      return false;
-    }
-
-    if (!String(user.taxInn || '').trim() || !String(user.taxDisplayName || '').trim()) {
-      return false;
+    if (user.taxStatus === TaxStatus.LEGAL_ENTITY && !this.supportsLegalEntityPayout()) {
+      return {
+        status: 'UNAVAILABLE' as const,
+        reason: 'Выплаты для юридических лиц временно недоступны для выбранной схемы.',
+      };
     }
 
     if (!profile) {
-      return false;
+      return { status: 'NOT_CONFIGURED' as const, reason: null };
     }
 
     if (!profile.paymentStatusConsentAccepted || !profile.paymentTermsAccepted) {
-      return false;
+      return {
+        status: 'NOT_CONFIGURED' as const,
+        reason: 'Нужно подтвердить обязательные чекбоксы.',
+      };
+    }
+
+    if (profile.connectionStatus === 'REJECTED') {
+      return {
+        status: 'REJECTED' as const,
+        reason: profile.connectionStatusReason || 'Реквизиты отклонены проверкой.',
+      };
+    }
+
+    if (profile.connectionStatus === 'PENDING_REVIEW') {
+      return { status: 'PENDING_REVIEW' as const, reason: null };
+    }
+
+    if (profile.connectionStatus === 'UNAVAILABLE') {
+      return {
+        status: 'UNAVAILABLE' as const,
+        reason: profile.connectionStatusReason || 'Подключение выплат недоступно.',
+      };
+    }
+
+    if (profile.connectionStatus === 'ACTIVE') {
+      return { status: 'ACTIVE' as const, reason: null };
     }
 
     if (
       profile.payoutMethod === TutorPayoutMethod.BANK_ACCOUNT &&
       !this.supportsBankAccountPayout()
     ) {
-      return false;
+      return {
+        status: 'UNAVAILABLE' as const,
+        reason: 'Выплата на банковский счёт временно недоступна.',
+      };
     }
 
-    return !!profile.payoutDetailsMasked;
+    if (profile.payoutMethod === TutorPayoutMethod.YOOMONEY && !this.supportsYoomoneyPayout()) {
+      return {
+        status: 'UNAVAILABLE' as const,
+        reason: 'Выплаты через ЮMoney пока не поддерживаются.',
+      };
+    }
+
+    if (!String(user.taxInn || '').trim() || !String(user.taxDisplayName || '').trim()) {
+      return {
+        status: 'NOT_CONFIGURED' as const,
+        reason: 'Заполните ИНН и данные получателя.',
+      };
+    }
+
+    if (profile.payoutMethod === TutorPayoutMethod.CARD) {
+      if (!profile.paymentMethodToken && !profile.payoutToken) {
+        return {
+          status: 'NOT_CONFIGURED' as const,
+          reason: 'Привяжите карту для выплат.',
+        };
+      }
+      if (!profile.payoutDetailsMasked) {
+        return {
+          status: 'NOT_CONFIGURED' as const,
+          reason: 'Не удалось определить маску карты.',
+        };
+      }
+      return { status: 'ACTIVE' as const, reason: null };
+    }
+
+    if (profile.payoutMethod === TutorPayoutMethod.YOOMONEY) {
+      if (!profile.payoutToken) {
+        return {
+          status: 'NOT_CONFIGURED' as const,
+          reason: 'Укажите идентификатор кошелька ЮMoney.',
+        };
+      }
+      return { status: 'ACTIVE' as const, reason: null };
+    }
+
+    return profile.payoutDetailsMasked
+      ? { status: 'ACTIVE' as const, reason: null }
+      : {
+          status: 'NOT_CONFIGURED' as const,
+          reason: 'Укажите реквизиты для выплаты.',
+        };
+  }
+
+  private isRepetoPaymentProfileReady(
+    user: { taxStatus: TaxStatus; taxInn: string | null; taxDisplayName: string | null },
+    profile: {
+      payoutMethod: TutorPayoutMethod;
+      paymentMethodToken: string | null;
+      payoutToken: string | null;
+      paymentMethodType: string | null;
+      payoutDetailsMasked: string | null;
+      payoutLast4: string | null;
+      provider: string;
+      createdAt: string | null;
+      updatedAt: string | null;
+      connectionStatus:
+        | 'NOT_CONFIGURED'
+        | 'PENDING_REVIEW'
+        | 'ACTIVE'
+        | 'REJECTED'
+        | 'UNAVAILABLE'
+        | null;
+      connectionStatusReason: string | null;
+      paymentStatusConsentAccepted: boolean;
+      paymentTermsAccepted: boolean;
+    } | null,
+  ) {
+    return this.getRepetoPaymentConnectionStatus(user, profile).status === 'ACTIVE';
   }
 
   private normalizeSlug(raw?: string | null) {
@@ -664,7 +900,8 @@ export class SettingsService {
     const paymentCardNumber = extractTutorPaymentCardNumber(user.paymentSettings);
     const paymentSbpPhone = extractTutorPaymentSbpPhone(user.paymentSettings);
     const repetoPaymentProfile = this.extractRepetoPaymentProfile(user.paymentSettings);
-    const hasYukassa = this.isRepetoPaymentProfileReady(user, repetoPaymentProfile);
+    const repetoConnection = this.getRepetoPaymentConnectionStatus(user, repetoPaymentProfile);
+    const hasYukassa = repetoConnection.status === 'ACTIVE';
     const verificationSets = extractQualificationVerificationSets(user.paymentSettings);
 
     const education = normalizeEducationEntries(user.education).map((entry) => {
@@ -711,8 +948,27 @@ export class SettingsService {
       paymentSbpPhone,
       paymentPayoutMethod: repetoPaymentProfile?.payoutMethod || null,
       paymentPayoutDetailsMasked: repetoPaymentProfile?.payoutDetailsMasked || null,
+      paymentMethodType: repetoPaymentProfile?.paymentMethodType || null,
+      paymentPayoutProvider: repetoPaymentProfile?.provider || null,
+      paymentPayoutTokenBound: !!repetoPaymentProfile?.payoutToken,
+      paymentMethodTokenBound: !!repetoPaymentProfile?.paymentMethodToken,
+      paymentPayoutLast4: repetoPaymentProfile?.payoutLast4 || null,
+      paymentPayoutCreatedAt: repetoPaymentProfile?.createdAt || null,
+      paymentPayoutUpdatedAt: repetoPaymentProfile?.updatedAt || null,
+      paymentSoleTraderOgrnip: repetoPaymentProfile?.soleTraderOgrnip || null,
+      paymentLegalKpp: repetoPaymentProfile?.legalKpp || null,
+      paymentLegalOgrn: repetoPaymentProfile?.legalOgrn || null,
+      paymentLegalCheckingAccount: repetoPaymentProfile?.legalCheckingAccount || null,
+      paymentLegalBik: repetoPaymentProfile?.legalBik || null,
+      paymentLegalBankName: repetoPaymentProfile?.legalBankName || null,
+      paymentLegalCorrespondentAccount: repetoPaymentProfile?.legalCorrespondentAccount || null,
+      paymentConnectionStatus: repetoConnection.status,
+      paymentConnectionStatusReason: repetoConnection.reason,
       supportsBankAccountPayout: this.supportsBankAccountPayout(),
+      supportsYoomoneyPayout: this.supportsYoomoneyPayout(),
+      supportsLegalEntityPayout: this.supportsLegalEntityPayout(),
       repetoPaymentsSafeDealEnabled: this.isRepetoSafeDealEnabled(),
+      repetoPaymentsSectionVisible: this.isRepetoPaymentsSectionVisible(),
       hasYukassa,
       hasYandexDisk: !!user.yandexDiskToken,
       hasGoogleDrive: !!user.googleDriveToken,
@@ -1484,14 +1740,16 @@ export class SettingsService {
       );
     }
 
-    const allowedStatuses = new Set<TaxStatus>([
-      TaxStatus.SELF_EMPLOYED,
-      TaxStatus.SOLE_TRADER,
-      TaxStatus.LEGAL_ENTITY,
-    ]);
+    const allowedStatuses = new Set<TaxStatus>([TaxStatus.SELF_EMPLOYED, TaxStatus.SOLE_TRADER]);
+    if (this.supportsLegalEntityPayout()) {
+      allowedStatuses.add(TaxStatus.LEGAL_ENTITY);
+    }
+
     if (!allowedStatuses.has(dto.taxStatus)) {
       throw new BadRequestException(
-        'Подключение выплат через Repeto доступно только для самозанятых, ИП и юридических лиц',
+        this.supportsLegalEntityPayout()
+          ? 'Подключение выплат через Repeto доступно только для самозанятых, ИП и юридических лиц'
+          : 'Подключение выплат через Repeto сейчас доступно только для самозанятых и ИП',
       );
     }
 
@@ -1505,6 +1763,38 @@ export class SettingsService {
       throw new BadRequestException('Укажите ФИО получателя или наименование организации');
     }
 
+    const normalizedSoleTraderOgrnip = this.normalizeOptionalString(dto.soleTraderOgrnip, 20);
+    const normalizedLegalKpp = this.normalizeOptionalString(dto.legalKpp, 20);
+    const normalizedLegalOgrn = this.normalizeOptionalString(dto.legalOgrn, 20);
+    const normalizedLegalCheckingAccount = this.normalizeOptionalString(dto.legalCheckingAccount, 34);
+    const normalizedLegalBik = this.normalizeOptionalString(dto.legalBik, 20);
+    const normalizedLegalBankName = this.normalizeOptionalString(dto.legalBankName, 255);
+    const normalizedLegalCorrespondentAccount = this.normalizeOptionalString(
+      dto.legalCorrespondentAccount,
+      34,
+    );
+
+    if (dto.taxStatus === TaxStatus.LEGAL_ENTITY) {
+      if (!normalizedLegalKpp) {
+        throw new BadRequestException('Укажите КПП');
+      }
+      if (!normalizedLegalOgrn) {
+        throw new BadRequestException('Укажите ОГРН');
+      }
+      if (!normalizedLegalCheckingAccount) {
+        throw new BadRequestException('Укажите расчётный счёт');
+      }
+      if (!normalizedLegalBik) {
+        throw new BadRequestException('Укажите БИК');
+      }
+      if (!normalizedLegalBankName) {
+        throw new BadRequestException('Укажите наименование банка');
+      }
+      if (!normalizedLegalCorrespondentAccount) {
+        throw new BadRequestException('Укажите корреспондентский счёт');
+      }
+    }
+
     if (
       dto.payoutMethod === TutorPayoutMethod.BANK_ACCOUNT &&
       !this.supportsBankAccountPayout()
@@ -1512,22 +1802,88 @@ export class SettingsService {
       throw new BadRequestException('Выплата на банковский счёт сейчас недоступна');
     }
 
-    const payoutDetailsRaw = (dto.payoutDetails || '').trim();
-    if (!payoutDetailsRaw) {
-      throw new BadRequestException('Укажите данные для выплаты');
+    if (dto.payoutMethod === TutorPayoutMethod.YOOMONEY && !this.supportsYoomoneyPayout()) {
+      throw new BadRequestException('Выплаты через ЮMoney пока не поддерживаются');
     }
 
-    const normalizedPayout = this.normalizeRepetoPayoutDetails(dto.payoutMethod, payoutDetailsRaw);
+    const paymentMethodToken = this.normalizeOptionalString(dto.paymentMethodToken, 255);
+    const payoutToken = this.normalizeOptionalString(dto.payoutToken, 255) || paymentMethodToken;
+    const paymentMethodType =
+      this.normalizeOptionalString(dto.paymentMethodType, 50) || dto.payoutMethod;
+    const maskedPan = this.normalizeMaskedPan(dto.maskedPan);
+
+    if (dto.payoutMethod === TutorPayoutMethod.CARD) {
+      if (!paymentMethodToken && !payoutToken) {
+        throw new BadRequestException('Сначала привяжите карту для выплат');
+      }
+      if (!maskedPan) {
+        throw new BadRequestException('Не удалось определить маску карты');
+      }
+    }
+
+    if (dto.payoutMethod === TutorPayoutMethod.YOOMONEY && !payoutToken) {
+      throw new BadRequestException('Укажите идентификатор кошелька ЮMoney');
+    }
+
+    let payoutDetailsMasked = maskedPan;
+    if (!payoutDetailsMasked && dto.payoutMethod === TutorPayoutMethod.YOOMONEY) {
+      const digits = (payoutToken || '').match(/\d/g)?.join('') || '';
+      payoutDetailsMasked =
+        digits.length >= 4 ? `${digits.slice(0, 4)}***${digits.slice(-4)}` : 'ЮMoney';
+    }
+
+    if (!payoutDetailsMasked && dto.payoutMethod === TutorPayoutMethod.BANK_ACCOUNT) {
+      const accountDigits =
+        (normalizedLegalCheckingAccount || '').match(/\d/g)?.join('') || '';
+      payoutDetailsMasked =
+        accountDigits.length >= 4 ? `••••${accountDigits.slice(-4)}` : 'Банковский счёт';
+    }
 
     const currentUser = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { paymentSettings: true },
     });
 
+    const existingProfile = this.extractRepetoPaymentProfile(currentUser?.paymentSettings);
+    const nowIso = new Date().toISOString();
+    const createdAt = existingProfile?.createdAt || nowIso;
+    const maskedDigits = (payoutDetailsMasked || '').match(/\d/g)?.join('') || '';
+    const payoutLast4 = maskedDigits.length >= 4 ? maskedDigits.slice(-4) : null;
+
+    const taxProfile: Record<string, unknown> = {
+      taxStatus: dto.taxStatus,
+      taxInn: normalizedInn,
+      taxDisplayName: normalizedDisplayName,
+      soleTraderOgrnip: normalizedSoleTraderOgrnip,
+      legalKpp: normalizedLegalKpp,
+      legalOgrn: normalizedLegalOgrn,
+      legalCheckingAccount: normalizedLegalCheckingAccount,
+      legalBik: normalizedLegalBik,
+      legalBankName: normalizedLegalBankName,
+      legalCorrespondentAccount: normalizedLegalCorrespondentAccount,
+    };
+
     const repetoPaymentProfile = {
       payoutMethod: dto.payoutMethod,
-      payoutDetails: normalizedPayout.value,
-      payoutDetailsMasked: normalizedPayout.masked,
+      provider: 'yookassa',
+      payment_method_token: paymentMethodToken,
+      paymentMethodToken,
+      payout_token: payoutToken,
+      payoutToken,
+      payment_method_type: paymentMethodType,
+      paymentMethodType,
+      masked_pan: payoutDetailsMasked,
+      maskedPan: payoutDetailsMasked,
+      payoutLast4,
+      created_at: createdAt,
+      updated_at: nowIso,
+      createdAt,
+      updatedAt: nowIso,
+      connectionStatus: 'PENDING_REVIEW' as const,
+      connectionStatusReason: null,
+      taxProfile,
+      payoutDetails: payoutToken || paymentMethodToken || payoutDetailsMasked || '',
+      payoutDetailsMasked,
       paymentStatusConsentAccepted: true,
       paymentTermsAccepted: true,
       paymentStatusConsentText:
@@ -1536,7 +1892,6 @@ export class SettingsService {
       paymentTermsConsentText:
         (dto.paymentTermsConsentText || '').trim() ||
         SettingsService.TUTOR_PAYMENT_TERMS_CHECKBOX_TEXT,
-      updatedAt: new Date().toISOString(),
     };
 
     const nextPaymentSettings = this.mergeRepetoPaymentProfile(
@@ -1585,10 +1940,17 @@ export class SettingsService {
             SettingsService.TUTOR_PAYMENT_STATUS_CHECKBOX_TEXT,
           documentAnchor: '#repeto-payments',
           metadata: {
+            checkbox_type: LEGAL_CONSENT_TYPE.TUTOR_PAYMENT_STATUS,
+            checkbox_text:
+              (dto.paymentStatusConsentText || '').trim() ||
+              SettingsService.TUTOR_PAYMENT_STATUS_CHECKBOX_TEXT,
             taxStatus: dto.taxStatus,
             taxInn: normalizedInn,
             payoutMethod: dto.payoutMethod,
-            payoutDetailsMasked: normalizedPayout.masked,
+            payoutDetailsMasked,
+            paymentMethodType,
+            provider: 'yookassa',
+            timestamp: nowIso,
           },
         },
         {
@@ -1599,12 +1961,21 @@ export class SettingsService {
             SettingsService.TUTOR_PAYMENT_TERMS_CHECKBOX_TEXT,
           documentAnchor: '#repeto-payments',
           metadata: {
+            checkbox_type: LEGAL_CONSENT_TYPE.TUTOR_PAYMENT_TERMS,
+            checkbox_text:
+              (dto.paymentTermsConsentText || '').trim() ||
+              SettingsService.TUTOR_PAYMENT_TERMS_CHECKBOX_TEXT,
             payoutMethod: dto.payoutMethod,
-            payoutDetailsMasked: normalizedPayout.masked,
+            payoutDetailsMasked,
+            paymentMethodType,
+            provider: 'yookassa',
+            timestamp: nowIso,
           },
         },
       ],
     });
+
+    const connection = this.getRepetoPaymentConnectionStatus(updatedUser, updatedProfile);
 
     return {
       taxStatus: updatedUser.taxStatus,
@@ -1612,7 +1983,16 @@ export class SettingsService {
       taxDisplayName: updatedUser.taxDisplayName,
       paymentPayoutMethod: updatedProfile?.payoutMethod || null,
       paymentPayoutDetailsMasked: updatedProfile?.payoutDetailsMasked || null,
-      hasYukassa: this.isRepetoPaymentProfileReady(updatedUser, updatedProfile),
+      paymentMethodType: updatedProfile?.paymentMethodType || null,
+      paymentPayoutProvider: updatedProfile?.provider || null,
+      paymentPayoutTokenBound: !!updatedProfile?.payoutToken,
+      paymentMethodTokenBound: !!updatedProfile?.paymentMethodToken,
+      paymentPayoutLast4: updatedProfile?.payoutLast4 || null,
+      paymentPayoutCreatedAt: updatedProfile?.createdAt || null,
+      paymentPayoutUpdatedAt: updatedProfile?.updatedAt || null,
+      paymentConnectionStatus: connection.status,
+      paymentConnectionStatusReason: connection.reason,
+      hasYukassa: connection.status === 'ACTIVE',
     };
   }
 

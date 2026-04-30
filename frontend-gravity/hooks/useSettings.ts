@@ -91,7 +91,17 @@ export async function connectYukassa(data: {
   taxInn: string;
   taxDisplayName: string;
   payoutMethod: 'CARD' | 'YOOMONEY' | 'BANK_ACCOUNT';
-  payoutDetails: string;
+  paymentMethodToken?: string;
+  payoutToken?: string;
+  paymentMethodType?: string;
+  maskedPan?: string;
+  soleTraderOgrnip?: string;
+  legalKpp?: string;
+  legalOgrn?: string;
+  legalCheckingAccount?: string;
+  legalBik?: string;
+  legalBankName?: string;
+  legalCorrespondentAccount?: string;
   paymentStatusConsentAccepted: boolean;
   paymentTermsAccepted: boolean;
   paymentStatusConsentText?: string;
