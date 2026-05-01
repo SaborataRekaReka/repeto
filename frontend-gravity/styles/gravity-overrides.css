@@ -125,9 +125,9 @@ html body.g-root_theme_dark {
 }
 
 :root {
-    --surface-page: #f7f7f5;
+    --surface-page: #f0eef2;
     --surface-card: #ffffff;
-    --surface-subtle: #f2f2ee;
+    --surface-subtle: #f0eef2;
     --surface-sunken: #edede8;
     --border-subtle: #eaeae6;
     --border-strong: #d6d6d1;

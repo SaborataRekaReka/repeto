@@ -443,29 +443,29 @@ export default function LandingHomePage() {
                         </header>
 
                         <section className={styles.hero}>
-                            <p className={styles.heroKicker}>CRM и платформа для работы с учениками</p>
+                            <div className={styles.heroCopy}>
+                                <p className={styles.heroKicker}>CRM и платформа для работы с учениками</p>
 
-                            <h1 className={styles.heroTitle}>
-                                Ученики, занятия и оплаты
-                                <br />
-                                в одной системе
-                            </h1>
+                                <h1 className={styles.heroTitle}>
+                                    Ученики, занятия и оплаты в одной системе
+                                </h1>
 
-                            <p className={styles.heroSubtitle}>
-                                Repeto помогает вести расписание, считать долги, продавать пакеты,
-                                отправлять напоминания и давать родителям понятный доступ к занятиям.
-                            </p>
+                                <p className={styles.heroSubtitle}>
+                                    Repeto помогает вести расписание, считать долги, продавать пакеты,
+                                    отправлять напоминания и давать родителям понятный доступ к занятиям.
+                                </p>
 
-                            <div className={styles.heroActions}>
-                                <Link href="/auth?view=signup" className={`${styles.heroButton} ${styles.heroButtonPrimary}`}>
-                                    Начать бесплатно
-                                </Link>
-                                <a href="#features" className={`${styles.heroButton} ${styles.heroButtonGhost}`}>
-                                    Посмотреть возможности
-                                </a>
+                                <div className={styles.heroActions}>
+                                    <Link href="/auth?view=signup" className={`${styles.heroButton} ${styles.heroButtonPrimary}`}>
+                                        Начать бесплатно
+                                    </Link>
+                                    <a href="#features" className={`${styles.heroButton} ${styles.heroButtonGhost}`}>
+                                        Посмотреть возможности
+                                    </a>
+                                </div>
+
+                                <p className={styles.heroTrust}>Бесплатный старт · Без карты · Для репетиторов и небольших центров</p>
                             </div>
-
-                            <p className={styles.heroTrust}>Бесплатный старт · Без карты · Для репетиторов и небольших центров</p>
 
                             <div className={styles.productStage} aria-label="Интерфейс Repeto">
                                 <div className={styles.productHalo} aria-hidden="true" />
