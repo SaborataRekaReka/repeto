@@ -5,9 +5,9 @@
 
 :root {
     /* Brand */
-    --accent: #ae7aff;
-    --accent-hover: #9b68ef;
-    --accent-pressed: #7e49e2;
+    --accent: #005BAC;
+    --accent-hover: #004D90;
+    --accent-pressed: #003C73;
     --repeto-on-brand: #ffffff;
 
     /* Hover / states */
@@ -24,9 +24,9 @@
 }
 
 :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) {
-    --accent: #ae7aff;
-    --accent-hover: #9b68ef;
-    --accent-pressed: #7e49e2;
+    --accent: #005BAC;
+    --accent-hover: #004D90;
+    --accent-pressed: #003C73;
     --repeto-on-brand: #ffffff;
 
     --g-color-base-simple-hover: color-mix(in srgb, var(--surface-subtle) 88%, #000 12%);

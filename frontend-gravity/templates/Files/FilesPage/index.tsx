@@ -66,6 +66,7 @@ const FilesPage = () => {
     return (
         <GravityLayout title="Материалы">
             <PageOverlay
+                className="page-overlay--finance-dashboard-bg"
                 title="Материалы"
                 backHref="/dashboard"
                 nav={overlayNav}

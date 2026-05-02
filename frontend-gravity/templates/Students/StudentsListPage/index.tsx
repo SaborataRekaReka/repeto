@@ -315,6 +315,7 @@ const StudentsListPage = () => {
     return (
         <GravityLayout title="Ученики">
             <PageOverlay
+                className="page-overlay--finance-dashboard-bg"
                 title="Ученики"
                 breadcrumb="Дашборд"
                 backHref="/dashboard"

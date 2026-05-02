@@ -2,28 +2,28 @@
  * Repeto — Brand Design Tokens
  * Source of truth for all brand colors, derived from the logo.
  *
- * Logo Purple: #AE7AFF  (primary)
+ * Logo Blue:   #005BAC  (primary)
  * Logo Green:  #98E9AB  (accent)
  *
  * Usage in inline styles:
  *   import { brand, accent, semantic } from "@/constants/brand";
- *   style={{ color: brand[700] }}          // readable purple text
- *   style={{ background: brand[400] }}     // logo purple fill
+ *   style={{ color: brand[700] }}          // readable brand text
+ *   style={{ background: brand[400] }}     // logo brand fill
  *   style={{ background: accent[300] }}    // logo green fill
  */
 
-/** Primary brand purple scale — derived from logo #AE7AFF */
+/** Primary brand blue scale — derived from logo #005BAC */
 export const brand = {
-    50: "#F5EEFF",
-    100: "#EDE2FF",
-    200: "#D9C0FF",
-    300: "#C49DFF",
-    400: "#AE7AFF",
-    500: "#9B5FFF",
-    600: "#8840F5",
-    700: "#7030D9",
-    800: "#5820B8",
-    900: "#42189A",
+    50: "#E6F1FA",
+    100: "#CCE3F5",
+    200: "#99C8EA",
+    300: "#66ACDF",
+    400: "#005BAC",
+    500: "#004D90",
+    600: "#00427C",
+    700: "#003663",
+    800: "#00294B",
+    900: "#001D35",
 } as const;
 
 /** Accent green scale — derived from logo #98E9AB */
@@ -46,9 +46,9 @@ export const semantic = {
     successDark: "#16A34A",
     danger: "#D16B8F",
     dangerDark: "#B85C7E",
-    warning: "#AE7AFF",
-    warningDark: "#8E7BFF",
-    info: "#AE7AFF",
+    warning: "#005BAC",
+    warningDark: "#004D90",
+    info: "#005BAC",
 } as const;
 
 /** Gradient presets using brand colors */

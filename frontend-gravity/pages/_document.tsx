@@ -23,8 +23,8 @@ export default function Document() {
                     property="og:description"
                 />
                 <meta property="og:type" content="website" />
-                <meta name="msapplication-TileColor" content="#AE7AFF" />
-                <meta name="theme-color" content="#AE7AFF" />
+                <meta name="msapplication-TileColor" content="#005BAC" />
+                <meta name="theme-color" content="#005BAC" />
                 <meta name="apple-mobile-web-app-capable" content="yes" />
                 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
                 <meta name="mobile-web-app-capable" content="yes" />

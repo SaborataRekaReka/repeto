@@ -22,6 +22,7 @@ const FinanceOverviewPage = () => {
     return (
         <GravityLayout title="Финансы">
             <PageOverlay
+                className="page-overlay--finance-dashboard-bg"
                 title="Финансы"
                 breadcrumb="Дашборд"
                 backHref="/dashboard"

@@ -69,6 +69,8 @@ type PageOverlayProps = {
     children: ReactNode;
     /** Where to go when back is clicked. Defaults to router.back() */
     backHref?: string;
+    /** Optional extra className for root overlay container */
+    className?: string;
 };
 
 const PageOverlay = ({
@@ -81,6 +83,7 @@ const PageOverlay = ({
     hidePrimaryAction,
     children,
     backHref,
+    className,
 }: PageOverlayProps) => {
     const router = useRouter();
     const shellContextSidebar = useShellContextSidebar();
@@ -91,6 +94,9 @@ const PageOverlay = ({
     const [hoveredSidebarNavKey, setHoveredSidebarNavKey] = useState<string | null>(null);
     const overlayRef = useRef<HTMLDivElement>(null);
     const useShellContextMode = Boolean(shellContextSidebar) && !isMobileViewport;
+    const isRailSidebarEntry = backHref === "/dashboard";
+    const hideMobileOverlayHeading = isMobileViewport && isRailSidebarEntry;
+    const hideMobileSidebar = hideMobileOverlayHeading && !sidebarHeader;
 
     useEffect(() => {
         if (typeof window === "undefined") {
@@ -264,10 +270,10 @@ const PageOverlay = ({
     return (
         <div
             ref={overlayRef}
-            className={`page-overlay${isLeaving ? " page-overlay--leaving" : ""}${useShellContextMode ? " page-overlay--shell" : ""}`}
+            className={`page-overlay${className ? ` ${className}` : ""}${isLeaving ? " page-overlay--leaving" : ""}${useShellContextMode ? " page-overlay--shell" : ""}`}
         >
             {/* Back button */}
-            {!useShellContextMode && (
+            {!useShellContextMode && !hideMobileOverlayHeading && (
                 <button
                     type="button"
                     className="page-overlay__back"
@@ -280,9 +286,9 @@ const PageOverlay = ({
 
             <div className="page-overlay__layout">
                 {/* Sidebar */}
-                {!useShellContextMode && (
+                {!useShellContextMode && !hideMobileSidebar && (
                 <aside className="page-overlay__sidebar">
-                    <h2 className="page-overlay__title">{title}</h2>
+                    {!hideMobileOverlayHeading && <h2 className="page-overlay__title">{title}</h2>}
 
                     {sidebarHeader}
 
@@ -377,7 +383,7 @@ const PageOverlay = ({
                                 aria-label={quickActionsOpen ? "Закрыть быстрые действия" : "Открыть быстрые действия"}
                                 {...props}
                             >
-                                <Icon data={quickActionsOpen ? Xmark : Thunderbolt as IconData} size={20} />
+                                <Icon data={quickActionsOpen ? Xmark : Thunderbolt as IconData} size={22} />
                             </button>
                         )}
                     >

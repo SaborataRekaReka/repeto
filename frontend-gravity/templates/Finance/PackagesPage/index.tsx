@@ -132,6 +132,7 @@ const PackagesPage = () => {
     return (
         <GravityLayout title="Пакеты">
             <PageOverlay
+                className="page-overlay--finance-dashboard-bg"
                 title="Пакеты"
                 breadcrumb="Дашборд"
                 backHref="/dashboard"

@@ -407,7 +407,7 @@ const CreatePaymentModal = ({
     const panelContent = (
         <div
             ref={panelRef}
-            className={`lp2 ${isPanelVisible ? "lp2--open" : ""}`}
+            className={`lp2 lp2--mobile-inline-title ${isPanelVisible ? "lp2--open" : ""}`}
             style={{ zIndex: PANEL_Z }}
             onTransitionEnd={handleTransitionEnd}
             role="dialog"

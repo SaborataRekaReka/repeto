@@ -28,19 +28,19 @@ module.exports = {
         },
         extend: {
             colors: {
-                /* ═══ Brand primary — logo purple #AE7AFF ═══ */
+                /* ═══ Brand primary — logo blue #005BAC ═══ */
                 brand: {
-                    50:  "#F5EEFF",
-                    100: "#EDE2FF",
-                    200: "#D9C0FF",
-                    300: "#C49DFF",
-                    400: "#AE7AFF",
-                    DEFAULT: "#AE7AFF",
-                    500: "#9B5FFF",
-                    600: "#8840F5",
-                    700: "#7030D9",
-                    800: "#5820B8",
-                    900: "#42189A",
+                    50:  "#E6F1FA",
+                    100: "#CCE3F5",
+                    200: "#99C8EA",
+                    300: "#66ACDF",
+                    400: "#005BAC",
+                    DEFAULT: "#005BAC",
+                    500: "#004D90",
+                    600: "#00427C",
+                    700: "#003663",
+                    800: "#00294B",
+                    900: "#001D35",
                 },
                 /* ═══ Brand accent — logo green #98E9AB ═══ */
                 accent: {
@@ -58,13 +58,13 @@ module.exports = {
                 },
                 /* ═══ Backward-compat aliases (legacy kit naming) ═══ */
                 purple: {
-                    1: "#AE7AFF",
-                    2: "#7030D9",
-                    3: "#EDE2FF",
+                    1: "#005BAC",
+                    2: "#003663",
+                    3: "#CCE3F5",
                 },
                 yellow: {
-                    1: "#C6A6FF",
-                    2: "#F4EEFF",
+                    1: "#7BB4DB",
+                    2: "#EAF3FB",
                 },
                 pink: {
                     1: "#D16B8F",

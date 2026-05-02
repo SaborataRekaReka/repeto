@@ -3,7 +3,26 @@
     --repeto-shell-sidebar-width: 52px;
     --repeto-shell-sidebar-collapsed-width: 52px;
     --repeto-shell-context-sidebar-width: 260px;
+    --repeto-shell-content-inline-padding: 20px;
+    --repeto-shell-rail-bg: var(--accent);
+    --repeto-shell-rail-border: color-mix(in srgb, #ffffff 22%, transparent);
+    --repeto-shell-rail-icon: #ffffff;
+    --repeto-shell-rail-item-hover-bg: rgba(255, 255, 255, 0.18);
+    --repeto-shell-rail-item-active-bg: #ffffff;
+    --repeto-shell-rail-item-active-icon: #141414;
+    --repeto-shell-rail-expand-hover-bg: rgba(255, 255, 255, 0.22);
+    --repeto-shell-floating-edge: 14px;
+    --repeto-shell-floating-gap: 10px;
+    --repeto-shell-floating-radius: 14px;
+    --repeto-shell-header-radius: 14px;
+    --repeto-shell-header-height: 58px;
+    --repeto-shell-floating-shadow: 0 18px 36px rgba(15, 23, 42, 0.1);
     --repeto-shell-page-top-inset: 10px;
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) {
+    --repeto-shell-rail-bg: var(--accent);
+    --repeto-shell-rail-border: color-mix(in srgb, #ffffff 24%, transparent);
 }
 
 /* Upgrade plan modal: payment-step summary card. */
@@ -79,18 +98,45 @@
 
 @media (min-width: 769px) {
     .repeto-top-header {
-        left: calc(var(--repeto-shell-sidebar-collapsed-width) + var(--repeto-shell-context-sidebar-width)) !important;
-        height: 56px !important;
+        top: var(--repeto-shell-floating-edge) !important;
+        left: calc(
+            var(--repeto-shell-floating-edge) +
+            var(--repeto-shell-sidebar-collapsed-width) +
+            var(--repeto-shell-floating-gap) +
+            var(--repeto-shell-context-sidebar-width) +
+            var(--repeto-shell-floating-gap) +
+            var(--repeto-shell-content-inline-padding)
+        ) !important;
+        right: calc(
+            var(--repeto-shell-floating-edge) +
+            var(--repeto-shell-content-inline-padding)
+        ) !important;
+        height: var(--repeto-shell-header-height) !important;
         background: var(--surface-card) !important;
-        border-bottom: 1px solid var(--border-subtle) !important;
+        border: 1px solid color-mix(in srgb, var(--border-subtle) 86%, transparent) !important;
+        border-radius: var(--repeto-shell-header-radius) !important;
+        box-shadow: none !important;
+        backdrop-filter: blur(10px);
     }
 
     body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
-        left: var(--repeto-shell-sidebar-collapsed-width) !important;
+        left: calc(
+            var(--repeto-shell-floating-edge) +
+            var(--repeto-shell-sidebar-collapsed-width) +
+            var(--repeto-shell-floating-gap) +
+            var(--repeto-shell-content-inline-padding)
+        ) !important;
+    }
+
+    body .repeto-top-header.repeto-top-header--no-sidebar {
+        left: calc(
+            var(--repeto-shell-floating-edge) +
+            var(--repeto-shell-content-inline-padding)
+        ) !important;
     }
 
     .repeto-top-header__inner {
-        padding: 0 16px !important;
+        padding: 0 18px !important;
     }
 
     .repeto-top-header__brand {
@@ -119,14 +165,20 @@
     }
 
     .repeto-sidebar--flat.repeto-sidebar--rail {
-        top: 0 !important;
-        left: 0 !important;
-        bottom: 0 !important;
+        top: var(--repeto-shell-floating-edge) !important;
+        left: var(--repeto-shell-floating-edge) !important;
+        bottom: var(--repeto-shell-floating-edge) !important;
         width: var(--repeto-shell-sidebar-collapsed-width) !important;
-        background: var(--surface-subtle) !important;
-        border-right: 1px solid var(--border-subtle) !important;
-        border-radius: 0 !important;
+        background: var(--repeto-shell-rail-bg) !important;
+        border: 1px solid var(--repeto-shell-rail-border) !important;
+        border-radius: var(--repeto-shell-floating-radius) !important;
         box-shadow: none !important;
+        --repeto-main-menu-text: var(--repeto-shell-rail-icon);
+        --repeto-main-menu-icon: var(--repeto-shell-rail-icon);
+        --repeto-main-menu-hover-text: var(--repeto-shell-rail-icon);
+        --repeto-main-menu-hover-icon: var(--repeto-shell-rail-icon);
+        --repeto-main-menu-active-text: var(--repeto-shell-rail-item-active-icon);
+        --repeto-main-menu-active-icon: var(--repeto-shell-rail-item-active-icon);
     }
 
     .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__logo--rail-slot {
@@ -135,7 +187,7 @@
     }
 
     .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__nav {
-        padding: 8px 6px 14px !important;
+        padding: 10px 6px 14px !important;
         gap: 8px !important;
     }
 
@@ -145,32 +197,54 @@
         border-radius: 8px !important;
     }
 
+    .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--main {
+        color: var(--repeto-shell-rail-icon) !important;
+    }
+
+    .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--main .repeto-sidebar__item-icon .g-icon,
+    .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--main .repeto-animated-sidebar-icon__fallback .g-icon {
+        color: var(--repeto-shell-rail-icon) !important;
+    }
+
+    .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--main .repeto-animated-sidebar-icon__canvas :is(path, circle, ellipse, line, polyline, polygon, rect) {
+        stroke: var(--repeto-shell-rail-icon) !important;
+    }
+
+    .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--main .repeto-animated-sidebar-icon__canvas [fill]:not([fill="none"]) {
+        fill: var(--repeto-shell-rail-icon) !important;
+    }
+
     .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item-rail-label {
         display: none !important;
     }
 
     .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--main.repeto-sidebar__item--active {
-        background: var(--accent) !important;
-        color: var(--repeto-on-brand) !important;
+        background: var(--repeto-shell-rail-item-active-bg) !important;
+        color: var(--repeto-shell-rail-item-active-icon) !important;
         border-radius: 10px !important;
     }
 
     .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--main.repeto-sidebar__item--active:hover {
-        background: var(--accent-hover) !important;
-        color: var(--repeto-on-brand) !important;
+        background: var(--repeto-shell-rail-item-active-bg) !important;
+        color: var(--repeto-shell-rail-item-active-icon) !important;
     }
 
     .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--main.repeto-sidebar__item--active .repeto-sidebar__item-icon .g-icon,
     .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--main.repeto-sidebar__item--active .repeto-animated-sidebar-icon__fallback .g-icon {
-        color: var(--repeto-on-brand) !important;
+        color: var(--repeto-shell-rail-item-active-icon) !important;
     }
 
     .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--main.repeto-sidebar__item--active .repeto-animated-sidebar-icon__canvas :is(path, circle, ellipse, line, polyline, polygon, rect) {
-        stroke: var(--repeto-on-brand) !important;
+        stroke: var(--repeto-shell-rail-item-active-icon) !important;
     }
 
     .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--main.repeto-sidebar__item--active .repeto-animated-sidebar-icon__canvas [fill]:not([fill="none"]) {
-        fill: var(--repeto-on-brand) !important;
+        fill: var(--repeto-shell-rail-item-active-icon) !important;
+    }
+
+    .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__item--main:hover {
+        background: var(--repeto-shell-rail-item-hover-bg) !important;
+        color: var(--repeto-shell-rail-icon) !important;
     }
 
     .repeto-sidebar__context-expand-btn {
@@ -180,23 +254,34 @@
         border-radius: 8px !important;
     }
 
+    .repeto-sidebar--flat.repeto-sidebar--rail .repeto-sidebar__context-expand-btn {
+        color: var(--repeto-shell-rail-icon) !important;
+        opacity: 0.9 !important;
+    }
+
     .repeto-sidebar__context-expand-btn:hover {
-        background: var(--surface-sunken) !important;
+        background: var(--repeto-shell-rail-expand-hover-bg) !important;
+        color: var(--repeto-shell-rail-icon) !important;
+        opacity: 1 !important;
     }
 
     .repeto-context-sidebar {
-        top: 0 !important;
-        left: var(--repeto-shell-sidebar-collapsed-width) !important;
-        bottom: 0 !important;
+        top: var(--repeto-shell-floating-edge) !important;
+        left: calc(
+            var(--repeto-shell-floating-edge) +
+            var(--repeto-shell-sidebar-collapsed-width) +
+            var(--repeto-shell-floating-gap)
+        ) !important;
+        bottom: var(--repeto-shell-floating-edge) !important;
         width: var(--repeto-shell-context-sidebar-width) !important;
         background: var(--surface-card) !important;
-        border-right: 1px solid var(--border-subtle) !important;
-        border-radius: 0 !important;
-        box-shadow: none !important;
+        border: 1px solid color-mix(in srgb, var(--border-subtle) 86%, transparent) !important;
+        border-radius: var(--repeto-shell-floating-radius) !important;
+        box-shadow: var(--repeto-shell-floating-shadow) !important;
     }
 
     .repeto-context-sidebar__inner {
-        padding: 18px 12px !important;
+        padding: 18px 14px !important;
         overflow: hidden !important;
     }
 
@@ -665,7 +750,33 @@
     }
 
     .repeto-content--flat {
-        padding-top: 56px !important;
+        padding: calc(
+            var(--repeto-shell-floating-edge) +
+            var(--repeto-shell-header-height)
+        ) var(--repeto-shell-content-inline-padding) 28px !important;
+        margin-right: var(--repeto-shell-floating-edge) !important;
+    }
+
+    body .repeto-content--flat.repeto-content--no-sidebar {
+        margin-left: var(--repeto-shell-floating-edge) !important;
+    }
+
+    body.repeto-shell-rail-open .repeto-content--flat.repeto-content--with-context-sidebar {
+        margin-left: calc(
+            var(--repeto-shell-floating-edge) +
+            var(--repeto-shell-sidebar-collapsed-width) +
+            var(--repeto-shell-floating-gap) +
+            var(--repeto-shell-context-sidebar-width) +
+            var(--repeto-shell-floating-gap)
+        ) !important;
+    }
+
+    body.repeto-shell-rail-open .repeto-content--flat.repeto-content--with-context-sidebar-collapsed {
+        margin-left: calc(
+            var(--repeto-shell-floating-edge) +
+            var(--repeto-shell-sidebar-collapsed-width) +
+            var(--repeto-shell-floating-gap)
+        ) !important;
     }
 
     /* The page title row inside content duplicates top header in Yandex shell. */
@@ -836,7 +947,10 @@
 
     /* LP2 panels should occupy all available workspace without card chrome. */
     .lp2:not(.lp2--homework) {
-        top: 56px !important;
+        top: calc(
+            var(--repeto-shell-floating-edge) +
+            var(--repeto-shell-header-height)
+        ) !important;
         right: 0 !important;
         bottom: 0 !important;
         left: 0 !important;
@@ -846,10 +960,20 @@
     }
 
     body.repeto-shell-rail-open .lp2:not(.lp2--homework) {
-        left: var(--repeto-shell-sidebar-collapsed-width) !important;
+        left: calc(
+            var(--repeto-shell-floating-edge) +
+            var(--repeto-shell-sidebar-collapsed-width) +
+            var(--repeto-shell-floating-gap)
+        ) !important;
     }
 
     body.repeto-shell-context-sidebar-open .lp2:not(.lp2--homework) {
-        left: calc(var(--repeto-shell-sidebar-collapsed-width) + var(--repeto-shell-context-sidebar-width)) !important;
+        left: calc(
+            var(--repeto-shell-floating-edge) +
+            var(--repeto-shell-sidebar-collapsed-width) +
+            var(--repeto-shell-floating-gap) +
+            var(--repeto-shell-context-sidebar-width) +
+            var(--repeto-shell-floating-gap)
+        ) !important;
     }
 }

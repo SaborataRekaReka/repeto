@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo, type MouseEventHandler, type KeyboardEventHandler } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo, type MouseEventHandler, type KeyboardEventHandler } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import Head from "next/head";
@@ -363,6 +363,41 @@ const mobileNavItems: MenuItem[] = [
     },
 ];
 
+const MOBILE_NAV_VISIBLE_ITEMS = 5;
+const MOBILE_NAV_MAX_START_INDEX = Math.max(0, mobileNavItems.length - MOBILE_NAV_VISIBLE_ITEMS);
+const MOBILE_NAV_START_INDEX_KEY = "repeto-mobile-nav-start-index";
+const useClientLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
+
+function clampMobileNavStartIndex(value: number): number {
+    if (!Number.isFinite(value)) {
+        return 0;
+    }
+
+    return Math.max(0, Math.min(MOBILE_NAV_MAX_START_INDEX, Math.round(value)));
+}
+
+function readMobileNavStartIndex(): number {
+    if (typeof window === "undefined") {
+        return 0;
+    }
+
+    try {
+        return clampMobileNavStartIndex(Number(window.sessionStorage.getItem(MOBILE_NAV_START_INDEX_KEY)));
+    } catch {
+        return 0;
+    }
+}
+
+function writeMobileNavStartIndex(value: number) {
+    if (typeof window === "undefined") {
+        return;
+    }
+
+    try {
+        window.sessionStorage.setItem(MOBILE_NAV_START_INDEX_KEY, String(clampMobileNavStartIndex(value)));
+    } catch {}
+}
+
 const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = false, children }: GravityLayoutProps) => {
     const useFlatLayout = true;
     const router = useRouter();
@@ -464,7 +499,7 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
     const mobileSearchRef = useRef<HTMLDivElement>(null);
     const mobileNavRef = useRef<HTMLElement>(null);
     const mobileNavItemRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
-    const previousMobileNavIndexRef = useRef<number | null>(null);
+    const mobileNavStartIndexRef = useRef(readMobileNavStartIndex());
     const useTopHeaderSearch = useFlatLayout && !isMobileViewport;
     const useRailSidebar = useFlatLayout && !isMobileViewport;
     const rawPlatformPlanId = user?.platformAccess?.planId;
@@ -530,59 +565,122 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
         return active?.url || null;
     }, [pathname]);
 
-    useEffect(() => {
-        if (!isMobileViewport || !activeMobileNavUrl) {
-            previousMobileNavIndexRef.current = null;
-            return;
-        }
-
+    const scrollMobileNavToStartIndex = useCallback((startIndex: number, behavior: ScrollBehavior): number | null => {
         const nav = mobileNavRef.current;
-        if (!nav) return;
-
-        const activeIndex = mobileNavItems.findIndex((item) => item.url === activeMobileNavUrl);
-        if (activeIndex < 0) return;
-
-        const previousIndex = previousMobileNavIndexRef.current;
-        previousMobileNavIndexRef.current = activeIndex;
+        if (!nav) return null;
 
         const maxScrollLeft = nav.scrollWidth - nav.clientWidth;
-        if (maxScrollLeft <= 0) return;
+        if (maxScrollLeft <= 0) return null;
 
-        const scrollPadding = 8;
-        const navRect = nav.getBoundingClientRect();
-        const moveDirection = previousIndex === null ? 0 : Math.sign(activeIndex - previousIndex);
-        let targetLeft = nav.scrollLeft;
+        const normalizedStartIndex = clampMobileNavStartIndex(startIndex);
+        let targetLeft = 0;
 
-        if (activeIndex === 0) {
-            // Active is the last item — scroll all the way to the right end.
-            targetLeft = 0;
-        } else if (activeIndex === mobileNavItems.length - 1) {
+        if (normalizedStartIndex >= MOBILE_NAV_MAX_START_INDEX) {
             targetLeft = maxScrollLeft;
-        } else if (moveDirection < 0) {
-            const previousItem = mobileNavItemRefs.current[mobileNavItems[activeIndex - 1].url];
-            if (previousItem) {
-                const previousItemRect = previousItem.getBoundingClientRect();
-                const previousItemLeft = previousItemRect.left - navRect.left + nav.scrollLeft;
-                targetLeft = previousItemLeft - scrollPadding;
-            }
-        } else {
-            const nextItem = mobileNavItemRefs.current[mobileNavItems[activeIndex + 1].url];
-            if (nextItem) {
-                const nextItemRect = nextItem.getBoundingClientRect();
-                const nextItemRight = nextItemRect.right - navRect.left + nav.scrollLeft;
-                targetLeft = nextItemRight - nav.clientWidth + scrollPadding;
-            }
+        } else if (normalizedStartIndex > 0) {
+            const targetItem = mobileNavItemRefs.current[mobileNavItems[normalizedStartIndex]?.url];
+            if (!targetItem) return null;
+
+            const navRect = nav.getBoundingClientRect();
+            const itemRect = targetItem.getBoundingClientRect();
+            targetLeft = itemRect.left - navRect.left + nav.scrollLeft - 6;
         }
 
-        // Use getBoundingClientRect because nav is position:fixed — offsetLeft is relative to body, not nav.
         const clampedLeft = Math.max(0, Math.min(maxScrollLeft, targetLeft));
         if (Math.abs(clampedLeft - nav.scrollLeft) > 1) {
             nav.scrollTo({
                 left: clampedLeft,
-                behavior: "smooth",
+                behavior,
             });
         }
-    }, [activeMobileNavUrl, isMobileViewport]);
+        return clampedLeft;
+    }, []);
+
+    const handleMobileNavItemClick = useCallback((
+        itemIndex: number,
+        itemUrl: string,
+        event: React.MouseEvent<HTMLAnchorElement>,
+    ) => {
+        const shouldLetBrowserHandle =
+            event.defaultPrevented ||
+            event.button !== 0 ||
+            event.metaKey ||
+            event.ctrlKey ||
+            event.shiftKey ||
+            event.altKey;
+
+        if (shouldLetBrowserHandle) return;
+
+        const currentStart = mobileNavStartIndexRef.current;
+        const currentEnd = Math.min(
+            mobileNavItems.length - 1,
+            currentStart + MOBILE_NAV_VISIBLE_ITEMS - 1,
+        );
+        let nextStart = currentStart;
+
+        if (itemIndex === currentEnd && currentStart < MOBILE_NAV_MAX_START_INDEX) {
+            nextStart = currentStart + 1;
+        } else if (itemIndex === currentStart && currentStart > 0) {
+            nextStart = currentStart - 1;
+        }
+
+        if (nextStart === currentStart) return;
+
+        event.preventDefault();
+        mobileNavStartIndexRef.current = nextStart;
+        writeMobileNavStartIndex(nextStart);
+        const targetLeft = scrollMobileNavToStartIndex(nextStart, "smooth");
+
+        const navigate = () => {
+            if (router.asPath.split("?")[0] !== itemUrl) {
+                void router.push(itemUrl);
+            }
+        };
+
+        if (targetLeft === null || router.asPath.split("?")[0] === itemUrl) {
+            navigate();
+            return;
+        }
+
+        const nav = mobileNavRef.current;
+        const startedAt = window.performance.now();
+
+        const waitForScroll = () => {
+            if (!nav || Math.abs(nav.scrollLeft - targetLeft) <= 1 || window.performance.now() - startedAt > 260) {
+                navigate();
+                return;
+            }
+
+            window.requestAnimationFrame(waitForScroll);
+        };
+
+        window.requestAnimationFrame(waitForScroll);
+    }, [router, scrollMobileNavToStartIndex]);
+
+    useClientLayoutEffect(() => {
+        const activeIndex = activeMobileNavUrl
+            ? mobileNavItems.findIndex((item) => item.url === activeMobileNavUrl)
+            : -1;
+        const currentStart = mobileNavStartIndexRef.current;
+        const currentEnd = Math.min(
+            mobileNavItems.length - 1,
+            currentStart + MOBILE_NAV_VISIBLE_ITEMS - 1,
+        );
+        let nextStart = currentStart;
+
+        if (activeIndex >= 0 && activeIndex < currentStart) {
+            nextStart = Math.max(0, Math.min(activeIndex, MOBILE_NAV_MAX_START_INDEX));
+        } else if (activeIndex > currentEnd) {
+            nextStart = Math.max(
+                0,
+                Math.min(activeIndex - MOBILE_NAV_VISIBLE_ITEMS + 1, MOBILE_NAV_MAX_START_INDEX),
+            );
+        }
+
+        mobileNavStartIndexRef.current = nextStart;
+        writeMobileNavStartIndex(nextStart);
+        scrollMobileNavToStartIndex(nextStart, "auto");
+    }, [activeMobileNavUrl, scrollMobileNavToStartIndex]);
 
     const openPublicPage = useCallback(() => {
         setProfileMenuOpen(false);
@@ -1881,7 +1979,7 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
             )}
 
             <nav ref={mobileNavRef} className="repeto-mobile-nav" aria-label="Мобильная навигация">
-                {mobileNavItems.map((item) => {
+                {mobileNavItems.map((item, itemIndex) => {
                     const isActive = activeMobileNavUrl === item.url;
                     const iconKey = `mobile-nav:${item.url}`;
 
@@ -1900,6 +1998,7 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                             onBlur={() =>
                                 setHoveredSidebarIconKey((prev) => (prev === iconKey ? null : prev))
                             }
+                            onClick={(event) => handleMobileNavItemClick(itemIndex, item.url, event)}
                             className={`repeto-mobile-nav__item ${isActive ? "repeto-mobile-nav__item--active" : ""}`}
                         >
                             <span className="repeto-mobile-nav__icon">

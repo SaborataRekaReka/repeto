@@ -58,8 +58,8 @@ html body.g-root_theme_light {
     --g-color-text-brand-heavy: var(--accent);
     --g-color-text-link: var(--accent-hover);
     --g-color-text-link-hover: var(--accent-pressed);
-    --g-color-text-link-visited: var(--g-color-private-purple-550-solid);
-    --g-color-text-link-visited-hover: var(--g-color-private-purple-800-solid);
+    --g-color-text-link-visited: var(--accent);
+    --g-color-text-link-visited-hover: var(--accent-hover);
     --g-color-text-brand-contrast: var(--g-color-text-light-primary);
     --g-color-base-background: var(--surface-page);
     --g-color-base-float: var(--surface-card);
@@ -112,8 +112,8 @@ html body.g-root_theme_dark {
     --g-color-text-brand-contrast: var(--g-color-text-light-primary);
     --g-color-text-link: var(--accent);
     --g-color-text-link-hover: var(--accent-hover);
-    --g-color-text-link-visited: var(--g-color-private-purple-700-solid);
-    --g-color-text-link-visited-hover: var(--g-color-private-purple-850-solid);
+    --g-color-text-link-visited: var(--accent);
+    --g-color-text-link-visited-hover: var(--accent-hover);
     --g-color-base-background: var(--surface-page);
     --g-color-base-float: var(--surface-card);
     --g-color-base-brand: var(--accent);
@@ -134,9 +134,9 @@ html body.g-root_theme_dark {
     --text-primary: #141414;
     --text-secondary: #6b6b66;
     --text-tertiary: #9a9a93;
-    --accent: #ae7aff;
-    --accent-hover: #9b68ef;
-    --accent-pressed: #7e49e2;
+    --accent: #005BAC;
+    --accent-hover: #004D90;
+    --accent-pressed: #003C73;
     --accent-soft: color-mix(in srgb, var(--accent) 18%, transparent);
     --repeto-bg: var(--surface-page);
     --repeto-shell-sidebar-width: 52px;
@@ -210,12 +210,12 @@ html body.g-root_theme_dark {
     --repeto-drawer-shadow: -8px 0 32px rgba(0, 0, 0, 0.12);
 
     /* Chart palette — used by IncomeByStudents, PaymentMethods, etc. */
-    --chart-brand:      #ae7aff;
-    --chart-lavender:   #c4a5ff;
-    --chart-info:       #d6bbff;
-    --chart-success:    #e4d4ff;
-    --chart-warning:    #efe6ff;
-    --chart-brand-soft: #d5c7ef;
+    --chart-brand:      #005BAC;
+    --chart-lavender:   #2D7FBE;
+    --chart-info:       #5A9DD1;
+    --chart-success:    #87B9E0;
+    --chart-warning:    #B3D5EE;
+    --chart-brand-soft: #9CC4E3;
 }
 
 :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) {
@@ -228,10 +228,10 @@ html body.g-root_theme_dark {
     --text-primary: #eceff5;
     --text-secondary: #b1b8c6;
     --text-tertiary: #8a92a4;
-    --accent: #ae7aff;
-    --accent-hover: #9b68ef;
-    --accent-pressed: #7e49e2;
-    --accent-soft: rgba(174, 122, 255, 0.2);
+    --accent: #005BAC;
+    --accent-hover: #004D90;
+    --accent-pressed: #003C73;
+    --accent-soft: rgba(0, 91, 172, 0.2);
     --g-color-base-simple-hover: color-mix(in srgb, var(--surface-subtle) 88%, #000 12%);
     --repeto-bg: var(--surface-page);
     --repeto-control-surface: var(--surface-subtle);
@@ -294,12 +294,12 @@ html body.g-root_theme_dark {
     --repeto-drawer-shadow: -8px 0 32px rgba(0, 0, 0, 0.32);
 
     /* Chart palette — dark mode (brighter tints) */
-    --chart-brand:      #c4a5ff;
-    --chart-lavender:   #d6bbff;
-    --chart-info:       #e1cfff;
-    --chart-success:    #ecdfff;
-    --chart-warning:    #f3e9ff;
-    --chart-brand-soft: #7a6fa0;
+    --chart-brand:      #5A9DD1;
+    --chart-lavender:   #7BB4DB;
+    --chart-info:       #9FCBE7;
+    --chart-success:    #C0DEF0;
+    --chart-warning:    #DBEEF8;
+    --chart-brand-soft: #3B6D95;
 }
 
 html,
@@ -2026,7 +2026,7 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: #7e67f5;
+    color: #005BAC;
     flex-shrink: 0;
 }
 
@@ -3347,6 +3347,7 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 .repeto-app-dialog .g-dialog-body,
 .repeto-app-dialog .g-dialog-footer {
     background: var(--g-color-base-float);
+    border-radius: 0 !important;
 }
 
 .repeto-app-dialog .g-dialog-header {
@@ -3377,11 +3378,20 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     border-radius: 18px;
     border: 1px solid color-mix(in srgb, var(--g-color-line-generic) 80%, transparent);
     box-shadow: 0 26px 64px rgba(16, 24, 40, 0.22), 0 2px 8px rgba(16, 24, 40, 0.08);
+    background: var(--g-color-base-float);
     overflow: hidden;
 }
 
 .repeto-app-dialog-modal .g-modal__content-wrapper {
     margin: 20px;
+}
+
+.repeto-app-dialog-modal .g-modal__content,
+.repeto-app-dialog-modal .g-modal__content-wrapper {
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
 }
 
 .repeto-dialog-row {
@@ -8444,6 +8454,15 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     --g-color-text-light-primary: var(--repeto-on-brand);
 }
 
+.page-overlay--finance-dashboard-bg {
+    background: var(--repeto-bg);
+}
+
+.page-overlay--finance-dashboard-bg .page-overlay__content,
+.page-overlay--finance-dashboard-bg .page-overlay__sidebar {
+    background: var(--repeto-bg);
+}
+
 .page-overlay--leaving {
     animation: repeto-page-overlay-exit 0.24s ease both;
 }
@@ -9311,7 +9330,7 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 
 @media (max-width: 768px) {
     .page-overlay {
-        top: 0;
+        top: 64px;
     }
 
     .page-overlay__back {
@@ -9328,11 +9347,19 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     }
 
     .page-overlay__sidebar {
-        padding: 56px 20px 6px;
+        padding: 12px 20px 6px;
         border-right: none;
         border-bottom: none;
         overflow-y: visible;
         align-self: start;
+    }
+
+    .page-overlay__title {
+        min-height: 36px;
+        display: flex;
+        align-items: center;
+        padding-left: 36px;
+        margin: 0 0 16px;
     }
 
     .page-overlay__nav--section {
@@ -9360,10 +9387,10 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     .page-overlay__fab {
         width: 56px;
         height: 56px;
-        border: none;
+        border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border-subtle));
         border-radius: 20px;
-        background: color-mix(in srgb, var(--text-primary) 84%, black);
-        color: var(--repeto-on-brand);
+        background: var(--surface-card);
+        color: var(--accent);
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -9374,7 +9401,7 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 
     .page-overlay__fab:hover {
         transform: translateY(-1px);
-        background: color-mix(in srgb, var(--text-primary) 90%, black);
+        background: var(--surface-subtle);
     }
 }
 
@@ -9539,6 +9566,46 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     .lp2__page-title {
         font-size: 22px;
         margin-bottom: 20px;
+    }
+
+    .lp2--mobile-inline-title .lp2__topbar {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 3;
+        border-bottom: none;
+        pointer-events: none;
+    }
+
+    .lp2--mobile-inline-title .lp2__back,
+    .lp2--mobile-inline-title .lp2__topbar-actions {
+        pointer-events: auto;
+    }
+
+    .lp2--mobile-inline-title .lp2__scroll {
+        position: relative;
+    }
+
+    .lp2--mobile-inline-title .lp2__center {
+        position: relative;
+        padding-top: 56px;
+    }
+
+    .lp2--mobile-inline-title .lp2__center > .lp2__page-title:first-child {
+        position: absolute;
+        top: 0;
+        left: 16px;
+        right: 16px;
+        height: 56px;
+        margin: 0;
+        padding: 0 56px 0 48px;
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        pointer-events: none;
     }
 
     .lp2-row {

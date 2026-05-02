@@ -192,19 +192,19 @@
 .repeto-tochka-dash .repeto-task-panel .repeto-task-tile,
 .repeto-tochka-dash .repeto-task-stack__card,
 .repeto-tochka-dash .repeto-task-mobile-modal .repeto-task-tile {
-    background: #E2DDF6 !important;
+    background: #D4E8F7 !important;
     border: none !important;
     box-shadow: none !important;
 }
 
 .repeto-tochka-dash .repeto-task-panel .repeto-task-tile:hover,
 .repeto-tochka-dash .repeto-task-mobile-modal .repeto-task-tile:hover {
-    background: #D8D0F1 !important;
+    background: #C6DEF3 !important;
 }
 
 .repeto-tochka-dash .repeto-task-panel .repeto-task-tile__kicker,
 .repeto-tochka-dash .repeto-task-mobile-modal .repeto-task-tile__kicker {
-    color: #6f6880 !important;
+    color: #4F6D89 !important;
 }
 
 .repeto-tochka-dash .repeto-task-panel .repeto-task-tile__title,
@@ -214,43 +214,43 @@
 
 .repeto-tochka-dash .repeto-task-panel .repeto-task-tile__meta,
 .repeto-tochka-dash .repeto-task-mobile-modal .repeto-task-tile__meta {
-    color: #5c556f !important;
+    color: #44637F !important;
 }
 
 :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-task-panel .repeto-task-tile,
 :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-task-stack__card,
 :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-task-mobile-modal .repeto-task-tile {
-    background: #2e2a3a !important;
+    background: #1F3346 !important;
 }
 
 :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-task-panel .repeto-task-tile:hover,
 :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-task-mobile-modal .repeto-task-tile:hover {
-    background: #393347 !important;
+    background: #27415A !important;
 }
 
 :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-task-panel .repeto-task-tile--urgent,
 :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-task-mobile-modal .repeto-task-tile--urgent {
-    background: #46395a !important;
+    background: #2F4F70 !important;
 }
 
 :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-task-panel .repeto-task-tile--urgent:hover,
 :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-task-mobile-modal .repeto-task-tile--urgent:hover {
-    background: #514066 !important;
+    background: #365D84 !important;
 }
 
 :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-task-panel .repeto-task-tile__kicker,
 :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-task-mobile-modal .repeto-task-tile__kicker {
-    color: #c0b8d6 !important;
+    color: #9FB9D3 !important;
 }
 
 :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-task-panel .repeto-task-tile__title,
 :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-task-mobile-modal .repeto-task-tile__title {
-    color: #f3f0ff !important;
+    color: #EAF3FB !important;
 }
 
 :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-task-panel .repeto-task-tile__meta,
 :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-task-mobile-modal .repeto-task-tile__meta {
-    color: #d0c8e4 !important;
+    color: #AFC5DD !important;
 }
 
 .repeto-task-stack {
@@ -289,7 +289,7 @@
         right: 12px;
         height: 72px;
         border-radius: 14px;
-        background: #D7CFF1;
+        background: #C5DCF0;
         pointer-events: none;
     }
 
@@ -302,16 +302,16 @@
         left: 24px;
         right: 24px;
         bottom: 0;
-        background: #CEC3EC;
+        background: #B7D2EA;
         transform: translateY(14px);
     }
 
     :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-task-stack__layer {
-        background: #3c3550;
+        background: #27405A;
     }
 
     :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-task-stack__layer--third {
-        background: #322c43;
+        background: #20354A;
     }
 
     .repeto-task-stack__card {
@@ -423,27 +423,27 @@
 
 /* Finance monthly segment chart color roles — purple scale (matches adjacent IncomeByStudents chart). */
 .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--cancelled {
-    --segment-bg: #f0ecff;
-    --segment-marker: #c4a5ff;
-    --segment-bar: #c4a5ff;
+    --segment-bg: #E9F3FB;
+    --segment-marker: #5A9DD1;
+    --segment-bar: #5A9DD1;
 }
 
 .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--received {
-    --segment-bg: #d8ccff;
-    --segment-marker: #7030d9;
-    --segment-bar: #7030d9;
+    --segment-bg: #D4E8F7;
+    --segment-marker: #005BAC;
+    --segment-bar: #005BAC;
 }
 
 .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--planned {
-    --segment-bg: #e6dfff;
-    --segment-marker: #9b68ef;
-    --segment-bar: #9b68ef;
+    --segment-bg: #E2F0FA;
+    --segment-marker: #2D7FBE;
+    --segment-bar: #2D7FBE;
 }
 
 .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--debt {
-    --segment-bg: #f5f0ff;
-    --segment-marker: #b89aef;
-    --segment-bar: #b89aef;
+    --segment-bg: #EEF6FC;
+    --segment-marker: #7BB4DB;
+    --segment-bar: #7BB4DB;
 }
 
 .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item {
@@ -455,15 +455,15 @@
 }
 
 :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--cancelled {
-    --segment-bg: color-mix(in srgb, #c4a5ff 20%, var(--t-surface));
-    --segment-marker: #c4a5ff;
-    --segment-bar: #c4a5ff;
+    --segment-bg: color-mix(in srgb, #5A9DD1 20%, var(--t-surface));
+    --segment-marker: #7BB4DB;
+    --segment-bar: #7BB4DB;
 }
 
 :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--received {
     --segment-bg: color-mix(in srgb, var(--accent) 38%, var(--t-surface));
-    --segment-marker: #e0cfff;
-    --segment-bar: #e0cfff;
+    --segment-marker: #9FCBE7;
+    --segment-bar: #9FCBE7;
 }
 
 :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--planned {
@@ -473,21 +473,21 @@
 }
 
 :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tochka-dash .repeto-tochka-finance .repeto-finance-segments__item--debt {
-    --segment-bg: color-mix(in srgb, #b89aef 22%, var(--t-surface));
-    --segment-marker: #d6bbff;
-    --segment-bar: #d6bbff;
+    --segment-bg: color-mix(in srgb, #7BB4DB 22%, var(--t-surface));
+    --segment-marker: #9FCBE7;
+    --segment-bar: #9FCBE7;
 }
 
 /* Booking selected date/time must be visibly active. */
 .repeto-bk-cal-day--selected,
 .repeto-bk-time-slot--active {
-    background: var(--g-color-base-brand, #835DE1) !important;
+    background: var(--g-color-base-brand, #005BAC) !important;
     color: var(--g-color-text-light-primary, #ffffff) !important;
 }
 
 .repeto-bk-time-slot--active:hover,
 .repeto-bk-cal-day--selected:hover:not(:disabled) {
-    background: var(--g-color-base-brand-hover, #7945EB) !important;
+    background: var(--g-color-base-brand-hover, #004D90) !important;
     color: var(--g-color-text-light-primary, #ffffff) !important;
 }
 
