@@ -6,10 +6,7 @@ import {
     Button,
     Text,
     TextArea,
-    Icon,
 } from "@gravity-ui/uikit";
-import { ArrowLeft } from "@gravity-ui/icons";
-import type { IconData } from "@gravity-ui/uikit";
 import { useStudents } from "@/hooks/useStudents";
 import { createPayment, updatePayment, deletePayment, usePayments } from "@/hooks/usePayments";
 import { useLessons } from "@/hooks/useLessons";
@@ -19,6 +16,8 @@ import { Lp2Field, Lp2Row } from "@/components/Lp2Field";
 import { codedErrorMessage } from "@/lib/errorCodes";
 import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 import StudentAvatar from "@/components/StudentAvatar";
+import Lp2PlannerShell, { Lp2PlannerLayout, Lp2PlannerSection } from "@/components/Lp2PlannerShell";
+import { useModalEscape } from "@/hooks/useModalEscape";
 import type { Payment } from "@/types/finance";
 
 const methodOptions = [
@@ -40,6 +39,7 @@ type CreatePaymentModalProps = {
     } | null;
     paymentData?: Payment | null;
     hideLesson?: boolean;
+    defaultLessonId?: string | null;
 };
 
 const MAX_PAYMENT_AMOUNT = 2147483647;
@@ -81,6 +81,7 @@ const CreatePaymentModal = ({
     defaultStudent,
     paymentData,
     hideLesson,
+    defaultLessonId,
 }: CreatePaymentModalProps) => {
     const panelRef = useRef<HTMLDivElement>(null);
     const [mounted, setMounted] = useState(false);
@@ -110,12 +111,7 @@ const CreatePaymentModal = ({
         setTimeout(() => onClose(), 350);
     }, [onClose]);
 
-    useEffect(() => {
-        if (!visible) return;
-        const handler = (e: KeyboardEvent) => { if (e.key === "Escape") handleClose(); };
-        document.addEventListener("keydown", handler);
-        return () => document.removeEventListener("keydown", handler);
-    }, [visible, handleClose]);
+    useModalEscape({ enabled: visible, onEscape: handleClose });
     const studentsQuery = paymentData
         ? { limit: 200 }
         : { status: "active", limit: 200 };
@@ -227,7 +223,7 @@ const CreatePaymentModal = ({
             setComment(paymentData.comment || "");
         } else {
             setStudentId(defaultStudent ? [defaultStudent.id] : []);
-            setLessonId([]);
+            setLessonId(defaultLessonId ? [defaultLessonId] : []);
             setAmount("");
             setDate(today);
             setMethod(["sbp"]);
@@ -236,7 +232,7 @@ const CreatePaymentModal = ({
         setSaving(false);
         setErrorText(null);
         setTouched({ studentId: false, amount: false });
-    }, [visible, defaultStudent, paymentData, today]);
+    }, [visible, defaultStudent, paymentData, defaultLessonId, today]);
 
     useEffect(() => {
         if (!visible || !!defaultStudent || !!paymentData) return;
@@ -264,7 +260,7 @@ const CreatePaymentModal = ({
 
         if (!defaultStudent) {
             if (studentsLoading) {
-                setErrorText("Список учеников загружается. Повторите попытку через секђндђ.");
+                setErrorText("Список учеников загружается. Повторите попытку через секунду.");
                 return;
             }
             if (hasStudentLoadError) {
@@ -272,7 +268,7 @@ const CreatePaymentModal = ({
                 return;
             }
             if (hasNoActiveStudents) {
-                setErrorText("Нет активных учеников. Добавьте ученика пеѬед записью оплаты.");
+                setErrorText("Нет активных учеников. Добавьте ученика перед записью оплаты.");
                 return;
             }
         }
@@ -404,27 +400,68 @@ const CreatePaymentModal = ({
 
     if (!mounted || (!shouldRender && !visible)) return null;
 
+    const paymentPanelTitle = isEditing ? "Редактирование оплаты" : "Новая оплата";
+
     const panelContent = (
-        <div
-            ref={panelRef}
-            className={`lp2 lp2--mobile-inline-title ${isPanelVisible ? "lp2--open" : ""}`}
+        <Lp2PlannerShell
+            panelRef={panelRef}
+            className="lp2--mobile-inline-title"
             style={{ zIndex: PANEL_Z }}
+            isOpen={isPanelVisible}
             onTransitionEnd={handleTransitionEnd}
-            role="dialog"
-            aria-modal="false"
-            aria-label={isEditing ? "Редактирование оплаты" : "Новая оплата"}
+            ariaLabel={paymentPanelTitle}
+            ariaModal={false}
+            onBack={handleClose}
+            title={paymentPanelTitle}
+            subtitle="Сумма, дата и способ оплаты"
+            footer={
+                isEditing ? (
+                    <div className="lp2__actions lp2__actions--split">
+                        <Button
+                            className="lp2__action lp2__action--secondary"
+                            view="outlined"
+                            size="xl"
+                            width="max"
+                            onClick={handleDelete}
+                            loading={saving}
+                            disabled={saving || !canDelete}
+                            title={
+                                !canDelete
+                                    ? "Оплаты из платежной системы удалять нельзя"
+                                    : undefined
+                            }
+                        >
+                            Удалить
+                        </Button>
+                        <Button
+                            className="lp2__submit lp2__action"
+                            view="action"
+                            size="xl"
+                            width="max"
+                            onClick={handleSubmit}
+                            loading={saving}
+                        >
+                            Сохранить
+                        </Button>
+                    </div>
+                ) : (
+                    <div className="lp2__actions">
+                        <Button
+                            className="lp2__submit lp2__action"
+                            view="action"
+                            size="xl"
+                            width="max"
+                            onClick={handleSubmit}
+                            loading={saving}
+                        >
+                            Сохранить
+                        </Button>
+                    </div>
+                )
+            }
         >
-            <div className="lp2__topbar">
-                <button type="button" className="lp2__back" onClick={handleClose} aria-label="Назад">
-                    <Icon data={ArrowLeft as IconData} size={18} />
-                </button>
-                <div className="lp2__topbar-actions" />
-            </div>
-
-            <div className="lp2__scroll">
-                <div className="lp2__center">
-                    <h1 className="lp2__page-title">{isEditing ? "Редактирование оплаты" : "Новая оплата"}</h1>
-
+            <Lp2PlannerLayout>
+                <Lp2PlannerSection title="Ученик">
                     {defaultStudent ? (
                         <Lp2Field label="Ученик">
                             <Text variant="body-1" style={{ fontWeight: 600 }}>
@@ -481,7 +518,9 @@ const CreatePaymentModal = ({
                             )}
                         </Lp2Field>
                     )}
+                </Lp2PlannerSection>
 
+                <Lp2PlannerSection title="Параметры оплаты">
                     <Lp2Field label="Сумма (₽) *" error={amountError} errorText="Введите корректную сумму больше 0">
                         <TextInput
                             size="l"
@@ -512,36 +551,38 @@ const CreatePaymentModal = ({
                             />
                         </Lp2Field>
                     </Lp2Row>
+                </Lp2PlannerSection>
 
+                <Lp2PlannerSection title="Дополнительно">
                     {!hideLesson && (
-                    <Lp2Field label="Привязать к занятию (опционально)">
-                        <Select
-                            size="l"
-                            width="max"
-                            placeholder={
-                                selectedStudentValue === "__no-student__"
-                                    ? "Сначала выберите ученика"
-                                    : lessonsLoading
-                                      ? "Загружаем занятия..."
-                                      : completedLessonOptions.length > 0
-                                        ? "Выберите пѬоведенное занятие"
-                                        : "Нет свободных проведенных занятий"
-                            }
-                            options={completedLessonOptions}
-                            value={lessonId}
-                            onUpdate={setLessonId}
-                            disabled={
-                                saving ||
-                                selectedStudentValue === "__no-student__" ||
-                                lessonsLoading ||
-                                completedLessonOptions.length === 0
-                            }
-                            popupClassName="app-select-popup"
-                        />
-                        <Text as="div" variant="caption-2" color="secondary" style={{ marginTop: 4 }}>
-                            Занятия, ђже связанные с оплатами, в список не попадают.
-                        </Text>
-                    </Lp2Field>
+                        <Lp2Field label="Привязать к занятию (опционально)">
+                            <Select
+                                size="l"
+                                width="max"
+                                placeholder={
+                                    selectedStudentValue === "__no-student__"
+                                        ? "Сначала выберите ученика"
+                                        : lessonsLoading
+                                          ? "Загружаем занятия..."
+                                          : completedLessonOptions.length > 0
+                                            ? "Выберите проведенное занятие"
+                                            : "Нет свободных проведенных занятий"
+                                }
+                                options={completedLessonOptions}
+                                value={lessonId}
+                                onUpdate={setLessonId}
+                                disabled={
+                                    saving ||
+                                    selectedStudentValue === "__no-student__" ||
+                                    lessonsLoading ||
+                                    completedLessonOptions.length === 0
+                                }
+                                popupClassName="app-select-popup"
+                            />
+                            <Text as="div" variant="caption-2" color="secondary" style={{ marginTop: 4 }}>
+                                Занятия, уже связанные с оплатами, в список не попадают.
+                            </Text>
+                        </Lp2Field>
                     )}
 
                     <Lp2Field label="Комментарий">
@@ -553,61 +594,15 @@ const CreatePaymentModal = ({
                             rows={2}
                         />
                     </Lp2Field>
+                </Lp2PlannerSection>
+            </Lp2PlannerLayout>
 
-                    {errorText && (
-                        <Text variant="body-1" style={{ color: "var(--g-color-text-danger)" }}>
-                            {errorText}
-                        </Text>
-                    )}
-                </div>
-            </div>
-
-            <div className="lp2__bottombar">
-                {isEditing ? (
-                    <div className="lp2__actions lp2__actions--split">
-                        <Button
-                            className="lp2__action lp2__action--secondary"
-                            view="outlined"
-                            size="xl"
-                            width="max"
-                            onClick={handleDelete}
-                            loading={saving}
-                            disabled={saving || !canDelete}
-                            title={
-                                !canDelete
-                                    ? "Оплаты из платежной системы удалять нельзя"
-                                    : undefined
-                            }
-                        >
-                            Удалить
-                        </Button>
-                        <Button
-                            className="lp2__submit lp2__action"
-                            view="action"
-                            size="xl"
-                            width="max"
-                            onClick={handleSubmit}
-                            loading={saving}
-                        >
-                            Сохранить
-                        </Button>
-                    </div>
-                ) : (
-                    <div className="lp2__actions">
-                        <Button
-                            className="lp2__submit lp2__action"
-                            view="action"
-                            size="xl"
-                            width="max"
-                            onClick={handleSubmit}
-                            loading={saving}
-                        >
-                            Сохранить
-                        </Button>
-                    </div>
-                )}
-            </div>
-        </div>
+            {errorText && (
+                <Text variant="body-1" style={{ color: "var(--g-color-text-danger)" }}>
+                    {errorText}
+                </Text>
+            )}
+        </Lp2PlannerShell>
     );
 
     return createPortal(panelContent, document.body);

@@ -61,11 +61,12 @@ function formatLessonMode(format: Lesson["format"]) {
 }
 
 function getScheduleStatusChipClass(status: Lesson["status"]) {
-    if (status === "completed") return "repeto-sl-cell-chip--active";
-    if (status === "cancelled_student" || status === "cancelled_tutor") {
-        return "repeto-sl-cell-chip--archived";
-    }
-    return "repeto-sl-cell-chip--paused";
+    if (status === "planned") return "repeto-schedule-status-chip--planned";
+    if (status === "completed") return "repeto-schedule-status-chip--completed";
+    if (status === "cancelled_student") return "repeto-schedule-status-chip--cancelled_student";
+    if (status === "cancelled_tutor") return "repeto-schedule-status-chip--cancelled_tutor";
+    if (status === "reschedule_pending") return "repeto-schedule-status-chip--reschedule_pending";
+    return "repeto-schedule-status-chip--no_show";
 }
 
 function pluralizeLessons(count: number) {
@@ -164,7 +165,7 @@ const ListView = ({ lessons = [], statusLabels, onLessonClick }: ListViewProps) 
                                     <span className="repeto-sl-row__cell repeto-sl-row__cell--schedule-status">
                                         <span className="repeto-schedule-list__status">
                                             <span
-                                                className={`repeto-sl-cell-chip ${getScheduleStatusChipClass(lesson.status)}`}
+                                                className={`repeto-schedule-status-chip ${getScheduleStatusChipClass(lesson.status)}`}
                                             >
                                                 {statusLabels[lesson.status]}
                                             </span>

@@ -492,21 +492,27 @@
 }
 
 /* Flat modal chrome for lp2 and shared Gravity dialogs. */
-.lp2:not(.lp2--homework),
 .repeto-app-dialog {
-    box-shadow: none !important;
+    box-shadow: var(--repeto-panel-shadow) !important;
 }
 
 .lp2__topbar,
-.lp2__bottombar,
-.repeto-app-dialog .g-dialog-header,
-.repeto-app-dialog .g-dialog-footer {
+.repeto-app-dialog .g-dialog-header {
     border-top: 0 !important;
+    border-bottom: 1px solid var(--repeto-line-subtle) !important;
+    background: var(--repeto-surface-elevated) !important;
+}
+
+.lp2__bottombar,
+.repeto-app-dialog .g-dialog-footer {
+    border-top: 1px solid var(--repeto-line-subtle) !important;
     border-bottom: 0 !important;
+    background: color-mix(in srgb, var(--repeto-surface-elevated) 96%, var(--repeto-bg) 4%) !important;
+    backdrop-filter: blur(10px);
 }
 
 .repeto-app-dialog .g-dialog-body {
-    background: var(--g-color-base-float) !important;
+    background: var(--repeto-surface-elevated) !important;
 }
 
 /* Keep phone landscape on the mobile shell. */

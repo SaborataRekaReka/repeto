@@ -19,6 +19,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { ThemeProvider, configure } from "@gravity-ui/uikit";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ModalStackProvider } from "@/contexts/ModalStackContext";
 import { ThemeModeProvider, useThemeMode } from "@/contexts/ThemeContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import CookieBanner from "@/components/CookieBanner";
@@ -106,8 +107,10 @@ function AppContent({ Component, pageProps }: { Component: AppProps["Component"]
             </Head>
             <PageTransitionLoader />
             <GAuthProvider>
-                <PageComponent {...pageProps} />
-                <CookieBanner />
+                <ModalStackProvider>
+                    <PageComponent {...pageProps} />
+                    <CookieBanner />
+                </ModalStackProvider>
             </GAuthProvider>
         </GravityTheme>
     );

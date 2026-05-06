@@ -200,10 +200,10 @@ const Month = ({ currentDate, onLessonClick, onMoreClick, lessons = [] }: MonthP
                                             alignItems: "center",
                                             justifyContent: "center",
                                             borderRadius: 999,
-                                            background: "transparent",
-                                            border: isToday
-                                                ? "1px solid var(--g-color-base-brand)"
-                                                : "1px solid transparent",
+                                            background: isToday
+                                                ? "var(--g-color-base-brand)"
+                                                : "transparent",
+                                            border: "1px solid transparent",
                                         }}
                                     >
                                         <Text
@@ -212,7 +212,7 @@ const Month = ({ currentDate, onLessonClick, onMoreClick, lessons = [] }: MonthP
                                                 fontSize: 13,
                                                 fontWeight: isToday ? 600 : 400,
                                                 color: isToday
-                                                    ? "var(--g-color-text-brand)"
+                                                    ? "var(--repeto-on-brand)"
                                                     : item.isCurrentMonth
                                                       ? "var(--g-color-text-primary)"
                                                       : "var(--g-color-text-secondary)",
@@ -251,16 +251,13 @@ const Month = ({ currentDate, onLessonClick, onMoreClick, lessons = [] }: MonthP
                                             className="repeto-calendar-more-btn"
                                             style={{
                                                 border: "none",
-                                                background: "var(--repeto-surface-muted-soft)",
                                                 width: "100%",
                                                 fontSize: 12,
                                                 lineHeight: "18px",
-                                                color: "var(--g-color-text-secondary)",
                                                 fontWeight: 500,
                                                 cursor: "pointer",
                                                 padding: "2px 8px",
                                                 borderRadius: 6,
-                                                transition: "background 0.15s ease, color 0.15s ease",
                                                 boxSizing: "border-box",
                                             }}
                                         >

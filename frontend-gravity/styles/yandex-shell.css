@@ -451,7 +451,7 @@
         align-items: center !important;
         justify-content: center !important;
         color: var(--accent) !important;
-        background: color-mix(in srgb, var(--accent) 14%, transparent) !important;
+        background: transparent !important;
         border-radius: 999px !important;
         flex-shrink: 0 !important;
     }
@@ -561,107 +561,142 @@
     .repeto-schedule-sidebar-calendar {
         display: flex !important;
         flex-direction: column !important;
-        gap: 8px !important;
-        padding: 8px !important;
-        border-radius: 10px !important;
-        border: 1px solid var(--border-subtle) !important;
-        background: var(--surface-page) !important;
+        gap: 10px !important;
+        padding: 4px 2px 2px !important;
+        border-radius: 0 !important;
+        border: none !important;
+        background: #ffffff !important;
     }
 
     .repeto-schedule-sidebar-calendar__header {
+        position: relative !important;
         display: flex !important;
         align-items: center !important;
-        justify-content: space-between !important;
-        gap: 8px !important;
+        justify-content: center !important;
+        min-height: 34px !important;
+        gap: 0 !important;
+        padding-inline: 2px !important;
     }
 
     .repeto-schedule-sidebar-calendar__title {
-        font-size: 13px !important;
+        font-size: 16px !important;
         font-weight: 600 !important;
-        line-height: 18px !important;
+        line-height: 20px !important;
         color: var(--text-primary) !important;
+        text-align: center !important;
+        letter-spacing: 0 !important;
     }
 
     .repeto-schedule-sidebar-calendar__nav {
-        display: inline-flex !important;
+        position: absolute !important;
+        inset-inline: 0 !important;
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+        display: flex !important;
         align-items: center !important;
-        gap: 4px !important;
+        justify-content: space-between !important;
+        gap: 0 !important;
+        pointer-events: none !important;
     }
 
     .repeto-schedule-sidebar-calendar__nav-btn {
-        width: 24px !important;
-        height: 24px !important;
+        width: 30px !important;
+        height: 30px !important;
         border: none !important;
-        border-radius: 6px !important;
+        border-radius: 999px !important;
         background: transparent !important;
         color: var(--text-secondary) !important;
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
         cursor: pointer !important;
+        pointer-events: auto !important;
+        transition: background-color 0.15s ease, color 0.15s ease !important;
     }
 
     .repeto-schedule-sidebar-calendar__nav-btn:hover {
-        background: var(--surface-subtle) !important;
+        background: color-mix(in srgb, var(--text-primary) 8%, transparent) !important;
         color: var(--text-primary) !important;
+    }
+
+    .repeto-schedule-sidebar-calendar__nav-btn .g-icon {
+        width: 18px !important;
+        height: 18px !important;
     }
 
     .repeto-schedule-sidebar-calendar__weekdays {
         display: grid !important;
         grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
-        gap: 2px !important;
+        gap: 0 !important;
     }
 
     .repeto-schedule-sidebar-calendar__weekday {
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
-        height: 16px !important;
-        font-size: 10px !important;
-        font-weight: 600 !important;
+        height: 24px !important;
+        font-size: 12px !important;
+        font-weight: 500 !important;
         line-height: 1 !important;
         color: var(--text-tertiary) !important;
+        text-transform: lowercase !important;
+        letter-spacing: 0 !important;
     }
 
     .repeto-schedule-sidebar-calendar__grid {
         display: grid !important;
         grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
-        gap: 2px !important;
+        gap: 2px 0 !important;
     }
 
     .repeto-schedule-sidebar-calendar__day {
-        width: 100% !important;
-        height: 26px !important;
+        width: 34px !important;
+        height: 34px !important;
+        margin: 0 auto !important;
+        padding: 0 !important;
         border: none !important;
-        border-radius: 6px !important;
+        border-radius: 999px !important;
         background: transparent !important;
         color: var(--text-primary) !important;
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
-        font-size: 12px !important;
+        font-size: 14px !important;
         font-weight: 500 !important;
         line-height: 1 !important;
         cursor: pointer !important;
+        transition: background-color 0.15s ease, color 0.15s ease !important;
     }
 
     .repeto-schedule-sidebar-calendar__day:hover {
-        background: var(--surface-subtle) !important;
+        background: color-mix(in srgb, var(--text-primary) 8%, transparent) !important;
     }
 
     .repeto-schedule-sidebar-calendar__day--outside {
         color: var(--text-tertiary) !important;
-        opacity: 0.68 !important;
+        opacity: 0.72 !important;
     }
 
     .repeto-schedule-sidebar-calendar__day--today {
-        box-shadow: inset 0 0 0 1px var(--accent) !important;
+        background: color-mix(in srgb, var(--text-primary) 14%, transparent) !important;
+        color: var(--text-secondary) !important;
+        font-weight: 600 !important;
+        box-shadow: none !important;
+    }
+
+    .repeto-schedule-sidebar-calendar__day--today:hover {
+        background: color-mix(in srgb, var(--text-primary) 18%, transparent) !important;
     }
 
     .repeto-schedule-sidebar-calendar__day--selected {
-        background: var(--accent) !important;
-        color: var(--repeto-on-brand) !important;
+        background: var(--g-color-base-brand, var(--accent)) !important;
+        color: var(--repeto-on-brand, #ffffff) !important;
         font-weight: 600 !important;
+    }
+
+    .repeto-schedule-sidebar-calendar__day--today.repeto-schedule-sidebar-calendar__day--selected {
+        background: var(--g-color-base-brand, var(--accent)) !important;
+        color: var(--repeto-on-brand, #ffffff) !important;
     }
 
     .repeto-context-sidebar__item--active {
@@ -947,16 +982,13 @@
 
     /* LP2 panels should occupy all available workspace without card chrome. */
     .lp2:not(.lp2--homework) {
-        top: calc(
-            var(--repeto-shell-floating-edge) +
-            var(--repeto-shell-header-height)
-        ) !important;
-        right: 0 !important;
-        bottom: 0 !important;
-        left: 0 !important;
-        border-radius: 0 !important;
-        border: 0 !important;
-        box-shadow: none !important;
+        top: var(--repeto-shell-floating-edge) !important;
+        right: var(--repeto-shell-floating-edge) !important;
+        bottom: var(--repeto-shell-floating-edge) !important;
+        left: var(--repeto-shell-floating-edge) !important;
+        border-radius: var(--repeto-shell-floating-radius) !important;
+        border: 1px solid color-mix(in srgb, var(--border-subtle) 86%, transparent) !important;
+        box-shadow: var(--repeto-shell-floating-shadow) !important;
     }
 
     body.repeto-shell-rail-open .lp2:not(.lp2--homework) {

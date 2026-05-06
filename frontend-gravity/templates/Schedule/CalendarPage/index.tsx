@@ -2,14 +2,14 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/router";
 import GravityLayout from "@/components/GravityLayout";
-import { Text, Button, Icon, Select, DropdownMenu } from "@gravity-ui/uikit";
+import { Text, Button, Icon, Select } from "@gravity-ui/uikit";
 import PillTabs, { type PillTabOption } from "@/components/PillTabs";
 import AppIcon from "@/components/Icon";
 import AnimatedSidebarIcon from "@/components/AnimatedSidebarIcon";
+import Lp2PlannerShell, { Lp2PlannerLayout, Lp2PlannerSection } from "@/components/Lp2PlannerShell";
 import {
-    ArrowChevronLeft,
-    ArrowChevronRight,
     ArrowLeft,
+    ArrowRight,
     ArrowUpRight,
     Clock,
 } from "@gravity-ui/icons";
@@ -23,6 +23,7 @@ import ListView from "./List";
 import AvailabilityEditor from "./AvailabilityEditor";
 import { useLessons, deleteLesson } from "@/hooks/useLessons";
 import { useAvailability } from "@/hooks/useAvailability";
+import { useModalEscape } from "@/hooks/useModalEscape";
 import { useSettings, syncYandexCalendar, syncGoogleCalendar } from "@/hooks/useSettings";
 import { toLocalDateKey } from "@/lib/dates";
 import { codedErrorMessage } from "@/lib/errorCodes";
@@ -33,15 +34,9 @@ type DisplayMode = "calendar" | "list";
 type LessonStatusFilter = Lesson["status"];
 type ExportProvider = "yandex" | "google";
 
-const GDropdownMenu = DropdownMenu as any;
-
 const MONTH_NAMES = [
     "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
     "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
-];
-const MONTH_NAMES_SHORT = [
-    "янв", "фев", "мар", "апр", "май", "июн",
-    "июл", "авг", "сен", "окт", "ноя", "дек",
 ];
 const MONTH_NAMES_GEN = [
     "января", "февраля", "марта", "апреля", "мая", "июня",
@@ -54,6 +49,12 @@ const CALENDAR_VIEW_OPTIONS: { value: CalendarViewType; label: string }[] = [
     { value: "week", label: "Неделя" },
     { value: "day", label: "День" },
 ];
+
+const CALENDAR_VIEW_SELECT_OPTIONS: { value: CalendarViewType; content: string }[] =
+    CALENDAR_VIEW_OPTIONS.map((option) => ({
+        value: option.value,
+        content: option.label,
+    }));
 
 const DISPLAY_MODE_OPTIONS: PillTabOption<DisplayMode>[] = [
     {
@@ -160,46 +161,35 @@ const ScheduleWorkHoursPanel = ({ open, onClose }: ScheduleWorkHoursPanelProps) 
         setTimeout(() => onClose(), 350);
     }, [onClose]);
 
-    useEffect(() => {
-        if (!open) return;
-
-        const handler = (event: KeyboardEvent) => {
-            if (event.key === "Escape") {
-                handleClose();
-            }
-        };
-
-        document.addEventListener("keydown", handler);
-        return () => document.removeEventListener("keydown", handler);
-    }, [handleClose, open]);
+    useModalEscape({ enabled: open, onEscape: handleClose });
 
     if (!mounted || (!shouldRender && !open) || typeof document === "undefined") {
         return null;
     }
 
     return createPortal(
-        <div
-            className={`lp2 repeto-schedule-workhours-panel${isPanelVisible ? " lp2--open" : ""}`}
+        <Lp2PlannerShell
+            className="repeto-schedule-workhours-panel"
             style={{ zIndex: WORK_HOURS_PANEL_Z_INDEX }}
+            isOpen={isPanelVisible}
             onTransitionEnd={handleTransitionEnd}
-            role="dialog"
-            aria-modal="false"
-            aria-label="Рабочие часы"
+            ariaLabel="Рабочие часы"
+            ariaModal={false}
+            onBack={handleClose}
+            title="Рабочие часы"
+            subtitle="Настройка доступных слотов"
+            centerClassName="lp2__center--workhours"
+            withPlannerCenter={false}
         >
-            <div className="lp2__topbar">
-                <button type="button" className="lp2__back" onClick={handleClose} aria-label="Назад">
-                    <Icon data={ArrowLeft as IconData} size={18} />
-                </button>
-                <div className="lp2__topbar-actions" />
-            </div>
-
-            <div className="lp2__scroll">
-                <div className="lp2__center lp2__center--workhours">
-                    <h1 className="lp2__page-title">Рабочие часы</h1>
+            <Lp2PlannerLayout>
+                <Lp2PlannerSection
+                    title="Календарь доступности"
+                    description="Отметьте дни недели и часы, когда готовы проводить занятия"
+                >
                     <AvailabilityEditor embedded />
-                </div>
-            </div>
-        </div>,
+                </Lp2PlannerSection>
+            </Lp2PlannerLayout>
+        </Lp2PlannerShell>,
         document.body,
     );
 };
@@ -216,8 +206,7 @@ const CalendarPage = () => {
     const [availabilityModalOpen, setAvailabilityModalOpen] = useState(false);
     const [selectedStatuses, setSelectedStatuses] = useState<LessonStatusFilter[]>(ALL_STATUS_VALUES);
     const [isExporting, setIsExporting] = useState(false);
-    const [exportMenuOpen, setExportMenuOpen] = useState(false);
-    const [isExportIconActive, setIsExportIconActive] = useState(false);
+    const [isToolbarExportIconActive, setIsToolbarExportIconActive] = useState(false);
     const [exportStatus, setExportStatus] = useState<{ type: "ok" | "error"; text: string } | null>(null);
     const [optimisticRemovedLessonIds, setOptimisticRemovedLessonIds] = useState<string[]>([]);
 
@@ -321,37 +310,6 @@ const CalendarPage = () => {
                 text: `Экспорт частично завершен. ${success.join(" · ")}. ${errors.join(" · ")}`,
             });
         }
-
-        setIsExporting(false);
-    }, [
-        hasGoogleCalendar,
-        hasYandexCalendar,
-        isExporting,
-        router,
-        runProviderExport,
-        settingsLoading,
-    ]);
-
-    const handleProviderExport = useCallback(async (provider: ExportProvider) => {
-        if (isExporting || settingsLoading) return;
-
-        const isProviderConnected = provider === "yandex"
-            ? hasYandexCalendar
-            : hasGoogleCalendar;
-
-        if (!isProviderConnected) {
-            await router.push("/settings?tab=integrations");
-            return;
-        }
-
-        setIsExporting(true);
-        setExportStatus(null);
-
-        const result = await runProviderExport(provider);
-        setExportStatus({
-            type: result.ok ? "ok" : "error",
-            text: result.ok ? `Экспорт завершен. ${result.text}` : result.text,
-        });
 
         setIsExporting(false);
     }, [
@@ -475,6 +433,37 @@ const CalendarPage = () => {
         );
     }, [lessons, selectedStatuses, optimisticRemovedLessonIds]);
 
+    const selectedStatusSummary = useMemo(() => {
+        const selectedSet = new Set<LessonStatusFilter>(selectedStatuses);
+        const orderedSelectedStatuses = LESSON_STATUS_OPTIONS
+            .map((option) => option.value)
+            .filter((status) => selectedSet.has(status));
+
+        if (orderedSelectedStatuses.length === 0) {
+            return "Статусы занятий";
+        }
+
+        if (orderedSelectedStatuses.length === ALL_STATUS_VALUES.length) {
+            return "Все статусы";
+        }
+
+        if (orderedSelectedStatuses.length <= 2) {
+            return orderedSelectedStatuses
+                .map((status) => LESSON_STATUS_BADGE_LABELS[status])
+                .join(", ");
+        }
+
+        return `Выбрано: ${orderedSelectedStatuses.length}`;
+    }, [selectedStatuses]);
+
+    const handleStatusesUpdate = useCallback((values: string[]) => {
+        const valuesSet = new Set(values as LessonStatusFilter[]);
+        const normalizedValues = LESSON_STATUS_OPTIONS
+            .map((option) => option.value)
+            .filter((status) => valuesSet.has(status));
+        setSelectedStatuses(normalizedValues);
+    }, []);
+
     const navigate = useCallback((direction: -1 | 1) => {
         setCurrentDate((prev) => {
             const d = new Date(prev);
@@ -495,78 +484,48 @@ const CalendarPage = () => {
         setCurrentDate(fromIsoDate(isoDate));
     }, []);
 
-    const handleOpenMonthView = useCallback(() => {
-        setDisplayMode("calendar");
-        setCalendarView("month");
-    }, []);
-
-    const handleGoToday = useCallback(() => {
-        setCurrentDate(new Date());
-    }, []);
-
-    const formatDateLabel = () => {
-        if (displayMode === "calendar" && calendarView === "month") {
-            return `${MONTH_NAMES[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
-        }
-        if (displayMode === "calendar" && calendarView === "week") {
-            const weekStart = new Date(currentDate);
-            const dow = weekStart.getDay();
-            const diff = dow === 0 ? -6 : 1 - dow;
-            weekStart.setDate(weekStart.getDate() + diff);
-            const weekEnd = new Date(weekStart);
-            weekEnd.setDate(weekEnd.getDate() + 6);
-            const startDay = weekStart.getDate();
-            const endDay = weekEnd.getDate();
-            const startMonth = MONTH_NAMES_SHORT[weekStart.getMonth()];
-            const endMonth = MONTH_NAMES_SHORT[weekEnd.getMonth()];
-            if (weekStart.getMonth() === weekEnd.getMonth()) {
-                return `${startDay} – ${endDay} ${endMonth} ${weekEnd.getFullYear()}`;
-            }
-            return `${startDay} ${startMonth} – ${endDay} ${endMonth} ${weekEnd.getFullYear()}`;
-        }
-        if (displayMode === "list") {
-            const weekStart = new Date(currentDate);
-            const dow = weekStart.getDay();
-            const diff = dow === 0 ? -6 : 1 - dow;
-            weekStart.setDate(weekStart.getDate() + diff);
-            const weekEnd = new Date(weekStart);
-            weekEnd.setDate(weekEnd.getDate() + 6);
-            const startDay = weekStart.getDate();
-            const endDay = weekEnd.getDate();
-            const startMonth = MONTH_NAMES_SHORT[weekStart.getMonth()];
-            const endMonth = MONTH_NAMES_SHORT[weekEnd.getMonth()];
-            if (weekStart.getMonth() === weekEnd.getMonth()) {
-                return `${startDay} – ${endDay} ${endMonth} ${weekEnd.getFullYear()}`;
-            }
-            return `${startDay} ${startMonth} – ${endDay} ${endMonth} ${weekEnd.getFullYear()}`;
-        }
-        return `${currentDate.getDate()} ${MONTH_NAMES_GEN[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
-    };
-
     const scheduleSidebarMonthLabel = `${MONTH_NAMES[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
     const scheduleSidebarMiniCalendarCells = useMemo(() => {
         const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+        const monthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
         const firstWeekdayIndex = (monthStart.getDay() + 6) % 7;
+        const lastWeekdayIndex = (monthEnd.getDay() + 6) % 7;
         const gridStart = new Date(monthStart);
         gridStart.setDate(monthStart.getDate() - firstWeekdayIndex);
+        const gridEnd = new Date(monthEnd);
+        gridEnd.setDate(monthEnd.getDate() + (6 - lastWeekdayIndex));
 
         const todayKey = toLocalDateKey(new Date());
         const selectedDateKey = toLocalDateKey(currentDate);
+        const cells: Array<{
+            key: string;
+            date: Date;
+            dayNumber: number;
+            isOutsideMonth: boolean;
+            isToday: boolean;
+            isSelected: boolean;
+        }> = [];
 
-        return Array.from({ length: 42 }, (_, index) => {
-            const date = new Date(gridStart);
-            date.setDate(gridStart.getDate() + index);
-
+        const cursor = new Date(gridStart);
+        let index = 0;
+        while (cursor <= gridEnd) {
+            const date = new Date(cursor);
             const dateKey = toLocalDateKey(date);
-            return {
+
+            cells.push({
                 key: `${dateKey}-${index}`,
                 date,
                 dayNumber: date.getDate(),
                 isOutsideMonth: date.getMonth() !== currentDate.getMonth(),
                 isToday: dateKey === todayKey,
                 isSelected: dateKey === selectedDateKey,
-            };
-        });
+            });
+
+            cursor.setDate(cursor.getDate() + 1);
+            index += 1;
+        }
+
+        return cells;
     }, [currentDate]);
 
     const scheduleSidebarHeader = useMemo(
@@ -594,7 +553,7 @@ const CalendarPage = () => {
                             aria-label="Предыдущий месяц"
                             onClick={() => handleSidebarMiniCalendarMonthShift(-1)}
                         >
-                            <Icon data={ArrowChevronLeft as IconData} size={14} />
+                            <Icon data={ArrowLeft as IconData} size={16} />
                         </button>
                         <button
                             type="button"
@@ -602,7 +561,7 @@ const CalendarPage = () => {
                             aria-label="Следующий месяц"
                             onClick={() => handleSidebarMiniCalendarMonthShift(1)}
                         >
-                            <Icon data={ArrowChevronRight as IconData} size={14} />
+                            <Icon data={ArrowRight as IconData} size={16} />
                         </button>
                     </div>
                 </div>
@@ -629,93 +588,14 @@ const CalendarPage = () => {
                 </div>
                 </div>
 
-                <div className="repeto-schedule-export">
-                    <GDropdownMenu
-                        open={exportMenuOpen}
-                        onOpenToggle={setExportMenuOpen}
-                        popupProps={{
-                            placement: "bottom-start",
-                            className: "repeto-schedule-export-menu__popup",
-                        }}
-                        renderSwitcher={(props: any) => (
-                            <button
-                                type="button"
-                                className="repeto-schedule-sidebar-tools__export"
-                                disabled={isExporting || settingsLoading}
-                                onMouseEnter={() => setIsExportIconActive(true)}
-                                onMouseLeave={() => setIsExportIconActive(false)}
-                                onFocus={() => setIsExportIconActive(true)}
-                                onBlur={() => setIsExportIconActive(false)}
-                                {...props}
-                            >
-                                <span className="repeto-schedule-sidebar-tools__export-main">
-                                    <span className="repeto-schedule-sidebar-tools__export-icon" aria-hidden="true">
-                                        <AnimatedSidebarIcon
-                                            src="/icons/sidebar-animated/export.json"
-                                            fallbackIcon={ArrowUpRight as IconData}
-                                            play={isExportIconActive || exportMenuOpen}
-                                            size={18}
-                                        />
-                                    </span>
-                                    <span>
-                                        {isExporting
-                                            ? "Экспорт..."
-                                            : settingsLoading
-                                                ? "Проверяем интеграции..."
-                                                : "Экспорт расписания"}
-                                    </span>
-                                </span>
-                            </button>
-                        )}
-                    >
-                        <div className="repeto-quick-actions-menu repeto-context-create-menu repeto-schedule-export-menu">
-                            <div className="repeto-quick-actions-menu__list">
-                                <button
-                                    type="button"
-                                    className="repeto-quick-actions-menu__item"
-                                    onClick={() => {
-                                        setExportMenuOpen(false);
-                                        void handleProviderExport("yandex");
-                                    }}
-                                    disabled={isExporting}
-                                >
-                                    <span className="repeto-quick-actions-menu__item-icon repeto-schedule-export-menu__provider-icon" aria-hidden="true">
-                                        <img src="/images/yandex.svg" alt="" />
-                                    </span>
-                                    <span className="repeto-quick-actions-menu__item-text">Яндекс Календарь</span>
-                                </button>
-
-                                <button
-                                    type="button"
-                                    className="repeto-quick-actions-menu__item"
-                                    onClick={() => {
-                                        setExportMenuOpen(false);
-                                        void handleProviderExport("google");
-                                    }}
-                                    disabled={isExporting}
-                                >
-                                    <span className="repeto-quick-actions-menu__item-icon repeto-schedule-export-menu__provider-icon" aria-hidden="true">
-                                        <img src="/images/google.svg" alt="" />
-                                    </span>
-                                    <span className="repeto-quick-actions-menu__item-text">Гугл календарь</span>
-                                </button>
-                            </div>
-                        </div>
-                    </GDropdownMenu>
-                </div>
             </div>
         ),
         [
             availabilityTotalHours,
-            exportMenuOpen,
-            handleProviderExport,
             handleSidebarMiniCalendarMonthShift,
             handleSidebarMiniCalendarSelect,
-            isExportIconActive,
-            isExporting,
             scheduleSidebarMiniCalendarCells,
             scheduleSidebarMonthLabel,
-            settingsLoading,
         ],
     );
 
@@ -728,87 +608,105 @@ const CalendarPage = () => {
             <div className="repeto-schedule-page">
                 {/* ── Toolbar ── */}
                 <div className="repeto-schedule-toolbar">
-                    <div className="repeto-schedule-toolbar__display">
-                        <PillTabs
-                            value={displayMode}
-                            onChange={(mode) => setDisplayMode(mode as DisplayMode)}
-                            options={DISPLAY_MODE_OPTIONS}
-                            size="s"
-                            ariaLabel="Режим представления"
-                        />
+                    <div className="repeto-schedule-toolbar__mode-group">
+                        <div className="repeto-schedule-toolbar__display">
+                            <PillTabs
+                                value={displayMode}
+                                onChange={(mode) => setDisplayMode(mode as DisplayMode)}
+                                options={DISPLAY_MODE_OPTIONS}
+                                size="s"
+                                ariaLabel="Режим представления"
+                            />
+                        </div>
                     </div>
 
-                    {/* Lessons visibility filter */}
-                    <div className="repeto-schedule-toolbar__filter">
-                        <Select
-                            className="repeto-schedule-filter-select"
-                            popupClassName="app-select-popup"
-                            size="m"
-                            width="max"
-                            multiple
-                            hasClear
-                            hasCounter={selectedStatuses.length > 0}
-                            placeholder="Статусы занятий"
-                            options={LESSON_STATUS_OPTIONS}
-                            value={selectedStatuses}
-                            onUpdate={(values) => {
-                                setSelectedStatuses(values as LessonStatusFilter[]);
-                            }}
-                        />
-                    </div>
+                    <div className="repeto-schedule-toolbar__meta-group">
+                        {/* Period navigation */}
+                        <div className="repeto-schedule-toolbar__period">
+                            <div className="repeto-schedule-toolbar__nav">
+                                <Button
+                                    view="flat"
+                                    size="m"
+                                    onClick={() => navigate(-1)}
+                                >
+                                    <Icon data={ArrowLeft as IconData} size={18} />
+                                </Button>
+                                <Button
+                                    view="flat"
+                                    size="m"
+                                    onClick={() => navigate(1)}
+                                >
+                                    <Icon data={ArrowRight as IconData} size={18} />
+                                </Button>
+                            </div>
 
-                    {/* Period navigation */}
-                    <div className="repeto-schedule-toolbar__period">
-                        <div className="repeto-schedule-toolbar__nav">
-                            <Button
-                                view="flat"
-                                size="m"
-                                onClick={() => navigate(-1)}
+                            {displayMode === "calendar" && (
+                                <Select
+                                    className="repeto-schedule-view-select"
+                                    popupClassName="repeto-schedule-view-popup"
+                                    size="m"
+                                    width={132}
+                                    options={CALENDAR_VIEW_SELECT_OPTIONS}
+                                    value={[calendarView]}
+                                    onUpdate={([nextView]) => {
+                                        if (nextView) {
+                                            setCalendarView(nextView as CalendarViewType);
+                                        }
+                                    }}
+                                />
+                            )}
+
+                            <span className="repeto-schedule-toolbar__period-divider" aria-hidden="true" />
+
+                            <button
+                                type="button"
+                                className="repeto-schedule-toolbar__export-calendar-btn"
+                                onClick={() => {
+                                    void handleQuickExport();
+                                }}
+                                disabled={isExporting || settingsLoading}
+                                onMouseEnter={() => setIsToolbarExportIconActive(true)}
+                                onMouseLeave={() => setIsToolbarExportIconActive(false)}
+                                onFocus={() => setIsToolbarExportIconActive(true)}
+                                onBlur={() => setIsToolbarExportIconActive(false)}
                             >
-                                <Icon data={ArrowChevronLeft as IconData} size={16} />
-                            </Button>
-                            <Button
-                                view="flat"
-                                size="m"
-                                onClick={() => navigate(1)}
-                            >
-                                <Icon data={ArrowChevronRight as IconData} size={16} />
-                            </Button>
+                                <span className="repeto-schedule-toolbar__export-calendar-icon" aria-hidden="true">
+                                    <AnimatedSidebarIcon
+                                        src="/icons/sidebar-animated/export.json"
+                                        fallbackIcon={ArrowUpRight as IconData}
+                                        play={isToolbarExportIconActive}
+                                        size={18}
+                                    />
+                                </span>
+                                <span>
+                                    {isExporting
+                                        ? "Экспорт..."
+                                        : settingsLoading
+                                            ? "Проверяем интеграции..."
+                                            : "Экспорт в Календарь"}
+                                </span>
+                            </button>
                         </div>
 
-                        <Button
-                            view="flat"
-                            size="m"
-                            className="repeto-schedule-toolbar__today-btn"
-                            onClick={handleGoToday}
+                        {/* Lessons visibility filter */}
+                        <div
+                            className="repeto-schedule-toolbar__filter repeto-schedule-toolbar__filter--summary"
+                            data-status-summary={selectedStatusSummary}
                         >
-                            Сегодня
-                        </Button>
-
-                        <button
-                            type="button"
-                            className="repeto-schedule-toolbar__date-btn"
-                            onClick={handleOpenMonthView}
-                        >
-                            <Text variant="body-2" className="repeto-schedule-toolbar__date">
-                                {formatDateLabel()}
-                            </Text>
-                        </button>
-                    </div>
-
-                    {/* Spacer */}
-                    <div className="repeto-schedule-toolbar__spacer" />
-
-                    {/* View toggle */}
-                    <div className="repeto-schedule-toolbar__view">
-                        {displayMode === "calendar" && (
-                            <PillTabs
-                                value={calendarView}
-                                onChange={(v) => setCalendarView(v as CalendarViewType)}
-                                options={CALENDAR_VIEW_OPTIONS}
-                                ariaLabel="Режим календаря"
+                            <Select
+                                className="repeto-schedule-filter-select"
+                                popupClassName="repeto-schedule-filter-popup"
+                                size="m"
+                                width="max"
+                                multiple
+                                hasClear
+                                hasCounter={false}
+                                placeholder="Статусы занятий"
+                                options={LESSON_STATUS_OPTIONS}
+                                value={selectedStatuses}
+                                onUpdate={handleStatusesUpdate}
                             />
-                        )}
+                        </div>
                     </div>
                 </div>
 

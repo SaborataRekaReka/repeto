@@ -21,13 +21,6 @@ const CookieBanner = () => {
         setVisible(false);
     };
 
-    const closeForNow = () => {
-        if (typeof window !== "undefined") {
-            window.localStorage.setItem(COOKIE_CONSENT_KEY, "configured");
-        }
-        setVisible(false);
-    };
-
     if (!visible) return null;
 
     return (
@@ -45,9 +38,6 @@ const CookieBanner = () => {
                 <Link href="/legal#cookies" className="repeto-cookie-banner__link">
                     Подробнее
                 </Link>
-                <Button size="m" view="outlined" onClick={closeForNow}>
-                    Настроить
-                </Button>
                 <Button size="m" view="action" onClick={acceptCookies}>
                     Согласен
                 </Button>

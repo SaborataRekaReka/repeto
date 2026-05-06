@@ -21,17 +21,6 @@ const HOURS_24 = Array.from({ length: 24 }, (_, i) => i);
 const WEEK_COMPACT_SINGLE_AREA_PCT = 100;
 const WEEK_COMPACT_LANE_PCT = 100;
 const OVERLAP_GAP_PCT = 1;
-const WEEK_SLOT_BG = "var(--repeto-surface-muted-soft)";
-const WEEK_SLOT_TEXT = "var(--g-color-text-primary)";
-
-const WEEK_STATUS_DOT: Record<Lesson["status"], string> = {
-    planned: "var(--g-color-text-info)",
-    completed: "var(--g-color-text-positive)",
-    cancelled_student: "var(--g-color-text-secondary)",
-    cancelled_tutor: "var(--g-color-text-secondary)",
-    no_show: "var(--g-color-text-warning)",
-    reschedule_pending: "var(--g-color-text-warning)",
-};
 
 function pad(n: number) {
     return String(n).padStart(2, "0");
@@ -53,11 +42,6 @@ function parseTimeToMinutes(value: string) {
     const [hh, mm] = normalizeTime(value).split(":").map(Number);
     if (!Number.isFinite(hh) || !Number.isFinite(mm)) return 0;
     return hh * 60 + mm;
-}
-
-function surnameOnly(fullName: string) {
-    const parts = fullName.trim().split(/\s+/);
-    return parts[0] || "";
 }
 
 type PositionedLesson = {
@@ -326,10 +310,10 @@ const Week = ({ currentDate, onLessonClick, onSlotClick, onMoreClick, lessons = 
                                         alignItems: "center",
                                         justifyContent: "center",
                                         borderRadius: "50%",
-                                        background: "transparent",
-                                        border: day.isToday
-                                            ? "1.5px solid var(--g-color-base-brand)"
-                                            : "1.5px solid transparent",
+                                        background: day.isToday
+                                            ? "var(--g-color-base-brand)"
+                                            : "transparent",
+                                        border: "1.5px solid transparent",
                                         marginTop: 2,
                                     }}
                                 >
@@ -337,7 +321,7 @@ const Week = ({ currentDate, onLessonClick, onSlotClick, onMoreClick, lessons = 
                                         variant="subheader-2"
                                         style={{
                                             color: day.isToday
-                                                ? "var(--g-color-text-brand)"
+                                                ? "var(--repeto-on-brand)"
                                                 : "var(--g-color-text-primary)",
                                             fontWeight: day.isToday ? 600 : 400,
                                         }}
@@ -430,8 +414,6 @@ const Week = ({ currentDate, onLessonClick, onSlotClick, onMoreClick, lessons = 
 
                                 {buildPositionedLessons(day.lessons).map((positioned) => {
                                     const hasMore = positioned.extraCount > 0;
-                                    const slotHoverBg = `color-mix(in srgb, ${WEEK_SLOT_BG} 95%, var(--g-color-text-primary) 5%)`;
-                                    const statusDot = WEEK_STATUS_DOT[positioned.lesson.status];
                                     return (
                                         <div
                                             key={positioned.lesson.id}
@@ -454,62 +436,13 @@ const Week = ({ currentDate, onLessonClick, onSlotClick, onMoreClick, lessons = 
                                                 }}
                                             >
                                                 <div style={{ flex: 1, minHeight: 0 }}>
-                                                    {hasMore ? (
-                                                        <button
-                                                            type="button"
-                                                            onClick={(event) => {
-                                                                event.stopPropagation();
-                                                                onLessonClick?.(positioned.lesson);
-                                                            }}
-                                                            onMouseEnter={(event) => {
-                                                                event.currentTarget.style.background = slotHoverBg;
-                                                            }}
-                                                            onMouseLeave={(event) => {
-                                                                event.currentTarget.style.background = WEEK_SLOT_BG;
-                                                            }}
-                                                            style={{
-                                                                width: "100%",
-                                                                height: "100%",
-                                                                minHeight: 22,
-                                                                display: "flex",
-                                                                alignItems: "center",
-                                                                gap: 6,
-                                                                padding: "3px 8px",
-                                                                borderRadius: 6,
-                                                                border: "none",
-                                                                background: WEEK_SLOT_BG,
-                                                                textAlign: "left",
-                                                                cursor: "pointer",
-                                                                overflow: "hidden",
-                                                                transition: "background 0.15s ease",
-                                                            }}
-                                                        >
-                                                            <span
-                                                                style={{
-                                                                    width: 6,
-                                                                    height: 6,
-                                                                    borderRadius: "50%",
-                                                                    background: statusDot,
-                                                                    flexShrink: 0,
-                                                                }}
-                                                            />
-                                                            <Text
-                                                                variant="caption-2"
-                                                                ellipsis
-                                                                style={{ color: WEEK_SLOT_TEXT, fontWeight: 500 }}
-                                                            >
-                                                                {positioned.lesson.subject} · {surnameOnly(positioned.lesson.studentName)}
-                                                            </Text>
-                                                        </button>
-                                                    ) : (
-                                                        <LessonBlock
-                                                            lesson={positioned.lesson}
-                                                            compact={false}
-                                                            showTime
-                                                            onClick={onLessonClick}
-                                                            style={{ height: "100%" }}
-                                                        />
-                                                    )}
+                                                    <LessonBlock
+                                                        lesson={positioned.lesson}
+                                                        compact={positioned.useCompact || hasMore}
+                                                        showTime={!positioned.useCompact && !hasMore}
+                                                        onClick={onLessonClick}
+                                                        style={{ height: "100%" }}
+                                                    />
                                                 </div>
                                                 {hasMore && (
                                                     <button
@@ -518,19 +451,10 @@ const Week = ({ currentDate, onLessonClick, onSlotClick, onMoreClick, lessons = 
                                                             event.stopPropagation();
                                                             onMoreClick?.(day.date);
                                                         }}
-                                                        onMouseEnter={(event) => {
-                                                            event.currentTarget.style.background = "color-mix(in srgb, var(--repeto-surface-muted-soft) 88%, var(--g-color-text-primary) 12%)";
-                                                            event.currentTarget.style.color = "var(--g-color-text-primary)";
-                                                        }}
-                                                        onMouseLeave={(event) => {
-                                                            event.currentTarget.style.background = "var(--repeto-surface-muted-soft)";
-                                                            event.currentTarget.style.color = "var(--g-color-text-secondary)";
-                                                        }}
+                                                        className="repeto-calendar-more-btn"
                                                         style={{
                                                             alignSelf: "stretch",
                                                             border: "none",
-                                                            background: "var(--repeto-surface-muted-soft)",
-                                                            color: "var(--g-color-text-secondary)",
                                                             fontSize: 12,
                                                             fontWeight: 500,
                                                             lineHeight: "18px",
@@ -538,7 +462,6 @@ const Week = ({ currentDate, onLessonClick, onSlotClick, onMoreClick, lessons = 
                                                             padding: "2px 8px",
                                                             borderRadius: 6,
                                                             cursor: "pointer",
-                                                            transition: "background 0.15s ease, color 0.15s ease",
                                                         }}
                                                     >
                                                         Ещё {positioned.extraCount}

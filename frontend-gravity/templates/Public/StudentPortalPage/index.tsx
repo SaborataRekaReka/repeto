@@ -8,7 +8,7 @@ import {
     Button,
     TextInput,
 } from "@gravity-ui/uikit";
-import { ChevronDown, Gear, ArrowLeft, Sun, Moon } from "@gravity-ui/icons";
+import { ChevronDown, Gear, Sun, Moon } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import type { StudentPortalData } from "@/types/student-portal";
 import PublicTutorWidget, {
@@ -19,12 +19,12 @@ import HomeworkTab from "./HomeworkTab";
 import MaterialsTab from "./MaterialsTab";
 import PaymentTab from "./PaymentTab";
 import SignUpBanner from "./SignUpBanner";
-import PortalModal from "./PortalModal";
 import { PublicPageFooter, PublicPageHeader } from "../PublicPageChrome";
 
 import Image from "next/image";
 import { useThemeMode } from "@/contexts/ThemeContext";
 import { Lp2Field, Lp2Row } from "@/components/Lp2Field";
+import { Lp2PlannerLayout, Lp2PlannerSection, Lp2PortalShell } from "@/components/Lp2PlannerShell";
 import PhoneInput from "@/components/PhoneInput";
 import StudentAvatar from "@/components/StudentAvatar";
 import { resolveApiAssetUrl } from "@/lib/api";
@@ -515,23 +515,42 @@ const StudentPortalPage = ({
                 </div>
             </div>
 
-            <PortalModal
+            <Lp2PortalShell
                 open={settingsOpen}
                 onClose={closeSettings}
                 ariaLabel="Настройки профиля"
                 overlayClassName="repeto-portal-settings-overlay"
                 overlayOpenClassName="repeto-portal-settings-overlay--open"
-                panelClassName="repeto-portal-settings-panel"
-                panelOpenClassName="repeto-portal-settings-panel--open"
+                className="lp2--homework repeto-portal-settings-panel"
+                style={{ zIndex: 960 }}
+                onBack={closeSettings}
+                backAriaLabel="Закрыть"
+                title="Настройки профиля"
+                footer={(
+                    <div className="lp2__actions">
+                        <Button
+                            view="action"
+                            size="xl"
+                            width="max"
+                            onClick={handleSettingsSave}
+                            loading={settingsSaving}
+                            disabled={!settingsName.trim()}
+                        >
+                            Сохранить
+                        </Button>
+                        <Button
+                            view="flat-danger"
+                            size="l"
+                            width="max"
+                            onClick={() => void onLogout()}
+                        >
+                            Выйти из аккаунта
+                        </Button>
+                    </div>
+                )}
             >
-                <div className="repeto-portal-settings-panel__topbar">
-                    <button type="button" className="lp2__back" onClick={closeSettings} aria-label="Закрыть">
-                        <Icon data={ArrowLeft as IconData} size={18} />
-                    </button>
-                    <Text variant="subheader-2">Настройки профиля</Text>
-                </div>
-
-                <div className="repeto-portal-settings-panel__scroll">
+                <Lp2PlannerLayout>
+                    <Lp2PlannerSection title="Профиль">
                             {/* Avatar */}
                             <div style={{ textAlign: "center", marginBottom: 20 }}>
                                 <div
@@ -604,16 +623,9 @@ const StudentPortalPage = ({
                                     />
                                 </Lp2Field>
                             </Lp2Row>
+                    </Lp2PlannerSection>
 
-                            <Text
-                                as="div"
-                                variant="caption-2"
-                                color="secondary"
-                                style={{ marginTop: 14, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}
-                            >
-                                Основной контакт родителя
-                            </Text>
-
+                    <Lp2PlannerSection title="Контакт родителя">
                             <Lp2Field label="ФИО родителя">
                                 <TextInput
                                     value={settingsParentName}
@@ -640,16 +652,9 @@ const StudentPortalPage = ({
                                     />
                                 </Lp2Field>
                             </Lp2Row>
+                    </Lp2PlannerSection>
 
-                            {/* Theme */}
-                            <Text
-                                as="div"
-                                variant="caption-2"
-                                color="secondary"
-                                style={{ marginTop: 24, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}
-                            >
-                                Тема оформления
-                            </Text>
+                    <Lp2PlannerSection title="Тема оформления">
                             <div style={{ display: "flex", gap: 8 }}>
                                 <Button
                                     view={theme === "light" ? "action" : "outlined"}
@@ -668,36 +673,17 @@ const StudentPortalPage = ({
                                     <span style={{ marginLeft: 6 }}>Тёмная</span>
                                 </Button>
                             </div>
+                    </Lp2PlannerSection>
 
-                            {settingsError && (
-                                <Text as="div" variant="body-1" style={{ color: "var(--g-color-text-danger)", marginTop: 8 }}>
-                                    {settingsError}
-                                </Text>
-                            )}
-                </div>
-
-                <div className="repeto-portal-settings-panel__bottombar">
-                    <Button
-                        view="action"
-                        size="xl"
-                        width="max"
-                        onClick={handleSettingsSave}
-                        loading={settingsSaving}
-                        disabled={!settingsName.trim()}
-                    >
-                        Сохранить
-                    </Button>
-                    <Button
-                        view="flat"
-                        size="l"
-                        width="max"
-                        onClick={() => void onLogout()}
-                        style={{ marginTop: 8, color: "var(--g-color-text-danger)" }}
-                    >
-                        Выйти из аккаунта
-                    </Button>
-                </div>
-            </PortalModal>
+                    {settingsError && (
+                        <Lp2PlannerSection>
+                            <Text as="div" variant="body-1" style={{ color: "var(--g-color-text-danger)" }}>
+                                {settingsError}
+                            </Text>
+                        </Lp2PlannerSection>
+                    )}
+                </Lp2PlannerLayout>
+            </Lp2PortalShell>
         </>
     );
 };

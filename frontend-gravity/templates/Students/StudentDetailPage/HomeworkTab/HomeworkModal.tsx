@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Alert, Button, Icon, Select, Text, TextArea } from "@gravity-ui/uikit";
-import { ArrowLeft, File, Folder, Plus, TrashBin } from "@gravity-ui/icons";
+import { File, Folder, Plus, TrashBin } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import StyledDateInput from "@/components/StyledDateInput";
 import AppField from "@/components/AppField";
+import Lp2PlannerShell, { Lp2PlannerLayout, Lp2PlannerSection } from "@/components/Lp2PlannerShell";
+import { useModalEscape } from "@/hooks/useModalEscape";
 import MaterialsPickerDialog from "@/components/MaterialsPickerDialog";
 import type { HomeworkFile } from "@/mocks/student-details";
 import type { CloudProvider } from "@/types/files";
@@ -182,20 +184,7 @@ const HomeworkModal = ({
         setPickerOpen(false);
     }, [visible, homework]);
 
-    useEffect(() => {
-        if (!visible) {
-            return;
-        }
-
-        const onKeyDown = (event: KeyboardEvent) => {
-            if (event.key === "Escape") {
-                onClose();
-            }
-        };
-
-        document.addEventListener("keydown", onKeyDown);
-        return () => document.removeEventListener("keydown", onKeyDown);
-    }, [visible, onClose]);
+    useModalEscape({ enabled: visible, onEscape: onClose });
 
     const lessonOptions = useMemo(() => {
         return [...availableLessons]
@@ -295,39 +284,51 @@ const HomeworkModal = ({
                 onClick={onClose}
                 aria-hidden="true"
             />
-            <div
-                className={`lp2 lp2--homework${isPanelVisible ? " lp2--open" : ""}`}
+            <Lp2PlannerShell
+                className="lp2--homework"
+                isOpen={isPanelVisible}
                 onTransitionEnd={handleTransitionEnd}
-                role="dialog"
-                aria-modal="true"
-                aria-label={title}
-            >
-                <div className="lp2__topbar">
-                    <button type="button" className="lp2__back" onClick={onClose} aria-label="Закрыть">
-                        <Icon data={ArrowLeft as IconData} size={18} />
-                    </button>
-                    <Text variant="subheader-2">{title}</Text>
-                    <div className="lp2__topbar-actions">
-                        {isEdit && onDelete ? (
-                            <Button
-                                view="flat-danger"
-                                size="s"
-                                onClick={() => void handleDelete()}
-                                loading={deleting}
-                                disabled={saving}
-                            >
-                                {confirmDelete ? "Подтвердить" : "Удалить"}
-                            </Button>
-                        ) : (
-                            <span style={{ width: 80, height: 1 }} aria-hidden="true" />
-                        )}
+                ariaLabel={title}
+                ariaModal
+                onBack={onClose}
+                backAriaLabel="Закрыть"
+                title={title}
+                centerClassName="lp2__center--homework"
+                withPlannerCenter={false}
+                topbarActions={
+                    isEdit && onDelete ? (
+                        <Button
+                            view="flat-danger"
+                            size="s"
+                            onClick={() => void handleDelete()}
+                            loading={deleting}
+                            disabled={saving}
+                        >
+                            {confirmDelete ? "Подтвердить" : "Удалить"}
+                        </Button>
+                    ) : null
+                }
+                footer={
+                    <div className="lp2__actions lp2__actions--split">
+                        <Button view="outlined" size="xl" onClick={onClose} disabled={saving || deleting}>
+                            Отмена
+                        </Button>
+                        <Button
+                            view="action"
+                            size="xl"
+                            onClick={() => void handleSubmit()}
+                            loading={saving}
+                            disabled={!task.trim() || deleting}
+                        >
+                            {isEdit ? "Сохранить изменения" : "Сохранить"}
+                        </Button>
                     </div>
-                </div>
+                }
+            >
+                {formError && <Alert theme="danger" message={formError} />}
 
-                <div className="lp2__scroll">
-                    <div className="lp2__center lp2__center--homework">
-                        {formError && <Alert theme="danger" message={formError} />}
-
+                <Lp2PlannerLayout>
+                    <Lp2PlannerSection title="Задание">
                         <AppField
                             label="Описание задания"
                             error={taskTouched && !task.trim() ? "Обязательное поле" : undefined}
@@ -372,7 +373,9 @@ const HomeworkModal = ({
                                 />
                             </AppField>
                         )}
+                    </Lp2PlannerSection>
 
+                    <Lp2PlannerSection title="Материалы" description="Файлы от преподавателя и ваши загрузки">
                         {files.length > 0 && (
                             <div className="lp2-materials">
                                 <Text variant="caption-2" color="secondary" style={{ marginBottom: 8 }}>
@@ -422,26 +425,9 @@ const HomeworkModal = ({
                                 Подключите облако в разделе Файлы, чтобы прикреплять материалы.
                             </Text>
                         )}
-                    </div>
-                </div>
-
-                <div className="lp2__bottombar">
-                    <div className="lp2__actions lp2__actions--split">
-                        <Button view="outlined" size="xl" onClick={onClose} disabled={saving || deleting}>
-                            Отмена
-                        </Button>
-                        <Button
-                            view="action"
-                            size="xl"
-                            onClick={() => void handleSubmit()}
-                            loading={saving}
-                            disabled={!task.trim() || deleting}
-                        >
-                            {isEdit ? "Сохранить изменения" : "Сохранить"}
-                        </Button>
-                    </div>
-                </div>
-            </div>
+                    </Lp2PlannerSection>
+                </Lp2PlannerLayout>
+            </Lp2PlannerShell>
 
             <MaterialsPickerDialog
                 open={pickerOpen}

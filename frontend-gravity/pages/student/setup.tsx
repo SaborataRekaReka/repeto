@@ -13,6 +13,7 @@ import {
 } from "@/lib/studentAuth";
 import { codedErrorMessage } from "@/lib/errorCodes";
 import { Lp2Field, Lp2Row } from "@/components/Lp2Field";
+import Lp2PlannerShell, { Lp2PlannerLayout, Lp2PlannerSection } from "@/components/Lp2PlannerShell";
 import PhoneInput from "@/components/PhoneInput";
 
 type SetupData = {
@@ -194,24 +195,28 @@ const StudentSetupPage = () => {
             <Head>
                 <title>Заполните профиль — Repeto</title>
             </Head>
-            <div className="lp2 lp2--open" style={{ position: "fixed", inset: 0, zIndex: 960 }}>
-                <div className="lp2__topbar">
-                    <div style={{ flex: 1 }} />
-                    <div className="lp2__topbar-actions" />
-                </div>
-
-                <div className="lp2__scroll">
-                    <div className="lp2__center">
-                        <h1 className="lp2__page-title">Добро пожаловать в Repeto</h1>
-                        <Text
-                            as="div"
-                            variant="body-1"
-                            color="secondary"
-                            style={{ marginBottom: 24 }}
-                        >
-                            Проверьте и дополните свои данные. Репетитор увидит обновлённую информацию в карточке ученика.
-                        </Text>
-
+            <Lp2PlannerShell
+                className="lp2--student-setup"
+                style={{ zIndex: 960 }}
+                isOpen
+                ariaLabel="Заполнение профиля"
+                title="Добро пожаловать в Repeto"
+                subtitle="Проверьте и дополните свои данные"
+                footer={(
+                    <Button
+                        className="lp2__submit"
+                        view="action"
+                        size="xl"
+                        width="max"
+                        onClick={handleSubmit}
+                        loading={saving}
+                    >
+                        Завершить и войти
+                    </Button>
+                )}
+            >
+                <Lp2PlannerLayout>
+                    <Lp2PlannerSection title="Основное">
                         <Lp2Field label="ФИО *" error={nameError} errorText="Обязательное поле">
                             <TextInput
                                 value={name}
@@ -256,16 +261,9 @@ const StudentSetupPage = () => {
                                 />
                             </Lp2Field>
                         </Lp2Row>
+                    </Lp2PlannerSection>
 
-                        <Text
-                            as="div"
-                            variant="caption-2"
-                            color="secondary"
-                            style={{ marginTop: 14, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}
-                        >
-                            Основной контакт родителя
-                        </Text>
-
+                    <Lp2PlannerSection title="Контакт родителя">
                         <Lp2Field label="ФИО родителя">
                             <TextInput
                                 value={parentName}
@@ -292,32 +290,21 @@ const StudentSetupPage = () => {
                                 />
                             </Lp2Field>
                         </Lp2Row>
+                    </Lp2PlannerSection>
 
-                        {formError && (
+                    {formError && (
+                        <Lp2PlannerSection>
                             <Text
                                 as="div"
                                 variant="body-1"
-                                style={{ color: "var(--g-color-text-danger)", marginTop: 8 }}
+                                style={{ color: "var(--g-color-text-danger)" }}
                             >
                                 {formError}
                             </Text>
-                        )}
-                    </div>
-                </div>
-
-                <div className="lp2__bottombar">
-                    <Button
-                        className="lp2__submit"
-                        view="action"
-                        size="xl"
-                        width="max"
-                        onClick={handleSubmit}
-                        loading={saving}
-                    >
-                        Завершить и войти
-                    </Button>
-                </div>
-            </div>
+                        </Lp2PlannerSection>
+                    )}
+                </Lp2PlannerLayout>
+            </Lp2PlannerShell>
         </>
     );
 };

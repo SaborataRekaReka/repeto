@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Text, Icon } from "@gravity-ui/uikit";
 import {
-    ArrowLeft,
     ArrowUpRightFromSquare,
     ChevronRight,
     Copy,
@@ -15,7 +14,7 @@ import type {
     PortalPayment,
     StudentPortalData,
 } from "@/types/student-portal";
-import PortalModal from "./PortalModal";
+import { Lp2PlannerLayout, Lp2PlannerSection, Lp2PortalShell } from "@/components/Lp2PlannerShell";
 
 type PaymentTabProps = {
     data: StudentPortalData;
@@ -480,25 +479,18 @@ const PaymentTab = ({ data }: PaymentTabProps) => {
                 </section>
             </div>
 
-            <PortalModal
+            <Lp2PortalShell
                 open={requisitesOpen}
                 onClose={closeRequisites}
                 ariaLabel="Реквизиты"
                 overlayClassName="repeto-portal-requisites-overlay"
                 overlayOpenClassName="repeto-portal-requisites-overlay--open"
-                panelClassName="repeto-portal-requisites-panel"
-                panelOpenClassName="repeto-portal-requisites-panel--open"
-            >
-                <div className="repeto-portal-requisites-panel__topbar">
-                    <button
-                        type="button"
-                        className="lp2__back"
-                        onClick={closeRequisites}
-                        aria-label="Назад"
-                    >
-                        <Icon data={ArrowLeft as IconData} size={18} />
-                    </button>
-                    <Text variant="subheader-2">Реквизиты {data.tutorName}</Text>
+                className="lp2--homework repeto-portal-requisites-panel"
+                style={{ zIndex: 990 }}
+                onBack={closeRequisites}
+                title={`Реквизиты ${data.tutorName}`}
+                subtitle="Данные для оплаты"
+                topbarActions={(
                     <button
                         type="button"
                         className="repeto-portal-requisites-panel__close"
@@ -507,13 +499,10 @@ const PaymentTab = ({ data }: PaymentTabProps) => {
                     >
                         <Icon data={Xmark as IconData} size={22} />
                     </button>
-                </div>
-
-                <div className="repeto-portal-requisites-panel__scroll">
-                    <Text variant="header-1" className="repeto-portal-requisites-panel__title">
-                        Реквизиты
-                    </Text>
-
+                )}
+            >
+                <Lp2PlannerLayout>
+                    <Lp2PlannerSection title="Реквизиты">
                     {requisitesItems.length === 0 ? (
                         <Text variant="body-1" color="secondary">
                             Реквизиты пока не заполнены.
@@ -562,8 +551,9 @@ const PaymentTab = ({ data }: PaymentTabProps) => {
                                 : "Не удалось скопировать"}
                         </Text>
                     )}
-                </div>
-            </PortalModal>
+                    </Lp2PlannerSection>
+                </Lp2PlannerLayout>
+            </Lp2PortalShell>
         </>
     );
 };

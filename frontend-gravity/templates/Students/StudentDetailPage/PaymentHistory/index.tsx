@@ -1,215 +1,181 @@
-import { Text, Button, Icon } from "@gravity-ui/uikit";
-import { Plus, CirclePlus, CreditCard, HandPointUp } from "@gravity-ui/icons";
+import { Icon } from "@gravity-ui/uikit";
+import { Calendar, ChevronRight, CreditCard } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import type { Payment } from "@/types/finance";
+import type { Lesson } from "@/types/schedule";
 import { getMethodLabel } from "@/mocks/finance-tutor";
+import TabAddSlot from "../TabAddSlot";
 
-const GText = Text as any;
-const GButton = Button as any;
 const GIcon = Icon as any;
 
 type PaymentHistoryProps = {
     payments: Payment[];
-    onAdd?: () => void;
+    lessons?: Lesson[];
+    balance?: number;
+    onAdd?: (lesson?: Lesson) => void;
 };
 
-const paymentStatusLabel = (status: string) => {
-    switch (status) {
-        case "paid":
-            return "Зачислено";
-        case "pending":
-            return "Ожидает";
-        case "cancelled":
-            return "Отменено";
-        default:
-            return status;
+type LedgerOperation = {
+    id: string;
+    kind: "payment" | "lesson";
+    title: string;
+    subtitle: string;
+    amount: number;
+    direction: "credit" | "debit";
+    timestamp: number;
+};
+
+const formatMoney = (value: number) => `${value.toLocaleString("ru-RU")} ₽`;
+const formatAbsoluteMoney = (value: number) => `${Math.abs(value).toLocaleString("ru-RU")} ₽`;
+
+const parseDateTimestamp = (value: string, time = "00:00") => {
+    const raw = String(value || "").trim();
+    if (!raw) return 0;
+
+    const ru = raw.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+    if (ru) {
+        const parsed = new Date(`${ru[3]}-${ru[2]}-${ru[1]}T${time}`).getTime();
+        return Number.isFinite(parsed) ? parsed : 0;
     }
+
+    const isoDate = raw.match(/^\d{4}-\d{2}-\d{2}$/);
+    const parsed = new Date(isoDate ? `${raw}T${time}` : raw).getTime();
+    return Number.isFinite(parsed) ? parsed : 0;
 };
 
-const paymentStatusColor = (status: string) => {
-    switch (status) {
-        case "paid":
-            return "#22a053";
-        case "pending":
-            return "var(--g-color-text-secondary)";
-        case "cancelled":
-            return "var(--g-color-text-danger)";
-        default:
-            return "var(--g-color-text-secondary)";
-    }
+const formatDate = (value: string) => {
+    const timestamp = parseDateTimestamp(value);
+    if (!timestamp) return value;
+
+    return new Date(timestamp).toLocaleDateString("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+    });
 };
 
-const methodIcon = (method: string): IconData => {
-    switch (method) {
-        case "sbp":
-            return HandPointUp as IconData;
-        case "cash":
-            return CreditCard as IconData;
-        case "yukassa":
-            return CreditCard as IconData;
-        case "transfer":
-        default:
-            return CreditCard as IconData;
-    }
+const buildOperations = (payments: Payment[], completedLessons: Lesson[]): LedgerOperation[] => {
+    const paymentOperations = payments.map((payment) => ({
+        id: `payment-${payment.id}`,
+        kind: "payment" as const,
+        title: `Оплата · ${getMethodLabel(payment.method)}`,
+        subtitle: [payment.date, payment.comment].filter(Boolean).join(" · "),
+        amount: payment.amount,
+        direction: "credit" as const,
+        timestamp: parseDateTimestamp(payment.date),
+    }));
+
+    const lessonOperations = completedLessons.map((lesson) => ({
+        id: `lesson-${lesson.id}`,
+        kind: "lesson" as const,
+        title: `Занятие · ${lesson.subject}`,
+        subtitle: [formatDate(lesson.date), lesson.startTime].filter(Boolean).join(" · "),
+        amount: lesson.rate,
+        direction: "debit" as const,
+        timestamp: parseDateTimestamp(lesson.date, lesson.startTime),
+    }));
+
+    return [...paymentOperations, ...lessonOperations]
+        .sort((first, second) => second.timestamp - first.timestamp);
 };
 
-const methodBg = (method: string): string => {
-    switch (method) {
-        case "sbp":
-            return "#e0f2e9";
-        case "cash":
-            return "#e8e8e8";
-        case "yukassa":
-            return "#dce4f0";
-        case "transfer":
-        default:
-            return "#e8e8e8";
-    }
-};
-
-const methodFg = (method: string): string => {
-    switch (method) {
-        case "sbp":
-            return "#2d8a56";
-        case "cash":
-            return "#555";
-        case "yukassa":
-            return "#3b5998";
-        case "transfer":
-        default:
-            return "#555";
-    }
-};
-
-/** Group payments by date string, preserving order */
-const groupByDate = (payments: Payment[]) => {
-    const map = new Map<string, Payment[]>();
-    for (const p of payments) {
-        const key = p.date;
-        const list = map.get(key);
-        if (list) list.push(p);
-        else map.set(key, [p]);
-    }
-    return Array.from(map.entries());
-};
-
-const formatDateHeading = (dateStr: string) => {
-    // dateStr = "DD.MM.YYYY"
-    const parts = dateStr.split(".");
-    if (parts.length !== 3) return dateStr;
-    const d = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-    if (Number.isNaN(d.getTime())) return dateStr;
-    return d.toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
-};
-
-const PaymentHistory = ({ payments, onAdd }: PaymentHistoryProps) => {
-    const groups = groupByDate(payments);
+const PaymentHistory = ({ payments, lessons = [], balance, onAdd }: PaymentHistoryProps) => {
+    const paidTotal = payments
+        .filter((payment) => payment.status === "paid")
+        .reduce((sum, payment) => sum + payment.amount, 0);
+    const completedLessons = lessons.filter((lesson) => lesson.status === "completed");
+    const lessonEarnedTotal = completedLessons.reduce((sum, lesson) => sum + lesson.rate, 0);
+    const linkedLessonIds = new Set(payments.map((payment) => payment.lessonId).filter(Boolean));
+    const unpaidLessons = completedLessons
+        .filter((lesson) => !linkedLessonIds.has(lesson.id))
+        .sort((first, second) => parseDateTimestamp(second.date, second.startTime) - parseDateTimestamp(first.date, first.startTime));
+    const balanceValue = typeof balance === "number" ? balance : paidTotal - lessonEarnedTotal;
+    const earnedTotal = typeof balance === "number" ? paidTotal - balance : lessonEarnedTotal;
+    const operations = buildOperations(payments, completedLessons);
+    const balanceCaption = balanceValue < 0 ? "К оплате" : balanceValue > 0 ? "На балансе" : "Баланс";
 
     return (
-        <div className="tab-section">
-            {onAdd && (
-                <div className="tab-section__actions">
-                    <button type="button" className="tab-action-btn" onClick={onAdd}>
-                        <span className="tab-action-btn__icon">
-                            <GIcon data={CirclePlus as IconData} size={20} />
-                        </span>
-                        Записать оплату
-                    </button>
-                </div>
-            )}
-
-            {payments.length === 0 && (
-                <div className="lp2-empty">Оплат пока нет</div>
-            )}
-
-            {groups.map(([date, items]) => (
-                <div key={date} style={{ marginBottom: 24 }}>
-                    <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 16 }}>
-                        {formatDateHeading(date)}
+        <div className="tab-section student-payment-tab">
+            <div className="student-payment-ledger">
+                <section className="student-payment-hero">
+                    <div className="student-payment-hero__caption">{balanceCaption}</div>
+                    <div className="student-payment-hero__amount">{formatMoney(balanceValue)}</div>
+                    <div className="student-payment-hero__metrics">
+                        <span>Оплачено {formatMoney(paidTotal)}</span>
+                        <span>Начислено {formatMoney(earnedTotal)}</span>
+                        <span>Без оплаты {unpaidLessons.length}</span>
                     </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-                        {items.map((payment, idx) => (
-                            <div key={payment.id}>
-                                {idx > 0 && (
-                                    <div style={{
-                                        height: 1,
-                                        background: "var(--g-color-line-generic)",
-                                        margin: "0 0 0 0",
-                                    }} />
-                                )}
-                                <div style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 20,
-                                    padding: "18px 0",
-                                }}>
-                                    {/* Left: amount + status */}
-                                    <div style={{ minWidth: 120, flexShrink: 0 }}>
-                                        <div style={{
-                                            fontSize: 17,
-                                            fontWeight: 500,
-                                            color: paymentStatusColor(payment.status),
-                                            lineHeight: 1.3,
-                                        }}>
-                                            {payment.status === "paid" ? "+ " : ""}
-                                            {payment.amount.toLocaleString("ru-RU")} ₽
-                                        </div>
-                                        <div style={{
-                                            fontSize: 13,
-                                            color: paymentStatusColor(payment.status),
-                                            marginTop: 2,
-                                        }}>
-                                            {paymentStatusLabel(payment.status)}
-                                        </div>
-                                    </div>
+                </section>
 
-                                    {/* Middle: method + comment + date */}
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ fontWeight: 600, fontSize: 15, lineHeight: 1.3 }}>
-                                            {getMethodLabel(payment.method)}
-                                        </div>
-                                        {payment.comment && (
-                                            <div style={{
-                                                fontSize: 14,
-                                                color: "var(--g-color-text-secondary)",
-                                                marginTop: 2,
-                                                lineHeight: 1.4,
-                                            }}>
-                                                {payment.comment}
-                                            </div>
-                                        )}
-                                        <div style={{
-                                            fontSize: 13,
-                                            color: "var(--g-color-text-secondary)",
-                                            marginTop: 2,
-                                        }}>
-                                            {payment.date}
-                                        </div>
+                {unpaidLessons.length > 0 && (
+                    <section className="student-ledger-section">
+                        <div className="student-ledger-section__head">
+                            <div>
+                                <div className="student-ledger-section__title">Неоплаченные занятия</div>
+                                <div className="student-ledger-section__subtitle">Можно быстро привязать оплату к занятию</div>
+                            </div>
+                        </div>
+                        <div className="student-payment-due-list">
+                            {unpaidLessons.slice(0, 6).map((lesson) => (
+                                <div key={lesson.id} className="student-payment-due-row">
+                                    <div className="student-payment-due-row__copy">
+                                        <span>{lesson.subject}</span>
+                                        <span>{formatDate(lesson.date)} · {lesson.startTime}</span>
                                     </div>
+                                    <div className="student-payment-due-row__amount">{formatMoney(lesson.rate)}</div>
+                                    {onAdd && (
+                                        <button
+                                            type="button"
+                                            className="student-payment-due-row__action"
+                                            onClick={() => onAdd(lesson)}
+                                        >
+                                            Записать
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                )}
 
-                                    {/* Right: method icon */}
-                                    <div style={{
-                                        width: 44,
-                                        height: 44,
-                                        borderRadius: "50%",
-                                        background: methodBg(payment.method),
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        flexShrink: 0,
-                                        color: methodFg(payment.method),
-                                    }}>
+                <section className="student-ledger-section">
+                    <div className="student-ledger-section__head">
+                        <div>
+                            <div className="student-ledger-section__title">Операции</div>
+                            <div className="student-ledger-section__subtitle">Оплаты и проведенные занятия в одной ленте</div>
+                        </div>
+                        <GIcon data={ChevronRight as IconData} size={18} />
+                    </div>
+
+                    {operations.length === 0 ? (
+                        <div className="lp2-empty lp2-empty--with-action">
+                            <span>Операций пока нет</span>
+                            {onAdd && <TabAddSlot title="Добавить оплату" onClick={() => onAdd()} />}
+                        </div>
+                    ) : (
+                        <div className="student-ledger-list">
+                            {operations.map((operation) => (
+                                <div key={operation.id} className="student-ledger-row">
+                                    <span className="student-ledger-row__icon">
                                         <GIcon
-                                            data={methodIcon(payment.method)}
-                                            size={20}
+                                            data={(operation.kind === "payment" ? CreditCard : Calendar) as IconData}
+                                            size={18}
                                         />
+                                    </span>
+                                    <div className="student-ledger-row__copy">
+                                        <div className="student-ledger-row__title">{operation.title}</div>
+                                        <div className="student-ledger-row__subtitle">{operation.subtitle}</div>
+                                    </div>
+                                    <div className={`student-ledger-row__amount student-ledger-row__amount--${operation.direction}`}>
+                                        {operation.direction === "credit" ? "+" : "−"}{formatAbsoluteMoney(operation.amount)}
                                     </div>
                                 </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            ))}
+                            ))}
+                            {onAdd && <TabAddSlot title="Добавить оплату" onClick={() => onAdd()} />}
+                        </div>
+                    )}
+                </section>
+            </div>
         </div>
     );
 };

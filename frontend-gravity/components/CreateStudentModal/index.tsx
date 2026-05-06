@@ -9,13 +9,15 @@ import {
     Switch,
     Tooltip,
 } from "@gravity-ui/uikit";
-import { ArrowLeft, CircleQuestion } from "@gravity-ui/icons";
+import { CircleQuestion } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import { createStudent, checkStudentEmail } from "@/hooks/useStudents";
 import { useSettings } from "@/hooks/useSettings";
 import { codedErrorMessage } from "@/lib/errorCodes";
 import { Lp2Field, Lp2Row } from "@/components/Lp2Field";
 import PhoneInput from "@/components/PhoneInput";
+import Lp2PlannerShell, { Lp2PlannerLayout, Lp2PlannerSection } from "@/components/Lp2PlannerShell";
+import { useModalEscape } from "@/hooks/useModalEscape";
 import type { Student } from "@/types/student";
 
 const DEFAULT_SUBJECTS = [
@@ -82,14 +84,7 @@ const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalP
         setTimeout(() => onClose(), 350);
     }, [onClose]);
 
-    useEffect(() => {
-        if (!visible) return;
-        const handler = (e: KeyboardEvent) => {
-            if (e.key === "Escape") handleClose();
-        };
-        document.addEventListener("keydown", handler);
-        return () => document.removeEventListener("keydown", handler);
-    }, [visible, handleClose]);
+    useModalEscape({ enabled: visible, onEscape: handleClose });
 
     const [name, setName] = useState("");
     const [grade, setGrade] = useState("");
@@ -283,26 +278,32 @@ const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalP
     if (!mounted || (!shouldRender && !visible)) return null;
 
     const panelContent = (
-        <div
-            ref={panelRef}
-            className={`lp2 lp2--mobile-inline-title ${isPanelVisible ? "lp2--open" : ""}`}
+        <Lp2PlannerShell
+            panelRef={panelRef}
+            className="lp2--mobile-inline-title"
             style={{ zIndex: PANEL_Z }}
+            isOpen={isPanelVisible}
             onTransitionEnd={handleTransitionEnd}
-            role="dialog"
-            aria-modal="false"
-            aria-label="Новый ученик"
+            ariaLabel="Новый ученик"
+            ariaModal={false}
+            onBack={handleClose}
+            title="Новый ученик"
+            subtitle="Профиль, контакты и ставка"
+            footer={(
+                <Button
+                    className="lp2__submit"
+                    view="action"
+                    size="xl"
+                    width="max"
+                    onClick={handleSubmit}
+                    loading={saving}
+                >
+                    Сохранить
+                </Button>
+            )}
         >
-            <div className="lp2__topbar">
-                <button type="button" className="lp2__back" onClick={handleClose} aria-label="Назад">
-                    <Icon data={ArrowLeft as IconData} size={18} />
-                </button>
-                <div className="lp2__topbar-actions" />
-            </div>
-
-            <div className="lp2__scroll">
-                <div className="lp2__center">
-                    <h1 className="lp2__page-title">Новый ученик</h1>
-
+            <Lp2PlannerLayout>
+                <Lp2PlannerSection title="Основное">
                     <Lp2Field label="ФИО *" error={nameError} errorText="Обязательное поле">
                         <TextInput
                             value={name}
@@ -363,7 +364,9 @@ const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalP
                             )}
                         </div>
                     </Lp2Field>
+                </Lp2PlannerSection>
 
+                <Lp2PlannerSection title="Контакты ученика" description="Телефон, email и доступ в Repeto">
                     <Lp2Field label="Телефон ученика">
                         <PhoneInput
                             value={phone}
@@ -414,45 +417,26 @@ const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalP
                             />
                         </div>
                     )}
+                </Lp2PlannerSection>
 
-                    <div
-                        style={{
-                            borderTop: "1px dashed var(--g-color-line-generic)",
-                            paddingTop: 16,
-                            marginTop: 6,
-                            marginBottom: 6,
-                        }}
-                    >
-                        <Text
-                            as="div"
-                            variant="caption-2"
-                            color="secondary"
-                            style={{
-                                marginBottom: 12,
-                                textTransform: "uppercase",
-                                letterSpacing: "0.06em",
-                            }}
-                        >
-                            Родитель
-                        </Text>
+                <Lp2PlannerSection title="Контакт родителя">
+                    <Lp2Field label="ФИО родителя">
+                        <TextInput
+                            value={parentName}
+                            onUpdate={setParentName}
+                            placeholder="Иванова Мария Петровна"
+                            size="l"
+                        />
+                    </Lp2Field>
 
-                        <Lp2Field label="ФИО родителя">
-                            <TextInput
-                                value={parentName}
-                                onUpdate={setParentName}
-                                placeholder="Иванова Мария Петровна"
-                                size="l"
-                            />
-                        </Lp2Field>
-
-                        <Lp2Field label="Телефон родителя">
+                    <Lp2Row>
+                        <Lp2Field label="Телефон родителя" half>
                             <PhoneInput
                                 value={parentPhone}
                                 onUpdate={setParentPhone}
                             />
                         </Lp2Field>
-
-                        <Lp2Field label="Email родителя">
+                        <Lp2Field label="Email родителя" half>
                             <TextInput
                                 value={parentEmail}
                                 onUpdate={setParentEmail}
@@ -460,8 +444,10 @@ const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalP
                                 size="l"
                             />
                         </Lp2Field>
-                    </div>
+                    </Lp2Row>
+                </Lp2PlannerSection>
 
+                <Lp2PlannerSection title="Условия обучения">
                     <Lp2Field label="Ставка за занятие (₽) *" error={rateError} errorText="Введите сумму больше 0">
                         <TextInput
                             value={rate}
@@ -481,28 +467,15 @@ const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalP
                             size="l"
                         />
                     </Lp2Field>
+                </Lp2PlannerSection>
+            </Lp2PlannerLayout>
 
-                    {formError && (
-                        <Text as="div" variant="body-1" style={{ color: "var(--g-color-text-danger)" }}>
-                            {formError}
-                        </Text>
-                    )}
-                </div>
-            </div>
-
-            <div className="lp2__bottombar">
-                <Button
-                    className="lp2__submit"
-                    view="action"
-                    size="xl"
-                    width="max"
-                    onClick={handleSubmit}
-                    loading={saving}
-                >
-                    Сохранить
-                </Button>
-            </div>
-        </div>
+            {formError && (
+                <Text as="div" variant="body-1" style={{ color: "var(--g-color-text-danger)" }}>
+                    {formError}
+                </Text>
+            )}
+        </Lp2PlannerShell>
     );
 
     return createPortal(panelContent, document.body);

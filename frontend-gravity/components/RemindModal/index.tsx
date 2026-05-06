@@ -6,18 +6,17 @@ import {
     Checkbox,
     Switch,
     Button,
-    Icon,
     Loader,
     Select,
 } from "@gravity-ui/uikit";
-import { ArrowLeft } from "@gravity-ui/icons";
-import type { IconData } from "@gravity-ui/uikit";
 import { useLessons } from "@/hooks/useLessons";
 import { usePayments } from "@/hooks/usePayments";
 import { useStudentHomework } from "@/hooks/useStudents";
 import { sendReminder } from "@/hooks/useNotifications";
 import { codedErrorMessage } from "@/lib/errorCodes";
 import { Lp2Field } from "@/components/Lp2Field";
+import Lp2PlannerShell, { Lp2PlannerLayout, Lp2PlannerSection } from "@/components/Lp2PlannerShell";
+import { useModalEscape } from "@/hooks/useModalEscape";
 import type { Lesson } from "@/types/schedule";
 import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 
@@ -100,12 +99,7 @@ const RemindModal = ({
         setTimeout(() => onClose(), 350);
     }, [onClose]);
 
-    useEffect(() => {
-        if (!visible) return;
-        const handler = (e: KeyboardEvent) => { if (e.key === "Escape") handleClose(); };
-        document.addEventListener("keydown", handler);
-        return () => document.removeEventListener("keydown", handler);
-    }, [visible, handleClose]);
+    useModalEscape({ enabled: visible, onEscape: handleClose });
 
     // Fetch lessons for this student
     const { data: allLessons = [], loading: lessonsLoading } = useLessons({
@@ -238,7 +232,7 @@ const RemindModal = ({
 
     const formatHomeworkLabel = (hw: HomeworkItem) => {
         const taskPreview =
-            hw.task.length > 60 ? hw.task.slice(0, 60) + "⬦" : hw.task;
+            hw.task.length > 60 ? hw.task.slice(0, 60) + "..." : hw.task;
         if (hw.dueAt) {
             const d = new Date(hw.dueAt);
             const dateStr = d.toLocaleDateString("ru-RU", {
@@ -290,7 +284,7 @@ const RemindModal = ({
                 }, 1200);
             } else {
                 setErrorText(
-                    "Не удалось отправить — ђ ученика нет подключённых каналов (Telegram / Max). Подключите через портал."
+                    "Не удалось отправить: у ученика нет подключенных каналов (Telegram / Max). Подключите через портал."
                 );
                 setSaving(false);
             }
@@ -301,21 +295,19 @@ const RemindModal = ({
     };
 
     const renderTypeSelection = () => (
-        <Lp2Field label="Тип напоминания">
-            <Select
-                size="l"
-                width="max"
-                options={typeOptions}
-                value={[reminderType]}
-                onUpdate={([val]) => {
-                    setReminderType(val as ReminderType);
-                    setSelectedLessonIds([]);
-                    setSelectedHomeworkIds([]);
-                    setErrorText(null);
-                }}
-                popupClassName="app-select-popup"
-            />
-        </Lp2Field>
+        <Select
+            size="l"
+            width="max"
+            options={typeOptions}
+            value={[reminderType]}
+            onUpdate={([val]) => {
+                setReminderType(val as ReminderType);
+                setSelectedLessonIds([]);
+                setSelectedHomeworkIds([]);
+                setErrorText(null);
+            }}
+            popupClassName="app-select-popup"
+        />
     );
 
     const renderPaymentSection = () => (
@@ -328,7 +320,7 @@ const RemindModal = ({
                 }}
             >
                 <Text variant="body-2" color="secondary">
-                    Ученику будет отправлено напоминание об оплате с ђказанием текущей задолженности.
+                    Ученику будет отправлено напоминание об оплате с указанием текущей задолженности.
                 </Text>
             </div>
 
@@ -362,7 +354,7 @@ const RemindModal = ({
                                     borderRadius: 10,
                                     cursor: "pointer",
                                     background: selectedLessonIds.includes(lesson.id)
-                                        ? "rgba(174,122,255,0.08)"
+                                        ? "var(--repeto-section-hover)"
                                         : "var(--g-color-base-generic)",
                                     border: selectedLessonIds.includes(lesson.id)
                                         ? "1px solid var(--g-color-line-brand)"
@@ -481,7 +473,7 @@ const RemindModal = ({
                                 borderRadius: 10,
                                 cursor: "pointer",
                                 background: selectedLessonIds.includes(lesson.id)
-                                    ? "rgba(174,122,255,0.08)"
+                                    ? "var(--repeto-section-hover)"
                                     : "var(--g-color-base-generic)",
                                 border: selectedLessonIds.includes(lesson.id)
                                     ? "1px solid var(--g-color-line-brand)"
@@ -558,7 +550,7 @@ const RemindModal = ({
                                 borderRadius: 10,
                                 cursor: "pointer",
                                 background: selectedHomeworkIds.includes(hw.id)
-                                    ? "rgba(174,122,255,0.08)"
+                                    ? "var(--repeto-section-hover)"
                                     : "var(--g-color-base-generic)",
                                 border: selectedHomeworkIds.includes(hw.id)
                                     ? "1px solid var(--g-color-line-brand)"
@@ -584,67 +576,22 @@ const RemindModal = ({
     if (!mounted || (!shouldRender && !visible)) return null;
 
     const panelContent = (
-        <div
-            ref={panelRef}
-            className={`lp2 ${isPanelVisible ? "lp2--open" : ""}`}
+        <Lp2PlannerShell
+            panelRef={panelRef}
             style={{ zIndex: PANEL_Z }}
+            isOpen={isPanelVisible}
             onTransitionEnd={handleTransitionEnd}
-            role="dialog"
-            aria-modal="false"
-            aria-label={`Напомнить · ${studentName}`}
-        >
-            <div className="lp2__topbar">
-                <button type="button" className="lp2__back" onClick={handleClose} aria-label="Назад">
-                    <Icon data={ArrowLeft as IconData} size={18} />
-                </button>
-                <div className="lp2__topbar-actions" />
-            </div>
-
-            <div className="lp2__scroll">
-                <div className="lp2__center">
-                    <h1
-                        className="lp2__page-title"
-                        style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}
-                    >
-                        <span>Напомнить ·</span>
-                        <StudentNameWithBadge
-                            name={studentName}
-                            hasRepetoAccount={Boolean(hasRepetoAccount)}
-                        />
-                    </h1>
-
-                    {renderTypeSelection()}
-
-                    <div style={{ marginBottom: 12 }}>
-                        {reminderType === "payment" && renderPaymentSection()}
-                        {reminderType === "lesson" && renderLessonSection()}
-                        {reminderType === "homework" && renderHomeworkSection()}
-                    </div>
-
-                    <Lp2Field label="Сообщение">
-                        <TextArea
-                            value={comment}
-                            onUpdate={setComment}
-                            placeholder="Добавить сообщение к напоминанию…"
-                            rows={2}
-                            size="l"
-                        />
-                    </Lp2Field>
-
-                    {errorText && (
-                        <Text variant="body-1" style={{ color: "var(--g-color-text-danger)" }}>
-                            {errorText}
-                        </Text>
-                    )}
-                    {successText && (
-                        <Text variant="body-1" style={{ color: "var(--g-color-text-positive)" }}>
-                            ✓ {successText}
-                        </Text>
-                    )}
-                </div>
-            </div>
-
-            <div className="lp2__bottombar">
+            ariaLabel={`Напомнить · ${studentName}`}
+            ariaModal={false}
+            onBack={handleClose}
+            title="Напомнить"
+            subtitle={
+                <StudentNameWithBadge
+                    name={studentName}
+                    hasRepetoAccount={Boolean(hasRepetoAccount)}
+                />
+            }
+            footer={
                 <Button
                     className="lp2__submit"
                     view="action"
@@ -656,8 +603,53 @@ const RemindModal = ({
                 >
                     Отправить
                 </Button>
-            </div>
-        </div>
+            }
+        >
+            <Lp2PlannerLayout>
+                <Lp2PlannerSection title="Тип напоминания">
+                    <Lp2Field label="Вид напоминания">
+                        {renderTypeSelection()}
+                    </Lp2Field>
+                </Lp2PlannerSection>
+
+                <Lp2PlannerSection
+                    title={
+                        reminderType === "payment"
+                            ? "Долг и оплата"
+                            : reminderType === "lesson"
+                              ? "Занятия"
+                              : "Домашние задания"
+                    }
+                >
+                    {reminderType === "payment" && renderPaymentSection()}
+                    {reminderType === "lesson" && renderLessonSection()}
+                    {reminderType === "homework" && renderHomeworkSection()}
+                </Lp2PlannerSection>
+
+                <Lp2PlannerSection title="Сообщение">
+                    <Lp2Field label="Текст сообщения">
+                        <TextArea
+                            value={comment}
+                            onUpdate={setComment}
+                            placeholder="Добавить сообщение к напоминанию…"
+                            rows={2}
+                            size="l"
+                        />
+                    </Lp2Field>
+                </Lp2PlannerSection>
+            </Lp2PlannerLayout>
+
+            {errorText && (
+                <Text variant="body-1" style={{ color: "var(--g-color-text-danger)" }}>
+                    {errorText}
+                </Text>
+            )}
+            {successText && (
+                <Text variant="body-1" style={{ color: "var(--g-color-text-positive)" }}>
+                    ✓ {successText}
+                </Text>
+            )}
+        </Lp2PlannerShell>
     );
 
     return createPortal(panelContent, document.body);

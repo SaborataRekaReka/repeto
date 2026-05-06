@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import {
     Alert,
@@ -17,6 +17,7 @@ import PaymentHistory from "./PaymentHistory";
 import ProfileTab from "./ProfileTab";
 import NotesTab from "./NotesTab";
 import HomeworkTab from "./HomeworkTab";
+import ActivityTab, { type StudentActivityItem } from "./ActivityTab";
 import { useLessons, deleteLesson } from "@/hooks/useLessons";
 import { usePayments } from "@/hooks/usePayments";
 import { useSettings } from "@/hooks/useSettings";
@@ -38,6 +39,7 @@ const TAB_VALUES = [
     "payments",
     "notes",
     "homework",
+    "activity",
 ] as const;
 
 const tabs = [
@@ -46,6 +48,7 @@ const tabs = [
     { title: "Оплаты", value: "payments" },
     { title: "Заметки", value: "notes" },
     { title: "Домашка", value: "homework" },
+    { title: "История", value: "activity" },
 ];
 
 type StudentDetailPageProps = {
@@ -56,6 +59,52 @@ type StudentDetailPageProps = {
 const isEmailLike = (value?: string) => {
     const email = (value || "").trim();
     return email.includes("@") && email.includes(".");
+};
+
+const parseActivityTimestamp = (value: unknown, time = "00:00") => {
+    const raw = String(value || "").trim();
+    if (!raw) return 0;
+
+    const ru = raw.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+    if (ru) {
+        const parsed = new Date(`${ru[3]}-${ru[2]}-${ru[1]}T${time}`).getTime();
+        return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    const isoDate = raw.match(/^\d{4}-\d{2}-\d{2}$/);
+    const parsed = new Date(isoDate ? `${raw}T${time}` : raw).getTime();
+    return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const lessonStatusLabel = (status: Lesson["status"]) => {
+    switch (status) {
+        case "completed":
+            return "Проведено";
+        case "cancelled_student":
+        case "cancelled_tutor":
+            return "Отменено";
+        case "no_show":
+            return "Неявка";
+        case "reschedule_pending":
+            return "Перенос";
+        case "planned":
+        default:
+            return "Запланировано";
+    }
+};
+
+const paymentMethodLabel = (method: string) => {
+    switch (method) {
+        case "sbp":
+            return "СБП";
+        case "cash":
+            return "Наличные";
+        case "yukassa":
+            return "ЮKassa";
+        case "transfer":
+        default:
+            return "Перевод";
+    }
 };
 
 const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
@@ -79,10 +128,12 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
     const [scheduleModal, setScheduleModal] = useState(false);
     const [editLesson, setEditLesson] = useState<Lesson | null>(null);
     const [paymentModal, setPaymentModal] = useState(false);
+    const [paymentLessonId, setPaymentLessonId] = useState<string | null>(null);
     const [activateAccountModal, setActivateAccountModal] = useState(false);
     const [unlinkConfirmOpen, setUnlinkConfirmOpen] = useState(false);
     const [unlinkLoading, setUnlinkLoading] = useState(false);
     const [remindModal, setRemindModal] = useState(false);
+    const [remindInitialType, setRemindInitialType] = useState<"payment" | "lesson" | "homework">("payment");
     const [optimisticRemovedLessonIds, setOptimisticRemovedLessonIds] = useState<string[]>([]);
     const [lessonActionError, setLessonActionError] = useState<string | null>(null);
     const [statusUpdating, setStatusUpdating] = useState(false);
@@ -299,6 +350,11 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
     });
     const studentPayments = paymentsData?.data || [];
 
+    const openPaymentModal = (lesson?: Lesson) => {
+        setPaymentLessonId(lesson?.id || null);
+        setPaymentModal(true);
+    };
+
     const handlePaymentCreated = () => {
         refetchPayments();
         onRefresh?.();
@@ -313,6 +369,53 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
         student.id
     );
     const homeworks = hwData?.data || [];
+
+    const activityItems = useMemo<StudentActivityItem[]>(() => {
+        const lessonItems = studentLessons.map((lesson) => ({
+            id: `lesson-${lesson.id}`,
+            tone: "lesson" as const,
+            timestamp: parseActivityTimestamp(lesson.date, lesson.startTime),
+            title: `Занятие: ${lesson.subject}`,
+            meta: `${lessonStatusLabel(lesson.status)} · ${lesson.startTime}-${lesson.endTime}`,
+            amount: lesson.rate ? `${lesson.rate.toLocaleString("ru-RU")} ₽` : undefined,
+        }));
+
+        const paymentItems = studentPayments.map((payment) => ({
+            id: `payment-${payment.id}`,
+            tone: "payment" as const,
+            timestamp: parseActivityTimestamp(payment.date),
+            title: "Оплата",
+            meta: payment.comment || paymentMethodLabel(payment.method),
+            amount: `+${payment.amount.toLocaleString("ru-RU")} ₽`,
+        }));
+
+        const noteItems = notes.map((note: any) => ({
+            id: `note-${note.id}`,
+            tone: "note" as const,
+            timestamp: parseActivityTimestamp(note.createdAt),
+            title: "Заметка",
+            meta: String(note.content || "").slice(0, 140),
+        }));
+
+        const homeworkItems = homeworks.map((homework: any) => {
+            const status = String(homework.status || "PENDING").toUpperCase();
+            const title = status === "COMPLETED"
+                ? "Домашка сдана"
+                : status === "OVERDUE"
+                  ? "Домашка просрочена"
+                  : "Домашка назначена";
+
+            return {
+                id: `homework-${homework.id}`,
+                tone: "homework" as const,
+                timestamp: parseActivityTimestamp(homework.createdAt || homework.dueAt),
+                title,
+                meta: String(homework.task || ""),
+            };
+        });
+
+        return [...lessonItems, ...paymentItems, ...noteItems, ...homeworkItems];
+    }, [homeworks, notes, studentLessons, studentPayments]);
 
 
 
@@ -340,7 +443,10 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
                 <ProfileTab
                     student={local}
                     onSave={handleInlineSave}
-                    onRemind={() => setRemindModal(true)}
+                    onRemind={() => {
+                        setRemindInitialType(local.balance < 0 ? "payment" : "lesson");
+                        setRemindModal(true);
+                    }}
                     onPortalAction={handlePortalAction}
                     portalActionLabel={portalActionLabel}
                     portalActionBusy={unlinkLoading}
@@ -352,7 +458,9 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
             {tab === "payments" && (
                 <PaymentHistory
                     payments={studentPayments}
-                    onAdd={() => setPaymentModal(true)}
+                    lessons={studentLessons}
+                    balance={local.balance}
+                    onAdd={openPaymentModal}
                 />
             )}
             {tab === "notes" && (
@@ -381,6 +489,7 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
             {tab === "homework" && (
                 <HomeworkTab
                     studentId={student.id}
+                    lessons={studentLessons}
                     homeworks={homeworks.map((h: any) => {
                         const d = new Date(h.createdAt);
                         const status =
@@ -489,7 +598,14 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
                         };
                     })}
                     onMutate={() => mutateHomework()}
+                    onRemindHomework={() => {
+                        setRemindInitialType("homework");
+                        setRemindModal(true);
+                    }}
                 />
+            )}
+            {tab === "activity" && (
+                <ActivityTab items={activityItems} />
             )}
         </>
     );
@@ -501,6 +617,7 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
 
     return (
         <PageOverlay
+            className="page-overlay--student-detail-bg"
             title={
                 <StudentNameWithBadge
                     name={local.name}
@@ -513,7 +630,15 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
             onNavChange={handleTabChange}
             backHref="/students"
         >
-            {renderTabContent()}
+            {tab === "profile" ? (
+                <div className="student-detail-surface">
+                    {renderTabContent()}
+                </div>
+            ) : (
+                <div className="student-detail-dashboard-shell">
+                    {renderTabContent()}
+                </div>
+            )}
 
             <LessonPanelV2
                 open={!!selectedLesson || scheduleModal}
@@ -536,13 +661,17 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
             />
             <CreatePaymentModal
                 visible={paymentModal}
-                onClose={() => setPaymentModal(false)}
+                onClose={() => {
+                    setPaymentModal(false);
+                    setPaymentLessonId(null);
+                }}
                 onCreated={handlePaymentCreated}
                 defaultStudent={{
                     id: student.id,
                     name: student.name,
                     accountId: student.accountId ?? null,
                 }}
+                defaultLessonId={paymentLessonId}
             />
             <ActivateAccountModal
                 visible={activateAccountModal}
@@ -562,6 +691,7 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
                 hasRepetoAccount={Boolean(local.accountId)}
                 hasDebt={local.balance < 0}
                 hasParentEmail={!!local.parentEmail}
+                initialType={remindInitialType}
             />
             <AppDialog
                 size="s"

@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Alert, TextInput, Select, Button, Text, TextArea, Icon, Switch } from "@gravity-ui/uikit";
-import { TrashBin, ArrowLeft } from "@gravity-ui/icons";
+import { TrashBin } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import { useStudents } from "@/hooks/useStudents";
 import {
@@ -11,6 +11,8 @@ import {
 } from "@/hooks/usePackages";
 import StyledDateInput from "@/components/StyledDateInput";
 import { Lp2Field, Lp2Row } from "@/components/Lp2Field";
+import Lp2PlannerShell, { Lp2PlannerLayout, Lp2PlannerSection } from "@/components/Lp2PlannerShell";
+import { useModalEscape } from "@/hooks/useModalEscape";
 import type { LessonPackage } from "@/types/package";
 import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 import StudentAvatar from "@/components/StudentAvatar";
@@ -72,12 +74,7 @@ const CreatePackageModal = ({
         setTimeout(() => onClose(), 350);
     }, [onClose]);
 
-    useEffect(() => {
-        if (!visible) return;
-        const handler = (e: KeyboardEvent) => { if (e.key === "Escape") handleClose(); };
-        document.addEventListener("keydown", handler);
-        return () => document.removeEventListener("keydown", handler);
-    }, [visible, handleClose]);
+    useModalEscape({ enabled: visible, onEscape: handleClose });
 
     const { data: studentsData } = useStudents({ limit: 200 }, { skip: !visible });
     const studentOptions = (studentsData?.data || []).map((s) => ({
@@ -290,6 +287,12 @@ const CreatePackageModal = ({
     );
 
     const isEditing = !!packageData;
+    const packagePanelTitle =
+        isEditing
+            ? "Редактирование пакета"
+            : isPublicPackage
+            ? "Новый публичный пакет"
+            : "Новый пакет";
 
     const renderStudentOption = (option: any) => {
         const optionLabel =
@@ -318,44 +321,67 @@ const CreatePackageModal = ({
     if (!mounted || (!shouldRender && !visible)) return null;
 
     const panelContent = (
-        <div
-            ref={panelRef}
-            className={`lp2 lp2--mobile-inline-title ${isPanelVisible ? "lp2--open" : ""}`}
+        <Lp2PlannerShell
+            panelRef={panelRef}
+            className="lp2--mobile-inline-title"
             style={{ zIndex: PANEL_Z }}
+            isOpen={isPanelVisible}
             onTransitionEnd={handleTransitionEnd}
-            role="dialog"
-            aria-modal="false"
-            aria-label={
-                isEditing
-                    ? "Редактировать пакет"
-                    : isPublicPackage
-                    ? "Новый публичный пакет"
-                    : "Новый пакет"
+            ariaLabel={packagePanelTitle}
+            ariaModal={false}
+            onBack={handleClose}
+            title={packagePanelTitle}
+            subtitle="Параметры пакета и итоговая сумма"
+            topbarActions={
+                isEditing ? (
+                    <Button view="flat" size="s" onClick={handleDelete} disabled={submitting} title="Удалить пакет">
+                        <Icon data={TrashBin as IconData} size={16} />
+                    </Button>
+                ) : null
+            }
+            footer={
+                isEditing ? (
+                    <div className="lp2__actions lp2__actions--split">
+                        <Button
+                            className="lp2__action lp2__action--secondary"
+                            view="outlined"
+                            size="xl"
+                            width="max"
+                            onClick={handleDelete}
+                            loading={submitting}
+                            disabled={submitting}
+                        >
+                            Удалить пакет
+                        </Button>
+                        <Button
+                            className="lp2__submit lp2__action"
+                            view="action"
+                            size="xl"
+                            width="max"
+                            onClick={handleSubmit}
+                            loading={submitting}
+                        >
+                            Сохранить изменения
+                        </Button>
+                    </div>
+                ) : (
+                    <div className="lp2__actions">
+                        <Button
+                            className="lp2__submit lp2__action"
+                            view="action"
+                            size="xl"
+                            width="max"
+                            onClick={handleSubmit}
+                            loading={submitting}
+                        >
+                            Сохранить
+                        </Button>
+                    </div>
+                )
             }
         >
-            <div className="lp2__topbar">
-                <button type="button" className="lp2__back" onClick={handleClose} aria-label="Назад">
-                    <Icon data={ArrowLeft as IconData} size={18} />
-                </button>
-                <div className="lp2__topbar-actions">
-                    {isEditing && (
-                        <Button view="flat" size="s" onClick={handleDelete} disabled={submitting} title="Удалить пакет">
-                            <Icon data={TrashBin as IconData} size={16} />
-                        </Button>
-                    )}
-                </div>
-            </div>
-
-            <div className="lp2__scroll">
-                <div className="lp2__center">
-                    <h1 className="lp2__page-title">
-                        {isEditing
-                            ? "Редактирование пакета"
-                            : isPublicPackage
-                            ? "Новый публичный пакет"
-                            : "Новый пакет"}
-                    </h1>
-
+            <Lp2PlannerLayout>
+                <Lp2PlannerSection title="Доступ и ученик">
                     <Lp2Field label="Публичный пакет">
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                             <Text as="div" variant="body-2" color="secondary">
@@ -415,9 +441,12 @@ const CreatePackageModal = ({
                         </Lp2Field>
                     ) : (
                         <Text as="div" variant="caption-2" color="secondary">
+                            Для публичного пакета ученик не требуется.
                         </Text>
                     )}
+                </Lp2PlannerSection>
 
+                <Lp2PlannerSection title="Параметры и стоимость">
                     <Lp2Field label="Предмет *" error={subjectError} errorText="Обязательное поле">
                         <TextInput
                             size="l"
@@ -498,7 +527,9 @@ const CreatePackageModal = ({
                             </Button>
                         )}
                     </div>
+                </Lp2PlannerSection>
 
+                <Lp2PlannerSection title="Срок и комментарий">
                     <Lp2Field label="Действует до">
                         <StyledDateInput
                             value={validUntil}
@@ -518,59 +549,18 @@ const CreatePackageModal = ({
                             rows={2}
                         />
                     </Lp2Field>
-                    {error && (
-                        <Alert
-                            theme="danger"
-                            view="filled"
-                            corners="rounded"
-                            title="Ошибка пѬи сохранении пакета"
-                            message={error}
-                        />
-                    )}
-                </div>
-            </div>
-
-            <div className="lp2__bottombar">
-                {isEditing ? (
-                    <div className="lp2__actions lp2__actions--split">
-                        <Button
-                            className="lp2__action lp2__action--secondary"
-                            view="outlined"
-                            size="xl"
-                            width="max"
-                            onClick={handleDelete}
-                            loading={submitting}
-                            disabled={submitting}
-                        >
-                            Удалить пакет
-                        </Button>
-                        <Button
-                            className="lp2__submit lp2__action"
-                            view="action"
-                            size="xl"
-                            width="max"
-                            onClick={handleSubmit}
-                            loading={submitting}
-                        >
-                            Сохранить изменения
-                        </Button>
-                    </div>
-                ) : (
-                    <div className="lp2__actions">
-                        <Button
-                            className="lp2__submit lp2__action"
-                            view="action"
-                            size="xl"
-                            width="max"
-                            onClick={handleSubmit}
-                            loading={submitting}
-                        >
-                            Сохранить
-                        </Button>
-                    </div>
-                )}
-            </div>
-        </div>
+                </Lp2PlannerSection>
+            </Lp2PlannerLayout>
+            {error && (
+                <Alert
+                    theme="danger"
+                    view="filled"
+                    corners="rounded"
+                    title="Ошибка при сохранении пакета"
+                    message={error}
+                />
+            )}
+        </Lp2PlannerShell>
     );
 
     return createPortal(panelContent, document.body);

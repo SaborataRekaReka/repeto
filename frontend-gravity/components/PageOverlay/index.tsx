@@ -36,6 +36,7 @@ const overlayAnimatedIconPaths = {
     profile: "/icons/sidebar-animated/profile.json",
     noteText: "/icons/sidebar-animated/note-text.json",
     taskSquare: "/icons/sidebar-animated/task-square.json",
+    clock: "/icons/sidebar-animated/clock.json",
     export: "/icons/sidebar-animated/export.json",
     logout: "/icons/sidebar-animated/logout.json",
     notifications: "/icons/sidebar-animated/notification-bing.json",
@@ -220,6 +221,7 @@ const PageOverlay = ({
         }
         if (key === "notes") return overlayAnimatedIconPaths.noteText;
         if (key === "homework") return overlayAnimatedIconPaths.taskSquare;
+        if (key === "activity" || key === "history" || label.includes("истор")) return overlayAnimatedIconPaths.clock;
         if (key === "export") return overlayAnimatedIconPaths.export;
         if (key === "logout" || key === "exit" || label.includes("выйти") || label.includes("logout")) {
             return overlayAnimatedIconPaths.logout;

@@ -1,10 +1,10 @@
-import { Text, Button, Icon, Label } from "@gravity-ui/uikit";
-import { CirclePlus, ChevronRight } from "@gravity-ui/icons";
+import { Icon } from "@gravity-ui/uikit";
+import { ChevronRight } from "@gravity-ui/icons";
 
 import type { IconData } from "@gravity-ui/uikit";
 import type { Lesson } from "@/types/schedule";
+import TabAddSlot from "../TabAddSlot";
 
-const GText = Text as any;
 const GIcon = Icon as any;
 
 type LessonHistoryProps = {
@@ -24,25 +24,20 @@ const statusLabel = (status: Lesson["status"]) => {
             return "Отменено";
         case "no_show":
             return "Не явился";
+        case "reschedule_pending":
+            return "Перенос";
+        default:
+            return "Статус не указан";
     }
 };
 
-const statusTheme = (
-    status: Lesson["status"]
-): "success" | "warning" | "danger" | "normal" => {
-    switch (status) {
-        case "planned":
-            return "normal";
-        case "completed":
-            return "success";
-        case "cancelled_student":
-        case "cancelled_tutor":
-            return "danger";
-        case "no_show":
-            return "warning";
-        default:
-            return "normal";
-    }
+const statusClassName = (status: Lesson["status"]) => {
+    if (status === "planned") return "repeto-schedule-status-chip--planned";
+    if (status === "completed") return "repeto-schedule-status-chip--completed";
+    if (status === "cancelled_student") return "repeto-schedule-status-chip--cancelled_student";
+    if (status === "cancelled_tutor") return "repeto-schedule-status-chip--cancelled_tutor";
+    if (status === "reschedule_pending") return "repeto-schedule-status-chip--reschedule_pending";
+    return "repeto-schedule-status-chip--no_show";
 };
 
 const formatDate = (value: string) => {
@@ -59,19 +54,11 @@ const LessonHistory = ({
     onAdd,
 }: LessonHistoryProps) => (
     <div className="tab-section">
-        {onAdd && (
-            <div className="tab-section__actions">
-                <button type="button" className="tab-action-btn" onClick={onAdd}>
-                    <span className="tab-action-btn__icon">
-                        <Icon data={CirclePlus as IconData} size={20} />
-                    </span>
-                    Назначить занятие
-                </button>
-            </div>
-        )}
-
         {lessons.length === 0 ? (
-            <div className="lp2-empty">Занятий пока нет</div>
+            <div className="lp2-empty lp2-empty--with-action">
+                <span>Занятий пока нет</span>
+                {onAdd && <TabAddSlot title="Добавить занятие" onClick={onAdd} />}
+            </div>
         ) : (
             <div className="tab-list">
                 {lessons.map((lesson) => (
@@ -102,9 +89,9 @@ const LessonHistory = ({
                                 </span>
                             </div>
                             <div className="tab-list__trail">
-                                <Label theme={statusTheme(lesson.status)} size="xs">
+                                <span className={`repeto-schedule-status-chip ${statusClassName(lesson.status)}`}>
                                     {statusLabel(lesson.status)}
-                                </Label>
+                                </span>
                                 <GIcon
                                     data={ChevronRight as IconData}
                                     size={16}
@@ -114,6 +101,7 @@ const LessonHistory = ({
                         </div>
                     </div>
                 ))}
+                {onAdd && <TabAddSlot title="Добавить занятие" onClick={onAdd} />}
             </div>
         )}
     </div>

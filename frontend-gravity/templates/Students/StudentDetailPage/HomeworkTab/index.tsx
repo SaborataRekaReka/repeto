@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
-import { Text, Button, Icon } from "@gravity-ui/uikit";
+import { Text, Icon, DropdownMenu } from "@gravity-ui/uikit";
 import {
-    CirclePlus,
+    Ellipsis,
     File as FileIcon,
     Folder,
     ArrowUpRightFromSquare,
@@ -9,12 +9,15 @@ import {
 import type { IconData } from "@gravity-ui/uikit";
 import { useApi } from "@/hooks/useApi";
 import { createHomework, updateHomework, deleteHomework } from "@/hooks/useStudents";
+import PillTabs from "@/components/PillTabs";
 import type { CloudProvider, FilesOverviewResponse } from "@/types/files";
+import type { Lesson } from "@/types/schedule";
 import HomeworkModal from "./HomeworkModal";
+import TabAddSlot from "../TabAddSlot";
 
 const GText = Text as any;
-const GButton = Button as any;
 const GIcon = Icon as any;
+const GDropdownMenu = DropdownMenu as any;
 
 type StudentUpload = {
     id: string;
@@ -43,7 +46,23 @@ type Homework = {
 type HomeworkTabProps = {
     studentId: string;
     homeworks: Homework[];
+    lessons?: Lesson[];
     onMutate?: () => void;
+    onRemindHomework?: () => void;
+};
+
+type HomeworkFilter = "all" | "not_done" | "overdue" | "done";
+
+const homeworkStatusLabels: Record<Homework["status"], string> = {
+    not_done: "Назначено",
+    overdue: "Просрочено",
+    done: "Сдано",
+};
+
+const homeworkStatusToApi = (status: Homework["status"]) => {
+    if (status === "done") return "COMPLETED";
+    if (status === "overdue") return "OVERDUE";
+    return "PENDING";
 };
 
 const formatDueDate = (date: string) => {
@@ -54,10 +73,17 @@ const formatDueDate = (date: string) => {
     return date;
 };
 
-const HomeworkTab = ({ studentId, homeworks, onMutate }: HomeworkTabProps) => {
+const HomeworkTab = ({
+    studentId,
+    homeworks,
+    lessons = [],
+    onMutate,
+    onRemindHomework,
+}: HomeworkTabProps) => {
     const [formVisible, setFormVisible] = useState(false);
     const [editingHomework, setEditingHomework] = useState<Homework | null>(null);
     const [busyId, setBusyId] = useState<string | null>(null);
+    const [statusFilter, setStatusFilter] = useState<HomeworkFilter>("all");
 
     const { data: filesOverview } = useApi<FilesOverviewResponse>(formVisible ? "/files" : null);
 
@@ -92,6 +118,21 @@ const HomeworkTab = ({ studentId, homeworks, onMutate }: HomeworkTabProps) => {
 
         return connectedProviders[0];
     }, [connectedProviders]);
+
+    const homeworkStats = useMemo(() => ({
+        all: homeworks.length,
+        not_done: homeworks.filter((homework) => homework.status === "not_done").length,
+        overdue: homeworks.filter((homework) => homework.status === "overdue").length,
+        done: homeworks.filter((homework) => homework.status === "done").length,
+    }), [homeworks]);
+
+    const filteredHomeworks = useMemo(() => {
+        if (statusFilter === "all") {
+            return homeworks;
+        }
+
+        return homeworks.filter((homework) => homework.status === statusFilter);
+    }, [homeworks, statusFilter]);
 
     const resetForm = () => {
         setFormVisible(false);
@@ -133,6 +174,19 @@ const HomeworkTab = ({ studentId, homeworks, onMutate }: HomeworkTabProps) => {
         onMutate?.();
     };
 
+    const handleStatusUpdate = async (homework: Homework, nextStatus: Homework["status"]) => {
+        setBusyId(homework.id);
+
+        try {
+            await updateHomework(studentId, homework.id, {
+                status: homeworkStatusToApi(nextStatus),
+            });
+            onMutate?.();
+        } finally {
+            setBusyId(null);
+        }
+    };
+
     const handleModalDelete = async () => {
         if (!editingHomework) {
             return;
@@ -155,146 +209,196 @@ const HomeworkTab = ({ studentId, homeworks, onMutate }: HomeworkTabProps) => {
 
     return (
         <div className="tab-section">
-            <div className="tab-section__actions">
-                <button type="button" className="tab-action-btn" onClick={handleOpenCreate}>
-                    <span className="tab-action-btn__icon">
-                        <GIcon data={CirclePlus as IconData} size={20} />
-                    </span>
-                    Добавить задание
-                </button>
-            </div>
-
             {homeworks.length > 0 && (
+                <div className="hw-status-tabs">
+                    <PillTabs<HomeworkFilter>
+                        value={statusFilter}
+                        onChange={setStatusFilter}
+                        size="s"
+                        ariaLabel="Фильтр домашки"
+                        options={[
+                            { value: "all", label: "Все", count: homeworkStats.all },
+                            { value: "not_done", label: "Назначено", count: homeworkStats.not_done },
+                            { value: "overdue", label: "Просрочено", count: homeworkStats.overdue },
+                            { value: "done", label: "Сдано", count: homeworkStats.done },
+                        ]}
+                    />
+                </div>
+            )}
+
+            {filteredHomeworks.length > 0 && (
                 <div className="lp2-hw-list">
-                    {homeworks.map((homework) => (
-                        <div key={homework.id} className="lp2-hw-item">
-                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                <GText
-                                    variant="body-1"
-                                    style={{ fontWeight: 600, flex: 1, minWidth: 0 }}
-                                    ellipsis
-                                >
-                                    {homework.task}
-                                </GText>
-                                <GButton
-                                    view="flat"
-                                    size="s"
-                                    disabled={!!busyId && busyId !== homework.id}
-                                    onClick={() => handleEdit(homework)}
-                                >
-                                    Редактировать
-                                </GButton>
-                                <GButton
-                                    view="flat"
-                                    size="s"
-                                    loading={busyId === homework.id}
-                                    disabled={!!busyId && busyId !== homework.id}
-                                    onClick={() => void handleDelete(homework.id)}
-                                >
-                                    Удалить
-                                </GButton>
-                            </div>
+                    {filteredHomeworks.map((homework) => {
+                        const dueLabel = formatDueDate(homework.dueDate);
 
-                            {formatDueDate(homework.dueDate) && (
-                                <GText variant="caption-2" color="secondary">
-                                    Срок: {homework.dueDate}
-                                </GText>
-                            )}
+                        const isBusy = !!busyId;
+                        const isOtherBusy = isBusy && busyId !== homework.id;
+                        const menuItems = [
+                            {
+                                text: "Редактировать",
+                                disabled: isOtherBusy,
+                                action: () => handleEdit(homework),
+                            },
+                            homework.status === "done"
+                                ? {
+                                    text: "Вернуть в работу",
+                                    disabled: isOtherBusy,
+                                    action: () => void handleStatusUpdate(homework, "not_done"),
+                                }
+                                : {
+                                    text: "Отметить сданным",
+                                    disabled: isOtherBusy,
+                                    action: () => void handleStatusUpdate(homework, "done"),
+                                },
+                            ...(homework.status === "not_done"
+                                ? [{
+                                    text: "Отметить просроченным",
+                                    disabled: isBusy,
+                                    action: () => void handleStatusUpdate(homework, "overdue"),
+                                }]
+                                : []),
+                            ...(homework.status !== "done" && onRemindHomework
+                                ? [{
+                                    text: "Напомнить",
+                                    disabled: isBusy,
+                                    action: onRemindHomework,
+                                }]
+                                : []),
+                            {
+                                text: "Удалить",
+                                disabled: isOtherBusy,
+                                action: () => void handleDelete(homework.id),
+                            },
+                        ];
 
-                            {homework.linkedFiles && homework.linkedFiles.length > 0 && (
-                                <div className="hw-uploads">
-                                    <GText
-                                        variant="caption-2"
-                                        color="secondary"
-                                        style={{ marginBottom: 6 }}
-                                    >
-                                        Материалы репетитора:
-                                    </GText>
-                                    {homework.linkedFiles.map((file: any, index: number) => {
-                                        const fileUrl = typeof file.url === "string" ? file.url : "";
-                                        const rowKey = file.id || `${file.name || "file"}-${index}`;
-                                        const fileType =
-                                            (file.type || "file") === "folder" ? Folder : FileIcon;
+                        return (
+                            <div key={homework.id} className={`lp2-hw-item lp2-hw-item--${homework.status}`}>
+                                <div className="hw-item-topline">
+                                    <div className="hw-item-title-wrap">
+                                        <GText variant="body-1" className="hw-item-title">
+                                            {homework.task}
+                                        </GText>
+                                        <GText variant="caption-2" color="secondary" className="hw-item-meta">
+                                            {[dueLabel ? `Срок до ${dueLabel}` : null, homeworkStatusLabels[homework.status]]
+                                                .filter(Boolean)
+                                                .join(" · ")}
+                                        </GText>
+                                    </div>
+                                    <div className="hw-item-menu" onClick={(event) => event.stopPropagation()}>
+                                        <GDropdownMenu
+                                            items={menuItems}
+                                            renderSwitcher={(props: any) => (
+                                                <button
+                                                    type="button"
+                                                    className="repeto-sl-row__menu-btn"
+                                                    {...props}
+                                                    disabled={isOtherBusy}
+                                                    title="Действия"
+                                                >
+                                                    <GIcon data={Ellipsis as IconData} size={16} />
+                                                </button>
+                                            )}
+                                        />
+                                    </div>
+                                </div>
 
-                                        if (!fileUrl || fileUrl === "#") {
+                                {homework.linkedFiles && homework.linkedFiles.length > 0 && (
+                                    <div className="hw-uploads">
+                                        <GText variant="caption-2" color="secondary" className="hw-uploads__label">
+                                            Материалы репетитора:
+                                        </GText>
+                                        {homework.linkedFiles.map((file: any, index: number) => {
+                                            const fileUrl = typeof file.url === "string" ? file.url : "";
+                                            const rowKey = file.id || `${file.name || "file"}-${index}`;
+                                            const fileType =
+                                                (file.type || "file") === "folder" ? Folder : FileIcon;
+
+                                            if (!fileUrl || fileUrl === "#") {
+                                                return (
+                                                    <div key={rowKey} className="hw-upload-row hw-upload-row--muted">
+                                                        <span className="hw-upload-row__icon">
+                                                            <GIcon data={fileType as IconData} size={16} />
+                                                        </span>
+                                                        <span className="hw-upload-row__name">{file.name}</span>
+                                                    </div>
+                                                );
+                                            }
+
                                             return (
-                                                <div
+                                                <a
                                                     key={rowKey}
-                                                    className="hw-upload-row hw-upload-row--muted"
+                                                    href={fileUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="hw-upload-row"
                                                 >
                                                     <span className="hw-upload-row__icon">
                                                         <GIcon data={fileType as IconData} size={16} />
                                                     </span>
                                                     <span className="hw-upload-row__name">{file.name}</span>
-                                                </div>
+                                                    <GIcon
+                                                        data={ArrowUpRightFromSquare as IconData}
+                                                        size={12}
+                                                        className="hw-upload-row__ext"
+                                                    />
+                                                </a>
                                             );
-                                        }
+                                        })}
+                                    </div>
+                                )}
 
-                                        return (
+                                {homework.studentUploads && homework.studentUploads.length > 0 && (
+                                    <div className="hw-uploads">
+                                        <GText variant="caption-2" color="secondary" className="hw-uploads__label">
+                                            Работы ученика:
+                                        </GText>
+                                        {homework.studentUploads.map((upload) => (
                                             <a
-                                                key={rowKey}
-                                                href={fileUrl}
+                                                key={upload.id}
+                                                href={upload.url}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="hw-upload-row"
                                             >
                                                 <span className="hw-upload-row__icon">
-                                                    <GIcon data={fileType as IconData} size={16} />
+                                                    <GIcon data={FileIcon as IconData} size={16} />
                                                 </span>
-                                                <span className="hw-upload-row__name">{file.name}</span>
+                                                <span className="hw-upload-row__name">{upload.name}</span>
                                                 <GIcon
                                                     data={ArrowUpRightFromSquare as IconData}
                                                     size={12}
                                                     className="hw-upload-row__ext"
                                                 />
                                             </a>
-                                        );
-                                    })}
-                                </div>
-                            )}
-
-                            {homework.studentUploads && homework.studentUploads.length > 0 && (
-                                <div className="hw-uploads">
-                                    <GText
-                                        variant="caption-2"
-                                        color="secondary"
-                                        style={{ marginBottom: 6 }}
-                                    >
-                                        Работы ученика:
-                                    </GText>
-                                    {homework.studentUploads.map((upload) => (
-                                        <a
-                                            key={upload.id}
-                                            href={upload.url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="hw-upload-row"
-                                        >
-                                            <span className="hw-upload-row__icon">
-                                                <GIcon data={FileIcon as IconData} size={16} />
-                                            </span>
-                                            <span className="hw-upload-row__name">{upload.name}</span>
-                                            <GIcon
-                                                data={ArrowUpRightFromSquare as IconData}
-                                                size={12}
-                                                className="hw-upload-row__ext"
-                                            />
-                                        </a>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    ))}
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                    <TabAddSlot title="Добавить домашку" onClick={handleOpenCreate} />
                 </div>
             )}
 
-            {homeworks.length === 0 && <div className="lp2-empty">Домашних заданий пока нет</div>}
+            {homeworks.length === 0 && (
+                <div className="lp2-empty lp2-empty--with-action">
+                    <span>Домашних заданий пока нет</span>
+                    <TabAddSlot title="Добавить домашку" onClick={handleOpenCreate} />
+                </div>
+            )}
+            {homeworks.length > 0 && filteredHomeworks.length === 0 && (
+                <div className="lp2-empty lp2-empty--with-action">
+                    <span>Нет заданий в выбранном статусе</span>
+                    <TabAddSlot title="Добавить домашку" onClick={handleOpenCreate} />
+                </div>
+            )}
 
             <HomeworkModal
                 visible={formVisible}
                 onClose={resetForm}
                 homework={editingHomework}
                 availableFiles={availableHomeworkFiles}
+                availableLessons={lessons}
                 connectedProviders={connectedProviders}
                 defaultProvider={defaultMaterialsProvider}
                 onSave={handleModalSave}

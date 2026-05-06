@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Card, Text, Button, Icon } from "@gravity-ui/uikit";
 import {
-    ArrowLeft,
     File as FileIcon,
     ArrowUpRightFromSquare,
     TrashBin,
@@ -12,8 +11,8 @@ import {
 } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import { studentApi } from "@/lib/studentAuth";
+import { Lp2PlannerLayout, Lp2PlannerSection, Lp2PortalShell } from "@/components/Lp2PlannerShell";
 import type { PortalHomework, StudentUpload } from "@/types/student-portal";
-import PortalModal from "./PortalModal";
 
 type HomeworkTabProps = {
     homework: PortalHomework[];
@@ -410,128 +409,117 @@ const HomeworkTab = ({ homework: initial, studentId }: HomeworkTabProps) => {
             )}
 
             {openedHomework && (
-                <PortalModal
+                <Lp2PortalShell
                     open={isHomeworkModalOpen}
                     onClose={closeHomeworkModal}
                     onClosed={() => setOpenedHomeworkId(null)}
                     ariaLabel="Домашнее задание"
-                    overlayClassName="lp2-overlay"
-                    overlayOpenClassName="lp2-overlay--open"
-                    panelClassName="lp2 lp2--homework lp2--portal-homework"
-                    panelOpenClassName="lp2--open"
+                    onBack={closeHomeworkModal}
+                    backAriaLabel="Закрыть"
+                    title="Домашнее задание"
+                    className="lp2--homework lp2--portal-homework"
+                    centerClassName="lp2__center--homework lp2__center--portal-homework"
+                    withPlannerCenter={false}
+                    footer={(
+                        <div className="lp2__actions lp2__actions--split">
+                            <Button
+                                view="outlined"
+                                size="xl"
+                                className="lp2__action lp2__action--secondary"
+                                onClick={closeHomeworkModal}
+                            >
+                                Закрыть
+                            </Button>
+                            <Button
+                                view="action"
+                                size="xl"
+                                className="lp2__action"
+                                loading={updatingId === openedHomework.id}
+                                disabled={updatingId === openedHomework.id}
+                                onClick={() =>
+                                    void setHomeworkDone(
+                                        openedHomework.id,
+                                        !openedHomework.done
+                                    )
+                                }
+                            >
+                                {openedHomework.done ? "Вернуть в работу" : "Выполнено"}
+                            </Button>
+                        </div>
+                    )}
                 >
-                    <div className="lp2__topbar">
-                        <button
-                            type="button"
-                            className="lp2__back"
-                            onClick={closeHomeworkModal}
-                            aria-label="Закрыть"
-                        >
-                            <Icon data={ArrowLeft as IconData} size={18} />
-                        </button>
-                        <Text variant="subheader-2">Домашнее задание</Text>
-                        <div className="lp2__topbar-actions" />
-                    </div>
-
-                    <div className="lp2__scroll">
-                        <div className="lp2__center lp2__center--homework lp2__center--portal-homework">
-                            <div className="repeto-portal-stack repeto-portal-homework-modal">
-                                <div className="repeto-portal-item-mainline repeto-portal-homework-modal__due">
-                                    <Icon data={Calendar as IconData} size={16} />
-                                    <Text variant="body-2" style={{ fontWeight: 600 }}>
-                                        {openedHomework.due && openedHomework.due.trim()
-                                            ? openedHomework.due
-                                            : "Без срока"}
-                                    </Text>
-                                </div>
-
-                                <Text
-                                    variant="body-1"
-                                    className={`repeto-portal-homework-modal__task${
-                                        openedHomework.done
-                                            ? " repeto-portal-homework-modal__task--done"
-                                            : ""
-                                    }`}
-                                >
-                                    {openedHomework.task}
-                                </Text>
-
-                                {openedHomework.linkedFiles &&
-                                    openedHomework.linkedFiles.length > 0 && (
-                                        <div className="repeto-portal-stack repeto-portal-homework-modal__section">
-                                            <Text
-                                                variant="caption-1"
-                                                color="secondary"
-                                                className="repeto-portal-homework-modal__section-title"
-                                            >
-                                                Материалы от репетитора
-                                            </Text>
-                                            <div className="repeto-portal-stack repeto-portal-homework-modal__uploads">
-                                                {openedHomework.linkedFiles.map((file) => (
-                                                    <a
-                                                        key={file.id}
-                                                        href={file.cloudUrl}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="repeto-portal-file-row repeto-portal-file-pill"
-                                                    >
-                                                        <div className="repeto-portal-file-row__left">
-                                                            <Icon data={FileIcon as IconData} size={18} />
-                                                            <div className="repeto-portal-file-row__meta">
-                                                                <Text
-                                                                    variant="body-1"
-                                                                    as="div"
-                                                                    ellipsis
-                                                                    className="repeto-portal-file-row__title"
-                                                                    style={{ fontWeight: 600 }}
-                                                                >
-                                                                    {file.name}
-                                                                </Text>
-                                                                {file.size && (
-                                                                    <Text
-                                                                        variant="caption-1"
-                                                                        color="secondary"
-                                                                        as="div"
-                                                                        className="repeto-portal-file-row__subtitle"
-                                                                    >
-                                                                        {file.size}
-                                                                    </Text>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                        <span className="repeto-portal-file-pill__open">
-                                                            <span>Открыть</span>
-                                                            <Icon
-                                                                data={ArrowUpRightFromSquare as IconData}
-                                                                size={14}
-                                                            />
-                                                        </span>
-                                                    </a>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                <div className="repeto-portal-stack repeto-portal-homework-modal__section">
-                                    <div
-                                        className="repeto-portal-item-mainline repeto-portal-homework-modal__section-head"
-                                    >
-                                        <Text
-                                            variant="caption-1"
-                                            color="secondary"
-                                            className="repeto-portal-homework-modal__section-title"
-                                        >
-                                            Мои файлы
-                                        </Text>
-                                        <Text
-                                            variant="caption-1"
-                                            color="secondary"
-                                            className="repeto-portal-homework-modal__section-hint"
-                                        >
-                                            до 5 МБ · хранятся 3 дня
+                    <Lp2PlannerLayout className="repeto-portal-homework-modal">
+                                <Lp2PlannerSection title="Задание">
+                                    <div className="repeto-portal-item-mainline repeto-portal-homework-modal__due">
+                                        <Icon data={Calendar as IconData} size={16} />
+                                        <Text variant="body-2" style={{ fontWeight: 600 }}>
+                                            {openedHomework.due && openedHomework.due.trim()
+                                                ? openedHomework.due
+                                                : "Без срока"}
                                         </Text>
                                     </div>
 
+                                    <Text
+                                        variant="body-1"
+                                        className={`repeto-portal-homework-modal__task${
+                                            openedHomework.done
+                                                ? " repeto-portal-homework-modal__task--done"
+                                                : ""
+                                        }`}
+                                    >
+                                        {openedHomework.task}
+                                    </Text>
+                                </Lp2PlannerSection>
+
+                                {openedHomework.linkedFiles && openedHomework.linkedFiles.length > 0 && (
+                                    <Lp2PlannerSection title="Материалы от репетитора">
+                                        <div className="repeto-portal-stack repeto-portal-homework-modal__uploads">
+                                            {openedHomework.linkedFiles.map((file) => (
+                                                <a
+                                                    key={file.id}
+                                                    href={file.cloudUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="repeto-portal-file-row repeto-portal-file-pill"
+                                                >
+                                                    <div className="repeto-portal-file-row__left">
+                                                        <Icon data={FileIcon as IconData} size={18} />
+                                                        <div className="repeto-portal-file-row__meta">
+                                                            <Text
+                                                                variant="body-1"
+                                                                as="div"
+                                                                ellipsis
+                                                                className="repeto-portal-file-row__title"
+                                                                style={{ fontWeight: 600 }}
+                                                            >
+                                                                {file.name}
+                                                            </Text>
+                                                            {file.size && (
+                                                                <Text
+                                                                    variant="caption-1"
+                                                                    color="secondary"
+                                                                    as="div"
+                                                                    className="repeto-portal-file-row__subtitle"
+                                                                >
+                                                                    {file.size}
+                                                                </Text>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <span className="repeto-portal-file-pill__open">
+                                                        <span>Открыть</span>
+                                                        <Icon
+                                                            data={ArrowUpRightFromSquare as IconData}
+                                                            size={14}
+                                                        />
+                                                    </span>
+                                                </a>
+                                            ))}
+                                        </div>
+                                    </Lp2PlannerSection>
+                                )}
+
+                                <Lp2PlannerSection title="Мои файлы" description="до 5 МБ · хранятся 3 дня">
                                     {openedHomework.studentUploads &&
                                         openedHomework.studentUploads.length > 0 && (
                                             <div className="repeto-portal-stack repeto-portal-homework-modal__uploads">
@@ -620,39 +608,9 @@ const HomeworkTab = ({ homework: initial, studentId }: HomeworkTabProps) => {
                                             </span>
                                         </span>
                                     </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="lp2__bottombar">
-                        <div className="lp2__actions lp2__actions--split">
-                            <Button
-                                view="outlined"
-                                size="xl"
-                                className="lp2__action lp2__action--secondary"
-                                onClick={closeHomeworkModal}
-                            >
-                                Закрыть
-                            </Button>
-                            <Button
-                                view="action"
-                                size="xl"
-                                className="lp2__action"
-                                loading={updatingId === openedHomework.id}
-                                disabled={updatingId === openedHomework.id}
-                                onClick={() =>
-                                    void setHomeworkDone(
-                                        openedHomework.id,
-                                        !openedHomework.done
-                                    )
-                                }
-                            >
-                                {openedHomework.done ? "Вернуть в работу" : "Выполнено"}
-                            </Button>
-                        </div>
-                    </div>
-                </PortalModal>
+                                </Lp2PlannerSection>
+                    </Lp2PlannerLayout>
+                </Lp2PortalShell>
             )}
         </div>
     );

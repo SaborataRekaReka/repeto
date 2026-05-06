@@ -12,8 +12,8 @@ import {
     Alert,
 } from "@gravity-ui/uikit";
 import {
-    ArrowLeft,
     TrashBin,
+    Pencil,
     Plus,
     File,
     Folder,
@@ -55,6 +55,9 @@ import AppDialog from "@/components/AppDialog";
 import MaterialsPickerDialog from "@/components/MaterialsPickerDialog";
 import AppSelect from "@/components/AppSelect";
 import AppField from "@/components/AppField";
+import { Lp2PlannerFooter, Lp2PlannerHeader } from "@/components/Lp2PlannerShell";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import { useModalEscape } from "@/hooks/useModalEscape";
 import { codedErrorMessage } from "@/lib/errorCodes";
 import {
     buildLessonMaterialsNote,
@@ -285,6 +288,7 @@ const normalizePaymentForPanel = (raw: any): LessonPanelPaymentItem | null => {
     if (!id) return null;
     return {
         id,
+        studentId: raw.studentId || raw.student?.id || null,
         amount: Number(raw.amount) || 0,
         status: String(raw.status || "paid").toLowerCase(),
         method: raw.method ? String(raw.method).toLowerCase() : undefined,
@@ -307,6 +311,7 @@ type LessonPanelHomeworkItem = {
 
 type LessonPanelPaymentItem = {
     id: string;
+    studentId?: string | null;
     amount: number;
     status: string;
     method?: string;
@@ -333,8 +338,19 @@ type LessonPanelV2Props = {
    Sub-components
    ═══════════════════════════════════════════════════════════ */
 
-const SectionTitle = ({ children }: { children: React.ReactNode }) => (
-    <h3 className="lp2-section-title">{children}</h3>
+const LessonPanelSection = ({
+    title,
+    children,
+    className = "",
+}: {
+    title: string;
+    children: React.ReactNode;
+    className?: string;
+}) => (
+    <section className={`lp2-lesson-section${className ? ` ${className}` : ""}`}>
+        <h3 className="lp2-lesson-section__title">{title}</h3>
+        <div className="lp2-lesson-section__body">{children}</div>
+    </section>
 );
 
 /* ═══════════════════════════════════════════════════════════
@@ -584,14 +600,17 @@ const LessonPanelV2 = ({
     }, [visibleHomeworkItems]);
 
     const visiblePaymentItems = useMemo(() => {
-        if (!isExisting || !lesson?.id) return sessionPaymentItems;
+        if (!isExisting || !lesson?.id) {
+            if (!studentId[0]) return sessionPaymentItems;
+            return sessionPaymentItems.filter((item) => !item.studentId || item.studentId === studentId[0]);
+        }
         const map = new Map<string, LessonPanelPaymentItem>();
         persistedLessonPaymentItems.forEach((item) => map.set(item.id, item));
         sessionPaymentItems.forEach((item) => {
             if (item.lessonId === lesson.id || !item.lessonId) map.set(item.id, item);
         });
         return Array.from(map.values());
-    }, [isExisting, lesson?.id, persistedLessonPaymentItems, sessionPaymentItems]);
+    }, [isExisting, lesson?.id, persistedLessonPaymentItems, sessionPaymentItems, studentId]);
 
     /* ════════════════════════════════════════════════════════
        Lifecycle
@@ -623,6 +642,9 @@ const LessonPanelV2 = ({
         if (!open && !isPanelVisible) setShouldRender(false);
     };
 
+    useBodyScrollLock(open || shouldRender);
+    useModalEscape({ enabled: open, onEscape: onClose });
+
     useEffect(() => {
         if (!open) return;
         setActionError(null);
@@ -650,15 +672,6 @@ const LessonPanelV2 = ({
         initForm(lesson);
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open]);
-
-    useEffect(() => {
-        if (!open) return;
-        const onKey = (e: KeyboardEvent) => {
-            if (e.key === "Escape") { e.stopPropagation(); onClose(); }
-        };
-        document.addEventListener("keydown", onKey);
-        return () => document.removeEventListener("keydown", onKey);
-    }, [open, onClose]);
 
     useEffect(() => {
         if (!open || materialsDirty) return;
@@ -935,7 +948,7 @@ const LessonPanelV2 = ({
 
                     // Link session payments to the newly created lesson
                     const unlinkedPaymentIds = sessionPaymentItems
-                        .filter((item) => !item.lessonId && item.id)
+                        .filter((item) => !item.lessonId && item.id && item.studentId === studentId[0])
                         .map((item) => item.id);
                     if (unlinkedPaymentIds.length > 0) {
                         await Promise.allSettled(
@@ -1281,10 +1294,20 @@ const LessonPanelV2 = ({
         );
     };
 
+    const lessonPanelTitle = isExisting ? "Редактирование занятия" : "Новое занятие";
+    const lessonPanelStudentName =
+        currentStudent?.name || defaultStudent?.name || lesson?.studentName || "Ученик не выбран";
+    const lessonPanelSubtitle = [
+        lessonPanelStudentName,
+        resolvedSubjectValue,
+        date ? formatOptionalDate(date) : null,
+        time || null,
+    ].filter(Boolean).join(" · ");
+
     const panelContent = (
         <div
             ref={panelRef}
-            className={`lp2 ${isPanelVisible ? "lp2--open" : ""}`}
+            className={`lp2 lp2--lesson-planner ${isPanelVisible ? "lp2--open" : ""}`}
             style={{ zIndex: PANEL_Z }}
             onTransitionEnd={handleTransitionEnd}
             role="dialog"
@@ -1292,458 +1315,500 @@ const LessonPanelV2 = ({
             aria-label={lesson ? `Занятие: ${lesson.subject}` : "Новое занятие"}
         >
             {/* ══ Top bar ══ */}
-            <div className="lp2__topbar">
-                <button
-                    type="button"
-                    className="lp2__back"
-                    onClick={handleClose}
-                    aria-label="Назад"
-                >
-                    <GIcon data={ArrowLeft as IconData} size={18} />
-                </button>
-
-                <div className="lp2__topbar-actions">
-                    {isExisting && onDeleted && (
+            <Lp2PlannerHeader
+                title={lessonPanelTitle}
+                subtitle={lessonPanelSubtitle}
+                onBack={handleClose}
+                actions={
+                    isExisting && onDeleted ? (
                         <GButton view="flat" size="s" onClick={() => setConfirmDelete(true)} title="Удалить">
                             <GIcon data={TrashBin as IconData} size={16} />
                         </GButton>
-                    )}
-                </div>
-            </div>
+                    ) : null
+                }
+            />
 
             {/* ══ Scrollable content ══ */}
             <div className="lp2__scroll">
-                <div className="lp2__center">
-                    <h1 className="lp2__page-title">
-                        {isExisting ? "Редактирование занятия" : "Новое занятие"}
-                    </h1>
-
+                <div className="lp2__center lp2__center--lesson-planner">
                     {actionError && (
-                        <Alert theme="danger" view="filled" corners="rounded" message={actionError}
-                            onClose={() => setActionError(null)} style={{ marginBottom: 24 }} />
+                        <Alert
+                            theme="danger"
+                            view="filled"
+                            corners="rounded"
+                            message={actionError}
+                            onClose={() => setActionError(null)}
+                        />
                     )}
 
-                    {/* ──────── Ученик ──────── */}
-                    <SectionTitle>Ученик</SectionTitle>
-
-                    <AppSelect
-                        label="Ученик"
-                        required
-                        error={studentError ? "Выберите ученика" : undefined}
-                        options={studentOptions}
-                        value={studentId}
-                        onUpdate={(value: string[]) => {
-                            if (value[0] === ADD_STUDENT_OPTION_VALUE) {
-                                setCreateStudentModalVisible(true);
-                                markTouched("student");
-                                return;
-                            }
-                            setStudentId(value);
-                            markTouched("student");
-                        }}
-                        renderOption={renderStudentOption}
-                        renderSelectedOption={(option: any) => {
-                            const selectedStudent = students.find((s) => s.id === option.value);
-                            const selectedLabel =
-                                typeof option?.content === "string" && option.content.trim().length
-                                    ? option.content
-                                    : selectedStudent?.name || "Ученик";
-                            return (
-                                <div className="app-select-selected-entity">
-                                    {selectedStudent ? (
-                                        <StudentAvatar student={selectedStudent} size="xs" />
-                                    ) : (
-                                        <StudentAvatar
-                                            student={{ name: selectedLabel, avatarUrl: option?.data?.avatarUrl }}
-                                            size="xs"
-                                        />
-                                    )}
-                                    <span className="app-select-selected-entity__text">
-                                        <StudentNameWithBadge
-                                            name={selectedLabel}
-                                            hasRepetoAccount={Boolean(selectedStudent?.accountId ?? option?.data?.accountId)}
-                                        />
-                                    </span>
-                                </div>
-                            );
-                        }}
-                        placeholder="Выберите ученика"
-                        filterable
-                    />
-
-                    <AppSelect
-                        label="Статус"
-                        options={statusItems}
-                        value={[status]}
-                        onUpdate={(value: string[]) => {
-                            if (!value.length) return;
-                            setStatus(value[0] as EditableLessonStatus);
-                            setStatusTouchedManually(true);
-                        }}
-                    />
-
-                    {/* ──────── О занятии ──────── */}
-                    <SectionTitle>О занятии</SectionTitle>
-
-                    <AppField label="Предмет" required error={subjectError ? "Обязательное поле" : undefined}>
-                        {!hasSelectedStudent ? (
-                            <TextInput
-                                value=""
-                                placeholder="Сначала выберите ученика"
-                                size="xl"
-                                disabled
-                            />
-                        ) : hasSingleStudentSubject ? (
-                            <TextInput
-                                value={selectedStudentSubjects[0] || ""}
-                                size="xl"
-                                disabled
-                            />
-                        ) : (
-                            <Select
-                                options={availableSubjectItems}
-                                value={subject}
+                    <div className="lp2-lesson-layout">
+                        <LessonPanelSection title="Главное" className="lp2-lesson-section--primary">
+                            <AppSelect
+                                label="Ученик"
+                                required
+                                error={studentError ? "Выберите ученика" : undefined}
+                                options={studentOptions}
+                                value={studentId}
                                 onUpdate={(value: string[]) => {
-                                    if (value[0] === ADD_SUBJECT_OPTION_VALUE) {
-                                        markTouched("subject");
-                                        handleAddSubject();
+                                    if (value[0] === ADD_STUDENT_OPTION_VALUE) {
+                                        setCreateStudentModalVisible(true);
+                                        markTouched("student");
                                         return;
                                     }
-                                    setSubject(value);
-                                    markTouched("subject");
+                                    setStudentId(value);
+                                    markTouched("student");
                                 }}
-                                placeholder="Выберите предмет"
-                                size="xl"
-                                width="max"
-                                filterable
-                                popupClassName="app-select-popup"
-                                popupPlacement="bottom-start"
-                            />
-                        )}
-                    </AppField>
-
-                    <AppField label="Место / ссылка">
-                        <TextInput
-                            value={location}
-                            onUpdate={setLocation}
-                            placeholder="Zoom, Skype или адрес"
-                            size="xl"
-                        />
-                    </AppField>
-
-                    {/* ──────── Когда ──────── */}
-                    <SectionTitle>Когда планируете занятие?</SectionTitle>
-
-                    <div className="lp2-row">
-                        <AppField label="Дата" required error={dateError ? "Обязательное поле" : undefined} half>
-                            <StyledDateInput
-                                value={date}
-                                onUpdate={(value: string) => {
-                                    setDate(value);
-                                    markTouched("date");
-                                    if (!isExisting && !statusTouchedManually) setStatus(inferDefaultStatus(value));
-                                }}
-                                style={{
-                                    height: 40,
-                                    padding: 0,
-                                    fontSize: 15,
-                                    border: "none",
-                                    borderRadius: 0,
-                                    background: "transparent",
-                                }}
-                            />
-                        </AppField>
-
-                        <AppSelect
-                            label="Время начала"
-                            required
-                            error={timeError ? "Обязательное поле" : undefined}
-                            half
-                            options={timeItems}
-                            value={time ? [time] : []}
-                            onUpdate={(value: string[]) => { setTime(value[0] || ""); markTouched("time"); }}
-                            placeholder="Выберите время"
-                        />
-                    </div>
-
-                    <div className="lp2-row">
-                        <AppSelect
-                            label="Длительность"
-                            half
-                            options={durationItems}
-                            value={duration}
-                            onUpdate={setDuration}
-                        />
-
-                        <AppSelect
-                            label="Формат"
-                            half
-                            options={formatItems}
-                            value={format}
-                            onUpdate={setFormat}
-                        />
-                    </div>
-
-                    {/* ──────── Оплата ──────── */}
-                    <SectionTitle>Оплата и заметки</SectionTitle>
-
-                    <AppField label="Стоимость (₽)">
-                        <TextInput
-                            value={cost}
-                            onUpdate={setCost}
-                            placeholder="2100"
-                            size="xl"
-                        />
-                    </AppField>
-
-                    {!isExisting && (
-                        <div className="lp2-invite-card">
-                            <div className="lp2-invite-card__text">
-                                <GText variant="body-2" className="lp2-invite-card__title">
-                                    Повторять еженедельно
-                                </GText>
-                                {repeat && (
-                                    <GText variant="body-2" color="secondary" className="lp2-invite-card__subtitle">
-                                        В тот же день и время каждую неделю
-                                    </GText>
-                                )}
-                            </div>
-                            <Switch checked={repeat} onUpdate={setRepeat} size="l" />
-                        </div>
-                    )}
-
-                    <AppField label="Заметки">
-                        <TextArea
-                            value={note}
-                            onUpdate={setNote}
-                            placeholder="Подготовить новый материал..."
-                            rows={3}
-                            size="xl"
-                        />
-                    </AppField>
-
-                    {/* ──────── Домашнее задание ──────── */}
-                    <SectionTitle>Домашнее задание</SectionTitle>
-
-                    {!hwFormVisible && visibleHomeworkItems.length === 0 && (
-                        <div className="lp2-empty">
-                            {isExisting
-                                ? "Домашнее задание не назначено"
-                                : "Добавьте домашнее задание при создании занятия"}
-                        </div>
-                    )}
-
-                    {visibleHomeworkItems.length > 0 && (
-                        <div className="lp2-hw-list">
-                            {visibleHomeworkItems.map((homework) => {
-                                const filesPreview = homework.linkedFiles.slice(0, 2).map((f) => f.name).join(", ");
-                                const hasMoreFiles = homework.linkedFiles.length > 2;
-                                return (
-                                    <div key={homework.id} className="lp2-hw-item">
-                                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                            <GText variant="body-1" style={{ fontWeight: 600, flex: 1, minWidth: 0 }} ellipsis>
-                                                {homework.task}
-                                            </GText>
-                                            <GButton view="flat" size="s" disabled={!!hwBusyId && hwBusyId !== homework.id}
-                                                onClick={() => handleEditHomework(homework)}>Редактировать</GButton>
-                                            <GButton view="flat" size="s" loading={hwBusyId === homework.id}
-                                                disabled={!!hwBusyId && hwBusyId !== homework.id}
-                                                onClick={() => void handleDeleteHomework(homework)}>Удалить</GButton>
+                                renderOption={renderStudentOption}
+                                renderSelectedOption={(option: any) => {
+                                    const selectedStudent = students.find((s) => s.id === option.value);
+                                    const selectedLabel =
+                                        typeof option?.content === "string" && option.content.trim().length
+                                            ? option.content
+                                            : selectedStudent?.name || "Ученик";
+                                    return (
+                                        <div className="app-select-selected-entity">
+                                            {selectedStudent ? (
+                                                <StudentAvatar student={selectedStudent} size="xs" />
+                                            ) : (
+                                                <StudentAvatar
+                                                    student={{ name: selectedLabel, avatarUrl: option?.data?.avatarUrl }}
+                                                    size="xs"
+                                                />
+                                            )}
+                                            <span className="app-select-selected-entity__text">
+                                                <StudentNameWithBadge
+                                                    name={selectedLabel}
+                                                    hasRepetoAccount={Boolean(selectedStudent?.accountId ?? option?.data?.accountId)}
+                                                />
+                                            </span>
                                         </div>
-                                        <GText variant="caption-2" color="secondary">
-                                            Срок: {formatOptionalDate(homework.dueAt)}
+                                    );
+                                }}
+                                placeholder="Выберите ученика"
+                                filterable
+                            />
+
+                            <div className="lp2-row">
+                                <AppSelect
+                                    label="Статус"
+                                    half
+                                    options={statusItems}
+                                    value={[status]}
+                                    onUpdate={(value: string[]) => {
+                                        if (!value.length) return;
+                                        setStatus(value[0] as EditableLessonStatus);
+                                        setStatusTouchedManually(true);
+                                    }}
+                                />
+
+                                <AppField label="Предмет" required error={subjectError ? "Обязательное поле" : undefined} half>
+                                    {!hasSelectedStudent ? (
+                                        <TextInput
+                                            value=""
+                                            placeholder="Сначала выберите ученика"
+                                            size="xl"
+                                            disabled
+                                        />
+                                    ) : hasSingleStudentSubject ? (
+                                        <TextInput
+                                            value={selectedStudentSubjects[0] || ""}
+                                            size="xl"
+                                            disabled
+                                        />
+                                    ) : (
+                                        <Select
+                                            options={availableSubjectItems}
+                                            value={subject}
+                                            onUpdate={(value: string[]) => {
+                                                if (value[0] === ADD_SUBJECT_OPTION_VALUE) {
+                                                    markTouched("subject");
+                                                    handleAddSubject();
+                                                    return;
+                                                }
+                                                setSubject(value);
+                                                markTouched("subject");
+                                            }}
+                                            placeholder="Выберите предмет"
+                                            size="xl"
+                                            width="max"
+                                            filterable
+                                            popupClassName="app-select-popup"
+                                            popupPlacement="bottom-start"
+                                        />
+                                    )}
+                                </AppField>
+                            </div>
+
+                            <div className="lp2-row">
+                                <AppField label="Дата" required error={dateError ? "Обязательное поле" : undefined} half>
+                                    <StyledDateInput
+                                        value={date}
+                                        onUpdate={(value: string) => {
+                                            setDate(value);
+                                            markTouched("date");
+                                            if (!isExisting && !statusTouchedManually) setStatus(inferDefaultStatus(value));
+                                        }}
+                                        style={{
+                                            height: 40,
+                                            padding: 0,
+                                            fontSize: 15,
+                                            border: "none",
+                                            borderRadius: 0,
+                                            background: "transparent",
+                                        }}
+                                    />
+                                </AppField>
+
+                                <AppSelect
+                                    label="Время начала"
+                                    required
+                                    error={timeError ? "Обязательное поле" : undefined}
+                                    half
+                                    options={timeItems}
+                                    value={time ? [time] : []}
+                                    onUpdate={(value: string[]) => { setTime(value[0] || ""); markTouched("time"); }}
+                                    placeholder="Выберите время"
+                                />
+                            </div>
+
+                            <div className="lp2-row">
+                                <AppSelect
+                                    label="Длительность"
+                                    half
+                                    options={durationItems}
+                                    value={duration}
+                                    onUpdate={setDuration}
+                                />
+
+                                <AppField label="Стоимость (₽)" half>
+                                    <TextInput
+                                        value={cost}
+                                        onUpdate={setCost}
+                                        placeholder="2100"
+                                        size="xl"
+                                    />
+                                </AppField>
+                            </div>
+                        </LessonPanelSection>
+
+                        <LessonPanelSection title="Детали">
+                            <div className="lp2-row">
+                                <AppSelect
+                                    label="Формат"
+                                    half
+                                    options={formatItems}
+                                    value={format}
+                                    onUpdate={setFormat}
+                                />
+
+                                <AppField label="Место / ссылка" half>
+                                    <TextInput
+                                        value={location}
+                                        onUpdate={setLocation}
+                                        placeholder="Zoom, Skype или адрес"
+                                        size="xl"
+                                    />
+                                </AppField>
+                            </div>
+
+                            {!isExisting && (
+                                <div className="lp2-invite-card">
+                                    <div className="lp2-invite-card__text">
+                                        <GText variant="body-2" className="lp2-invite-card__title">
+                                            Повторять еженедельно
                                         </GText>
-                                        {homework.linkedFiles.length > 0 && (
-                                            <GText variant="caption-2" color="secondary">
-                                                Материалы: {filesPreview}{hasMoreFiles ? ` и еще ${homework.linkedFiles.length - 2}` : ""}
+                                        {repeat && (
+                                            <GText variant="body-2" color="secondary" className="lp2-invite-card__subtitle">
+                                                В тот же день и время каждую неделю
                                             </GText>
                                         )}
                                     </div>
-                                );
-                            })}
-                        </div>
-                    )}
+                                    <Switch checked={repeat} onUpdate={setRepeat} size="l" />
+                                </div>
+                            )}
 
-                    {!hwFormVisible && (
-                        <button type="button" className="lp2-add-btn" onClick={() => setHwFormVisible(true)}>
-                            <GIcon data={Plus as IconData} size={16} />
-                            Добавить домашнее задание
-                        </button>
-                    )}
-
-                    {hwFormVisible && (
-                        <div className="lp2-hw-form">
-                            <AppField label="Описание задания">
-                                <TextArea value={hwTask} onUpdate={setHwTask}
-                                    placeholder="Выучить параграф 5, решить задачи №12-18..." rows={3} size="xl" />
+                            <AppField label="Заметки">
+                                <TextArea
+                                    value={note}
+                                    onUpdate={setNote}
+                                    placeholder="Подготовить новый материал..."
+                                    rows={3}
+                                    size="xl"
+                                />
                             </AppField>
-                            <AppField label="Срок сдачи">
-                                <StyledDateInput value={hwDueDate} onUpdate={setHwDueDate}
-                                    style={{
-                                        height: 40,
-                                        padding: 0,
-                                        fontSize: 15,
-                                        border: "none",
-                                        borderRadius: 0,
-                                        background: "transparent",
-                                    }} />
-                            </AppField>
+                        </LessonPanelSection>
 
-                            {hwLinkedFiles.length > 0 && (
-                                <div className="lp2-materials">
-                                    <GText variant="caption-2" color="secondary" style={{ marginBottom: 8 }}>
-                                        Прикрепленные материалы к домашнему заданию
-                                    </GText>
-                                    {hwLinkedFiles.map((file) => (
-                                        <div key={file.provider ? makeSelectionKey(file.provider, file.id) : file.id}
-                                            className="lp2-material-row">
-                                            <GIcon data={((file.type || "file") === "folder" ? Folder : File) as IconData} size={16} />
-                                            <GText variant="body-1" style={{ flex: 1, minWidth: 0 }} ellipsis>{file.name}</GText>
-                                            <GButton view="flat" size="s" onClick={() =>
-                                                setHwLinkedFiles((prev) =>
-                                                    prev.filter((f) => !(f.id === file.id && f.provider === file.provider)),
-                                                )
-                                            }>
-                                                <GIcon data={TrashBin as IconData} size={14} />
+                        <div className="lp2-lesson-secondary-grid">
+                            <LessonPanelSection title="Домашнее задание">
+                                {!hwFormVisible && visibleHomeworkItems.length === 0 && (
+                                    <div className="lp2-empty">
+                                        {isExisting
+                                            ? "Домашнее задание не назначено"
+                                            : hasSelectedStudent
+                                                ? "Добавьте домашнее задание"
+                                                : "Сначала выберите ученика"}
+                                    </div>
+                                )}
+
+                                {visibleHomeworkItems.length > 0 && (
+                                    <div className="lp2-hw-list">
+                                        {visibleHomeworkItems.map((homework) => {
+                                            const filesPreview = homework.linkedFiles.slice(0, 2).map((f) => f.name).join(", ");
+                                            const hasMoreFiles = homework.linkedFiles.length > 2;
+                                            return (
+                                                <div key={homework.id} className="lp2-hw-item">
+                                                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                                        <GText variant="body-1" style={{ fontWeight: 600, flex: 1, minWidth: 0 }} ellipsis>
+                                                            {homework.task}
+                                                        </GText>
+                                                        <GButton
+                                                            view="flat"
+                                                            size="s"
+                                                            disabled={!!hwBusyId && hwBusyId !== homework.id}
+                                                            title="Редактировать"
+                                                            onClick={() => handleEditHomework(homework)}
+                                                        >
+                                                            <GIcon data={Pencil as IconData} size={14} />
+                                                        </GButton>
+                                                        <GButton
+                                                            view="flat"
+                                                            size="s"
+                                                            loading={hwBusyId === homework.id}
+                                                            disabled={!!hwBusyId && hwBusyId !== homework.id}
+                                                            title="Удалить"
+                                                            onClick={() => void handleDeleteHomework(homework)}
+                                                        >
+                                                            <GIcon data={TrashBin as IconData} size={14} />
+                                                        </GButton>
+                                                    </div>
+                                                    <GText variant="caption-2" color="secondary">
+                                                        Срок: {formatOptionalDate(homework.dueAt)}
+                                                    </GText>
+                                                    {homework.linkedFiles.length > 0 && (
+                                                        <GText variant="caption-2" color="secondary">
+                                                            Материалы: {filesPreview}{hasMoreFiles ? ` и еще ${homework.linkedFiles.length - 2}` : ""}
+                                                        </GText>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+
+                                {!hwFormVisible && (
+                                    <button
+                                        type="button"
+                                        className="lp2-add-btn"
+                                        disabled={!hasSelectedStudent}
+                                        title={!hasSelectedStudent ? "Сначала выберите ученика" : undefined}
+                                        onClick={() => {
+                                            if (!hasSelectedStudent) {
+                                                setActionError("Сначала выберите ученика в блоке «Главное».");
+                                                markTouched("student");
+                                                return;
+                                            }
+                                            setHwFormVisible(true);
+                                        }}
+                                    >
+                                        <GIcon data={Plus as IconData} size={16} />
+                                        Добавить домашнее задание
+                                    </button>
+                                )}
+
+                                {hwFormVisible && (
+                                    <div className="lp2-hw-form">
+                                        <AppField label="Описание задания">
+                                            <TextArea value={hwTask} onUpdate={setHwTask}
+                                                placeholder="Выучить параграф 5, решить задачи №12-18..." rows={3} size="xl" />
+                                        </AppField>
+                                        <AppField label="Срок сдачи">
+                                            <StyledDateInput value={hwDueDate} onUpdate={setHwDueDate}
+                                                style={{
+                                                    height: 40,
+                                                    padding: 0,
+                                                    fontSize: 15,
+                                                    border: "none",
+                                                    borderRadius: 0,
+                                                    background: "transparent",
+                                                }} />
+                                        </AppField>
+
+                                        {hwLinkedFiles.length > 0 && (
+                                            <div className="lp2-materials">
+                                                <GText variant="caption-2" color="secondary" style={{ marginBottom: 8 }}>
+                                                    Прикрепленные материалы к домашнему заданию
+                                                </GText>
+                                                {hwLinkedFiles.map((file) => (
+                                                    <div key={file.provider ? makeSelectionKey(file.provider, file.id) : file.id}
+                                                        className="lp2-material-row">
+                                                        <GIcon data={((file.type || "file") === "folder" ? Folder : File) as IconData} size={16} />
+                                                        <GText variant="body-1" style={{ flex: 1, minWidth: 0 }} ellipsis>{file.name}</GText>
+                                                        <GButton view="flat" size="s" onClick={() =>
+                                                            setHwLinkedFiles((prev) =>
+                                                                prev.filter((f) => !(f.id === file.id && f.provider === file.provider)),
+                                                            )
+                                                        }>
+                                                            <GIcon data={TrashBin as IconData} size={14} />
+                                                        </GButton>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {connectedProviders.length > 0 && (
+                                            <button
+                                                type="button"
+                                                className="hw-material-upload-btn"
+                                                onClick={openHomeworkMaterialsPicker}
+                                            >
+                                                <span className="hw-material-upload-btn__icon">
+                                                    <GIcon data={Plus as IconData} size={20} />
+                                                </span>
+                                                <span className="hw-material-upload-btn__content">
+                                                    <span className="hw-material-upload-btn__title">Загрузить материалы</span>
+                                                    <span className="hw-material-upload-btn__hint">{homeworkMaterialsHint}</span>
+                                                </span>
+                                            </button>
+                                        )}
+
+                                        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                                            <GButton view="outlined" size="l" onClick={resetHomeworkForm}>Отмена</GButton>
+                                            <GButton
+                                                view="action"
+                                                size="l"
+                                                disabled={!hwTask.trim() || !hasSelectedStudent}
+                                                loading={hwSaving}
+                                                onClick={() => void handleHomeworkSubmit()}>
+                                                {hwEditingId ? "Сохранить изменения" : "Сохранить"}
                                             </GButton>
                                         </div>
-                                    ))}
-                                </div>
-                            )}
+                                    </div>
+                                )}
+                            </LessonPanelSection>
 
-                            {connectedProviders.length > 0 && (
+                            <LessonPanelSection title="Материалы">
+                                {materialItemsForSection.length > 0 ? (
+                                    <div className="lp2-materials">
+                                        <GText variant="caption-2" color="secondary" style={{ marginBottom: 8 }}>
+                                            {showingLessonMaterialsDraft ? "Выбрано для занятия" : "Сохранено в домашних заданиях"}
+                                        </GText>
+                                        {materialItemsForSection.map((file) => (
+                                            <div key={file.provider ? makeSelectionKey(file.provider, file.id) : file.id}
+                                                className="lp2-material-row">
+                                                <GIcon data={(file.type || "file") === "folder" ? (Folder as IconData) : (File as IconData)} size={16} />
+                                                <GText variant="body-1" style={{ flex: 1, minWidth: 0 }} ellipsis>{file.name}</GText>
+                                                {showingLessonMaterialsDraft && (
+                                                    <GButton view="flat" size="s" onClick={() =>
+                                                        {
+                                                            setMaterialsDirty(true);
+                                                            setLessonMaterials((prev) =>
+                                                                prev.filter((f) => !(f.id === file.id && f.provider === file.provider)),
+                                                            );
+                                                        }
+                                                    }>
+                                                        <GIcon data={TrashBin as IconData} size={14} />
+                                                    </GButton>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="lp2-empty">Материалы не прикреплены</div>
+                                )}
+
+                                <button type="button" className="lp2-add-btn" onClick={openMaterialsPicker}>
+                                    <GIcon data={Plus as IconData} size={16} />
+                                    Прикрепить материалы
+                                </button>
+                            </LessonPanelSection>
+
+                            <LessonPanelSection title="Оплата">
+                                {visiblePaymentItems.length > 0 ? (
+                                    <div className="lp2-payments">
+                                        {visiblePaymentItems.map((payment) => {
+                                            const paymentStatus = payment.status.toUpperCase();
+                                            const isPaid = paymentStatus === "PAID";
+                                            const isOverdue = paymentStatus === "OVERDUE";
+                                            return (
+                                                <div key={payment.id} className="lp2-payment-row">
+                                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                                                        <GText variant="body-1" style={{ fontWeight: 600 }}>
+                                                            {payment.amount.toLocaleString("ru-RU")} ₽
+                                                        </GText>
+                                                        <GLabel theme={isPaid ? "success" : isOverdue ? "danger" : "warning"} size="s">
+                                                            {isPaid ? "Оплачено" : isOverdue ? "Просрочено" : "Ожидает"}
+                                                        </GLabel>
+                                                    </div>
+                                                    <GText variant="caption-2" color="secondary">
+                                                        {(payment.method || "—").toUpperCase()} · {formatOptionalDate(payment.date)}
+                                                    </GText>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="lp2-empty">
+                                        {isExisting
+                                            ? status === "completed" ? "Оплата не зафиксирована" : "Оплата будет доступна после проведения"
+                                            : hasSelectedStudent ? "Оплата пока не добавлена" : "Сначала выберите ученика"}
+                                    </div>
+                                )}
+
                                 <button
                                     type="button"
-                                    className="hw-material-upload-btn"
-                                    onClick={openHomeworkMaterialsPicker}
+                                    className="lp2-add-btn"
+                                    disabled={!hasSelectedStudent}
+                                    title={!hasSelectedStudent ? "Сначала выберите ученика" : undefined}
+                                    onClick={() => {
+                                        if (!hasSelectedStudent) {
+                                            setActionError("Сначала выберите ученика в блоке «Главное».");
+                                            markTouched("student");
+                                            return;
+                                        }
+                                        setPaymentModalOpen(true);
+                                    }}
                                 >
-                                    <span className="hw-material-upload-btn__icon">
-                                        <GIcon data={Plus as IconData} size={20} />
-                                    </span>
-                                    <span className="hw-material-upload-btn__content">
-                                        <span className="hw-material-upload-btn__title">Загрузить материалы</span>
-                                        <span className="hw-material-upload-btn__hint">{homeworkMaterialsHint}</span>
-                                    </span>
+                                    <GIcon data={Plus as IconData} size={16} />
+                                    Добавить оплату
                                 </button>
-                            )}
 
-                            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-                                <GButton view="outlined" size="l" onClick={resetHomeworkForm}>Отмена</GButton>
-                                <GButton view="action" size="l" disabled={!hwTask.trim()} loading={hwSaving}
-                                    onClick={() => void handleHomeworkSubmit()}>
-                                    {hwEditingId ? "Сохранить изменения" : "Сохранить"}
-                                </GButton>
-                            </div>
-                        </div>
-                    )}
+                                {!hasSelectedStudent && !isExisting && (
+                                    <GText variant="caption-2" color="secondary" style={{ marginTop: 8 }}>
+                                        Сначала выберите ученика, затем добавляйте оплату.
+                                    </GText>
+                                )}
+                            </LessonPanelSection>
 
-                    {/* ──────── Материалы ──────── */}
-                    <SectionTitle>Материалы к занятию</SectionTitle>
-
-                    {materialItemsForSection.length > 0 ? (
-                        <div className="lp2-materials">
-                            <GText variant="caption-2" color="secondary" style={{ marginBottom: 8 }}>
-                                {showingLessonMaterialsDraft ? "Выбрано для занятия" : "Сохранено в домашних заданиях"}
-                            </GText>
-                            {materialItemsForSection.map((file) => (
-                                <div key={file.provider ? makeSelectionKey(file.provider, file.id) : file.id}
-                                    className="lp2-material-row">
-                                    <GIcon data={(file.type || "file") === "folder" ? (Folder as IconData) : (File as IconData)} size={16} />
-                                    <GText variant="body-1" style={{ flex: 1, minWidth: 0 }} ellipsis>{file.name}</GText>
-                                    {showingLessonMaterialsDraft && (
-                                        <GButton view="flat" size="s" onClick={() =>
-                                            {
-                                                setMaterialsDirty(true);
-                                                setLessonMaterials((prev) =>
-                                                    prev.filter((f) => !(f.id === file.id && f.provider === file.provider)),
-                                                );
-                                            }
-                                        }>
-                                            <GIcon data={TrashBin as IconData} size={14} />
-                                        </GButton>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="lp2-empty">Материалы не прикреплены</div>
-                    )}
-
-                    <button type="button" className="lp2-add-btn" onClick={openMaterialsPicker}>
-                        <GIcon data={Plus as IconData} size={16} />
-                        Прикрепить материалы
-                    </button>
-
-                    {/* ──────── Оплата (список) ──────── */}
-                    <SectionTitle>Оплата</SectionTitle>
-
-                    {visiblePaymentItems.length > 0 ? (
-                        <div className="lp2-payments">
-                            {visiblePaymentItems.map((payment) => {
-                                const paymentStatus = payment.status.toUpperCase();
-                                const isPaid = paymentStatus === "PAID";
-                                const isOverdue = paymentStatus === "OVERDUE";
-                                return (
-                                    <div key={payment.id} className="lp2-payment-row">
-                                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                                            <GText variant="body-1" style={{ fontWeight: 600 }}>
-                                                {payment.amount.toLocaleString("ru-RU")} ₽
-                                            </GText>
-                                            <GLabel theme={isPaid ? "success" : isOverdue ? "danger" : "warning"} size="s">
-                                                {isPaid ? "Оплачено" : isOverdue ? "Просрочено" : "Ожидает"}
-                                            </GLabel>
+                            {isExisting && lesson?.status === "completed" && (
+                                <LessonPanelSection title="Отзыв ученика">
+                                    {lesson?.hasReview ? (
+                                        <div className="lp2-review">
+                                            <div style={{ color: "var(--g-color-text-brand)", fontSize: 20, lineHeight: 1 }}>
+                                                {[1, 2, 3, 4, 5].map((star) => star <= (lesson.reviewRating || 0) ? "★" : "☆").join(" ")}
+                                            </div>
+                                            <GText variant="body-1" color="secondary">Оценка: {lesson.reviewRating || 0}/5</GText>
+                                            {lesson.reviewFeedback && (
+                                                <GText variant="body-1" style={{ whiteSpace: "pre-wrap", marginTop: 4 }}>{lesson.reviewFeedback}</GText>
+                                            )}
                                         </div>
-                                        <GText variant="caption-2" color="secondary">
-                                            {(payment.method || "—").toUpperCase()} · {formatOptionalDate(payment.date)}
-                                        </GText>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    ) : (
-                        <div className="lp2-empty">
-                            {isExisting
-                                ? status === "completed" ? "Оплата не зафиксирована" : "Оплата будет доступна после проведения"
-                                : "Оплата пока не добавлена"}
-                        </div>
-                    )}
-
-                    <button type="button" className="lp2-add-btn" onClick={() => setPaymentModalOpen(true)}>
-                        <GIcon data={Plus as IconData} size={16} />
-                        Добавить оплату
-                    </button>
-
-                    {/* ──────── Отзыв ──────── */}
-                    {isExisting && lesson?.status === "completed" && (
-                        <>
-                            <SectionTitle>Отзыв ученика</SectionTitle>
-
-                            {lesson?.hasReview ? (
-                                <div className="lp2-review">
-                                    <div style={{ color: "var(--g-color-text-brand)", fontSize: 20, lineHeight: 1 }}>
-                                        {[1, 2, 3, 4, 5].map((star) => star <= (lesson.reviewRating || 0) ? "★" : "☆").join(" ")}
-                                    </div>
-                                    <GText variant="body-1" color="secondary">Оценка: {lesson.reviewRating || 0}/5</GText>
-                                    {lesson.reviewFeedback && (
-                                        <GText variant="body-1" style={{ whiteSpace: "pre-wrap", marginTop: 4 }}>{lesson.reviewFeedback}</GText>
+                                    ) : (
+                                        <div className="lp2-empty">
+                                            Отзыв пока не оставлен
+                                        </div>
                                     )}
-                                </div>
-                            ) : (
-                                <div className="lp2-empty">
-                                    Отзыв пока не оставлен
-                                </div>
+                                </LessonPanelSection>
                             )}
-                        </>
-                    )}
+                        </div>
+                    </div>
 
                     {formError && (
-                        <Alert theme="danger" view="filled" corners="rounded" message={formError} style={{ marginTop: 24 }} />
+                        <Alert theme="danger" view="filled" corners="rounded" message={formError} />
                     )}
                 </div>
             </div>
 
             {/* ══ Bottom bar ══ */}
-            <div className="lp2__bottombar">
+            <Lp2PlannerFooter>
                 <GButton
                     view="action"
                     size="xl"
@@ -1755,7 +1820,7 @@ const LessonPanelV2 = ({
                 >
                     {isExisting ? "Сохранить изменения" : "Создать занятие"}
                 </GButton>
-            </div>
+            </Lp2PlannerFooter>
         </div>
     );
 
@@ -1838,7 +1903,6 @@ const LessonPanelV2 = ({
                     }
                     setPaymentModalOpen(false);
                     void refetchPayments().catch(() => undefined);
-                    await onSaved?.();
                 }}
                 defaultStudent={paymentDefaultStudent}
             />

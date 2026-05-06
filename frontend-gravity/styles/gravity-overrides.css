@@ -1,6 +1,6 @@
 .g-root {
     --g-font-family-monospace: 'Roboto Mono', 'Monaco', 'Consolas', 'Liberation Mono', 'Ubuntu Mono', 'DejaVu Sans Mono', 'Courier New', 'Courier', monospace;
-    --g-font-family-sans: var(--font-inter, 'Inter'), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --g-font-family-sans: var(--font-inter-latin, var(--font-inter, 'Inter')), var(--font-inter-cyrillic, 'Inter'), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     /* Raise base text scale so labels and helper text are easier to read. */
     --g-text-body-1-font-size: 14px;
     --g-text-body-1-line-height: 20px;
@@ -147,15 +147,15 @@ html body.g-root_theme_dark {
     --repeto-card-shadow: none;
     --repeto-card-shadow-hover: var(--repeto-panel-shadow);
     --repeto-control-surface: var(--surface-subtle);
-    --repeto-control-surface-hover: var(--surface-sunken);
-    --repeto-control-surface-active: var(--surface-sunken);
-    --repeto-control-surface-plain: var(--surface-sunken);
+    --repeto-control-surface-hover: color-mix(in srgb, var(--surface-subtle) 58%, #bcc7d8 42%);
+    --repeto-control-surface-active: color-mix(in srgb, var(--surface-subtle) 46%, #b3bfd2 54%);
+    --repeto-control-surface-plain: var(--surface-subtle);
     --repeto-control-text: #26232d;
     --repeto-control-text-muted: #8e8799;
     --repeto-control-icon: #90899d;
     --repeto-control-accent: var(--accent);
     --repeto-control-danger: #d46c75;
-    --repeto-control-line-soft: rgba(38, 35, 45, 0.08);
+    --repeto-control-line-soft: rgba(38, 35, 45, 0.14);
     --repeto-control-line-focus: color-mix(in srgb, var(--accent) 88%, transparent);
     --repeto-control-radius: 10px;
     --repeto-control-radius-lg: 22px;
@@ -309,6 +309,12 @@ body {
     background: var(--repeto-bg) !important;
     color: var(--g-color-text-primary);
     min-height: 100vh;
+}
+
+html.repeto-lp2-scroll-locked,
+body.repeto-lp2-scroll-locked {
+    overflow: hidden !important;
+    overscroll-behavior: none !important;
 }
 
 /* ============ Global Card Overrides ============ */
@@ -3001,17 +3007,11 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     gap: 12px;
 }
 
-.repeto-schedule-view-mode {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
-}
-
 .repeto-schedule-toolbar {
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: flex-start;
+    gap: 12px;
     margin-bottom: 14px;
     flex-wrap: wrap;
     background: transparent;
@@ -3019,81 +3019,260 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     padding: 0;
 }
 
+.repeto-schedule-toolbar__mode-group,
+.repeto-schedule-toolbar__meta-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.repeto-schedule-toolbar__mode-group {
+    flex: 1 1 auto;
+}
+
+.repeto-schedule-toolbar__meta-group {
+    flex: 0 0 auto;
+    max-width: 100%;
+    margin-left: auto;
+}
+
 .repeto-schedule-toolbar__filter {
-    width: 232px;
+    width: 220px;
+    min-width: 0;
 }
 
 .repeto-schedule-toolbar__display {
     display: flex;
     align-items: center;
     min-width: 0;
+    flex-shrink: 0;
+    margin-right: 2px;
+    padding-right: 8px;
+    border-right: 1px solid color-mix(in srgb, var(--g-color-line-generic) 72%, transparent);
 }
 
 .repeto-schedule-toolbar__display .repeto-pill-tabs {
     flex-wrap: nowrap;
+    gap: 6px;
 }
 
 .repeto-schedule-toolbar__period {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     min-width: 0;
     max-width: 100%;
-    padding: 3px 8px 3px 4px;
-    border-radius: 999px;
-    background: var(--repeto-pill-bg);
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
 }
 
-.repeto-schedule-toolbar__date-btn {
-    all: unset;
+.repeto-schedule-view-select {
+    flex-shrink: 0;
     display: inline-flex;
     align-items: center;
-    min-width: 0;
-    max-width: 100%;
-    border-radius: 999px;
-    padding: 2px 8px;
-    cursor: pointer;
-    transition: background 0.15s ease;
 }
 
-.repeto-schedule-toolbar__date-btn:hover {
-    background: var(--repeto-pill-bg-hover);
-}
-
-.repeto-schedule-toolbar__today-btn.g-button {
-    border-radius: 999px !important;
-    min-height: 30px;
-    padding: 0 10px !important;
-    background: var(--repeto-pill-bg) !important;
-    color: var(--repeto-pill-text) !important;
+.repeto-schedule-view-select .g-select-control {
+    min-height: 36px;
+    border-radius: 12px;
     border: none !important;
+    background: color-mix(in srgb, var(--g-color-line-generic) 34%, transparent) !important;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.repeto-schedule-view-select .g-select-control:hover {
+    background: color-mix(in srgb, var(--g-color-line-generic) 44%, transparent) !important;
+}
+
+.repeto-schedule-view-select .g-select-control_open,
+.repeto-schedule-view-select .g-select-control:focus-within {
+    border-color: transparent !important;
     box-shadow: none !important;
-    --g-button-background-color: var(--repeto-pill-bg);
-    --g-button-background-color-hover: var(--repeto-pill-bg-hover);
-    --g-button-background-color-active: var(--repeto-pill-bg-hover);
-    --g-button-border-width: 0;
+}
+
+.repeto-schedule-view-select .g-select-control__button {
+    min-height: 36px;
+    padding-inline: 14px 10px !important;
+    border-radius: 12px !important;
+    background: transparent !important;
+    color: var(--g-color-text-primary) !important;
+    font-size: 15px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+}
+
+.repeto-schedule-view-select .g-select-control__button::before,
+.repeto-schedule-view-select .g-select-control__button::after {
+    display: none !important;
+}
+
+.repeto-schedule-view-select .g-select-control__option-text {
+    color: var(--g-color-text-primary) !important;
+}
+
+.repeto-schedule-view-select .g-select-control__chevron-icon {
+    color: var(--g-color-text-secondary) !important;
+    width: 18px;
+    height: 18px;
+}
+
+.repeto-schedule-toolbar__period-divider {
+    width: 1px;
+    height: 24px;
+    background: color-mix(in srgb, var(--g-color-line-generic) 86%, transparent);
+    margin-inline: 2px;
+    flex-shrink: 0;
+}
+
+.repeto-schedule-toolbar__export-calendar-btn {
+    all: unset;
+    box-sizing: border-box;
+    min-height: 36px;
+    padding: 0 14px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--g-color-line-generic) 34%, transparent);
+    color: var(--g-color-text-primary);
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.repeto-schedule-toolbar__export-calendar-btn:hover {
+    background: color-mix(in srgb, var(--g-color-line-generic) 44%, transparent);
+}
+
+.repeto-schedule-toolbar__export-calendar-btn:disabled {
+    opacity: 0.7;
+    cursor: default;
+}
+
+.repeto-schedule-toolbar__export-calendar-icon {
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--g-color-text-primary);
+}
+
+.repeto-schedule-toolbar__export-calendar-icon .repeto-animated-sidebar-icon__fallback .g-icon {
+    color: inherit !important;
+}
+
+.repeto-schedule-toolbar__export-calendar-icon .repeto-animated-sidebar-icon__canvas :is(path, circle, ellipse, line, polyline, polygon, rect) {
+    stroke: currentColor !important;
+}
+
+.repeto-schedule-toolbar__export-calendar-icon .repeto-animated-sidebar-icon__canvas [fill]:not([fill="none"]) {
+    fill: currentColor !important;
+}
+
+.g-select-popup.repeto-schedule-view-popup {
+    background: var(--repeto-surface-elevated) !important;
+    border: 1px solid var(--repeto-line-subtle) !important;
+    border-radius: 12px !important;
+    box-shadow: var(--repeto-popover-shadow) !important;
+    padding: 6px !important;
+}
+
+.g-select-popup.repeto-schedule-view-popup .g-list__item {
+    border-radius: 10px;
+}
+
+.g-select-popup.repeto-schedule-view-popup .g-select-list__option {
+    min-height: 34px;
+    padding: 0 10px !important;
+    background: transparent !important;
+}
+
+.g-select-popup.repeto-schedule-view-popup .g-list__item_active {
+    background: color-mix(in srgb, var(--repeto-surface-elevated) 94%, var(--text-primary) 6%) !important;
+}
+
+.g-select-popup.repeto-schedule-view-popup .g-list__item_selected {
+    background: color-mix(in srgb, var(--accent) 12%, var(--repeto-surface-elevated)) !important;
 }
 
 /* Filter select: clean single-surface control for single/multiple modes */
 .repeto-schedule-filter-select .g-select-control {
     --g-select-focus-outline-color: transparent;
-    border-radius: 999px;
-    min-height: 32px;
-    background: var(--repeto-pill-bg) !important;
+    border-radius: 12px;
+    min-height: 36px;
+    background: color-mix(in srgb, var(--g-color-line-generic) 34%, transparent) !important;
     border: 1px solid transparent;
     transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .repeto-schedule-filter-select .g-select-control:hover {
-    background: var(--repeto-pill-bg-hover) !important;
+    background: color-mix(in srgb, var(--g-color-line-generic) 44%, transparent) !important;
 }
 
 .repeto-schedule-filter-select .g-select-control__button {
-    color: var(--repeto-control-text) !important;
-    border-radius: 999px !important;
+    color: var(--g-color-text-primary) !important;
+    border-radius: 12px !important;
     background: transparent !important;
-    min-height: 32px;
-    padding-inline: 10px !important;
+    min-height: 36px;
+    padding-inline: 10px 8px !important;
+    display: inline-flex;
+    align-items: center;
+}
+
+.repeto-schedule-toolbar__filter--summary {
+    position: relative;
+}
+
+.repeto-schedule-toolbar__filter--summary::after {
+    content: attr(data-status-summary);
+    position: absolute;
+    left: 10px;
+    right: 38px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--g-color-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.repeto-schedule-toolbar__filter--summary .g-select-control__placeholder,
+.repeto-schedule-toolbar__filter--summary .g-select-control__option,
+.repeto-schedule-toolbar__filter--summary .g-select-control__option-text,
+.repeto-schedule-toolbar__filter--summary .g-select-counter {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    overflow: hidden !important;
+    clip: rect(0 0 0 0) !important;
+    white-space: nowrap !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+.repeto-schedule-toolbar__filter--summary .g-select-control__button {
+    position: relative;
+    z-index: 2;
+}
+
+.repeto-schedule-toolbar__filter--summary .g-select-clear,
+.repeto-schedule-toolbar__filter--summary .g-select-control__chevron {
+    position: relative;
+    z-index: 3;
 }
 
 .repeto-schedule-filter-select .g-select-control__button::before {
@@ -3115,12 +3294,13 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 
 .repeto-schedule-filter-select .g-select-control_open,
 .repeto-schedule-filter-select .g-select-control:focus-within {
-    background: var(--repeto-pill-bg-hover) !important;
-    border-color: var(--repeto-control-line-focus) !important;
-    box-shadow: inset 0 0 0 1px var(--repeto-control-line-focus);
+    background: color-mix(in srgb, var(--g-color-line-generic) 44%, transparent) !important;
+    border-color: transparent !important;
+    box-shadow: none;
 }
 
 .repeto-schedule-filter-select .g-select-control:not(.g-select-control_disabled):not(.g-select-control_no-active):active {
+    background: color-mix(in srgb, var(--g-color-line-generic) 52%, transparent) !important;
     transform: none !important;
 }
 
@@ -3150,14 +3330,14 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 
 .repeto-schedule-filter-select .g-select-clear,
 .repeto-schedule-filter-select .g-select-control__chevron-icon {
-    color: var(--repeto-control-icon) !important;
+    color: var(--g-color-text-secondary) !important;
     width: 14px;
     height: 14px;
     opacity: 0.78;
 }
 
 .repeto-schedule-filter-select .g-select-clear:hover {
-    background: var(--repeto-option-hover) !important;
+    background: transparent !important;
     opacity: 1;
 }
 
@@ -3192,11 +3372,11 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 
 .g-select-popup.repeto-schedule-filter-popup .g-list__item_active,
 .g-select-popup.repeto-schedule-filter-popup .g-select-list_multiple.g-list .g-list__item_active {
-    background: var(--repeto-option-hover) !important;
+    background: color-mix(in srgb, var(--repeto-surface-elevated) 94%, var(--text-primary) 6%) !important;
 }
 
 .g-select-popup.repeto-schedule-filter-popup .g-list__item_selected {
-    background: var(--repeto-option-active) !important;
+    background: color-mix(in srgb, var(--accent) 12%, var(--repeto-surface-elevated)) !important;
 }
 
 .g-select-popup.repeto-schedule-filter-popup .g-select-list_multiple.g-list .g-list__item_selected {
@@ -3204,7 +3384,7 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 }
 
 .g-select-popup.repeto-schedule-filter-popup .g-select-list_multiple.g-list .g-list__item_active.g-list__item_selected {
-    background: var(--repeto-option-hover) !important;
+    background: color-mix(in srgb, var(--repeto-surface-elevated) 94%, var(--text-primary) 6%) !important;
 }
 
 .g-select-popup.repeto-schedule-filter-popup .g-select-list__tick-icon {
@@ -3219,106 +3399,109 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 
 /* Nav arrows inside period block */
 .repeto-schedule-toolbar__nav .g-button {
-    border-radius: 999px !important;
-    background: transparent !important;
+    border-radius: 12px !important;
+    background: color-mix(in srgb, var(--g-color-line-generic) 34%, transparent) !important;
     border-color: transparent !important;
     box-shadow: none !important;
-    color: var(--repeto-pill-text) !important;
-    min-width: 30px;
-    width: 30px;
-    height: 30px;
+    color: var(--g-color-text-secondary) !important;
+    min-width: 36px;
+    width: 36px;
+    height: 36px;
     padding: 0 !important;
-    --g-button-background-color: transparent;
-    --g-button-background-color-hover: var(--repeto-pill-bg-hover);
-    --g-button-background-color-active: var(--repeto-pill-bg-hover);
+    align-items: center !important;
+    justify-content: center !important;
+    --g-button-background-color: color-mix(in srgb, var(--g-color-line-generic) 34%, transparent);
+    --g-button-background-color-hover: color-mix(in srgb, var(--g-color-line-generic) 44%, transparent);
+    --g-button-background-color-active: color-mix(in srgb, var(--g-color-line-generic) 52%, transparent);
     --g-button-border-width: 0;
     --g-button-border-color: transparent;
     --g-button-border-color-hover: transparent;
     --g-button-border-color-active: transparent;
-    --g-button-border-radius: 999px;
+    --g-button-border-radius: 12px;
 }
+
+.repeto-schedule-toolbar__nav .g-button .g-button__icon {
+    width: 28px;
+    height: 28px;
+    line-height: 0 !important;
+}
+
+.repeto-schedule-toolbar__nav .g-button .g-button__icon-inner {
+    inset: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.repeto-schedule-toolbar__nav .g-button .g-button__text {
+    width: 100%;
+    height: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.repeto-schedule-toolbar__nav .g-button .g-icon {
+    margin: 0 !important;
+    transform: translateY(0);
+}
+
 .repeto-schedule-toolbar__nav .g-button:hover {
-    color: var(--repeto-control-text) !important;
+    color: var(--g-color-text-primary) !important;
 }
 
 .repeto-schedule-toolbar__nav .g-button::before,
 .repeto-schedule-toolbar__nav .g-button::after {
-    border-radius: 999px !important;
-}
-
-.repeto-schedule-toolbar__nav .g-button:focus-visible {
-    border-color: transparent !important;
-    box-shadow: inset 0 0 0 1px var(--repeto-control-line-focus) !important;
-}
-
-.repeto-schedule-toolbar__date {
-    min-width: 0;
-    display: block;
-    font-size: 14px !important;
-    line-height: 1.2 !important;
-    font-weight: 600;
-    letter-spacing: 0;
-    color: var(--repeto-control-text);
-    padding: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.repeto-schedule-toolbar__spacer {
-    flex: 1;
-}
-
-.repeto-schedule-toolbar__view,
-.repeto-schedule-toolbar__export,
-.repeto-schedule-toolbar__create {
-    min-width: 0;
+    display: none !important;
 }
 
 .repeto-schedule-toolbar .repeto-pill-tab {
-    min-height: 32px;
-    padding: 6px 12px;
+    min-height: 34px;
+    padding: 0 12px;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--g-color-text-secondary);
+    font-weight: 500;
 }
 
-.repeto-schedule-toolbar__view .repeto-pill-tab {
-    min-width: 82px;
-    justify-content: center;
+.repeto-schedule-toolbar .repeto-pill-tab:hover {
+    background: color-mix(in srgb, var(--g-color-line-generic) 22%, transparent);
+    color: var(--g-color-text-primary);
 }
 
-.repeto-schedule-toolbar__view:empty {
+.repeto-schedule-toolbar .repeto-pill-tab.repeto-pill-tab--active,
+.repeto-schedule-toolbar .repeto-pill-tab.repeto-pill-tab--active:hover {
+    background: color-mix(in srgb, var(--g-color-line-generic) 30%, transparent);
+    color: var(--g-color-text-primary);
+    font-weight: 600;
+}
+
+.repeto-schedule-toolbar .repeto-pill-tab__icon {
     display: none;
 }
 
-/* Export: pill-chip ghost (no border) */
-.repeto-schedule-toolbar__export .g-button {
-    border-radius: 999px !important;
-    background: transparent !important;
-    border-color: transparent !important;
+.repeto-schedule-toolbar__display .repeto-pill-tab {
+    min-height: 36px;
+    padding: 0 14px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--g-color-line-generic) 34%, transparent);
+    color: var(--g-color-text-secondary);
+    font-weight: 500;
     box-shadow: none !important;
-    color: var(--repeto-pill-text) !important;
-    max-width: 100%;
-    --g-button-background-color: transparent;
-    --g-button-background-color-hover: var(--repeto-pill-bg-hover);
-    --g-button-background-color-active: var(--repeto-pill-bg-hover);
-    --g-button-border-width: 0;
-    --g-button-border-color: transparent;
-    --g-button-border-color-hover: transparent;
-    --g-button-border-color-active: transparent;
-    --g-button-border-radius: 999px;
-}
-.repeto-schedule-toolbar__export .g-button:hover {
-    color: var(--text-primary) !important;
 }
 
-.repeto-schedule-toolbar__export .g-button::before,
-.repeto-schedule-toolbar__export .g-button::after {
-    border-radius: 999px !important;
+.repeto-schedule-toolbar__display .repeto-pill-tab:hover {
+    background: color-mix(in srgb, var(--g-color-line-generic) 44%, transparent);
+    color: var(--g-color-text-primary);
 }
 
-/* CTA: pill accent — only accent element in the toolbar */
-.repeto-schedule-toolbar__create .g-button {
-    border-radius: 999px !important;
-    max-width: 100%;
+.repeto-schedule-toolbar__display .repeto-pill-tab.repeto-pill-tab--active,
+.repeto-schedule-toolbar__display .repeto-pill-tab.repeto-pill-tab--active:hover {
+    background: color-mix(in srgb, var(--g-color-line-generic) 52%, transparent);
+    color: var(--g-color-text-primary);
+    font-weight: 600;
+    box-shadow: none !important;
 }
 
 /* ============ Dialog responsive helpers ============ */
@@ -3346,12 +3529,12 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 .repeto-app-dialog .g-dialog-header,
 .repeto-app-dialog .g-dialog-body,
 .repeto-app-dialog .g-dialog-footer {
-    background: var(--g-color-base-float);
+    background: var(--repeto-surface-elevated);
     border-radius: 0 !important;
 }
 
 .repeto-app-dialog .g-dialog-header {
-    border-bottom: 1px solid color-mix(in srgb, var(--g-color-line-generic) 82%, transparent);
+    border-bottom: 1px solid var(--repeto-line-subtle);
 }
 
 .repeto-app-dialog .g-dialog-header__caption {
@@ -3362,23 +3545,22 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 }
 
 .repeto-app-dialog .g-dialog-body {
-    background:
-        radial-gradient(240px 140px at 100% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 72%),
-        var(--g-color-base-float);
+    background: var(--repeto-surface-elevated);
 }
 
 .repeto-app-dialog .g-dialog-footer {
-    border-top: 1px solid color-mix(in srgb, var(--g-color-line-generic) 82%, transparent);
-    background: color-mix(in srgb, var(--g-color-base-float) 86%, var(--repeto-surface-elevated) 14%);
+    border-top: 1px solid var(--repeto-line-subtle);
+    background: color-mix(in srgb, var(--repeto-surface-elevated) 96%, var(--repeto-bg) 4%);
+    backdrop-filter: blur(10px);
 }
 
 .repeto-app-dialog {
     width: min(var(--g-dialog-width, 720px), calc(100vw - 40px));
     max-width: calc(100vw - 40px);
-    border-radius: 18px;
-    border: 1px solid color-mix(in srgb, var(--g-color-line-generic) 80%, transparent);
-    box-shadow: 0 26px 64px rgba(16, 24, 40, 0.22), 0 2px 8px rgba(16, 24, 40, 0.08);
-    background: var(--g-color-base-float);
+    border-radius: 16px;
+    border: 1px solid var(--repeto-line-subtle);
+    box-shadow: var(--repeto-panel-shadow);
+    background: var(--repeto-surface-elevated);
     overflow: hidden;
 }
 
@@ -3639,13 +3821,226 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     margin-bottom: 16px;
 }
 
+.repeto-sl-table-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px 16px 12px;
+    border-bottom: 1px solid var(--repeto-line-subtle);
+}
+
+.repeto-sl-table-toolbar .repeto-sl-tabs-row {
+    margin-bottom: 0;
+}
+
+.repeto-sl-filter-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.repeto-sl-filter-pill {
+    all: unset;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 148px;
+    max-width: 232px;
+    min-height: 36px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: var(--repeto-section-hover);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background 0.14s ease, color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.repeto-sl-filter-pill:hover,
+.repeto-sl-filter-pill:focus-visible {
+    background: var(--repeto-surface-elevated-hover);
+    color: var(--text-primary);
+}
+
+.repeto-sl-filter-pill--active {
+    background: color-mix(in srgb, var(--accent-soft) 72%, var(--repeto-surface-elevated));
+    color: var(--text-primary);
+}
+
+.repeto-sl-filter-pill--short {
+    min-width: 124px;
+    max-width: 156px;
+}
+
+.repeto-sl-filter-pill--sort {
+    min-width: 188px;
+    max-width: 260px;
+}
+
+.repeto-sl-filter-pill__text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 18px;
+}
+
+.repeto-sl-filter-menu__popup {
+    z-index: 180;
+}
+
+.repeto-sl-filter-menu {
+    width: 236px;
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 6px;
+    border-radius: 14px;
+    background: var(--repeto-surface-elevated);
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+}
+
+.repeto-sl-filter-menu__item {
+    all: unset;
+    box-sizing: border-box;
+    display: block;
+    width: 100%;
+    min-height: 34px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 18px;
+}
+
+.repeto-sl-filter-menu__item:hover,
+.repeto-sl-filter-menu__item:focus-visible {
+    background: var(--repeto-section-hover);
+    color: var(--text-primary);
+}
+
+.repeto-sl-filter-menu__item--active {
+    background: color-mix(in srgb, var(--accent-soft) 66%, var(--repeto-surface-elevated));
+    color: var(--text-primary);
+    font-weight: 650;
+}
+
+.repeto-sl-filter-select {
+    min-width: 160px;
+    max-width: 220px;
+}
+
+.repeto-sl-filter-select--short {
+    min-width: 132px;
+    max-width: 150px;
+}
+
+.repeto-sl-filter-select--sort {
+    min-width: 210px;
+    max-width: 260px;
+}
+
+.repeto-sl-filter-row__meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 32px;
+    margin-left: auto;
+    flex: 1 1 360px;
+    min-width: 260px;
+    justify-content: flex-end;
+    white-space: normal;
+}
+
+.repeto-sl-search--toolbar {
+    flex: 1 1 320px;
+    min-width: 220px;
+    max-width: 460px;
+}
+
+.repeto-sl-export-button {
+    all: unset;
+    box-sizing: border-box;
+    min-height: 36px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--accent-soft) 54%, var(--surface-page, var(--repeto-section-hover)));
+    color: var(--text-primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 18px;
+    transition: background 0.14s ease, opacity 0.14s ease;
+}
+
+.repeto-sl-export-button:hover,
+.repeto-sl-export-button:focus-visible {
+    background: color-mix(in srgb, var(--accent-soft) 74%, var(--surface-page, var(--repeto-section-hover)));
+}
+
+.repeto-sl-export-button:disabled {
+    opacity: 0.55;
+    cursor: default;
+}
+
+.repeto-sl-export-button__icon {
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
+    border-radius: 999px;
+    flex-shrink: 0;
+}
+
+.repeto-sl-export-button__icon .repeto-animated-sidebar-icon__fallback .g-icon {
+    color: inherit;
+}
+
+.repeto-sl-export-button__icon .repeto-animated-sidebar-icon__canvas :is(path, circle, ellipse, line, polyline, polygon, rect) {
+    stroke: currentColor !important;
+}
+
+.repeto-sl-export-button__icon .repeto-animated-sidebar-icon__canvas [fill]:not([fill="none"]) {
+    fill: currentColor !important;
+}
+
 .repeto-sl-table {
-    border-top: 1px solid var(--repeto-line-subtle);
+    background: var(--g-color-base-float, #fff);
+    border: 1px solid var(--repeto-line-subtle);
+    border-radius: 16px;
+}
+
+.repeto-sl-table-scroll {
+    width: 100%;
+}
+
+.repeto-sl-table-state {
+    padding: 64px 0;
+    text-align: center;
+}
+
+.repeto-sl-table > .repeto-sl-empty {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 56px 24px;
 }
 
 .repeto-sl-list-header {
     display: grid;
-    grid-template-columns: 38% 10% 14% 14% 14% 40px;
+    grid-template-columns: minmax(220px, 1.8fr) 82px 126px minmax(150px, 1.1fr) 108px 118px 40px;
     align-items: center;
     padding: 8px 16px;
     border-bottom: 1px solid var(--repeto-line-subtle);
@@ -3671,7 +4066,7 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 
 .repeto-sl-row {
     display: grid;
-    grid-template-columns: 38% 10% 14% 14% 14% 40px;
+    grid-template-columns: minmax(220px, 1.8fr) 82px 126px minmax(150px, 1.1fr) 108px 118px 40px;
     align-items: center;
     padding: 14px 16px;
     border-bottom: 1px solid var(--repeto-line-subtle);
@@ -3705,6 +4100,71 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 
 .repeto-sl-row__cell--actions {
     justify-content: center;
+}
+
+.repeto-sl-row__cell--next {
+    min-width: 0;
+}
+
+.repeto-sl-next-action {
+    all: unset;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 1px;
+    width: 100%;
+    min-height: 38px;
+    padding: 6px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease, opacity 0.12s ease;
+}
+
+.repeto-sl-next-action:disabled {
+    cursor: default;
+    opacity: 0.72;
+}
+
+.repeto-sl-next-action:not(:disabled):hover {
+    background: var(--repeto-surface-elevated-hover);
+}
+
+.repeto-sl-next-action__label {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+.repeto-sl-next-action__detail {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+    line-height: 1.25;
+    color: var(--g-color-text-secondary);
+}
+
+.repeto-sl-next-action--danger .repeto-sl-next-action__label {
+    color: #b24d72;
+}
+
+.repeto-sl-next-action--warning .repeto-sl-next-action__label {
+    color: #9a6a00;
+}
+
+.repeto-sl-next-action--success .repeto-sl-next-action__label {
+    color: #1a8a3c;
+}
+
+.repeto-sl-next-action--neutral .repeto-sl-next-action__label {
+    color: var(--g-color-text-secondary);
 }
 
 .repeto-sl-row__name-text {
@@ -3823,15 +4283,16 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 }
 
 @media (max-width: 900px) {
-    .repeto-sl-table {
+    .repeto-sl-table-scroll {
         overflow-x: auto;
+        overflow-y: hidden;
         -webkit-overflow-scrolling: touch;
         scrollbar-gutter: stable;
     }
 
     .repeto-sl-list-header,
     .repeto-sl-row {
-        min-width: 760px;
+        min-width: 980px;
     }
 
     .repeto-packages-type-tab {
@@ -3840,6 +4301,36 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 
     .repeto-packages-type-tab__count {
         font-size: 16px;
+    }
+}
+
+@media (max-width: 640px) {
+    .repeto-sl-filter-row__meta {
+        width: 100%;
+        margin-left: 0;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .repeto-sl-search--toolbar {
+        flex: 1 1 100%;
+        min-width: 0;
+        max-width: none;
+    }
+
+    .repeto-sl-filter-select,
+    .repeto-sl-filter-select--short,
+    .repeto-sl-filter-select--sort,
+    .repeto-sl-filter-pill,
+    .repeto-sl-filter-pill--short,
+    .repeto-sl-filter-pill--sort {
+        flex: 1 1 148px;
+        min-width: 0;
+        max-width: none;
+    }
+
+    .repeto-sl-export-button {
+        flex: 0 0 auto;
     }
 }
 
@@ -6728,8 +7219,9 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     width: 520px;
     max-width: 100vw;
     z-index: 990;
-    background: var(--repeto-surface-elevated);
-    box-shadow: var(--repeto-drawer-shadow);
+    background: var(--repeto-bg);
+    border-left: 1px solid var(--repeto-line-subtle);
+    box-shadow: var(--repeto-panel-shadow);
     display: flex;
     flex-direction: column;
     transform: translateX(100%);
@@ -6747,8 +7239,10 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     grid-template-columns: auto 1fr auto;
     align-items: center;
     gap: 12px;
-    padding: 18px 24px;
-    border-bottom: 1px solid var(--g-color-line-generic);
+    min-height: 66px;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--repeto-line-subtle);
+    background: var(--repeto-bg);
 }
 
 .repeto-portal-requisites-panel__close {
@@ -6775,6 +7269,7 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     display: flex;
     flex-direction: column;
     gap: 14px;
+    background: var(--repeto-bg);
 }
 
 .repeto-portal-requisites-panel__title {
@@ -6790,7 +7285,7 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 .repeto-portal-requisites-panel__row {
     padding: 14px 14px 14px 16px;
     border-radius: 14px;
-    background: var(--repeto-surface-muted-soft);
+    background: var(--repeto-section-hover);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -6827,13 +7322,13 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     justify-content: center;
     border: none;
     border-radius: 10px;
-    background: #eceef3;
-    color: #505564;
+    background: color-mix(in srgb, var(--repeto-bg) 84%, var(--repeto-section-hover) 16%);
+    color: var(--g-color-text-secondary);
     cursor: pointer;
 }
 
 .repeto-portal-requisites-panel__row-copy-btn:hover {
-    background: #e1e4eb;
+    background: var(--repeto-surface-elevated-hover);
 }
 
 .repeto-portal-requisites-panel__copy-status {
@@ -7259,7 +7754,6 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 }
 
 @media (max-width: 1024px) {
-
     .repeto-settings-layout {
         flex-direction: column;
         gap: 20px;
@@ -7549,6 +8043,210 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     transform: translateY(0);
 }
 
+.lp2--lesson-planner {
+    inset: 0;
+    background: var(--repeto-surface-elevated);
+    overscroll-behavior: contain;
+}
+
+.lp2--lesson-planner .lp2__topbar {
+    min-height: 66px;
+    height: auto;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--repeto-line-subtle);
+    background: var(--repeto-surface-elevated);
+    pointer-events: auto;
+}
+
+.lp2-lesson-header__left {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.lp2-lesson-header__copy {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.lp2-lesson-header__title {
+    margin: 0;
+    color: var(--g-color-text-primary);
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.lp2-lesson-header__subtitle {
+    max-width: min(760px, 58vw);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--g-color-text-secondary);
+    font-size: 13px;
+    line-height: 1.35;
+}
+
+.lp2--lesson-planner .lp2__scroll {
+    scrollbar-color: rgba(15, 23, 42, 0.18) transparent;
+    overscroll-behavior: contain;
+}
+
+.lp2--lesson-planner .lp2__scroll::-webkit-scrollbar-thumb {
+    background: rgba(15, 23, 42, 0.18);
+}
+
+.lp2__center--lesson-planner {
+    width: 100%;
+    max-width: none;
+    padding: 24px 24px 112px;
+}
+
+.lp2-lesson-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.lp2--lesson-planner .lp2-lesson-layout {
+    background: var(--repeto-surface-elevated);
+    border-radius: 16px;
+    padding: 18px;
+}
+
+.lp2-lesson-section {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 18px;
+    border-radius: 16px;
+    background: var(--repeto-surface-elevated);
+    box-shadow: none;
+}
+
+.lp2--lesson-planner .lp2-lesson-section {
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+}
+
+.lp2--lesson-planner .lp2-lesson-layout > .lp2-lesson-section + .lp2-lesson-section {
+    padding-top: 0;
+    border-top: 0;
+}
+
+.lp2-lesson-section__title {
+    margin: 0 0 14px;
+    color: var(--g-color-text-primary);
+    font-size: 16px;
+    font-weight: 650;
+    line-height: 1.3;
+}
+
+.lp2-lesson-section__description {
+    margin: -8px 0 14px;
+    color: var(--g-color-text-secondary);
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.lp2-lesson-section__body {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.lp2-lesson-secondary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+    align-items: start;
+}
+
+.lp2--lesson-planner .app-field {
+    margin-bottom: 12px;
+}
+
+.lp2--lesson-planner .app-field:last-child,
+.lp2--lesson-planner .lp2-row:last-child .app-field {
+    margin-bottom: 0;
+}
+
+.lp2--lesson-planner .app-field__inner,
+.lp2--lesson-planner .app-field--select .app-field__inner {
+    background: var(--repeto-control-surface) !important;
+    border-color: var(--repeto-control-line-soft) !important;
+}
+
+.lp2--lesson-planner .lp2-invite-card,
+.lp2--lesson-planner .lp2-empty,
+.lp2--lesson-planner .lp2-hw-item,
+.lp2--lesson-planner .lp2-hw-form,
+.lp2--lesson-planner .lp2-material-row,
+.lp2--lesson-planner .lp2-payment-row {
+    background: var(--repeto-section-hover);
+}
+
+.lp2--lesson-planner .app-field__inner:hover,
+.lp2--lesson-planner .app-field--select .app-field__inner:hover {
+    background: var(--repeto-control-surface-hover) !important;
+    border-color: color-mix(in srgb, var(--text-primary) 18%, transparent) !important;
+}
+
+.lp2--lesson-planner .app-field__inner:focus-within,
+.lp2--lesson-planner .app-field--select .app-field__inner:focus-within {
+    background: var(--repeto-control-surface-active) !important;
+    border-color: var(--repeto-control-line-focus) !important;
+}
+
+.lp2--lesson-planner .lp2-hw-item:hover {
+    background: var(--repeto-surface-elevated-hover);
+}
+
+.lp2--lesson-planner .lp2-empty {
+    padding: 20px 16px;
+    border: 0;
+}
+
+.lp2--lesson-planner .lp2-add-btn {
+    margin-top: 2px;
+    margin-bottom: 0;
+}
+
+.lp2--lesson-planner .lp2-hw-list,
+.lp2--lesson-planner .lp2-materials,
+.lp2--lesson-planner .lp2-payments {
+    margin-bottom: 10px;
+}
+
+.lp2--lesson-planner .lp2-hw-form {
+    padding: 12px 14px;
+    border-radius: 14px;
+    margin-bottom: 0;
+}
+
+.lp2--lesson-planner .hw-material-upload-btn {
+    margin: 0 0 12px;
+    background: transparent;
+}
+
+.lp2--lesson-planner .hw-material-upload-btn:hover {
+    background: transparent;
+}
+
+.lp2--lesson-planner .lp2__bottombar {
+    padding: 14px 24px;
+    border-top: 1px solid var(--repeto-line-subtle);
+    background: color-mix(in srgb, var(--repeto-surface-elevated) 96%, var(--repeto-bg) 4%);
+    backdrop-filter: none;
+}
+
+.lp2--lesson-planner .lp2__bottombar > * {
+    max-width: none;
+}
+
 .lp2-overlay {
     position: fixed;
     inset: 0;
@@ -7575,7 +8273,7 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     }
 
     .lp2-overlay {
-        top: 72px;
+        top: 0;
         right: 0;
         bottom: 0;
         left: 0;
@@ -7586,7 +8284,11 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     }
 
     body.repeto-shell-rail-open .lp2-overlay {
-        left: calc(16px + var(--repeto-shell-sidebar-collapsed-width) + 8px);
+        left: 0;
+    }
+
+    body.repeto-shell-page-context-active.repeto-shell-rail-open .lp2-overlay {
+        left: 0;
     }
 
     body.repeto-shell-context-sidebar-open .lp2:not(.lp2--homework) {
@@ -7594,7 +8296,11 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     }
 
     body.repeto-shell-context-sidebar-open .lp2-overlay {
-        left: calc(16px + var(--repeto-shell-sidebar-collapsed-width) + 8px + var(--repeto-shell-context-sidebar-width) + 8px);
+        left: 0;
+    }
+
+    body.repeto-shell-page-context-active.repeto-shell-context-sidebar-open .lp2-overlay {
+        left: 0;
     }
 }
 
@@ -7624,6 +8330,28 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 
 .lp2--homework .lp2__bottombar > * {
     max-width: none;
+}
+
+.lp2.repeto-portal-requisites-panel {
+    width: 520px;
+    max-width: 100vw;
+    z-index: 990;
+}
+
+.lp2.repeto-portal-settings-panel {
+    width: 420px;
+    max-width: 90vw;
+    z-index: 960;
+}
+
+.lp2--student-setup {
+    top: 0;
+    height: 100vh;
+}
+
+.lp2--student-setup .lp2__center--lesson-planner {
+    max-width: 720px;
+    margin: 0 auto;
 }
 
 .lp2--portal-homework .lp2__center--portal-homework {
@@ -7864,8 +8592,9 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     width: 420px;
     max-width: 90vw;
     z-index: 960;
-    background: var(--repeto-surface-elevated);
-    box-shadow: var(--repeto-drawer-shadow);
+    background: var(--repeto-bg);
+    border-left: 1px solid var(--repeto-line-subtle);
+    box-shadow: var(--repeto-panel-shadow);
     display: flex;
     flex-direction: column;
     transform: translateX(100%);
@@ -7882,20 +8611,25 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 18px 24px;
-    border-bottom: 1px solid var(--g-color-line-generic);
+    min-height: 66px;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--repeto-line-subtle);
+    background: var(--repeto-bg);
 }
 
 .repeto-portal-settings-panel__scroll {
     flex: 1;
     overflow-y: auto;
     padding: 24px;
+    background: var(--repeto-bg);
 }
 
 .repeto-portal-settings-panel__bottombar {
     flex-shrink: 0;
     padding: 16px 24px;
-    border-top: 1px solid var(--g-color-line-generic);
+    border-top: 1px solid var(--repeto-line-subtle);
+    background: color-mix(in srgb, var(--repeto-bg) 92%, transparent);
+    backdrop-filter: blur(10px);
 }
 
 /* â”€â”€ Top bar â”€â”€ */
@@ -7940,6 +8674,7 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     scrollbar-width: thin;
     scrollbar-color: rgba(136, 64, 245, 0.3) transparent;
 }
@@ -7978,6 +8713,18 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     width: 100%;
     margin: 0;
     padding: 24px 20px 32px;
+}
+
+.lp2__center--lesson-planner {
+    width: 100%;
+    max-width: none;
+    padding: 20px 24px 112px;
+}
+
+@media (max-width: 1080px) {
+    .lp2-lesson-secondary-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* â”€â”€ Page title â”€â”€ */
@@ -8120,6 +8867,62 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     border: 1px dashed var(--repeto-line-soft);
     border-radius: 14px;
     margin-bottom: 12px;
+}
+
+.lp2-empty--with-action {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    padding: 20px;
+}
+
+.tab-add-slot {
+    all: unset;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 58px;
+    padding: 10px 16px;
+    border-radius: 14px;
+    border: 1px solid var(--repeto-line-subtle);
+    background: transparent;
+    color: var(--g-color-brand, var(--repeto-control-accent));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.tab-add-slot:hover,
+.tab-add-slot:focus-visible {
+    background: transparent;
+    border-color: color-mix(in srgb, var(--g-color-brand, var(--repeto-control-accent)) 34%, var(--repeto-line-subtle));
+    color: var(--g-color-brand, var(--repeto-control-accent));
+}
+
+.tab-add-slot:disabled {
+    cursor: default;
+    opacity: 0.54;
+}
+
+.tab-add-slot__icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: currentColor;
+    flex-shrink: 0;
+}
+
+.tab-add-slot__title {
+    color: currentColor;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.25;
 }
 
 /* â”€â”€ Add button (text link) â”€â”€ */
@@ -8350,17 +9153,21 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 .hw-uploads {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    margin-top: 8px;
-    padding-top: 8px;
+    gap: 6px;
+    margin-top: 2px;
+    padding-top: 10px;
     border-top: 1px solid var(--repeto-line-subtle);
+}
+
+.hw-uploads__label {
+    margin: 0 0 2px;
 }
 
 .hw-upload-row {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 6px 10px;
+    padding: 5px 8px;
     border-radius: 8px;
     text-decoration: none;
     color: inherit;
@@ -8383,11 +9190,11 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
     border-radius: 6px;
-    background: rgba(108, 92, 231, 0.1);
-    color: var(--g-color-brand, var(--repeto-control-accent));
+    background: var(--repeto-section-hover);
+    color: var(--g-color-text-secondary);
     flex-shrink: 0;
 }
 
@@ -8404,6 +9211,7 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 .hw-upload-row__ext {
     flex-shrink: 0;
     color: var(--g-color-text-secondary);
+    opacity: 0.75;
 }
 
 /* â”€â”€ Homework details â”€â”€ */
@@ -8461,6 +9269,73 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 .page-overlay--finance-dashboard-bg .page-overlay__content,
 .page-overlay--finance-dashboard-bg .page-overlay__sidebar {
     background: var(--repeto-bg);
+}
+
+.page-overlay--student-detail-bg {
+    background: var(--repeto-bg);
+}
+
+.page-overlay--student-detail-bg .page-overlay__content,
+.page-overlay--student-detail-bg .page-overlay__sidebar {
+    background: var(--repeto-bg);
+}
+
+.student-detail-surface {
+    box-sizing: border-box;
+    width: 100%;
+    margin: 0;
+    padding: 24px;
+    border: 1px solid var(--repeto-line-subtle);
+    border-radius: 18px;
+    background: var(--g-color-base-float, #fff);
+    box-shadow: none;
+}
+
+.student-detail-dashboard-shell {
+    box-sizing: border-box;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.student-detail-dashboard-shell .tab-section__actions {
+    margin-bottom: 18px;
+}
+
+.student-detail-dashboard-shell .tab-action-btn,
+.student-detail-dashboard-shell .tab-list__item,
+.student-detail-dashboard-shell .lp2-hw-item,
+.student-detail-dashboard-shell .student-payment-hero,
+.student-detail-dashboard-shell .student-ledger-section,
+.student-detail-dashboard-shell .lp2-empty {
+    background: var(--repeto-surface-elevated);
+}
+
+.student-detail-dashboard-shell .tab-action-btn:hover,
+.student-detail-dashboard-shell .tab-list__item--clickable:hover,
+.student-detail-dashboard-shell .lp2-hw-item:hover,
+.student-detail-dashboard-shell .student-payment-hero:hover,
+.student-detail-dashboard-shell .student-ledger-section:hover {
+    background: var(--repeto-widget-hover);
+}
+
+.student-detail-dashboard-shell .tab-action-btn,
+.student-detail-dashboard-shell .tab-action-btn:hover,
+.student-detail-dashboard-shell .tab-action-btn:focus-visible {
+    background: transparent;
+}
+
+.student-detail-dashboard-shell .student-ledger-row__icon,
+.student-detail-dashboard-shell .hw-upload-row__icon {
+    background: var(--repeto-section-hover);
+}
+
+@media (max-width: 768px) {
+    .student-detail-surface {
+        padding: 18px;
+        border-radius: 16px;
+    }
 }
 
 .page-overlay--leaving {
@@ -9472,17 +10347,82 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 .lp2-hw-list {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
     margin-bottom: 12px;
 }
 
 .lp2-hw-item {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 8px;
     background: var(--repeto-section-hover);
+    border: none;
     border-radius: 14px;
     padding: 14px 18px;
+    transition: background 0.15s ease;
+}
+
+.lp2-hw-item:hover {
+    background: var(--repeto-surface-elevated-hover);
+}
+
+.hw-status-tabs {
+    margin-bottom: 12px;
+}
+
+.hw-item-topline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.hw-item-title-wrap {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.hw-item-title {
+    font-weight: 500;
+    font-size: 15px;
+    line-height: 1.35;
+}
+
+.hw-item-meta {
+    display: block;
+    margin: 0;
+    padding: 0;
+    min-height: 0;
+    font-size: 12px;
+    line-height: 1.35;
+    background: transparent;
+    color: var(--g-color-text-secondary);
+}
+
+.hw-item-menu {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.hw-uploads {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 2px;
+    padding-top: 10px;
+    border-top: 1px solid var(--repeto-line-subtle);
+    border-radius: 0;
+    background: transparent;
+}
+
+@media (max-width: 640px) {
+    .hw-item-topline {
+        align-items: flex-start;
+    }
 }
 
 .lp2-hw-form {
@@ -9526,6 +10466,204 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     padding: 14px 18px;
 }
 
+.student-payment-ledger {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.student-payment-hero,
+.student-ledger-section {
+    border-radius: 14px;
+    background: var(--repeto-section-hover);
+}
+
+.student-payment-hero {
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.student-payment-hero__caption {
+    color: var(--g-color-text-secondary);
+    font-size: 13px;
+    line-height: 1.3;
+}
+
+.student-payment-hero__amount {
+    color: var(--g-color-text-primary);
+    font-size: clamp(30px, 4.2vw, 42px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.student-payment-hero__metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    color: var(--g-color-text-secondary);
+    font-size: 13px;
+    line-height: 1.3;
+}
+
+.student-ledger-section {
+    padding: 16px 18px;
+}
+
+.student-ledger-section__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 6px;
+}
+
+.student-ledger-section__title {
+    color: var(--g-color-text-primary);
+    font-size: 16px;
+    font-weight: 650;
+    line-height: 1.3;
+}
+
+.student-ledger-section__subtitle {
+    margin-top: 2px;
+    color: var(--g-color-text-secondary);
+    font-size: 12px;
+    line-height: 1.35;
+}
+
+.student-ledger-list,
+.student-payment-due-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.student-ledger-row,
+.student-payment-due-row {
+    display: grid;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 0;
+}
+
+.student-ledger-row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.student-payment-due-row {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.student-ledger-row + .student-ledger-row,
+.student-payment-due-row + .student-payment-due-row {
+    border-top: 1px solid var(--repeto-line-subtle);
+}
+
+.student-ledger-row__icon {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: var(--repeto-surface-elevated);
+    color: var(--g-color-text-secondary);
+    flex-shrink: 0;
+}
+
+.student-ledger-row__copy,
+.student-payment-due-row__copy {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.student-ledger-row__title,
+.student-payment-due-row__copy > span:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--g-color-text-primary);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.student-ledger-row__subtitle,
+.student-payment-due-row__copy > span:last-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--g-color-text-secondary);
+    font-size: 12px;
+    line-height: 1.35;
+}
+
+.student-ledger-row__amount,
+.student-payment-due-row__amount {
+    color: var(--g-color-text-primary);
+    font-size: 14px;
+    font-weight: 650;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.student-ledger-row__amount--credit {
+    color: #1a8a3c;
+}
+
+.student-ledger-row__amount--debit {
+    color: var(--g-color-text-primary);
+}
+
+.student-payment-due-row__action {
+    all: unset;
+    box-sizing: border-box;
+    min-height: 32px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    color: var(--g-color-text-secondary);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.student-payment-due-row__action:hover,
+.student-payment-due-row__action:focus-visible {
+    background: var(--repeto-surface-elevated-hover);
+    color: var(--g-color-text-primary);
+}
+
+@media (max-width: 720px) {
+    .student-payment-hero__metrics {
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .student-ledger-row {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .student-ledger-row__amount {
+        grid-column: 2;
+        justify-self: start;
+    }
+
+    .student-payment-due-row {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .student-payment-due-row__action {
+        grid-column: 1 / -1;
+        justify-self: start;
+    }
+}
+
 /* â”€â”€ Review â”€â”€ */
 .lp2-review {
     display: flex;
@@ -9554,6 +10692,64 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
         padding: 20px 16px 40px;
     }
 
+    .lp2__center--lesson-planner {
+        width: 100%;
+        max-width: none;
+        padding: 14px 14px 92px;
+    }
+
+    .lp2--lesson-planner .lp2__topbar {
+        min-height: 62px;
+        padding: 10px 14px;
+    }
+
+    .lp2-lesson-header__left {
+        gap: 10px;
+    }
+
+    .lp2-lesson-header__title {
+        font-size: 17px;
+    }
+
+    .lp2-lesson-header__subtitle {
+        max-width: calc(100vw - 112px);
+        font-size: 12px;
+    }
+
+    .lp2-lesson-layout,
+    .lp2-lesson-secondary-grid {
+        gap: 12px;
+    }
+
+    .lp2--lesson-planner .lp2-lesson-layout {
+        border-radius: 14px;
+        padding: 14px;
+    }
+
+    .lp2--lesson-planner .lp2-lesson-layout > .lp2-lesson-section + .lp2-lesson-section {
+        padding-top: 0;
+    }
+
+    .lp2-lesson-section {
+        padding: 14px;
+        border-radius: 14px;
+    }
+
+    .lp2--lesson-planner .lp2-lesson-section {
+        padding: 0;
+        border-radius: 0;
+    }
+
+    .lp2-lesson-section__title {
+        margin-bottom: 12px;
+        font-size: 15px;
+    }
+
+    .lp2-lesson-section__description {
+        margin: -6px 0 12px;
+        font-size: 12px;
+    }
+
     .lp2__center--workhours {
         max-width: none;
         width: 100%;
@@ -9576,6 +10772,10 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
         z-index: 3;
         border-bottom: none;
         pointer-events: none;
+    }
+
+    .lp2--lesson-planner.lp2--mobile-inline-title .lp2__topbar {
+        pointer-events: auto;
     }
 
     .lp2--mobile-inline-title .lp2__back,
@@ -9646,6 +10846,36 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
         padding: 12px 16px;
     }
 }
+
+    /* LP2: single shared surface, no per-section card backgrounds */
+    .lp2--lesson-planner .lp2-lesson-layout {
+        background: var(--repeto-surface-elevated) !important;
+        border-radius: 16px !important;
+        padding: 18px !important;
+    }
+
+    .lp2--lesson-planner .lp2-lesson-section {
+        background: transparent !important;
+        border-radius: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+    }
+
+    .lp2--lesson-planner .lp2-lesson-layout > .lp2-lesson-section + .lp2-lesson-section {
+        padding-top: 0 !important;
+        border-top: 0 !important;
+    }
+
+    @media (max-width: 720px) {
+        .lp2--lesson-planner .lp2-lesson-layout {
+            border-radius: 14px !important;
+            padding: 14px !important;
+        }
+
+        .lp2--lesson-planner .lp2-lesson-layout > .lp2-lesson-section + .lp2-lesson-section {
+            padding-top: 0 !important;
+        }
+    }
 
     @media (max-width: 768px), (max-height: 520px) and (pointer: coarse) {
 
@@ -9882,43 +11112,39 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     }
 
     .repeto-schedule-toolbar {
-        display: grid;
-        grid-template-columns: auto minmax(0, 1fr) auto;
-        grid-template-areas:
-            "period period period"
-            "view view view"
-            "display filter filter";
+        flex-direction: column;
+        align-items: stretch;
         gap: 8px;
-        padding: 0;
         margin-bottom: 16px;
     }
 
-    .repeto-schedule-toolbar__period {
-        grid-area: period;
-        justify-self: start;
-        min-width: 0;
+    .repeto-schedule-toolbar__mode-group,
+    .repeto-schedule-toolbar__meta-group {
+        width: 100%;
+        margin-left: 0;
     }
 
-    .repeto-schedule-toolbar__spacer {
-        display: none;
-    }
-
-    .repeto-schedule-toolbar__view {
-        grid-area: view;
+    .repeto-schedule-toolbar__mode-group {
         overflow-x: auto;
         padding-bottom: 2px;
     }
 
-    .repeto-schedule-toolbar__display {
-        grid-area: display;
+    .repeto-schedule-toolbar__mode-group > * {
+        flex-shrink: 0;
     }
 
-    .repeto-schedule-toolbar__view .g-segmented-radio-group {
-        min-width: max-content;
+    .repeto-schedule-toolbar__meta-group {
+        justify-content: space-between;
+        flex-wrap: wrap;
+    }
+
+    .repeto-schedule-toolbar__period {
+        min-width: 0;
+        width: 100%;
+        flex-wrap: wrap;
     }
 
     .repeto-schedule-toolbar__filter {
-        grid-area: filter;
         width: 100%;
         min-width: 0;
     }
@@ -9931,17 +11157,19 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 }
 
 @media (max-width: 640px) {
-    .repeto-schedule-toolbar {
-        grid-template-columns: 1fr auto;
-        grid-template-areas:
-            "period period"
-            "view view"
-            "display filter";
+    .repeto-schedule-toolbar__mode-group,
+    .repeto-schedule-toolbar__meta-group {
+        flex-direction: column;
+        align-items: stretch;
     }
 
     .repeto-schedule-toolbar__period {
-        width: max-content;
+        width: 100%;
         max-width: 100%;
+    }
+
+    .repeto-schedule-view-select {
+        min-width: 124px;
     }
 }
 
@@ -9996,14 +11224,15 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     scrollbar-color: var(--repeto-scrollbar-thumb) transparent;
 }
 
-/* Calendar header row: pale purple in light, solid in dark */
+/* Calendar grid: clean Yandex-like table surface. */
 .repeto-calendar-header {
-    background: var(--repeto-surface-muted-soft);
+    background: var(--repeto-surface-elevated);
 }
 
 .repeto-calendar-shell {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    background: var(--repeto-surface-elevated);
 }
 
 .repeto-calendar-shell__inner {
@@ -10016,36 +11245,59 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 
 .repeto-schedule-calendar-card {
     background: var(--repeto-surface-elevated) !important;
-    border: none !important;
+    border: 1px solid color-mix(in srgb, var(--g-color-line-generic) 72%, transparent) !important;
+    border-radius: 16px !important;
     box-shadow: none !important;
 }
 
 .repeto-schedule-calendar-card:hover {
-    background: var(--repeto-widget-hover) !important;
+    background: var(--repeto-surface-elevated) !important;
+}
+
+.repeto-schedule-calendar-card .repeto-calendar-header {
+    border-color: color-mix(in srgb, var(--g-color-line-generic) 72%, transparent) !important;
 }
 
 .repeto-calendar-slot-column {
     transition: background-color 0.15s ease;
 }
 
+.repeto-calendar-slot-column:hover {
+    background: color-mix(in srgb, var(--g-color-base-brand) 3%, transparent);
+}
+
+.repeto-calendar-slot-column > div[style*="border-top"] {
+    border-top-color: color-mix(in srgb, var(--g-color-line-generic) 68%, transparent) !important;
+}
+
 .repeto-month-dow {
-    letter-spacing: 0.02em;
+    letter-spacing: 0;
+    background: var(--repeto-surface-elevated);
+}
+
+.repeto-month-dow .g-text {
+    color: var(--g-color-text-secondary) !important;
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    letter-spacing: 0 !important;
 }
 
 .repeto-month-cell {
     transition: background-color 0.14s ease;
+    background: var(--repeto-surface-elevated);
+    border-color: color-mix(in srgb, var(--g-color-line-generic) 72%, transparent) !important;
 }
 
 .repeto-month-cell:hover {
-    background: color-mix(in srgb, var(--repeto-surface-muted-soft) 52%, transparent);
+    background: color-mix(in srgb, var(--g-color-base-brand) 3%, var(--repeto-surface-elevated));
 }
 
 .repeto-month-cell--outside {
-    background: color-mix(in srgb, var(--repeto-surface-muted-soft) 38%, transparent);
+    background: color-mix(in srgb, var(--repeto-surface-elevated) 92%, var(--g-color-line-generic) 8%);
 }
 
 .repeto-month-cell--today {
-    background: color-mix(in srgb, var(--g-color-base-brand-hover-alt) 40%, transparent);
+    background: var(--repeto-surface-elevated);
 }
 
 .repeto-month-cell__lessons {
@@ -10056,12 +11308,80 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     box-sizing: border-box;
 }
 
+.repeto-calendar-lesson {
+    width: 100%;
+    min-width: 0;
+    min-height: 18px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 1px 4px;
+    border-radius: 5px;
+    border: none;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+    overflow: hidden;
+    transition: background 0.14s ease, color 0.14s ease;
+    box-sizing: border-box;
+}
+
+.repeto-calendar-lesson:hover {
+    background: color-mix(in srgb, var(--g-color-base-brand) 9%, transparent);
+}
+
+.repeto-calendar-lesson__dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.repeto-calendar-lesson__dot--planned {
+    background: var(--g-color-text-info);
+}
+
+.repeto-calendar-lesson__dot--completed {
+    background: var(--g-color-text-positive);
+}
+
+.repeto-calendar-lesson__dot--cancelled_student,
+.repeto-calendar-lesson__dot--cancelled_tutor {
+    background: var(--g-color-text-secondary);
+}
+
+.repeto-calendar-lesson__dot--no_show,
+.repeto-calendar-lesson__dot--reschedule_pending {
+    background: var(--g-color-text-warning);
+}
+
+.repeto-calendar-lesson__content {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.repeto-calendar-lesson__title {
+    color: var(--g-color-text-primary) !important;
+    font-size: 12px !important;
+    font-weight: 500;
+    line-height: 16px !important;
+}
+
+.repeto-calendar-lesson__meta {
+    color: var(--g-color-text-secondary) !important;
+    font-size: 11px !important;
+    line-height: 14px !important;
+}
+
 .repeto-calendar-more-btn {
-    color: color-mix(in srgb, var(--g-color-text-secondary) 72%, var(--g-color-text-brand) 28%);
-    transition: color 0.14s ease;
+    background: color-mix(in srgb, var(--g-color-line-generic) 24%, transparent);
+    color: var(--g-color-text-secondary);
+    transition: background 0.15s ease, color 0.14s ease;
 }
 
 .repeto-calendar-more-btn:hover {
+    background: color-mix(in srgb, var(--g-color-base-brand) 9%, transparent);
     color: var(--g-color-text-primary);
 }
 
@@ -10604,7 +11924,9 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 
 /* â”€â”€ Files list (mirrors Students list) â”€â”€ */
 .repeto-fl-table {
-    border-top: 1px solid var(--repeto-line-subtle);
+    background: var(--g-color-base-float, #fff);
+    border: 1px solid var(--repeto-line-subtle);
+    border-radius: 16px;
 }
 
 .repeto-fl-list-header {
@@ -10772,8 +12094,8 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     background: var(--repeto-control-surface);
     border-radius: var(--repeto-control-radius);
     padding: 14px 18px 10px;
-    border: 1px solid transparent;
-    box-shadow: inset 0 0 0 1px transparent;
+    border: 1px solid var(--repeto-control-line-soft);
+    box-shadow: none;
     transition: background-color 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
     cursor: pointer;
     position: relative;
@@ -10781,6 +12103,7 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 
 .app-field__inner:hover {
     background: var(--repeto-control-surface-hover);
+    border-color: color-mix(in srgb, var(--text-primary) 18%, transparent);
 }
 
 .app-field__inner:focus-within {
@@ -11003,8 +12326,8 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 
 .g-select-popup.app-select-popup {
     max-width: calc(100vw - 20px) !important;
-    background: var(--repeto-control-surface-plain) !important;
-    border: none !important;
+    background: var(--repeto-surface-elevated) !important;
+    border: 1px solid var(--repeto-line-subtle) !important;
     border-radius: var(--repeto-control-radius-lg) !important;
     box-shadow: var(--repeto-popover-shadow) !important;
     padding: 8px !important;
@@ -11023,6 +12346,7 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     min-height: 50px;
     margin: 2px 0 !important;
     padding: 10px 14px !important;
+    background: transparent !important;
     border-radius: 14px !important;
     color: var(--repeto-control-text) !important;
     transition: background-color 0.14s ease, color 0.14s ease;
@@ -11039,12 +12363,12 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 .g-select-popup.app-select-popup .g-select-list__option:hover,
 .g-select-popup.app-select-popup .g-select-list__option_active,
 .g-select-popup.app-select-popup .g-select-list__option[aria-current="true"] {
-    background: var(--repeto-option-hover) !important;
+    background: color-mix(in srgb, var(--repeto-surface-elevated) 94%, var(--text-primary) 6%) !important;
 }
 
 .g-select-popup.app-select-popup .g-select-list__option_selected,
 .g-select-popup.app-select-popup .g-select-list__option[aria-selected="true"] {
-    background: var(--repeto-option-active) !important;
+    background: color-mix(in srgb, var(--accent) 12%, var(--repeto-surface-elevated)) !important;
     color: var(--repeto-control-text) !important;
 }
 

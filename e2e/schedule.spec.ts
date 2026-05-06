@@ -254,6 +254,68 @@ test.describe('Расписание — создание занятия (live up
     }
   });
 
+  test('Escape в модалке оплаты закрывает только вложенную модалку, родительская остаётся открытой', async ({ authedPage: page }) => {
+    await page.goto('/schedule');
+    await page.waitForLoadState('networkidle');
+
+    const directCreateLessonButton = page
+      .locator('button')
+      .filter({ hasText: /Новое занятие|Добавить занятие|Создать занятие/i })
+      .first();
+
+    if (await directCreateLessonButton.isVisible().catch(() => false)) {
+      await directCreateLessonButton.click();
+    } else {
+      const createMenuButton = page.getByRole('button', { name: /^Создать$/i }).first();
+      await expect(createMenuButton).toBeVisible({ timeout: 10000 });
+      await createMenuButton.click();
+
+      const createLessonMenuButton = page
+        .locator('button')
+        .filter({ hasText: /Добавить занятие|Новое занятие|Создать занятие/i })
+        .first();
+      await expect(createLessonMenuButton).toBeVisible({ timeout: 10000 });
+      await createLessonMenuButton.click();
+    }
+
+    const lessonDialog = page
+      .locator("[aria-label='Новое занятие'], [aria-label^='Занятие:'], .lp2[role='dialog'], .repeto-lp[role='dialog']")
+      .first();
+    await expect(lessonDialog).toBeVisible({ timeout: 10000 });
+
+    await lessonDialog.getByRole('combobox').first().click();
+    const studentOption = page
+      .getByRole('option')
+      .filter({ hasNotText: /Добавить ученика/i })
+      .first();
+
+    if (!(await studentOption.isVisible().catch(() => false))) {
+      await lessonDialog.getByRole('button', { name: /Назад|Отмена/i }).first().click();
+      test.skip(true, 'Нет доступных учеников для проверки вложенной модалки оплаты.');
+    }
+
+    await studentOption.click({ force: true });
+
+    const addPaymentButton = lessonDialog
+      .getByRole('button', { name: /Добавить оплату|Записать оплату/i })
+      .first();
+    await expect(addPaymentButton).toBeEnabled({ timeout: 10000 });
+    await addPaymentButton.click();
+
+    const paymentDialog = page
+      .getByRole('dialog', { name: /Новая оплата|Записать оплату|Оплата/i })
+      .first();
+    await expect(paymentDialog).toBeVisible({ timeout: 10000 });
+
+    await page.keyboard.press('Escape');
+
+    await expect(paymentDialog).toBeHidden({ timeout: 10000 });
+    await expect(lessonDialog).toBeVisible({ timeout: 10000 });
+
+    await lessonDialog.getByRole('button', { name: /Назад|Отмена/i }).first().click();
+    await expect(lessonDialog).toBeHidden({ timeout: 10000 });
+  });
+
   test('модалка занятия: домашка, материалы и оплата сохраняются и отображаются в секциях', async ({ authedPage: page }) => {
     const stamp = Date.now();
     const studentName = `E2E LessonPanel ${stamp}`;
