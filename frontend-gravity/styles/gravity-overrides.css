@@ -157,6 +157,10 @@ html body.g-root_theme_dark {
     --repeto-control-danger: #d46c75;
     --repeto-control-line-soft: rgba(38, 35, 45, 0.14);
     --repeto-control-line-focus: color-mix(in srgb, var(--accent) 88%, transparent);
+    --repeto-input-border-color: transparent;
+    --repeto-input-border-hover-color: transparent;
+    --repeto-input-border-focus-color: transparent;
+    --repeto-input-border-width: 0px;
     --repeto-control-radius: 10px;
     --repeto-control-radius-lg: 22px;
     --repeto-popover-shadow: none;
@@ -245,6 +249,10 @@ html body.g-root_theme_dark {
     --repeto-control-danger: #f08f9a;
     --repeto-control-line-soft: color-mix(in srgb, var(--border-subtle) 80%, transparent);
     --repeto-control-line-focus: color-mix(in srgb, var(--accent) 80%, transparent);
+    --repeto-input-border-color: transparent;
+    --repeto-input-border-hover-color: transparent;
+    --repeto-input-border-focus-color: transparent;
+    --repeto-input-border-width: 0px;
     --repeto-option-hover: color-mix(in srgb, var(--surface-subtle) 88%, #000 12%);
     --repeto-option-active: color-mix(in srgb, var(--accent) 24%, transparent);
     --repeto-scrollbar-thumb: color-mix(in srgb, var(--text-secondary) 36%, transparent);
@@ -300,6 +308,61 @@ html body.g-root_theme_dark {
     --chart-success:    #C0DEF0;
     --chart-warning:    #DBEEF8;
     --chart-brand-soft: #3B6D95;
+}
+
+/* Centralized input frame policy: borderless inputs across the product. */
+.g-root {
+    --g-text-input-focus-outline-color: transparent;
+    --g-select-focus-outline-color: transparent;
+}
+
+.g-root .g-text-input,
+.g-root .g-text-input:hover,
+.g-root .g-text-input:focus-within,
+.g-root .g-text-input__content,
+.g-root .g-text-input__content:hover,
+.g-root .g-text-input__content:focus-within,
+.g-root .g-text-area,
+.g-root .g-text-area:hover,
+.g-root .g-text-area:focus-within,
+.g-root .g-text-area__content,
+.g-root .g-text-area__content:hover,
+.g-root .g-text-area__content:focus-within,
+.g-root .g-select-control,
+.g-root .g-select-control:hover,
+.g-root .g-select-control:focus-within,
+.g-root .g-select-control_open,
+.g-root .g-select-control__button,
+.g-root .g-select-control__button:hover,
+.g-root .g-select-control__button:focus,
+.g-root .g-select-control__button:focus-visible,
+.g-root .g-select-control__button:focus-within,
+.g-root .g-select-control__button:active,
+.g-root .g-select-control__button_open {
+    border-width: var(--repeto-input-border-width) !important;
+    border-color: var(--repeto-input-border-color) !important;
+    box-shadow: none !important;
+}
+
+.g-root .g-text-input__content::before,
+.g-root .g-text-input__content::after,
+.g-root .g-text-area__content::before,
+.g-root .g-text-area__content::after,
+.g-root .g-select-control::before,
+.g-root .g-select-control::after,
+.g-root .g-select-control__button::before,
+.g-root .g-select-control__button::after,
+.g-root .g-select-control__button:hover::before,
+.g-root .g-select-control__button:hover::after,
+.g-root .g-select-control__button:focus::before,
+.g-root .g-select-control__button:focus-visible::before,
+.g-root .g-select-control__button:active::before,
+.g-root .g-select-control__button:active::after,
+.g-root .g-select-control__button_open::before,
+.g-root .g-select-control__button_open::after,
+.g-root [role="combobox"]::before,
+.g-root [role="combobox"]::after {
+    display: none !important;
 }
 
 html,
@@ -8177,7 +8240,7 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 .lp2--lesson-planner .app-field__inner,
 .lp2--lesson-planner .app-field--select .app-field__inner {
     background: var(--repeto-control-surface) !important;
-    border-color: var(--repeto-control-line-soft) !important;
+    border-color: var(--repeto-input-border-color) !important;
 }
 
 .lp2--lesson-planner .lp2-invite-card,
@@ -8192,13 +8255,13 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 .lp2--lesson-planner .app-field__inner:hover,
 .lp2--lesson-planner .app-field--select .app-field__inner:hover {
     background: var(--repeto-control-surface-hover) !important;
-    border-color: color-mix(in srgb, var(--text-primary) 18%, transparent) !important;
+    border-color: var(--repeto-input-border-hover-color) !important;
 }
 
 .lp2--lesson-planner .app-field__inner:focus-within,
 .lp2--lesson-planner .app-field--select .app-field__inner:focus-within {
     background: var(--repeto-control-surface-active) !important;
-    border-color: var(--repeto-control-line-focus) !important;
+    border-color: var(--repeto-input-border-focus-color) !important;
 }
 
 .lp2--lesson-planner .lp2-hw-item:hover {
@@ -12094,7 +12157,7 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     background: var(--repeto-control-surface);
     border-radius: var(--repeto-control-radius);
     padding: 14px 18px 10px;
-    border: 1px solid var(--repeto-control-line-soft);
+    border: var(--repeto-input-border-width) solid var(--repeto-input-border-color);
     box-shadow: none;
     transition: background-color 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
     cursor: pointer;
@@ -12103,18 +12166,18 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 
 .app-field__inner:hover {
     background: var(--repeto-control-surface-hover);
-    border-color: color-mix(in srgb, var(--text-primary) 18%, transparent);
+    border-color: var(--repeto-input-border-hover-color);
 }
 
 .app-field__inner:focus-within {
-    border-color: var(--repeto-control-line-focus);
+    border-color: var(--repeto-input-border-focus-color);
     background: var(--repeto-control-surface-active);
     box-shadow: none;
 }
 
 /* â”€â”€ Error state â”€â”€ */
 .app-field__inner--error {
-    border: 1px solid transparent;
+    border: var(--repeto-input-border-width) solid transparent;
 }
 
 .app-field__inner--error::after {
@@ -12317,6 +12380,70 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 
 .app-field--select .app-field__inner--error::after {
     margin: 0 18px 2px;
+}
+
+/* Central control grammar: distinct roles without field frames. */
+.app-field__inner:focus-within .app-field__label {
+    color: var(--repeto-control-accent);
+}
+
+.app-field__inner:has(.g-text-area) {
+    min-height: 112px;
+    background: color-mix(in srgb, var(--repeto-control-surface) 82%, var(--surface-card) 18%) !important;
+}
+
+.app-field__inner:has(.g-text-area):hover {
+    background: color-mix(in srgb, var(--repeto-control-surface-hover) 88%, var(--surface-card) 12%) !important;
+}
+
+.app-field__inner:has(.g-select-control) {
+    background: color-mix(in srgb, var(--repeto-control-surface) 70%, var(--surface-card) 30%) !important;
+}
+
+.app-field__inner:has(.g-select-control):hover {
+    background: color-mix(in srgb, var(--repeto-control-surface-hover) 82%, var(--surface-card) 18%) !important;
+}
+
+.app-field__inner:has(.g-select-control):focus-within {
+    background: color-mix(in srgb, var(--repeto-control-surface-active) 80%, var(--surface-card) 20%) !important;
+}
+
+.g-root .g-switch__indicator {
+    flex-shrink: 0;
+}
+
+.g-root .g-switch__indicator {
+    width: 42px !important;
+    height: 24px !important;
+}
+
+.g-root .g-switch__outline {
+    border: 0 !important;
+    border-radius: 999px !important;
+    background: color-mix(in srgb, var(--text-secondary) 20%, var(--surface-card)) !important;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text-secondary) 12%, transparent) !important;
+}
+
+.g-root .g-switch:hover .g-switch__outline {
+    background: color-mix(in srgb, var(--text-secondary) 27%, var(--surface-card)) !important;
+}
+
+.g-root .g-switch__slider {
+    background: var(--surface-card) !important;
+    box-shadow: 0 1px 3px rgb(var(--repeto-ink-rgb) / 0.18) !important;
+}
+
+.g-root .g-switch__control:checked ~ .g-switch__outline {
+    background: var(--repeto-control-accent) !important;
+    box-shadow: none !important;
+}
+
+.g-root .g-switch__control:focus-visible ~ .g-switch__outline {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--repeto-control-accent) 18%, transparent) !important;
+}
+
+.g-root .g-switch_disabled {
+    opacity: 0.62;
 }
 
 /* â”€â”€ Unified Select popup â”€â”€ */

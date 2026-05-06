@@ -312,18 +312,6 @@ const RemindModal = ({
 
     const renderPaymentSection = () => (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div
-                style={{
-                    background: "var(--g-color-base-generic)",
-                    borderRadius: 12,
-                    padding: 16,
-                }}
-            >
-                <Text variant="body-2" color="secondary">
-                    Ученику будет отправлено напоминание об оплате с указанием текущей задолженности.
-                </Text>
-            </div>
-
             {/* Completed (unpaid) lessons list */}
             {lessonsLoading ? (
                 <div style={{ display: "flex", justifyContent: "center", padding: 12 }}>
