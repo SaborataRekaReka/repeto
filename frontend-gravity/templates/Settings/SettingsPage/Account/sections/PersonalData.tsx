@@ -14,7 +14,7 @@ type Props = {
 };
 
 const PersonalDataSection = ({ name, setName, email, phone, setPhone, whatsapp, setWhatsapp, vk, setVk, website, setWebsite, about, setAbout }: Props) => (
-    <SectionCard title="Личные данные">
+    <SectionCard title="Профиль и контакты">
         <div className="repeto-settings-account-grid">
             <FormField label="Ваше имя">
                 <TextInput value={name} onUpdate={setName} placeholder="Смирнов Алексей Иванович" size="l" />

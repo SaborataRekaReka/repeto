@@ -691,6 +691,9 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
                 hasRepetoAccount={Boolean(local.accountId)}
                 hasDebt={local.balance < 0}
                 hasParentEmail={!!local.parentEmail}
+                hasTelegramChannel={Boolean(local.telegramChatId || local.telegram)}
+                hasMaxChannel={Boolean(local.maxChatId)}
+                estimatedDebtAmount={Math.max(0, -local.balance)}
                 initialType={remindInitialType}
             />
             <AppDialog

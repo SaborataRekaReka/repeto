@@ -30,14 +30,17 @@ const PortraitSection = ({ avatarSrc, userName, avatarInputRef, onAvatarChange }
                     <div className="repeto-settings-avatar-fallback">{getInitials(userName || "")}</div>
                 )}
             </button>
-            <Button
-                view="flat"
-                size="l"
-                className="repeto-settings-portrait-button"
-                onClick={() => avatarInputRef.current?.click()}
-            >
-                Изменить
-            </Button>
+            <div className="repeto-settings-portrait-meta">
+                <Button
+                    view="flat"
+                    size="l"
+                    className="repeto-settings-portrait-button"
+                    onClick={() => avatarInputRef.current?.click()}
+                >
+                    Загрузить фото
+                </Button>
+                <span className="repeto-settings-portrait-caption">JPG или PNG до 5 МБ. Фото появится в профиле и публичной странице.</span>
+            </div>
             <button
                 type="button"
                 className="repeto-settings-portrait-help"

@@ -6,7 +6,13 @@ import { ArrowUpRightFromSquare, CircleCheck, Xmark } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import { useAuth } from "@/contexts/AuthContext";
 import AppField from "@/components/AppField";
+import PublicTutorWidget, { type PublicTutorWidgetContactItem } from "@/components/PublicTutorWidget";
 import { codedErrorMessage } from "@/lib/errorCodes";
+import { resolveApiAssetUrl } from "@/lib/api";
+import {
+    formatCancelPolicyActionLabel,
+    formatCancelPolicyHoursWord,
+} from "@/lib/cancelPolicy";
 import { useSettings, updateAccount, checkAccountSlug } from "@/hooks/useSettings";
 import {
     LEGAL_DOCUMENT_HASH,
@@ -31,6 +37,53 @@ function sanitizeSlug(value: string): string {
         .replace(/^-|-$/g, "");
 }
 
+function getSubjectName(entry: unknown): string {
+    if (typeof entry === "string") return entry.trim();
+    if (entry && typeof entry === "object" && "name" in entry) {
+        return String((entry as { name?: unknown }).name || "").trim();
+    }
+    return "";
+}
+
+function resolveVkLink(value: string): string {
+    const trimmed = value.trim();
+    if (!trimmed) return "";
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    const normalized = trimmed
+        .replace(/^@/, "")
+        .replace(/^https?:\/\/vk\.com\//i, "")
+        .replace(/^vk\.com\//i, "");
+    return `https://vk.com/${normalized}`;
+}
+
+function resolveTelegramLink(value: string): string {
+    const trimmed = value.trim();
+    if (!trimmed) return "";
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    const normalized = trimmed
+        .replace(/^@/, "")
+        .replace(/^https?:\/\/t\.me\//i, "")
+        .replace(/^t\.me\//i, "");
+    return `https://t.me/${normalized}`;
+}
+
+function resolveMaxLink(value: string): string {
+    const trimmed = value.trim();
+    if (!trimmed) return "";
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    const normalized = trimmed
+        .replace(/^@/, "")
+        .replace(/^https?:\/\/max\.ru\//i, "")
+        .replace(/^max\.ru\//i, "");
+    return `https://max.ru/${normalized}`;
+}
+
+function resolveWebsiteLink(value: string): string {
+    const trimmed = value.trim();
+    if (!trimmed) return "";
+    return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+}
+
 const PublicPage = () => {
     const { user } = useAuth();
     const { data: settings, mutate } = useSettings();
@@ -43,7 +96,6 @@ const PublicPage = () => {
     const [slugStatus, setSlugStatus] = useState<SlugStatus>("idle");
     const [slugHint, setSlugHint] = useState("");
     const [slugSuggestion, setSlugSuggestion] = useState("");
-    const [slugFocused, setSlugFocused] = useState(false);
     const [slugTyping, setSlugTyping] = useState(false);
 
     const [saving, setSaving] = useState(false);
@@ -97,6 +149,22 @@ const PublicPage = () => {
 
     const requestSlugStatus = useCallback(async (rawSlug: string) => {
         const normalized = sanitizeSlug(rawSlug);
+        if (!normalized) {
+            setSlugStatus("idle");
+            setSlugHint("");
+            setSlugSuggestion("");
+            setSlugTyping(false);
+            return null;
+        }
+
+        if (normalized === snapshotRef.current.slug) {
+            setSlugStatus("available");
+            setSlugHint("Текущий адрес страницы");
+            setSlugSuggestion("");
+            setSlugTyping(false);
+            return { requested: normalized, isAvailable: true, suggested: "" };
+        }
+
         const requestId = slugRequestIdRef.current + 1;
         slugRequestIdRef.current = requestId;
         setSlugStatus("checking");
@@ -111,10 +179,6 @@ const PublicPage = () => {
 
             if (requestId !== slugRequestIdRef.current) {
                 return null;
-            }
-
-            if (!normalized && result.suggested) {
-                setSlug(result.suggested);
             }
 
             if (result.isAvailable) {
@@ -145,6 +209,14 @@ const PublicPage = () => {
         const normalized = sanitizeSlug(slug);
         if (normalized !== slug) {
             setSlug(normalized);
+            return;
+        }
+
+        if (!normalized) {
+            setSlugStatus("idle");
+            setSlugHint("");
+            setSlugSuggestion("");
+            setSlugTyping(false);
             return;
         }
 
@@ -244,13 +316,6 @@ const PublicPage = () => {
         }
     };
 
-    const slugHintColor =
-        slugStatus === "available"
-            ? "var(--g-color-text-positive)"
-            : slugStatus === "taken" || slugStatus === "error"
-                ? "var(--g-color-text-danger)"
-                : "var(--g-color-text-secondary)";
-
     const slugStatusIcon = slug && !slugTyping && slugStatus !== "checking"
         ? (slugStatus === "available"
             ? CircleCheck
@@ -267,10 +332,97 @@ const PublicPage = () => {
                 : null)
         : null;
 
-    const slugStatusIconColor =
-        slugStatus === "available"
-            ? "var(--g-color-text-positive)"
-            : "var(--g-color-text-danger)";
+    const normalizedSlug = sanitizeSlug(slug);
+    const slugIsCurrent = Boolean(normalizedSlug && normalizedSlug === snapshotRef.current.slug);
+    const publicPagePath = normalizedSlug ? `/t/${normalizedSlug}` : "";
+    const publicPageLabel = normalizedSlug ? `repeto.ru/t/${normalizedSlug}` : "repeto.ru/t/ваш-адрес";
+    const slugIsChecking = slugTyping || slugStatus === "checking";
+    const slugFieldError = slugStatus === "taken"
+        ? "Этот адрес уже занят. Выберите другой или примените предложенный вариант."
+        : slugStatus === "error"
+            ? "Не удалось проверить адрес. Попробуйте еще раз."
+            : published && !normalizedSlug
+                ? "Для публикации нужен свободный адрес страницы."
+                : undefined;
+    const slugStatusTone = slugIsChecking
+        ? "checking"
+        : !normalizedSlug
+            ? "empty"
+            : slugStatus === "available"
+                ? "available"
+                : slugStatus === "taken" || slugStatus === "error"
+                    ? "danger"
+                    : "neutral";
+    const slugStatusText = slugIsChecking
+        ? "Проверяем адрес"
+        : !normalizedSlug
+            ? "Адрес не указан"
+            : slugIsCurrent
+                ? "Текущий адрес"
+                : slugStatus === "available"
+                    ? "Адрес свободен"
+                : slugStatus === "taken"
+                    ? "Адрес занят"
+                    : slugStatus === "error"
+                        ? "Проверка недоступна"
+                        : slugHint || "Адрес будет проверен автоматически";
+
+    const previewName = settings?.name || user?.name || "Репетитор";
+    const previewAvatarUrl = resolveApiAssetUrl(settings?.avatarUrl) || user?.avatar || null;
+    const subjectSource = Array.isArray(settings?.subjectDetails) && settings.subjectDetails.length > 0
+        ? settings.subjectDetails
+        : Array.isArray(settings?.subjects) && settings.subjects.length > 0
+            ? settings.subjects
+            : Array.isArray(user?.subjects)
+                ? user.subjects
+                : [];
+    const previewSubjectsText = subjectSource
+        .map(getSubjectName)
+        .filter(Boolean)
+        .join(", ");
+    const previewContacts: PublicTutorWidgetContactItem[] = [];
+    const previewPhone = String(settings?.phone || user?.phone || "").trim();
+    const previewPhoneHref = previewPhone.replace(/[^+\d]/g, "");
+    const previewWhatsapp = String(settings?.whatsapp || user?.whatsapp || "").trim();
+    const previewWhatsappDigits = previewWhatsapp.replace(/[^\d]/g, "");
+    const previewEmail = String(settings?.email || user?.email || "").trim();
+    const previewVk = String(settings?.vk || "").trim();
+    const previewTelegram = String(settings?.telegram || "").trim();
+    const previewMax = String(settings?.max || "").trim();
+    const previewWebsite = String(settings?.website || "").trim();
+
+    if (previewPhone && previewPhoneHref) {
+        previewContacts.push({ key: "phone", title: "Телефон", value: previewPhone, href: `tel:${previewPhoneHref}` });
+    }
+    if (previewWhatsapp && previewWhatsappDigits) {
+        previewContacts.push({ key: "whatsapp", title: "WhatsApp", value: previewWhatsapp, href: `https://wa.me/${previewWhatsappDigits}`, external: true });
+    }
+    if (previewEmail) {
+        previewContacts.push({ key: "email", title: "Почта", value: previewEmail, href: `mailto:${previewEmail}` });
+    }
+    if (previewVk) {
+        previewContacts.push({ key: "vk", title: "VK", value: previewVk, href: resolveVkLink(previewVk), external: true });
+    }
+    if (previewTelegram) {
+        previewContacts.push({ key: "telegram", title: "Telegram", value: previewTelegram, href: resolveTelegramLink(previewTelegram), external: true });
+    }
+    if (previewMax) {
+        previewContacts.push({ key: "max", title: "Max", value: previewMax, href: resolveMaxLink(previewMax), external: true });
+    }
+    if (previewWebsite) {
+        previewContacts.push({ key: "website", title: "Сайт", value: previewWebsite, href: resolveWebsiteLink(previewWebsite), external: true });
+    }
+
+    const policySettings = settings?.cancelPolicySettings || {};
+    const freeHours = Number(policySettings.freeHours || 24);
+    const lateActionLabel = formatCancelPolicyActionLabel(policySettings.lateCancelAction || policySettings.lateAction).replace(
+        "стоимости занятия",
+        "стоимости",
+    );
+    const noShowActionLabel = formatCancelPolicyActionLabel(policySettings.noShowAction).replace(
+        "стоимости занятия",
+        "стоимости",
+    );
 
     const requiresPublicationConsent =
         !snapshotRef.current.published && published;
@@ -283,144 +435,171 @@ const PublicPage = () => {
                 </div>
 
                 <div className="repeto-settings-card__body" style={{ padding: 24 }}>
-                    <div className="repeto-settings-public-page-grid">
-                        <AppField
-                            label="Персональная ссылка"
-                            className="repeto-settings-public-slug-field"
-                            style={{ gridColumn: "1 / -1" }}
-                        >
-                            <TextInput
-                                size="l"
-                                value={slug}
-                                onUpdate={(value) => {
-                                    setSlug(sanitizeSlug(value));
-                                    setSlugTyping(true);
-                                    setSlugStatus("checking");
-                                    setSlugHint("Проверяем адрес...");
-                                    setSlugSuggestion("");
-                                    setSaveMsg(null);
-                                }}
-                                onFocus={() => setSlugFocused(true)}
-                                onBlur={() => {
-                                    setSlugFocused(false);
-                                    setSlugTyping(false);
-                                    void requestSlugStatus(slug);
-                                }}
-                                placeholder="slug"
-                                endContent={
-                                    slugStatusIcon && slugStatusAnimatedIconPath ? (
-                                        <span
-                                            style={{
-                                                color: slugStatusIconColor,
-                                                marginRight: 4,
-                                                display: "inline-flex",
+                    <div className="repeto-settings-public-layout">
+                        <div className="repeto-settings-public-main">
+                            <div className="repeto-settings-public-page-grid">
+                                <div className="repeto-settings-public-slug-block">
+                                    <AppField
+                                        label="Персональная ссылка"
+                                        className="repeto-settings-public-slug-field"
+                                        error={slugFieldError}
+                                    >
+                                        <TextInput
+                                            size="l"
+                                            value={slug}
+                                            onUpdate={(value) => {
+                                                const nextSlug = sanitizeSlug(value);
+                                                setSlug(nextSlug);
+                                                setSlugTyping(Boolean(nextSlug));
+                                                setSlugStatus(nextSlug ? "checking" : "idle");
+                                                setSlugHint(nextSlug ? "Проверяем адрес..." : "");
+                                                setSlugSuggestion("");
+                                                setSaveMsg(null);
                                             }}
-                                        >
-                                            <AnimatedSidebarIcon
-                                                src={slugStatusAnimatedIconPath}
-                                                fallbackIcon={slugStatusIcon as IconData}
-                                                play
-                                                size={14}
-                                            />
+                                            onBlur={() => {
+                                                setSlugTyping(false);
+                                                if (sanitizeSlug(slug)) {
+                                                    void requestSlugStatus(slug);
+                                                }
+                                            }}
+                                            placeholder="demo-tutor"
+                                        />
+                                    </AppField>
+
+                                    <div className="repeto-settings-public-slug-meta">
+                                        <span className={`repeto-settings-public-slug-status repeto-settings-public-slug-status--${slugStatusTone}`}>
+                                            {slugStatusIcon && slugStatusAnimatedIconPath ? (
+                                                <AnimatedSidebarIcon
+                                                    src={slugStatusAnimatedIconPath}
+                                                    fallbackIcon={slugStatusIcon as IconData}
+                                                    play
+                                                    size={18}
+                                                />
+                                            ) : (
+                                                <span className="repeto-settings-public-slug-status__dot" aria-hidden="true" />
+                                            )}
+                                            {slugStatusText}
                                         </span>
-                                    ) : null
-                                }
-                            />
-                        </AppField>
 
-                        <AppField
-                            label="Подзаголовок"
-                            style={{ gridColumn: "1 / -1" }}
-                        >
-                            <TextInput
-                                value={tagline}
-                                onUpdate={(value) => {
-                                    setTagline(value);
-                                    setSaveMsg(null);
-                                }}
-                                placeholder="Репетитор по математике и физике"
-                                size="l"
-                            />
-                        </AppField>
-                    </div>
+                                        {slugStatus === "taken" && slugSuggestion && (
+                                            <button
+                                                type="button"
+                                                className="repeto-settings-public-page-suggestion"
+                                                onClick={applySuggestedSlug}
+                                            >
+                                                Использовать {slugSuggestion}
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
 
-                    {slugFocused && !!slugHint && (
-                        <Text variant="caption-2" className="repeto-settings-public-page-hint" style={{ color: slugHintColor }}>
-                            {slugHint}
-                        </Text>
-                    )}
+                                <AppField label="Подзаголовок">
+                                    <TextInput
+                                        value={tagline}
+                                        onUpdate={(value) => {
+                                            setTagline(value);
+                                            setSaveMsg(null);
+                                        }}
+                                        placeholder="Репетитор по математике и физике"
+                                        size="l"
+                                    />
+                                </AppField>
+                            </div>
 
-                    {slugStatus === "taken" && slugSuggestion && (
-                        <button
-                            className="repeto-settings-public-page-suggestion"
-                            onClick={applySuggestedSlug}
-                        >
-                            Использовать: {slugSuggestion}
-                        </button>
-                    )}
+                            <div className="repeto-settings-switch-row repeto-settings-public-page-switch">
+                                <div>
+                                    <Text variant="body-1" style={{ fontWeight: 600, display: "block" }}>Опубликовать страницу</Text>
+                                    <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 2 }}>
+                                        Страница станет доступна по персональной ссылке.
+                                    </Text>
+                                </div>
+                                <Switch checked={published} onUpdate={setPublished} size="m" />
+                            </div>
 
-                    <div className="repeto-settings-switch-row repeto-settings-public-page-switch">
-                        <div>
-                            <Text variant="body-1" style={{ fontWeight: 600, display: "block" }}>Опубликовать страницу</Text>
-                            <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 2 }}>
-                                Страница станет доступна по персональной ссылке.
-                            </Text>
+                            {requiresPublicationConsent && (
+                                <div className="repeto-settings-public-consent">
+                                    <Checkbox
+                                        checked={publicationConsentAccepted}
+                                        onUpdate={setPublicationConsentAccepted}
+                                        size="l"
+                                    >
+                                        <span>
+                                            Даю согласие на <Link href="/legal#tutor-publication-consent" target="_blank">публикацию анкеты и распространение указанных данных</Link>.
+                                        </span>
+                                    </Checkbox>
+                                </div>
+                            )}
+
+                            <div className="repeto-settings-switch-row repeto-settings-public-page-switch">
+                                <div>
+                                    <Text variant="body-1" style={{ fontWeight: 600, display: "block" }}>Пакеты на странице</Text>
+                                    <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 2 }}>
+                                        Раздел с пакетами будет виден на странице и в записи.
+                                    </Text>
+                                </div>
+                                <Switch checked={showPublicPackages} onUpdate={setShowPublicPackages} size="m" />
+                            </div>
+
+                            <div className="repeto-settings-savebar">
+                                {saveMsg && (
+                                    <Text
+                                        variant="body-1"
+                                        className={`repeto-settings-savebar__message${saveMsg === "Сохранено" ? " repeto-settings-savebar__message--ok" : " repeto-settings-savebar__message--error"}`}
+                                    >
+                                        {saveMsg}
+                                    </Text>
+                                )}
+                                <Button view="action" size="l" onClick={handleSave} disabled={saving || !dirty}>
+                                    {saving ? "Сохраняем..." : "Сохранить"}
+                                </Button>
+                            </div>
                         </div>
-                        <Switch checked={published} onUpdate={setPublished} size="m" />
-                    </div>
 
-                    {requiresPublicationConsent && (
-                        <div style={{ marginBottom: 14 }}>
-                            <Checkbox
-                                checked={publicationConsentAccepted}
-                                onUpdate={setPublicationConsentAccepted}
-                                size="l"
-                            >
-                                <span style={{ fontSize: 13, color: "var(--g-color-text-secondary)", lineHeight: 1.4 }}>
-                                    Даю согласие на <Link href="/legal#tutor-publication-consent" target="_blank">публикацию анкеты и распространение указанных данных</Link>.
+                        <aside className="repeto-settings-public-preview" aria-label="Превью публичной страницы">
+                            <div className="repeto-settings-public-preview__head">
+                                <div>
+                                    <Text variant="subheader-1" as="div">Превью страницы</Text>
+                                    <Text variant="caption-2" color="secondary">Так ученики увидят верхний блок профиля.</Text>
+                                </div>
+                                <span className={`repeto-settings-public-publish-badge${published ? " repeto-settings-public-publish-badge--on" : ""}`}>
+                                    {published ? "Опубликована" : "Черновик"}
                                 </span>
-                            </Checkbox>
-                        </div>
-                    )}
+                            </div>
 
-                    <div className="repeto-settings-switch-row repeto-settings-public-page-switch">
-                        <div>
-                            <Text variant="body-1" style={{ fontWeight: 600, display: "block" }}>Пакеты на странице</Text>
-                            <Text variant="caption-2" color="secondary" style={{ display: "block", marginTop: 2 }}>
-                                Раздел с пакетами будет виден на странице и в записи.
-                            </Text>
-                        </div>
-                        <Switch checked={showPublicPackages} onUpdate={setShowPublicPackages} size="m" />
-                    </div>
-
-                    {published && slug && (
-                        <Link
-                            href={`/t/${slug}`}
-                            target="_blank"
-                            className="repeto-settings-public-link"
-                        >
-                            <AnimatedSidebarIcon
-                                src="/icons/sidebar-animated/global.json"
-                                fallbackIcon={ArrowUpRightFromSquare as IconData}
-                                play
-                                size={14}
+                            <PublicTutorWidget
+                                className="repeto-settings-public-widget-preview"
+                                name={previewName}
+                                avatarUrl={previewAvatarUrl || undefined}
+                                subjectsText={previewSubjectsText || undefined}
+                                rating={null}
+                                reviewsCount={0}
+                                noReviewsLabel="Предпросмотр"
+                                contacts={previewContacts}
+                                policy={{
+                                    freeHours,
+                                    freeHoursWord: formatCancelPolicyHoursWord(freeHours),
+                                    lateActionLabel,
+                                    noShowActionLabel,
+                                }}
                             />
-                            {`repeto.ru/t/${slug}`}
-                        </Link>
-                    )}
 
-                    <div className="repeto-settings-savebar">
-                        {saveMsg && (
-                            <Text
-                                variant="body-1"
-                                className={`repeto-settings-savebar__message${saveMsg === "Сохранено" ? " repeto-settings-savebar__message--ok" : " repeto-settings-savebar__message--error"}`}
-                            >
-                                {saveMsg}
-                            </Text>
-                        )}
-                        <Button view="action" size="l" onClick={handleSave} disabled={saving || !dirty}>
-                            {saving ? "Сохраняем..." : "Сохранить"}
-                        </Button>
+                            <div className="repeto-settings-public-preview__link-row">
+                                <span className="repeto-settings-public-preview__url">{publicPageLabel}</span>
+                                {published && publicPagePath ? (
+                                    <Link href={publicPagePath} target="_blank" className="repeto-settings-public-preview__open">
+                                        <AnimatedSidebarIcon
+                                            src="/icons/sidebar-animated/global.json"
+                                            fallbackIcon={ArrowUpRightFromSquare as IconData}
+                                            play
+                                            size={14}
+                                        />
+                                        Открыть
+                                    </Link>
+                                ) : (
+                                    <span className="repeto-settings-public-preview__disabled-link">После публикации</span>
+                                )}
+                            </div>
+                        </aside>
                     </div>
                 </div>
             </Card>

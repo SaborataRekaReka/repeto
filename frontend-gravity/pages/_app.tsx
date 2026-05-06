@@ -6,6 +6,7 @@ import "@/styles/theme-tokens.css";
 import "@/styles/theme-components.css";
 import "@/styles/theme-navigation.css";
 import "@/styles/yandex-shell.css";
+import "@/styles/settings-public-preview.css";
 import type { AppProps } from "next/app";
 import { Inter } from "next/font/google";
 

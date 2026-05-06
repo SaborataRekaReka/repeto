@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
-import { Card, Text, Button, Label, TextInput, Checkbox } from "@gravity-ui/uikit";
+import { Card, Text, Button, TextInput, Checkbox } from "@gravity-ui/uikit";
 import { Calendar, FolderOpen } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import AnimatedSidebarIcon from "@/components/AnimatedSidebarIcon";
@@ -36,11 +36,6 @@ type IntegrationDef = {
 type HomeworkDefaultCloud = "YANDEX_DISK" | "GOOGLE_DRIVE";
 type TaxStatusValue = "SELF_EMPLOYED" | "SOLE_TRADER" | "LEGAL_ENTITY";
 type PayoutMethodValue = "CARD" | "YOOMONEY" | "BANK_ACCOUNT";
-
-const homeworkDefaultCloudOptions = [
-    { value: "YANDEX_DISK", content: "Яндекс.Диск" },
-    { value: "GOOGLE_DRIVE", content: "Google Drive" },
-];
 
 const taxStatusOptions = [
     { value: "SELF_EMPLOYED", content: "Самозанятый" },
@@ -372,13 +367,14 @@ const Integrations = () => {
         finally { setSaving(false); }
     };
 
-    const handleSaveHomeworkDefaultCloud = async () => {
+    const handleSaveHomeworkDefaultCloud = async (nextCloud: HomeworkDefaultCloud) => {
         setSavingDefaultCloud(true);
         setMsg(null);
         try {
-            await updateAccount({ homeworkDefaultCloud });
+            await updateAccount({ homeworkDefaultCloud: nextCloud });
             await mutate();
-            setMsg("Диск по умолчанию для домашней работы сохранён");
+            setHomeworkDefaultCloud(nextCloud);
+            setMsg(`Диск по умолчанию для домашней работы: ${nextCloud === "YANDEX_DISK" ? "Яндекс.Диск" : "Google Drive"}`);
         } catch (e: any) {
             setMsg(codedErrorMessage("SETT-INT-HW-CLOUD", e));
         } finally {
@@ -741,36 +737,6 @@ const Integrations = () => {
                     <Text variant="subheader-2">Материалы</Text>
                 </div>
                 <div className="repeto-settings-integrations-panel__body">
-                    <div className="repeto-settings-default-cloud">
-                        <div className="repeto-settings-default-cloud__main">
-                            <AppSelect
-                                label="Диск для домашней работы"
-                                options={homeworkDefaultCloudOptions}
-                                value={[homeworkDefaultCloud]}
-                                onUpdate={(value) => {
-                                    const next = value[0] as HomeworkDefaultCloud | undefined;
-                                    if (next) {
-                                        setHomeworkDefaultCloud(next);
-                                    }
-                                }}
-                                size="l"
-                                width="max"
-                            />
-                            <Text variant="caption-2" color="secondary" className="repeto-settings-default-cloud__hint">
-                                Если выбранный диск не подключен, система автоматически использует доступный.
-                            </Text>
-                        </div>
-                        <Button
-                            className="repeto-settings-default-cloud__save"
-                            view="action"
-                            size="l"
-                            disabled={savingDefaultCloud}
-                            onClick={handleSaveHomeworkDefaultCloud}
-                        >
-                            {savingDefaultCloud ? "Сохраняем..." : "Сохранить"}
-                        </Button>
-                    </div>
-
                     <div className="repeto-settings-integrations-list">
                         {defs.map((def) => {
                             const status = getStatus(def.id);
@@ -789,9 +755,6 @@ const Integrations = () => {
                                         <div className="repeto-settings-integration-row__meta">
                                             <Text variant="body-1" className="repeto-settings-integration-row__title">{def.name}</Text>
                                             <Text variant="caption-2" color="secondary" className="repeto-settings-integration-row__desc">{def.description}</Text>
-                                        </div>
-                                        <div className="repeto-settings-integration-row__status">
-                                            <Label theme={isConnected ? "success" : "normal"} size="s">{isConnected ? "Подключено" : "Не подключено"}</Label>
                                         </div>
                                         <Button
                                             className="repeto-settings-integration-row__action"
@@ -850,6 +813,18 @@ const Integrations = () => {
                                         <div className="repeto-settings-integration-row__details repeto-settings-integration-row__details--split">
                                             <Text variant="caption-2" color="secondary">Аккаунт: <span>{settings?.yandexDiskEmail || "—"}</span></Text>
                                             <Text variant="caption-2" color="secondary">Корневая папка: <span>{settings?.yandexDiskRootPath || "/"}</span></Text>
+                                            {homeworkDefaultCloud === "YANDEX_DISK" ? (
+                                                <Text variant="caption-2" color="secondary">Используется по умолчанию для домашней работы</Text>
+                                            ) : (
+                                                <Button
+                                                    view="outlined"
+                                                    size="s"
+                                                    disabled={saving || savingDefaultCloud}
+                                                    onClick={() => handleSaveHomeworkDefaultCloud("YANDEX_DISK")}
+                                                >
+                                                    Использовать по умолчанию
+                                                </Button>
+                                            )}
                                         </div>
                                     )}
 
@@ -860,8 +835,20 @@ const Integrations = () => {
                                     )}
 
                                     {def.id === "google-drive" && hasGoogleDrive && (
-                                        <div className="repeto-settings-integration-row__details">
+                                        <div className="repeto-settings-integration-row__details repeto-settings-integration-row__details--split">
                                             <Text variant="caption-2" color="secondary">Аккаунт: <span>{settings?.googleDriveEmail || "—"}</span></Text>
+                                            {homeworkDefaultCloud === "GOOGLE_DRIVE" ? (
+                                                <Text variant="caption-2" color="secondary">Используется по умолчанию для домашней работы</Text>
+                                            ) : (
+                                                <Button
+                                                    view="outlined"
+                                                    size="s"
+                                                    disabled={saving || savingDefaultCloud}
+                                                    onClick={() => handleSaveHomeworkDefaultCloud("GOOGLE_DRIVE")}
+                                                >
+                                                    Использовать по умолчанию
+                                                </Button>
+                                            )}
                                         </div>
                                     )}
                                 </div>

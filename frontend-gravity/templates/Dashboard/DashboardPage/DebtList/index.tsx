@@ -18,6 +18,9 @@ type DebtStudent = {
     subject: string;
     balance: number;
     parentEmail?: string | null;
+    telegram?: string | null;
+    telegramChatId?: string | null;
+    maxChatId?: string | null;
 };
 
 const DEBT_COLOR = "var(--finance-debt)";
@@ -127,6 +130,9 @@ const DebtList = () => {
                     hasRepetoAccount={Boolean(reminderTarget.accountId)}
                     hasDebt={true}
                     hasParentEmail={!!reminderTarget.parentEmail}
+                    hasTelegramChannel={Boolean(reminderTarget.telegramChatId || reminderTarget.telegram)}
+                    hasMaxChannel={Boolean(reminderTarget.maxChatId)}
+                    estimatedDebtAmount={Math.max(0, -reminderTarget.balance)}
                     initialType="payment"
                 />
             )}

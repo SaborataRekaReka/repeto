@@ -16,6 +16,9 @@ type DebtStudent = {
   subject: string;
   balance: number;
   parentEmail?: string | null;
+  telegram?: string | null;
+  telegramChatId?: string | null;
+  maxChatId?: string | null;
 };
 
 type RecentPayment = {
@@ -89,6 +92,9 @@ export function useDebts(limit = 5) {
         subject: row.subject,
         balance: Number(row.balance ?? 0),
         parentEmail: row.parentEmail ?? null,
+        telegram: row.telegram ?? null,
+        telegramChatId: row.telegramChatId ?? null,
+        maxChatId: row.maxChatId ?? null,
       }),
     ),
   };

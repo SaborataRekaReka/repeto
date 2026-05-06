@@ -19,7 +19,7 @@ const CertificatesSection = ({ certificates, certUploading, certInputRef, onUplo
         title="Документы"
         action={
             <>
-                <Button view="outlined" size="s" onClick={() => certInputRef.current?.click()} disabled={certUploading}>
+                <Button view="flat" size="m" className="repeto-settings-add-btn repeto-settings-add-btn--section" onClick={() => certInputRef.current?.click()} disabled={certUploading}>
                     <AnimatedSidebarIcon
                         src={accountAnimatedIconPaths.upload}
                         fallbackIcon={FileArrowUp as IconData}

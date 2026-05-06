@@ -16,8 +16,9 @@ const EducationSection = ({ education, setEducation }: Props) => (
         title="Образование"
         action={
             <Button
-                view="outlined"
-                size="s"
+                view="flat"
+                size="m"
+                className="repeto-settings-add-btn repeto-settings-add-btn--section"
                 onClick={() => setEducation((prev) => [...prev, { id: createDraftEducationId(), institution: "", program: "", years: "" }])}
             >
                 <AnimatedSidebarIcon
@@ -35,16 +36,11 @@ const EducationSection = ({ education, setEducation }: Props) => (
                 Образование появится на публичной странице.
             </Text>
         ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div className="repeto-settings-repeat-list">
                 {education.map((edu, i) => (
                     <div
                         key={edu.id}
-                        className="repeto-settings-account-grid"
-                        style={{
-                            position: "relative",
-                            paddingBottom: 8,
-                            borderBottom: i < education.length - 1 ? "1px solid var(--g-color-line-generic)" : "none",
-                        }}
+                        className="repeto-settings-account-grid repeto-settings-education-row"
                     >
                         <FormField label="Учебное заведение" full>
                             <TextInput
@@ -74,7 +70,10 @@ const EducationSection = ({ education, setEducation }: Props) => (
                             <Button
                                 view="flat-danger"
                                 size="s"
+                                className="repeto-settings-icon-danger-btn"
                                 onClick={() => setEducation((prev) => prev.filter((_, idx) => idx !== i))}
+                                aria-label="Удалить образование"
+                                title="Удалить образование"
                             >
                                 <AnimatedSidebarIcon
                                     src={accountAnimatedIconPaths.remove}

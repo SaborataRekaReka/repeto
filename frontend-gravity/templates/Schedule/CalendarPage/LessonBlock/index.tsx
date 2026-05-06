@@ -5,6 +5,8 @@ type LessonBlockProps = {
     lesson: Lesson;
     compact?: boolean;
     showTime?: boolean;
+    titleOverride?: string;
+    metaOverride?: string;
     onClick?: (lesson: Lesson) => void;
     style?: React.CSSProperties;
 };
@@ -19,11 +21,21 @@ const LESSON_FORMAT_LABELS: Record<Lesson["format"], string> = {
     offline: "Очно",
 };
 
-const LessonBlock = ({ lesson, compact, showTime = true, onClick, style }: LessonBlockProps) => {
+const LessonBlock = ({
+    lesson,
+    compact,
+    showTime = true,
+    titleOverride,
+    metaOverride,
+    onClick,
+    style,
+}: LessonBlockProps) => {
     const rootClassName = [
         "repeto-calendar-lesson",
         compact ? "repeto-calendar-lesson--compact" : "",
     ].filter(Boolean).join(" ");
+    const titleText = titleOverride ?? `${lesson.subject} · ${surnameOnly(lesson.studentName)}`;
+    const metaText = metaOverride ?? `${lesson.startTime} - ${lesson.endTime} · ${LESSON_FORMAT_LABELS[lesson.format]}`;
 
     return (
         <button
@@ -40,16 +52,16 @@ const LessonBlock = ({ lesson, compact, showTime = true, onClick, style }: Lesso
                     ellipsis
                     className="repeto-calendar-lesson__title"
                 >
-                    {lesson.subject} · {surnameOnly(lesson.studentName)}
+                    {titleText}
                 </Text>
 
-                {!compact && showTime && (
+                {!compact && showTime && metaText && (
                     <Text
                         variant="caption-1"
                         ellipsis
                         className="repeto-calendar-lesson__meta"
                     >
-                        {lesson.startTime} - {lesson.endTime} · {LESSON_FORMAT_LABELS[lesson.format]}
+                        {metaText}
                     </Text>
                 )}
             </span>

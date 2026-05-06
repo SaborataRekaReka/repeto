@@ -68,3 +68,45 @@
 ) {
     fill: var(--repeto-nav-active-icon) !important;
 }
+
+/* Section sub-navigation rule: active subsection/tab is always brand-blue. */
+:where(
+    .repeto-context-sidebar__item--active,
+    .repeto-context-sidebar__item--active:hover,
+    .page-overlay__nav-item--active,
+    .page-overlay__nav-item--active:hover
+) {
+    color: var(--accent) !important;
+}
+
+:where(
+    .repeto-context-sidebar__item--active .repeto-context-sidebar__item-text,
+    .repeto-context-sidebar__item--active .repeto-context-sidebar__item-icon,
+    .page-overlay__nav-item--active .page-overlay__nav-item-icon
+) {
+    color: var(--accent) !important;
+}
+
+:where(
+    .repeto-context-sidebar__item--active .repeto-context-sidebar__item-icon .g-icon,
+    .repeto-context-sidebar__item--active .repeto-animated-sidebar-icon__fallback .g-icon,
+    .page-overlay__nav-item--active .repeto-animated-sidebar-icon__fallback .g-icon
+) {
+    color: var(--accent) !important;
+}
+
+:where(
+    .repeto-context-sidebar__item--active .repeto-context-sidebar__item-icon .g-icon svg [stroke],
+    .repeto-context-sidebar__item--active .repeto-animated-sidebar-icon__canvas :is(path, circle, ellipse, line, polyline, polygon, rect),
+    .page-overlay__nav-item--active .repeto-animated-sidebar-icon__canvas :is(path, circle, ellipse, line, polyline, polygon, rect)
+) {
+    stroke: var(--accent) !important;
+}
+
+:where(
+    .repeto-context-sidebar__item--active .repeto-context-sidebar__item-icon .g-icon svg [fill]:not([fill="none"]),
+    .repeto-context-sidebar__item--active .repeto-animated-sidebar-icon__canvas [fill]:not([fill="none"]),
+    .page-overlay__nav-item--active .repeto-animated-sidebar-icon__canvas [fill]:not([fill="none"])
+) {
+    fill: var(--accent) !important;
+}

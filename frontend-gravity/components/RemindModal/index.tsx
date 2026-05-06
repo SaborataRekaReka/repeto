@@ -12,10 +12,12 @@ import {
 import { useLessons } from "@/hooks/useLessons";
 import { usePayments } from "@/hooks/usePayments";
 import { useStudentHomework } from "@/hooks/useStudents";
+import { useProfile } from "@/hooks/useSettings";
 import { sendReminder } from "@/hooks/useNotifications";
 import { codedErrorMessage } from "@/lib/errorCodes";
 import { Lp2Field } from "@/components/Lp2Field";
 import Lp2PlannerShell, { Lp2PlannerLayout, Lp2PlannerSection } from "@/components/Lp2PlannerShell";
+import AppDialog from "@/components/AppDialog";
 import { useModalEscape } from "@/hooks/useModalEscape";
 import type { Lesson } from "@/types/schedule";
 import StudentNameWithBadge from "@/components/StudentNameWithBadge";
@@ -31,6 +33,9 @@ type RemindModalProps = {
     hasRepetoAccount?: boolean;
     hasDebt: boolean;
     hasParentEmail: boolean;
+    hasTelegramChannel?: boolean;
+    hasMaxChannel?: boolean;
+    estimatedDebtAmount?: number;
     initialType?: ReminderType;
 };
 
@@ -58,6 +63,9 @@ const RemindModal = ({
     hasRepetoAccount,
     hasDebt,
     hasParentEmail,
+    hasTelegramChannel,
+    hasMaxChannel,
+    estimatedDebtAmount,
     initialType,
 }: RemindModalProps) => {
     const panelRef = useRef<HTMLDivElement>(null);
@@ -74,6 +82,9 @@ const RemindModal = ({
     const [saving, setSaving] = useState(false);
     const [errorText, setErrorText] = useState<string | null>(null);
     const [successText, setSuccessText] = useState<string | null>(null);
+    const [previewOpen, setPreviewOpen] = useState(false);
+
+    const { data: profile } = useProfile();
 
     // LP2 panel lifecycle
     useEffect(() => { setMounted(true); }, []);
@@ -95,11 +106,12 @@ const RemindModal = ({
     }, [isPanelVisible]);
 
     const handleClose = useCallback(() => {
+        setPreviewOpen(false);
         setIsPanelVisible(false);
         setTimeout(() => onClose(), 350);
     }, [onClose]);
 
-    useModalEscape({ enabled: visible, onEscape: handleClose });
+    useModalEscape({ enabled: visible && !previewOpen, onEscape: handleClose });
 
     // Fetch lessons for this student
     const { data: allLessons = [], loading: lessonsLoading } = useLessons({
@@ -170,6 +182,7 @@ const RemindModal = ({
         setSaving(false);
         setErrorText(null);
         setSuccessText(null);
+        setPreviewOpen(false);
     }, [visible, hasDebt, initialType]);
 
     useEffect(() => {
@@ -244,6 +257,51 @@ const RemindModal = ({
         return taskPreview;
     };
 
+    const formatLessonDateAndTime = (lesson: Lesson) => {
+        const scheduled = new Date(`${lesson.date}T${lesson.startTime || "00:00"}`);
+        const hasValidDate = Number.isFinite(scheduled.getTime());
+        const dateStr = hasValidDate
+            ? scheduled.toLocaleDateString("ru-RU", { day: "numeric", month: "long" })
+            : lesson.date;
+        const timeStr = hasValidDate
+            ? scheduled.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })
+            : lesson.startTime;
+        return { dateStr, timeStr };
+    };
+
+    const formatHomeworkDueDate = (hw: HomeworkItem) => {
+        if (!hw.dueAt) return undefined;
+        const due = new Date(hw.dueAt);
+        if (!Number.isFinite(due.getTime())) return undefined;
+        return due.toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
+    };
+
+    const tutorName = useMemo(() => {
+        const rawName = typeof profile?.name === "string" ? profile.name.trim() : "";
+        return rawName || "Репетитор";
+    }, [profile?.name]);
+
+    const selectedPaymentLessons = useMemo(() => {
+        const selectedSet = new Set(selectedLessonIds);
+        return completedLessons
+            .filter((lesson) => selectedSet.has(lesson.id))
+            .sort((a, b) => {
+                const da = new Date(`${a.date}T${a.startTime || "00:00"}`).getTime();
+                const db = new Date(`${b.date}T${b.startTime || "00:00"}`).getTime();
+                return da - db;
+            });
+    }, [completedLessons, selectedLessonIds]);
+
+    const selectedPlannedLessons = useMemo(() => {
+        const selectedSet = new Set(selectedLessonIds);
+        return plannedLessons.filter((lesson) => selectedSet.has(lesson.id));
+    }, [plannedLessons, selectedLessonIds]);
+
+    const selectedHomeworkItems = useMemo(() => {
+        const selectedSet = new Set(selectedHomeworkIds);
+        return homeworks.filter((hw) => selectedSet.has(hw.id));
+    }, [homeworks, selectedHomeworkIds]);
+
     const canSubmit = () => {
         if (saving) return false;
         if (
@@ -258,8 +316,114 @@ const RemindModal = ({
         return true;
     };
 
+    const previewMessages = useMemo(() => {
+        const trimmedComment = comment.trim();
+
+        if (reminderType === "payment") {
+            if (selectedPaymentLessons.length > 0) {
+                const debtAmount = selectedPaymentLessons.reduce(
+                    (sum, lesson) => sum + (Number(lesson.rate) || 0),
+                    0,
+                );
+
+                const lessonsLines = selectedPaymentLessons.map((lesson, index) => {
+                    const { dateStr, timeStr } = formatLessonDateAndTime(lesson);
+                    return `${index + 1}. ${dateStr} ${timeStr} · ${lesson.subject} · ${(Number(lesson.rate) || 0).toLocaleString("ru-RU")} ₽`;
+                });
+
+                const lessonsComment = [
+                    "Проведенные занятия:",
+                    ...lessonsLines,
+                    "",
+                    `Итого к оплате: ${debtAmount.toLocaleString("ru-RU")} ₽`,
+                ].join("\n");
+
+                const fullComment = trimmedComment
+                    ? `${lessonsComment}\n\n${trimmedComment}`
+                    : lessonsComment;
+
+                let message =
+                    `💳 Напоминание об оплате\n\n` +
+                    `Сумма: ${debtAmount.toLocaleString("ru-RU")} ₽\n` +
+                    `Репетитор: ${tutorName}`;
+
+                if (fullComment) {
+                    message += `\n\n${fullComment}`;
+                }
+
+                return [message];
+            }
+
+            const debtAmount = Math.max(0, Number(estimatedDebtAmount) || 0);
+            let message =
+                `💳 Напоминание об оплате\n\n` +
+                `Сумма: ${debtAmount.toLocaleString("ru-RU")} ₽\n` +
+                `Репетитор: ${tutorName}`;
+            if (trimmedComment) {
+                message += `\n\n${trimmedComment}`;
+            }
+            return [message];
+        }
+
+        if (reminderType === "lesson") {
+            return selectedPlannedLessons.map((lesson) => {
+                const { dateStr, timeStr } = formatLessonDateAndTime(lesson);
+                let message =
+                    `⏰ Напоминание о занятии\n\n` +
+                    `Предмет: ${lesson.subject}\n` +
+                    `Дата: ${dateStr}\n` +
+                    `Время: ${timeStr}\n` +
+                    `Репетитор: ${tutorName}`;
+                if (trimmedComment) {
+                    message += `\n\n${trimmedComment}`;
+                }
+                return message;
+            });
+        }
+
+        return selectedHomeworkItems.map((hw) => {
+            const dueStr = formatHomeworkDueDate(hw);
+            let message =
+                `📝 Напоминание о домашнем задании\n\n` +
+                `Задание: ${hw.task}`;
+            if (dueStr) {
+                message += `\nСрок сдачи: ${dueStr}`;
+            }
+            message += `\nРепетитор: ${tutorName}`;
+            if (trimmedComment) {
+                message += `\n\n${trimmedComment}`;
+            }
+            return message;
+        });
+    }, [
+        comment,
+        reminderType,
+        selectedPaymentLessons,
+        selectedPlannedLessons,
+        selectedHomeworkItems,
+        tutorName,
+        estimatedDebtAmount,
+    ]);
+
+    const studentDeliveryChannels = useMemo(() => {
+        const channels: string[] = [];
+        if (hasTelegramChannel) channels.push("Telegram");
+        if (hasMaxChannel) channels.push("Max");
+        return channels;
+    }, [hasTelegramChannel, hasMaxChannel]);
+
+    const parentDeliveryEnabled = reminderType === "payment" && notifyParent && hasParentEmail;
+
+    const openSubmitPreview = () => {
+        if (!canSubmit()) return;
+        setErrorText(null);
+        setSuccessText(null);
+        setPreviewOpen(true);
+    };
+
     const handleSubmit = async () => {
         if (!canSubmit()) return;
+        setPreviewOpen(false);
         setSaving(true);
         setErrorText(null);
         setSuccessText(null);
@@ -585,7 +749,7 @@ const RemindModal = ({
                     view="action"
                     size="xl"
                     width="max"
-                    onClick={handleSubmit}
+                    onClick={openSubmitPreview}
                     loading={saving}
                     disabled={!canSubmit()}
                 >
@@ -637,6 +801,82 @@ const RemindModal = ({
                     ✓ {successText}
                 </Text>
             )}
+
+            <AppDialog
+                open={previewOpen}
+                onClose={() => {
+                    if (!saving) setPreviewOpen(false);
+                }}
+                size="s"
+                caption="Подтвердите отправку"
+                footer={{
+                    textButtonApply: "Отправить",
+                    onClickButtonApply: handleSubmit,
+                    propsButtonApply: {
+                        loading: saving,
+                        disabled: !canSubmit(),
+                    },
+                    textButtonCancel: "Отмена",
+                    onClickButtonCancel: () => setPreviewOpen(false),
+                    propsButtonCancel: {
+                        disabled: saving,
+                    },
+                }}
+            >
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <Text variant="body-2" color="secondary">
+                        Ученик получит сообщение в таком виде:
+                    </Text>
+
+                    <div
+                        style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 8,
+                            maxHeight: 260,
+                            overflowY: "auto",
+                        }}
+                    >
+                        {previewMessages.map((message, index) => (
+                            <div
+                                key={`${index}-${message.length}`}
+                                style={{
+                                    background: "var(--g-color-base-generic)",
+                                    borderRadius: 10,
+                                    padding: "10px 12px",
+                                    border: "1px solid var(--g-color-line-generic)",
+                                }}
+                            >
+                                {previewMessages.length > 1 && (
+                                    <Text variant="caption-2" color="secondary" style={{ marginBottom: 6, display: "block" }}>
+                                        Сообщение {index + 1}
+                                    </Text>
+                                )}
+                                <Text variant="body-2" style={{ whiteSpace: "pre-wrap", display: "block" }}>
+                                    {message}
+                                </Text>
+                            </div>
+                        ))}
+                    </div>
+
+                    <Text variant="body-2" color="secondary" style={{ marginTop: 6 }}>
+                        Сообщения придут в:
+                    </Text>
+                    {studentDeliveryChannels.length > 0 ? (
+                        <Text variant="body-2">{studentDeliveryChannels.join(", ")}</Text>
+                    ) : (
+                        <Text variant="body-2" color="secondary">
+                            Каналы ученика не подключены (Telegram / Max).
+                        </Text>
+                    )}
+
+                    {parentDeliveryEnabled && (
+                        <Text variant="body-2" color="secondary" style={{ marginTop: 2 }}>
+                            Дополнительно: Email родителя
+                        </Text>
+                    )}
+                </div>
+            </AppDialog>
         </Lp2PlannerShell>
     );
 

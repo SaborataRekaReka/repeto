@@ -110,6 +110,7 @@ const SettingsPage = () => {
     return (
         <GravityLayout title="Настройки">
             <PageOverlay
+                className="repeto-settings-overlay"
                 title="Настройки"
                 breadcrumb="Дашборд"
                 backHref="/dashboard"

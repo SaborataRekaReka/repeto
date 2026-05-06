@@ -105,13 +105,15 @@ const Security = () => {
                                         <Text variant="caption-2" color="secondary" style={{ display: "block" }}>
                                             Введите пароль для подтверждения
                                         </Text>
-                                        <TextInput
-                                            type="password"
-                                            value={deletePassword}
-                                            onUpdate={setDeletePassword}
-                                            placeholder="Ваш пароль"
-                                            size="l"
-                                        />
+                                        <AppField label="Пароль подтверждения" style={{ marginBottom: 0 }}>
+                                            <TextInput
+                                                type="password"
+                                                value={deletePassword}
+                                                onUpdate={setDeletePassword}
+                                                placeholder="Ваш пароль"
+                                                size="l"
+                                            />
+                                        </AppField>
                                         <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
                                             <Button view="outlined" size="l" onClick={() => { setDeleteConfirm(false); setDeletePassword(""); setDeleteMsg(null); }}>
                                                 Отмена

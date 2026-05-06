@@ -20,6 +20,1170 @@
     --repeto-shell-page-top-inset: 10px;
 }
 
+/* Settings: Yandex-like working surface, Repeto palette. */
+.repeto-settings-overlay .page-overlay__content--shell {
+    padding-top: var(--repeto-shell-page-top-inset) !important;
+}
+
+.repeto-settings-content--shell {
+    --repeto-settings-panel-bg: var(--surface-card, #ffffff);
+    --repeto-settings-field-bg: #f3f4f6;
+    --repeto-settings-field-bg-hover: #eef0f3;
+    --repeto-settings-field-bg-focus: #ffffff;
+    --repeto-settings-row-hover: #fcfcfc;
+    --repeto-settings-form-column: minmax(260px, 420px);
+    --repeto-settings-form-wide: 858px;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 26px 26px 30px !important;
+    border: 1px solid color-mix(in srgb, var(--border-subtle) 82%, transparent) !important;
+    border-radius: 16px !important;
+    background: var(--repeto-settings-panel-bg) !important;
+    box-shadow: none !important;
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-settings-content--shell {
+    --repeto-settings-panel-bg: var(--surface-card);
+    --repeto-settings-field-bg: color-mix(in srgb, var(--surface-subtle) 88%, #ffffff 12%);
+    --repeto-settings-field-bg-hover: color-mix(in srgb, var(--surface-subtle) 78%, #ffffff 22%);
+    --repeto-settings-field-bg-focus: var(--surface-card);
+    --repeto-settings-row-hover: color-mix(in srgb, var(--surface-subtle) 62%, transparent);
+}
+
+.repeto-settings-page-head {
+    margin: 0 !important;
+    padding: 0 0 24px !important;
+    border-bottom: 1px solid var(--repeto-line-subtle) !important;
+}
+
+.repeto-settings-page-head__title {
+    font-size: 24px !important;
+    line-height: 32px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0 !important;
+    color: var(--text-primary) !important;
+}
+
+.repeto-settings-page-head__desc {
+    max-width: 720px !important;
+    margin-top: 6px !important;
+    font-size: 13px !important;
+    line-height: 18px !important;
+    color: var(--text-secondary) !important;
+}
+
+.repeto-settings-account-stack,
+.repeto-settings-stack {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+}
+
+.repeto-settings-content :is(.g-card, .repeto-settings-section-card, .repeto-settings-widget-card),
+.repeto-settings-content :is(.g-card, .repeto-settings-section-card, .repeto-settings-widget-card):hover,
+.repeto-settings-content :is(.g-card, .repeto-settings-section-card, .repeto-settings-widget-card):focus-within,
+.page-overlay__content .repeto-settings-section-card:hover,
+.page-overlay__content .repeto-settings-widget-card:hover {
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    transform: none !important;
+    transition: none !important;
+}
+
+.repeto-settings-content .repeto-settings-section-card {
+    border-bottom: 1px solid var(--repeto-line-subtle) !important;
+}
+
+.repeto-settings-content .repeto-settings-section-card:last-child,
+.repeto-settings-content .repeto-settings-stack > .repeto-settings-section-card:last-child,
+.repeto-settings-content .repeto-settings-account-stack > .repeto-settings-section-card:last-of-type {
+    border-bottom: 0 !important;
+}
+
+.repeto-settings-card__header,
+.repeto-settings-section-card > div:first-child[style*="border-bottom"] {
+    min-height: 70px !important;
+    padding: 24px 0 14px !important;
+    border-bottom: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 16px !important;
+}
+
+.repeto-settings-card__header .g-text,
+.repeto-settings-section-card > div:first-child[style*="border-bottom"] .g-text,
+.repeto-settings-card__header .repeto-settings-portrait-title {
+    font-size: 18px !important;
+    line-height: 24px !important;
+    font-weight: 700 !important;
+    color: var(--text-primary) !important;
+    letter-spacing: 0 !important;
+}
+
+.repeto-settings-card__body,
+.repeto-settings-section-card > div:not(.repeto-settings-card__header) {
+    padding: 0 0 28px !important;
+}
+
+.repeto-settings-section-card > div[style*="max-width"] {
+    max-width: var(--repeto-settings-form-wide) !important;
+}
+
+.repeto-settings-account-grid,
+.repeto-settings-format-grid,
+.repeto-settings-public-page-grid {
+    width: min(100%, var(--repeto-settings-form-wide)) !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, var(--repeto-settings-form-column)) !important;
+    gap: 16px 18px !important;
+    align-items: start !important;
+}
+
+.repeto-settings-format-grid {
+    max-width: var(--repeto-settings-form-wide) !important;
+}
+
+.repeto-settings-account-grid > [style*="grid-column"],
+.repeto-settings-public-page-grid > [style*="grid-column"],
+.repeto-settings-account-grid .app-field[style*="grid-column"] {
+    max-width: var(--repeto-settings-form-wide) !important;
+}
+
+.repeto-settings-content .app-field {
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+}
+
+.repeto-settings-content .app-field__inner {
+    min-height: 56px !important;
+    padding: 10px 14px 8px !important;
+    border: 1px solid transparent !important;
+    border-radius: 12px !important;
+    background: var(--repeto-settings-field-bg) !important;
+    box-shadow: none !important;
+}
+
+.repeto-settings-content .app-field__inner:hover {
+    border-color: transparent !important;
+    background: var(--repeto-settings-field-bg-hover) !important;
+}
+
+.repeto-settings-content .app-field__inner:focus-within {
+    border-color: color-mix(in srgb, var(--accent) 42%, transparent) !important;
+    background: var(--repeto-settings-field-bg-focus) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent) !important;
+}
+
+.repeto-settings-content .app-field__inner:has(.g-text-area) {
+    min-height: 118px !important;
+    background: var(--repeto-settings-field-bg) !important;
+}
+
+.repeto-settings-content .app-field__inner:has(.g-select-control),
+.repeto-settings-content .app-field__inner:has(.g-text-area) {
+    background: var(--repeto-settings-field-bg) !important;
+}
+
+.repeto-settings-content .app-field__inner:has(.g-select-control):hover,
+.repeto-settings-content .app-field__inner:has(.g-text-area):hover {
+    background: var(--repeto-settings-field-bg-hover) !important;
+}
+
+.repeto-settings-content .app-field__inner:has(.g-select-control):focus-within,
+.repeto-settings-content .app-field__inner:has(.g-text-area):focus-within {
+    background: var(--repeto-settings-field-bg-focus) !important;
+}
+
+.repeto-settings-content .app-field__label,
+.repeto-settings-content .app-field--select .app-field__label {
+    margin: 0 0 4px !important;
+    padding: 0 !important;
+    color: var(--text-secondary) !important;
+    font-size: 12px !important;
+    line-height: 16px !important;
+    font-weight: 500 !important;
+}
+
+.repeto-settings-content .app-field__control,
+.repeto-settings-content .app-field--select .app-field__control {
+    padding: 0 !important;
+}
+
+.repeto-settings-content .app-field__control .g-text-input__control,
+.repeto-settings-content .app-field__control .g-text-area__control,
+.repeto-settings-content .app-field__control .g-select-control__button {
+    min-height: 26px !important;
+    font-size: 14px !important;
+    line-height: 20px !important;
+    color: var(--text-primary) !important;
+}
+
+.repeto-settings-content .app-field__control .g-select-control__button {
+    min-height: 28px !important;
+}
+
+.repeto-settings-content .app-field__control .g-select-control {
+    width: 100% !important;
+}
+
+.repeto-settings-content .app-field__control .g-select-control__button,
+.repeto-settings-content .app-field__control .g-select-control__button > span {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+.repeto-settings-content .g-button {
+    border-radius: 11px !important;
+    box-shadow: none !important;
+}
+
+.repeto-settings-add-btn.g-button,
+.repeto-settings-add-btn.g-button:hover,
+.repeto-settings-add-btn.g-button:active {
+    min-height: 38px !important;
+    padding-inline: 12px !important;
+    border: 0 !important;
+    border-radius: 11px !important;
+    background: var(--repeto-settings-field-bg) !important;
+    color: var(--text-primary) !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+}
+
+.repeto-settings-add-btn.g-button:hover {
+    background: var(--repeto-settings-field-bg-hover) !important;
+}
+
+.repeto-settings-add-btn .repeto-animated-sidebar-icon,
+.repeto-settings-add-btn .g-icon {
+    color: var(--accent) !important;
+}
+
+.repeto-settings-empty,
+.repeto-settings-empty-text {
+    width: min(100%, var(--repeto-settings-form-wide)) !important;
+    padding: 18px 0 24px !important;
+    color: var(--text-secondary) !important;
+}
+
+.repeto-settings-empty {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+}
+
+.repeto-settings-empty__icon {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 12px !important;
+    background: var(--repeto-settings-field-bg) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: var(--accent) !important;
+    flex-shrink: 0 !important;
+}
+
+.repeto-settings-empty__actions {
+    margin-left: auto !important;
+}
+
+.repeto-settings-portrait-section .repeto-settings-card__header {
+    min-height: 70px !important;
+    padding: 24px 0 14px !important;
+}
+
+.repeto-settings-portrait-section .repeto-settings-card__body {
+    padding: 0 0 28px !important;
+}
+
+.repeto-settings-portrait-row {
+    width: min(100%, var(--repeto-settings-form-wide)) !important;
+    display: grid !important;
+    grid-template-columns: 64px minmax(0, 1fr) 28px !important;
+    align-items: center !important;
+    gap: 14px !important;
+}
+
+.repeto-settings-portrait-row .repeto-settings-avatar-trigger--account {
+    width: 64px !important;
+    height: 64px !important;
+    border-radius: 50% !important;
+    box-shadow: none !important;
+}
+
+.repeto-settings-portrait-meta {
+    min-width: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+}
+
+.repeto-settings-portrait-button.g-button,
+.repeto-settings-portrait-button.g-button:hover,
+.repeto-settings-portrait-button.g-button:active {
+    height: 38px !important;
+    min-width: 0 !important;
+    padding-inline: 14px !important;
+    border-radius: 11px !important;
+    background: var(--repeto-settings-field-bg) !important;
+    color: var(--text-primary) !important;
+    font-size: 14px !important;
+    line-height: 18px !important;
+    font-weight: 500 !important;
+}
+
+.repeto-settings-portrait-button.g-button:hover {
+    background: var(--repeto-settings-field-bg-hover) !important;
+}
+
+.repeto-settings-portrait-caption {
+    max-width: 420px !important;
+    color: var(--text-secondary) !important;
+    font-size: 12px !important;
+    line-height: 16px !important;
+}
+
+.repeto-settings-portrait-help {
+    width: 28px !important;
+    height: 28px !important;
+    border: 0 !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+    color: var(--text-tertiary) !important;
+}
+
+.repeto-subjects-list,
+.repeto-settings-repeat-list {
+    width: min(100%, var(--repeto-settings-form-wide)) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+    border: 1px solid var(--repeto-line-subtle) !important;
+    border-radius: 14px !important;
+    background: var(--repeto-settings-panel-bg) !important;
+    overflow: hidden !important;
+}
+
+.repeto-subject-row,
+.repeto-settings-education-row {
+    padding: 14px !important;
+    border: 0 !important;
+    background: transparent !important;
+}
+
+.repeto-subject-row + .repeto-subject-row,
+.repeto-settings-education-row + .repeto-settings-education-row {
+    border-top: 1px solid var(--repeto-line-subtle) !important;
+}
+
+.repeto-subject-row:hover,
+.repeto-settings-education-row:hover {
+    background: var(--repeto-settings-row-hover) !important;
+}
+
+.repeto-subject-row__fields {
+    display: grid !important;
+    grid-template-columns: minmax(240px, 1fr) minmax(128px, 160px) minmax(136px, 160px) 42px !important;
+    gap: 12px !important;
+    align-items: end !important;
+    padding: 0 !important;
+}
+
+.repeto-subject-row .app-field__inner {
+    min-height: 52px !important;
+    padding: 8px 12px 7px !important;
+}
+
+.repeto-subject-row__actions {
+    align-self: stretch !important;
+    display: flex !important;
+    align-items: flex-end !important;
+    justify-content: flex-end !important;
+}
+
+.repeto-subject-row__delete.g-button,
+.repeto-settings-icon-danger-btn.g-button {
+    width: 38px !important;
+    min-width: 38px !important;
+    height: 38px !important;
+    padding: 0 !important;
+    border-radius: 11px !important;
+    background: transparent !important;
+    color: var(--text-tertiary) !important;
+}
+
+.repeto-subject-row__delete.g-button:hover,
+.repeto-settings-icon-danger-btn.g-button:hover {
+    background: color-mix(in srgb, var(--g-color-text-danger) 10%, transparent) !important;
+    color: var(--g-color-text-danger) !important;
+}
+
+.repeto-subject-row__unit {
+    color: var(--text-secondary) !important;
+    font-size: 13px !important;
+}
+
+.repeto-subject-row__confirm {
+    margin: 12px 0 0 !important;
+}
+
+.repeto-subject-row__confirm-actions {
+    display: flex !important;
+    gap: 8px !important;
+    margin-top: 10px !important;
+}
+
+.repeto-settings-education-row {
+    width: 100% !important;
+    grid-template-columns: minmax(0, 1fr) minmax(180px, 0.55fr) minmax(140px, 0.38fr) 42px !important;
+}
+
+.repeto-settings-certs-grid {
+    width: min(100%, var(--repeto-settings-form-wide)) !important;
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important;
+    gap: 12px !important;
+}
+
+.repeto-settings-cert-card {
+    border: 1px solid var(--repeto-line-subtle) !important;
+    border-radius: 14px !important;
+    background: var(--repeto-settings-panel-bg) !important;
+    overflow: hidden !important;
+}
+
+.repeto-settings-cert-card__preview {
+    aspect-ratio: 4 / 3 !important;
+    background: var(--repeto-settings-field-bg) !important;
+}
+
+.repeto-settings-switch-row,
+.repeto-settings-notification-item {
+    width: min(100%, var(--repeto-settings-form-wide)) !important;
+    min-height: 58px !important;
+    padding: 14px 0 !important;
+    border-top: 1px solid var(--repeto-line-subtle) !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 18px !important;
+}
+
+.repeto-settings-switch-row:first-child,
+.repeto-settings-notification-item:first-child {
+    border-top: 0 !important;
+}
+
+.repeto-settings-notification-list {
+    width: min(100%, var(--repeto-settings-form-wide)) !important;
+}
+
+.repeto-settings-notification-item__controls {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 12px !important;
+}
+
+.repeto-settings-inline-select {
+    width: 184px !important;
+    flex: 0 0 184px !important;
+}
+
+.repeto-settings-pill-row {
+    width: min(100%, var(--repeto-settings-form-wide)) !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+}
+
+.repeto-settings-pill {
+    height: 38px !important;
+    min-width: 86px !important;
+    padding: 0 14px !important;
+    border: 0 !important;
+    border-radius: 11px !important;
+    background: var(--repeto-settings-field-bg) !important;
+    color: var(--text-primary) !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+}
+
+.repeto-settings-pill:hover {
+    background: var(--repeto-settings-field-bg-hover) !important;
+}
+
+.repeto-settings-pill--active {
+    background: color-mix(in srgb, var(--accent) 12%, var(--repeto-settings-field-bg)) !important;
+    color: var(--accent) !important;
+}
+
+.repeto-settings-actions-row,
+.repeto-settings-savebar {
+    width: min(100%, var(--repeto-settings-form-wide)) !important;
+    min-height: 58px !important;
+    padding: 18px 0 0 !important;
+    margin-top: 0 !important;
+    border-top: 1px solid var(--repeto-line-subtle) !important;
+    background: transparent !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 12px !important;
+}
+
+.repeto-settings-savebar--sticky {
+    position: static !important;
+    bottom: auto !important;
+    z-index: auto !important;
+    padding-bottom: 2px !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+}
+
+.repeto-settings-savebar__message {
+    margin-right: auto !important;
+    font-size: 13px !important;
+}
+
+.repeto-settings-default-cloud {
+    width: min(100%, var(--repeto-settings-form-wide)) !important;
+    grid-template-columns: minmax(0, 1fr) 136px !important;
+    align-items: end !important;
+    gap: 14px !important;
+    padding: 0 0 18px !important;
+    border-bottom: 1px solid var(--repeto-line-subtle) !important;
+}
+
+.repeto-settings-default-cloud__save.g-button,
+.repeto-settings-integration-row__action.g-button {
+    width: 136px !important;
+    min-width: 136px !important;
+    height: 38px !important;
+    border-radius: 11px !important;
+    justify-self: end !important;
+}
+
+.repeto-settings-integrations-panel .repeto-settings-integrations-panel__body {
+    padding: 0 0 28px !important;
+}
+
+.repeto-settings-integrations-list {
+    width: min(100%, var(--repeto-settings-form-wide)) !important;
+}
+
+.repeto-settings-integration-row {
+    padding: 14px 0 !important;
+    border-bottom: 1px solid var(--repeto-line-subtle) !important;
+}
+
+.repeto-settings-integration-row:last-child {
+    border-bottom: 0 !important;
+}
+
+.repeto-settings-integration-row__summary {
+    display: grid !important;
+    grid-template-columns: 40px minmax(0, 1fr) 136px !important;
+    align-items: center !important;
+    gap: 14px !important;
+}
+
+.repeto-settings-integration-row__icon {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 12px !important;
+}
+
+.repeto-settings-integration-row__title {
+    font-size: 14px !important;
+    line-height: 20px !important;
+    font-weight: 600 !important;
+}
+
+.repeto-settings-integration-row__desc {
+    margin-top: 2px !important;
+    font-size: 12px !important;
+    line-height: 16px !important;
+}
+
+.repeto-settings-integration-row__status {
+    justify-self: start !important;
+}
+
+.repeto-settings-integration-row__details {
+    margin: 8px 0 0 54px !important;
+    gap: 8px 18px !important;
+}
+
+.repeto-settings-integration-row__details--form {
+    max-width: var(--repeto-settings-form-wide) !important;
+    margin-left: 54px !important;
+    padding: 14px !important;
+    border-radius: 14px !important;
+    background: var(--repeto-settings-field-bg) !important;
+}
+
+.repeto-settings-token-actions {
+    display: flex !important;
+    gap: 8px !important;
+    margin-top: 12px !important;
+}
+
+@media (max-width: 1100px) {
+    .repeto-settings-account-grid,
+    .repeto-settings-format-grid,
+    .repeto-settings-public-page-grid,
+    .repeto-settings-education-row {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+
+    .repeto-subject-row__fields {
+        grid-template-columns: minmax(0, 1fr) minmax(128px, 1fr) minmax(128px, 1fr) 42px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .repeto-settings-overlay .page-overlay__content {
+        padding-inline: 14px !important;
+    }
+
+    .repeto-settings-content--shell {
+        padding: 20px 16px 24px !important;
+        border-radius: 14px !important;
+    }
+
+    .repeto-settings-page-head {
+        padding-bottom: 18px !important;
+    }
+
+    .repeto-settings-page-head__title {
+        font-size: 22px !important;
+        line-height: 28px !important;
+    }
+
+    .repeto-settings-card__header,
+    .repeto-settings-section-card > div:first-child[style*="border-bottom"] {
+        min-height: 62px !important;
+        padding: 20px 0 12px !important;
+    }
+
+    .repeto-settings-portrait-row {
+        grid-template-columns: 56px minmax(0, 1fr) !important;
+    }
+
+    .repeto-settings-portrait-row .repeto-settings-avatar-trigger--account {
+        width: 56px !important;
+        height: 56px !important;
+    }
+
+    .repeto-settings-portrait-help {
+        display: none !important;
+    }
+
+    .repeto-subject-row__fields {
+        grid-template-columns: minmax(0, 1fr) 42px !important;
+    }
+
+    .repeto-subject-row__price,
+    .repeto-subject-row__duration {
+        grid-column: 1 / -1 !important;
+    }
+
+    .repeto-subject-row__actions {
+        grid-column: 2 !important;
+        grid-row: 1 !important;
+    }
+
+    .repeto-settings-switch-row,
+    .repeto-settings-notification-item,
+    .repeto-settings-default-cloud,
+    .repeto-settings-integration-row__summary {
+        grid-template-columns: minmax(0, 1fr) !important;
+        align-items: start !important;
+    }
+
+    .repeto-settings-notification-item__controls,
+    .repeto-settings-savebar,
+    .repeto-settings-actions-row {
+        justify-content: flex-start !important;
+        flex-wrap: wrap !important;
+    }
+
+    .repeto-settings-inline-select,
+    .repeto-settings-default-cloud__save.g-button,
+    .repeto-settings-integration-row__action.g-button {
+        width: 100% !important;
+        flex-basis: 100% !important;
+    }
+
+    .repeto-settings-integration-row__status,
+    .repeto-settings-integration-row__action.g-button {
+        grid-column: 2 !important;
+    }
+
+    .repeto-settings-integration-row__details,
+    .repeto-settings-integration-row__details--form {
+        margin-left: 0 !important;
+    }
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-savebar--sticky {
+    position: static !important;
+    bottom: auto !important;
+    z-index: auto !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+}
+
+/* Settings refinement pass: tighter Yandex-like rhythm and centered Gravity buttons. */
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content--shell {
+    --repeto-settings-field-bg: #f5f6f8;
+    --repeto-settings-field-bg-hover: #f0f1f4;
+    --repeto-settings-field-bg-focus: #ffffff;
+    --repeto-settings-row-hover: #fcfcfc;
+    padding: 24px 32px 28px !important;
+    border-color: color-mix(in srgb, var(--border-subtle) 68%, transparent) !important;
+    border-radius: 18px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-page-head {
+    padding-bottom: 22px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-page-head__title {
+    font-size: 23px !important;
+    line-height: 30px !important;
+    font-weight: 700 !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-page-head__desc {
+    margin-top: 5px !important;
+    font-size: 13px !important;
+    line-height: 18px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-card__header,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-section-card > div:first-child[style*="border-bottom"] {
+    min-height: 56px !important;
+    padding: 18px 0 8px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-card__header .g-text,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-section-card > div:first-child[style*="border-bottom"] .g-text,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-card__header .repeto-settings-portrait-title {
+    font-size: 17px !important;
+    line-height: 22px !important;
+    font-weight: 650 !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-card__body,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-section-card > div:not(.repeto-settings-card__header) {
+    padding-bottom: 22px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-account-grid,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-format-grid,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-page-grid {
+    gap: 10px 16px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .app-field__inner {
+    min-height: 54px !important;
+    padding: 6px 12px 5px !important;
+    border-radius: 10px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .app-field__inner:has(.g-text-area) {
+    min-height: 104px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .app-field__label,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .app-field--select .app-field__label {
+    margin-bottom: 1px !important;
+    color: color-mix(in srgb, var(--text-secondary) 84%, var(--text-primary)) !important;
+    font-size: 12px !important;
+    line-height: 15px !important;
+    font-weight: 500 !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .app-field__control .g-text-input,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .app-field__control .g-text-input__content,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .app-field__control .g-select-control,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .app-field__control .g-select-control__button {
+    height: 27px !important;
+    min-height: 27px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .app-field__control .g-text-input__control,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .app-field__control .g-select-control__button {
+    height: 27px !important;
+    min-height: 27px !important;
+    line-height: 18px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .g-button,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .g-button:not(.g-button_disabled):hover,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .g-button:not(.g-button_disabled):active {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .g-button__text,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .g-button__content {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 7px !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    line-height: 1 !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .g-button__text > *,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .g-button__content > *,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .repeto-animated-sidebar-icon,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .g-icon {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 0 0 auto !important;
+    line-height: 1 !important;
+    vertical-align: middle !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .repeto-animated-sidebar-icon__canvas,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .repeto-animated-sidebar-icon__fallback {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-add-btn.g-button,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-portrait-button.g-button,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-default-cloud__save.g-button,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-integration-row__action.g-button {
+    height: 36px !important;
+    min-height: 36px !important;
+    border-radius: 10px !important;
+    padding-inline: 13px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-subject-row__delete.g-button,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-icon-danger-btn.g-button {
+    width: 36px !important;
+    min-width: 36px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    border-radius: 10px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-subject-row__delete.g-button .g-button__text,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-icon-danger-btn.g-button .g-button__text {
+    width: 100% !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-portrait-row {
+    grid-template-columns: 60px minmax(0, 1fr) 28px !important;
+    gap: 14px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-portrait-row .repeto-settings-avatar-trigger--account {
+    width: 60px !important;
+    height: 60px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-portrait-meta {
+    gap: 10px 12px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-portrait-caption {
+    color: var(--text-tertiary) !important;
+    font-size: 12px !important;
+    line-height: 16px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-subjects-list,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-repeat-list {
+    border-radius: 12px !important;
+    border-color: color-mix(in srgb, var(--repeto-line-subtle) 86%, transparent) !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-subject-row,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-education-row {
+    padding: 12px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-subject-row__fields {
+    grid-template-columns: minmax(240px, 1fr) minmax(122px, 150px) minmax(128px, 154px) 36px !important;
+    gap: 10px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-subject-row .app-field__inner {
+    min-height: 50px !important;
+    padding: 6px 11px 5px !important;
+    border-radius: 10px !important;
+}
+
+@media (max-width: 768px) {
+    .page-overlay--shell.repeto-settings-overlay .repeto-settings-content--shell {
+        padding: 20px 16px 24px !important;
+        border-radius: 14px !important;
+    }
+
+    .page-overlay--shell.repeto-settings-overlay .repeto-settings-portrait-row {
+        grid-template-columns: 56px minmax(0, 1fr) !important;
+    }
+}
+
+/* Settings true EOF row-field model: keep after all duplicated density rules. */
+.page-overlay--shell.repeto-settings-overlay :is(
+    .repeto-settings-account-grid,
+    .repeto-settings-format-grid,
+    .repeto-settings-public-page-grid
+) .app-field__inner:not(:has(.g-text-area)) {
+    display: grid !important;
+    grid-template-columns: minmax(104px, 0.42fr) minmax(0, 1fr) !important;
+    align-items: center !important;
+    column-gap: 12px !important;
+    min-height: 48px !important;
+    padding: 5px 12px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay :is(
+    .repeto-settings-account-grid,
+    .repeto-settings-format-grid,
+    .repeto-settings-public-page-grid
+) .app-field__inner:not(:has(.g-text-area)) .app-field__label {
+    min-width: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay :is(
+    .repeto-settings-account-grid,
+    .repeto-settings-format-grid,
+    .repeto-settings-public-page-grid
+) .app-field__inner:not(:has(.g-text-area)) .app-field__control {
+    min-width: 0 !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-account-grid .app-field__inner:has(.g-text-area),
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-page-grid .app-field__inner:has(.g-text-area) {
+    min-height: 96px !important;
+    padding: 8px 12px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-subject-row .app-field__inner,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-education-row .app-field__inner,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-inline-select .app-field__inner {
+    display: block !important;
+    min-height: 50px !important;
+    padding: 6px 11px 5px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-subject-row .app-field__label,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-education-row .app-field__label,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-inline-select .app-field__label {
+    margin-bottom: 1px !important;
+    white-space: normal !important;
+}
+
+@media (max-width: 768px) {
+    .page-overlay--shell.repeto-settings-overlay :is(
+        .repeto-settings-account-grid,
+        .repeto-settings-format-grid,
+        .repeto-settings-public-page-grid
+    ) .app-field__inner:not(:has(.g-text-area)) {
+        grid-template-columns: minmax(0, 1fr) !important;
+        align-items: start !important;
+        row-gap: 1px !important;
+        min-height: 54px !important;
+    }
+}
+
+/* Settings EOF row-field model: closer to Yandex settings rows than form cards. */
+.page-overlay--shell.repeto-settings-overlay :is(
+    .repeto-settings-account-grid,
+    .repeto-settings-format-grid,
+    .repeto-settings-public-page-grid
+) .app-field__inner:not(:has(.g-text-area)) {
+    display: grid !important;
+    grid-template-columns: minmax(104px, 0.42fr) minmax(0, 1fr) !important;
+    align-items: center !important;
+    column-gap: 12px !important;
+    min-height: 48px !important;
+    padding: 5px 12px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay :is(
+    .repeto-settings-account-grid,
+    .repeto-settings-format-grid,
+    .repeto-settings-public-page-grid
+) .app-field__inner:not(:has(.g-text-area)) .app-field__label {
+    min-width: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay :is(
+    .repeto-settings-account-grid,
+    .repeto-settings-format-grid,
+    .repeto-settings-public-page-grid
+) .app-field__inner:not(:has(.g-text-area)) .app-field__control {
+    min-width: 0 !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay :is(
+    .repeto-settings-account-grid,
+    .repeto-settings-format-grid,
+    .repeto-settings-public-page-grid
+) .app-field__inner:not(:has(.g-text-area)) .g-text-input__control,
+.page-overlay--shell.repeto-settings-overlay :is(
+    .repeto-settings-account-grid,
+    .repeto-settings-format-grid,
+    .repeto-settings-public-page-grid
+) .app-field__inner:not(:has(.g-text-area)) .g-select-control__button {
+    text-align: left !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-account-grid .app-field__inner:has(.g-text-area),
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-page-grid .app-field__inner:has(.g-text-area) {
+    min-height: 96px !important;
+    padding: 8px 12px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-subject-row .app-field__inner,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-education-row .app-field__inner,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-inline-select .app-field__inner {
+    display: block !important;
+    min-height: 50px !important;
+    padding: 6px 11px 5px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-subject-row .app-field__label,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-education-row .app-field__label,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-inline-select .app-field__label {
+    margin-bottom: 1px !important;
+    white-space: normal !important;
+}
+
+@media (max-width: 768px) {
+    .page-overlay--shell.repeto-settings-overlay :is(
+        .repeto-settings-account-grid,
+        .repeto-settings-format-grid,
+        .repeto-settings-public-page-grid
+    ) .app-field__inner:not(:has(.g-text-area)) {
+        grid-template-columns: minmax(0, 1fr) !important;
+        align-items: start !important;
+        row-gap: 1px !important;
+        min-height: 54px !important;
+    }
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content--shell {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 26px 26px 30px !important;
+    border: 1px solid color-mix(in srgb, var(--border-subtle) 82%, transparent) !important;
+    border-radius: 16px !important;
+    background: var(--repeto-settings-panel-bg) !important;
+    box-shadow: none !important;
+}
+
+@media (max-width: 768px) {
+    .page-overlay--shell.repeto-settings-overlay .repeto-settings-content--shell {
+        padding: 20px 16px 24px !important;
+        border-radius: 14px !important;
+    }
+}
+
+/* Settings density pass: closer to Yandex controls, less card-like. */
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-card__header,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-section-card > div:first-child[style*="border-bottom"] {
+    min-height: 62px !important;
+    padding: 20px 0 10px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-card__body,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-section-card > div:not(.repeto-settings-card__header) {
+    padding: 0 0 24px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-account-grid,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-format-grid,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-page-grid {
+    gap: 12px 16px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .app-field__inner {
+    min-height: 58px !important;
+    padding: 7px 12px 6px !important;
+    border-radius: 11px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .app-field__inner:has(.g-text-area) {
+    min-height: 112px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .app-field__label,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .app-field--select .app-field__label {
+    margin-bottom: 2px !important;
+    font-size: 12px !important;
+    line-height: 15px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .app-field__control .g-text-input,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .app-field__control .g-text-input__content,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .app-field__control .g-select-control,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .app-field__control .g-select-control__button {
+    height: 28px !important;
+    min-height: 28px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .app-field__control .g-text-input__control,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .app-field__control .g-select-control__button {
+    height: 28px !important;
+    min-height: 28px !important;
+    font-size: 14px !important;
+    line-height: 18px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .app-field__control .g-text-area,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .app-field__control .g-text-area__content,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .app-field__control .g-text-area__control {
+    min-height: 72px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-switch-row,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-notification-item {
+    min-height: 54px !important;
+    padding: 12px 0 !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-actions-row,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-savebar {
+    min-height: 54px !important;
+    padding-top: 16px !important;
+}
+
 :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) {
     --repeto-shell-rail-bg: var(--accent);
     --repeto-shell-rail-border: color-mix(in srgb, #ffffff 24%, transparent);
@@ -702,7 +1866,7 @@
     .repeto-context-sidebar__item--active {
         background: transparent !important;
         border-color: transparent !important;
-        color: var(--text-primary) !important;
+        color: var(--accent) !important;
     }
 
     .repeto-context-sidebar__footer {
@@ -828,9 +1992,14 @@
     }
 
     .repeto-settings-content--shell {
-        width: min(1180px, 100%) !important;
-        max-width: 1180px !important;
-        margin: 0 auto !important;
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
     }
 
     .repeto-settings-content :is(.g-card, .repeto-settings-section-card, .repeto-settings-widget-card),
@@ -1007,5 +2176,873 @@
             var(--repeto-shell-context-sidebar-width) +
             var(--repeto-shell-floating-gap)
         ) !important;
+    }
+}
+
+/* Settings final pass: keep this after the shell media block. */
+.repeto-settings-content--shell {
+    --repeto-settings-panel-bg: var(--surface-card, #ffffff);
+    --repeto-settings-field-bg: #f3f4f6;
+    --repeto-settings-field-bg-hover: #eef0f3;
+    --repeto-settings-field-bg-focus: #ffffff;
+    --repeto-settings-row-hover: #fcfcfc;
+    --repeto-settings-form-column: minmax(260px, 420px);
+    --repeto-settings-form-wide: 858px;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 26px 26px 30px !important;
+    border: 1px solid color-mix(in srgb, var(--border-subtle) 82%, transparent) !important;
+    border-radius: 16px !important;
+    background: var(--repeto-settings-panel-bg) !important;
+    box-shadow: none !important;
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-settings-content--shell {
+    --repeto-settings-panel-bg: var(--surface-card);
+    --repeto-settings-field-bg: color-mix(in srgb, var(--surface-subtle) 88%, #ffffff 12%);
+    --repeto-settings-field-bg-hover: color-mix(in srgb, var(--surface-subtle) 78%, #ffffff 22%);
+    --repeto-settings-field-bg-focus: var(--surface-card);
+    --repeto-settings-row-hover: color-mix(in srgb, var(--surface-subtle) 62%, transparent);
+}
+
+.repeto-settings-page-head {
+    margin: 0 !important;
+    padding: 0 0 24px !important;
+    border-bottom: 1px solid var(--repeto-line-subtle) !important;
+}
+
+.repeto-settings-page-head__title {
+    font-size: 24px !important;
+    line-height: 32px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0 !important;
+    color: var(--text-primary) !important;
+}
+
+.repeto-settings-page-head__desc {
+    max-width: 720px !important;
+    margin-top: 6px !important;
+    font-size: 13px !important;
+    line-height: 18px !important;
+    color: var(--text-secondary) !important;
+}
+
+.repeto-settings-account-stack,
+.repeto-settings-stack {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+}
+
+.repeto-settings-content :is(.g-card, .repeto-settings-section-card, .repeto-settings-widget-card),
+.repeto-settings-content :is(.g-card, .repeto-settings-section-card, .repeto-settings-widget-card):hover,
+.repeto-settings-content :is(.g-card, .repeto-settings-section-card, .repeto-settings-widget-card):focus-within,
+.page-overlay__content .repeto-settings-section-card:hover,
+.page-overlay__content .repeto-settings-widget-card:hover {
+    margin: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    transform: none !important;
+    transition: none !important;
+}
+
+.repeto-settings-content .repeto-settings-section-card {
+    border-bottom: 1px solid var(--repeto-line-subtle) !important;
+}
+
+.repeto-settings-content .repeto-settings-section-card:last-child,
+.repeto-settings-content .repeto-settings-stack > .repeto-settings-section-card:last-child,
+.repeto-settings-content .repeto-settings-account-stack > .repeto-settings-section-card:last-of-type {
+    border-bottom: 0 !important;
+}
+
+.repeto-settings-card__header,
+.repeto-settings-section-card > div:first-child[style*="border-bottom"] {
+    min-height: 70px !important;
+    padding: 24px 0 14px !important;
+    border-bottom: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 16px !important;
+}
+
+.repeto-settings-card__header .g-text,
+.repeto-settings-section-card > div:first-child[style*="border-bottom"] .g-text,
+.repeto-settings-card__header .repeto-settings-portrait-title {
+    font-size: 18px !important;
+    line-height: 24px !important;
+    font-weight: 700 !important;
+    color: var(--text-primary) !important;
+    letter-spacing: 0 !important;
+}
+
+.repeto-settings-card__body,
+.repeto-settings-section-card > div:not(.repeto-settings-card__header) {
+    padding: 0 0 28px !important;
+}
+
+.repeto-settings-section-card > div[style*="max-width"] {
+    max-width: var(--repeto-settings-form-wide) !important;
+}
+
+.repeto-settings-account-grid,
+.repeto-settings-format-grid,
+.repeto-settings-public-page-grid {
+    width: min(100%, var(--repeto-settings-form-wide)) !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, var(--repeto-settings-form-column)) !important;
+    gap: 16px 18px !important;
+    align-items: start !important;
+}
+
+.repeto-settings-format-grid {
+    max-width: var(--repeto-settings-form-wide) !important;
+}
+
+.repeto-settings-content .app-field {
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+}
+
+.repeto-settings-content .app-field__inner {
+    min-height: 56px !important;
+    padding: 10px 14px 8px !important;
+    border: 1px solid transparent !important;
+    border-radius: 12px !important;
+    background: var(--repeto-settings-field-bg) !important;
+    box-shadow: none !important;
+}
+
+.repeto-settings-content .app-field__inner:hover {
+    border-color: transparent !important;
+    background: var(--repeto-settings-field-bg-hover) !important;
+}
+
+.repeto-settings-content .app-field__inner:focus-within {
+    border-color: color-mix(in srgb, var(--accent) 42%, transparent) !important;
+    background: var(--repeto-settings-field-bg-focus) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent) !important;
+}
+
+.repeto-settings-content .app-field__inner:has(.g-select-control),
+.repeto-settings-content .app-field__inner:has(.g-text-area) {
+    background: var(--repeto-settings-field-bg) !important;
+}
+
+.repeto-settings-content .app-field__inner:has(.g-select-control):hover,
+.repeto-settings-content .app-field__inner:has(.g-text-area):hover {
+    background: var(--repeto-settings-field-bg-hover) !important;
+}
+
+.repeto-settings-content .app-field__inner:has(.g-select-control):focus-within,
+.repeto-settings-content .app-field__inner:has(.g-text-area):focus-within {
+    background: var(--repeto-settings-field-bg-focus) !important;
+}
+
+.repeto-settings-content .app-field__inner:has(.g-text-area) {
+    min-height: 118px !important;
+}
+
+.repeto-settings-content .app-field__label,
+.repeto-settings-content .app-field--select .app-field__label {
+    margin: 0 0 4px !important;
+    padding: 0 !important;
+    color: var(--text-secondary) !important;
+    font-size: 12px !important;
+    line-height: 16px !important;
+    font-weight: 500 !important;
+}
+
+.repeto-settings-content .app-field__control,
+.repeto-settings-content .app-field--select .app-field__control {
+    padding: 0 !important;
+}
+
+.repeto-settings-content .app-field__control .g-text-input__control,
+.repeto-settings-content .app-field__control .g-text-area__control,
+.repeto-settings-content .app-field__control .g-select-control__button {
+    min-height: 26px !important;
+    font-size: 14px !important;
+    line-height: 20px !important;
+    color: var(--text-primary) !important;
+}
+
+.repeto-settings-content .app-field__control .g-select-control,
+.repeto-settings-content .app-field__control .g-select-control__button,
+.repeto-settings-content .app-field__control .g-select-control__button > span {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+.repeto-settings-content .g-button {
+    border-radius: 11px !important;
+    box-shadow: none !important;
+}
+
+.repeto-settings-add-btn.g-button,
+.repeto-settings-add-btn.g-button:hover,
+.repeto-settings-add-btn.g-button:active,
+.repeto-settings-portrait-button.g-button,
+.repeto-settings-portrait-button.g-button:hover,
+.repeto-settings-portrait-button.g-button:active {
+    min-height: 38px !important;
+    height: 38px !important;
+    min-width: 0 !important;
+    padding-inline: 12px !important;
+    border: 0 !important;
+    border-radius: 11px !important;
+    background: var(--repeto-settings-field-bg) !important;
+    color: var(--text-primary) !important;
+    font-size: 14px !important;
+    line-height: 18px !important;
+    font-weight: 500 !important;
+}
+
+.repeto-settings-add-btn.g-button:hover,
+.repeto-settings-portrait-button.g-button:hover {
+    background: var(--repeto-settings-field-bg-hover) !important;
+}
+
+.repeto-settings-add-btn .repeto-animated-sidebar-icon,
+.repeto-settings-add-btn .g-icon {
+    color: var(--accent) !important;
+}
+
+.repeto-settings-empty,
+.repeto-settings-empty-text {
+    width: min(100%, var(--repeto-settings-form-wide)) !important;
+    padding: 18px 0 24px !important;
+    color: var(--text-secondary) !important;
+}
+
+.repeto-settings-empty {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+}
+
+.repeto-settings-empty__icon {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 12px !important;
+    background: var(--repeto-settings-field-bg) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: var(--accent) !important;
+    flex-shrink: 0 !important;
+}
+
+.repeto-settings-empty__actions {
+    margin-left: auto !important;
+}
+
+.repeto-settings-portrait-section .repeto-settings-card__header,
+.repeto-settings-portrait-section .repeto-settings-card__body {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+.repeto-settings-portrait-row {
+    width: min(100%, var(--repeto-settings-form-wide)) !important;
+    display: grid !important;
+    grid-template-columns: 64px minmax(0, 1fr) 28px !important;
+    align-items: center !important;
+    gap: 14px !important;
+}
+
+.repeto-settings-portrait-row .repeto-settings-avatar-trigger--account {
+    width: 64px !important;
+    height: 64px !important;
+    border-radius: 50% !important;
+    box-shadow: none !important;
+}
+
+.repeto-settings-portrait-meta {
+    min-width: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+}
+
+.repeto-settings-portrait-caption {
+    max-width: 420px !important;
+    color: var(--text-secondary) !important;
+    font-size: 12px !important;
+    line-height: 16px !important;
+}
+
+.repeto-settings-portrait-help {
+    width: 28px !important;
+    height: 28px !important;
+    border: 0 !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+    color: var(--text-tertiary) !important;
+}
+
+.repeto-subjects-list,
+.repeto-settings-repeat-list {
+    width: min(100%, var(--repeto-settings-form-wide)) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+    border: 1px solid var(--repeto-line-subtle) !important;
+    border-radius: 14px !important;
+    background: var(--repeto-settings-panel-bg) !important;
+    overflow: hidden !important;
+}
+
+.repeto-subject-row,
+.repeto-settings-education-row {
+    padding: 14px !important;
+    border: 0 !important;
+    background: transparent !important;
+}
+
+.repeto-subject-row + .repeto-subject-row,
+.repeto-settings-education-row + .repeto-settings-education-row {
+    border-top: 1px solid var(--repeto-line-subtle) !important;
+}
+
+.repeto-subject-row:hover,
+.repeto-settings-education-row:hover {
+    background: var(--repeto-settings-row-hover) !important;
+}
+
+.repeto-subject-row__fields {
+    display: grid !important;
+    grid-template-columns: minmax(240px, 1fr) minmax(128px, 160px) minmax(136px, 160px) 42px !important;
+    gap: 12px !important;
+    align-items: end !important;
+    padding: 0 !important;
+}
+
+.repeto-subject-row .app-field__inner {
+    min-height: 52px !important;
+    padding: 8px 12px 7px !important;
+}
+
+.repeto-subject-row__actions {
+    align-self: stretch !important;
+    display: flex !important;
+    align-items: flex-end !important;
+    justify-content: flex-end !important;
+}
+
+.repeto-subject-row__delete.g-button,
+.repeto-settings-icon-danger-btn.g-button {
+    width: 38px !important;
+    min-width: 38px !important;
+    height: 38px !important;
+    padding: 0 !important;
+    border-radius: 11px !important;
+    background: transparent !important;
+    color: var(--text-tertiary) !important;
+}
+
+.repeto-subject-row__delete.g-button:hover,
+.repeto-settings-icon-danger-btn.g-button:hover {
+    background: color-mix(in srgb, var(--g-color-text-danger) 10%, transparent) !important;
+    color: var(--g-color-text-danger) !important;
+}
+
+.repeto-subject-row__unit {
+    color: var(--text-secondary) !important;
+    font-size: 13px !important;
+}
+
+.repeto-subject-row__confirm {
+    margin: 12px 0 0 !important;
+}
+
+.repeto-subject-row__confirm-actions {
+    display: flex !important;
+    gap: 8px !important;
+    margin-top: 10px !important;
+}
+
+.repeto-settings-education-row {
+    width: 100% !important;
+    grid-template-columns: minmax(0, 1fr) minmax(180px, 0.55fr) minmax(140px, 0.38fr) 42px !important;
+}
+
+.repeto-settings-certs-grid {
+    width: min(100%, var(--repeto-settings-form-wide)) !important;
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important;
+    gap: 12px !important;
+}
+
+.repeto-settings-cert-card {
+    border: 1px solid var(--repeto-line-subtle) !important;
+    border-radius: 14px !important;
+    background: var(--repeto-settings-panel-bg) !important;
+    overflow: hidden !important;
+}
+
+.repeto-settings-cert-card__preview {
+    aspect-ratio: 4 / 3 !important;
+    background: var(--repeto-settings-field-bg) !important;
+}
+
+.repeto-settings-switch-row,
+.repeto-settings-notification-item {
+    width: min(100%, var(--repeto-settings-form-wide)) !important;
+    min-height: 58px !important;
+    padding: 14px 0 !important;
+    border-top: 1px solid var(--repeto-line-subtle) !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 18px !important;
+}
+
+.repeto-settings-switch-row:first-child,
+.repeto-settings-notification-item:first-child {
+    border-top: 0 !important;
+}
+
+.repeto-settings-notification-list {
+    width: min(100%, var(--repeto-settings-form-wide)) !important;
+}
+
+.repeto-settings-notification-item__controls {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 12px !important;
+}
+
+.repeto-settings-inline-select {
+    width: 184px !important;
+    flex: 0 0 184px !important;
+}
+
+.repeto-settings-pill-row {
+    width: min(100%, var(--repeto-settings-form-wide)) !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+}
+
+.repeto-settings-pill {
+    height: 38px !important;
+    min-width: 86px !important;
+    padding: 0 14px !important;
+    border: 0 !important;
+    border-radius: 11px !important;
+    background: var(--repeto-settings-field-bg) !important;
+    color: var(--text-primary) !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+}
+
+.repeto-settings-pill:hover {
+    background: var(--repeto-settings-field-bg-hover) !important;
+}
+
+.repeto-settings-pill--active {
+    background: color-mix(in srgb, var(--accent) 12%, var(--repeto-settings-field-bg)) !important;
+    color: var(--accent) !important;
+}
+
+.repeto-settings-actions-row,
+.repeto-settings-savebar {
+    width: min(100%, var(--repeto-settings-form-wide)) !important;
+    min-height: 58px !important;
+    padding: 18px 0 0 !important;
+    margin-top: 0 !important;
+    border-top: 1px solid var(--repeto-line-subtle) !important;
+    background: transparent !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 12px !important;
+}
+
+.repeto-settings-savebar--sticky {
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 2 !important;
+    padding-bottom: 2px !important;
+    background: color-mix(in srgb, var(--repeto-settings-panel-bg) 92%, transparent) !important;
+    backdrop-filter: blur(8px) !important;
+}
+
+.repeto-settings-savebar__message {
+    margin-right: auto !important;
+    font-size: 13px !important;
+}
+
+.repeto-settings-default-cloud {
+    width: min(100%, var(--repeto-settings-form-wide)) !important;
+    grid-template-columns: minmax(0, 1fr) 136px !important;
+    align-items: end !important;
+    gap: 14px !important;
+    padding: 0 0 18px !important;
+    border-bottom: 1px solid var(--repeto-line-subtle) !important;
+}
+
+.repeto-settings-default-cloud__save.g-button,
+.repeto-settings-integration-row__action.g-button {
+    width: 136px !important;
+    min-width: 136px !important;
+    height: 38px !important;
+    border-radius: 11px !important;
+    justify-self: end !important;
+}
+
+.repeto-settings-integrations-panel .repeto-settings-integrations-panel__body {
+    padding: 0 0 28px !important;
+}
+
+.repeto-settings-integrations-list {
+    width: min(100%, var(--repeto-settings-form-wide)) !important;
+}
+
+.repeto-settings-integration-row {
+    padding: 14px 0 !important;
+    border-bottom: 1px solid var(--repeto-line-subtle) !important;
+}
+
+.repeto-settings-integration-row:last-child {
+    border-bottom: 0 !important;
+}
+
+.repeto-settings-integration-row__summary {
+    display: grid !important;
+    grid-template-columns: 40px minmax(0, 1fr) 136px !important;
+    align-items: center !important;
+    gap: 14px !important;
+}
+
+.repeto-settings-integration-row__icon {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 12px !important;
+}
+
+.repeto-settings-integration-row__title {
+    font-size: 14px !important;
+    line-height: 20px !important;
+    font-weight: 600 !important;
+}
+
+.repeto-settings-integration-row__desc {
+    margin-top: 2px !important;
+    font-size: 12px !important;
+    line-height: 16px !important;
+}
+
+.repeto-settings-integration-row__status {
+    justify-self: start !important;
+}
+
+.repeto-settings-integration-row__details {
+    margin: 8px 0 0 54px !important;
+    gap: 8px 18px !important;
+}
+
+.repeto-settings-integration-row__details--form {
+    max-width: var(--repeto-settings-form-wide) !important;
+    margin-left: 54px !important;
+    padding: 14px !important;
+    border-radius: 14px !important;
+    background: var(--repeto-settings-field-bg) !important;
+}
+
+.repeto-settings-token-actions {
+    display: flex !important;
+    gap: 8px !important;
+    margin-top: 12px !important;
+}
+
+@media (max-width: 1100px) {
+    .repeto-settings-account-grid,
+    .repeto-settings-format-grid,
+    .repeto-settings-public-page-grid,
+    .repeto-settings-education-row {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+
+    .repeto-subject-row__fields {
+        grid-template-columns: minmax(0, 1fr) minmax(128px, 1fr) minmax(128px, 1fr) 42px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .repeto-settings-overlay .page-overlay__content {
+        padding-inline: 14px !important;
+    }
+
+    .repeto-settings-content--shell {
+        padding: 20px 16px 24px !important;
+        border-radius: 14px !important;
+    }
+
+    .repeto-settings-page-head {
+        padding-bottom: 18px !important;
+    }
+
+    .repeto-settings-page-head__title {
+        font-size: 22px !important;
+        line-height: 28px !important;
+    }
+
+    .repeto-settings-card__header,
+    .repeto-settings-section-card > div:first-child[style*="border-bottom"] {
+        min-height: 62px !important;
+        padding: 20px 0 12px !important;
+    }
+
+    .repeto-settings-portrait-row {
+        grid-template-columns: 56px minmax(0, 1fr) !important;
+    }
+
+    .repeto-settings-portrait-row .repeto-settings-avatar-trigger--account {
+        width: 56px !important;
+        height: 56px !important;
+    }
+
+    .repeto-settings-portrait-help {
+        display: none !important;
+    }
+
+    .repeto-subject-row__fields {
+        grid-template-columns: minmax(0, 1fr) 42px !important;
+    }
+
+    .repeto-subject-row__price,
+    .repeto-subject-row__duration {
+        grid-column: 1 / -1 !important;
+    }
+
+    .repeto-subject-row__actions {
+        grid-column: 2 !important;
+        grid-row: 1 !important;
+    }
+
+    .repeto-settings-switch-row,
+    .repeto-settings-notification-item,
+    .repeto-settings-default-cloud,
+    .repeto-settings-integration-row__summary {
+        grid-template-columns: minmax(0, 1fr) !important;
+        align-items: start !important;
+    }
+
+    .repeto-settings-notification-item__controls,
+    .repeto-settings-savebar,
+    .repeto-settings-actions-row {
+        justify-content: flex-start !important;
+        flex-wrap: wrap !important;
+    }
+
+    .repeto-settings-inline-select,
+    .repeto-settings-default-cloud__save.g-button,
+    .repeto-settings-integration-row__action.g-button {
+        width: 100% !important;
+        min-width: 0 !important;
+        flex-basis: 100% !important;
+    }
+
+    .repeto-settings-integration-row__details,
+    .repeto-settings-integration-row__details--form {
+        margin-left: 0 !important;
+    }
+}
+
+/* Settings EOF refinement: keep this block last so duplicated shell rules cannot override it. */
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content--shell {
+    --repeto-settings-field-bg: #f5f6f8;
+    --repeto-settings-field-bg-hover: #f0f1f4;
+    --repeto-settings-field-bg-focus: #ffffff;
+    --repeto-settings-row-hover: #fcfcfc;
+    padding: 24px 32px 28px !important;
+    border-color: color-mix(in srgb, var(--border-subtle) 68%, transparent) !important;
+    border-radius: 18px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-page-head {
+    padding-bottom: 22px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-page-head__title {
+    font-size: 23px !important;
+    line-height: 30px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-card__header,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-section-card > div:first-child[style*="border-bottom"] {
+    min-height: 56px !important;
+    padding: 18px 0 8px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-card__header .g-text,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-section-card > div:first-child[style*="border-bottom"] .g-text,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-card__header .repeto-settings-portrait-title {
+    font-size: 17px !important;
+    line-height: 22px !important;
+    font-weight: 650 !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-card__body,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-section-card > div:not(.repeto-settings-card__header) {
+    padding-bottom: 22px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-account-grid,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-format-grid,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-page-grid {
+    gap: 10px 16px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .app-field__inner {
+    min-height: 54px !important;
+    padding: 6px 12px 5px !important;
+    border-radius: 10px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .app-field__inner:has(.g-text-area) {
+    min-height: 104px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .app-field__label,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .app-field--select .app-field__label {
+    margin-bottom: 1px !important;
+    color: color-mix(in srgb, var(--text-secondary) 84%, var(--text-primary)) !important;
+    line-height: 15px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .app-field__control .g-text-input,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .app-field__control .g-text-input__content,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .app-field__control .g-select-control,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .app-field__control .g-select-control__button {
+    height: 27px !important;
+    min-height: 27px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .app-field__control .g-text-input__control,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .app-field__control .g-select-control__button {
+    height: 27px !important;
+    min-height: 27px !important;
+    line-height: 18px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .g-button,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .g-button:not(.g-button_disabled):hover,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .g-button:not(.g-button_disabled):active {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .g-button__text,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .g-button__content {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 7px !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    line-height: 1 !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .g-button__text > *,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .g-button__content > *,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .repeto-animated-sidebar-icon,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .g-icon {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 0 0 auto !important;
+    line-height: 1 !important;
+    vertical-align: middle !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .repeto-animated-sidebar-icon__canvas,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-content .repeto-animated-sidebar-icon__fallback {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-add-btn.g-button,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-portrait-button.g-button,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-default-cloud__save.g-button,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-integration-row__action.g-button {
+    height: 36px !important;
+    min-height: 36px !important;
+    border-radius: 10px !important;
+    padding-inline: 13px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-subject-row__delete.g-button,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-icon-danger-btn.g-button {
+    width: 36px !important;
+    min-width: 36px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    border-radius: 10px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-subject-row__delete.g-button .g-button__text,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-icon-danger-btn.g-button .g-button__text {
+    width: 100% !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-portrait-row {
+    grid-template-columns: 60px minmax(0, 1fr) 28px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-portrait-row .repeto-settings-avatar-trigger--account {
+    width: 60px !important;
+    height: 60px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-portrait-caption {
+    color: var(--text-tertiary) !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-subjects-list,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-repeat-list {
+    border-radius: 12px !important;
+    border-color: color-mix(in srgb, var(--repeto-line-subtle) 86%, transparent) !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-subject-row,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-education-row {
+    padding: 12px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-subject-row__fields {
+    grid-template-columns: minmax(240px, 1fr) minmax(122px, 150px) minmax(128px, 154px) 36px !important;
+    gap: 10px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-subject-row .app-field__inner {
+    min-height: 50px !important;
+    padding: 6px 11px 5px !important;
+    border-radius: 10px !important;
+}
+
+@media (max-width: 768px) {
+    .page-overlay--shell.repeto-settings-overlay .repeto-settings-content--shell {
+        padding: 20px 16px 24px !important;
+        border-radius: 14px !important;
+    }
+
+    .page-overlay--shell.repeto-settings-overlay .repeto-settings-portrait-row {
+        grid-template-columns: 56px minmax(0, 1fr) !important;
     }
 }

@@ -9,6 +9,7 @@ import {
     Calendar,
     Receipt,
     FolderOpen,
+    ObjectAlignJustifyVertical,
     Persons,
     CircleInfo,
     Xmark,
@@ -182,6 +183,7 @@ const PageOverlay = ({
         if (item.key === "create") return CirclePlus as IconData;
         if (item.key === "lesson" || item.key === "lessons") return Calendar as IconData;
         if (item.key === "payment" || item.key === "payments") return Receipt as IconData;
+        if (item.key === "activity" || item.key === "history") return ObjectAlignJustifyVertical as IconData;
         if (item.key === "files" || item.key === "homework") return FolderOpen as IconData;
         if (item.key === "access" || item.key === "debtors" || item.key === "profile") return Persons as IconData;
         if (item.key === "notes") return CircleInfo as IconData;
@@ -221,7 +223,7 @@ const PageOverlay = ({
         }
         if (key === "notes") return overlayAnimatedIconPaths.noteText;
         if (key === "homework") return overlayAnimatedIconPaths.taskSquare;
-        if (key === "activity" || key === "history" || label.includes("истор")) return overlayAnimatedIconPaths.clock;
+        if (key === "activity" || key === "history" || label.includes("истор")) return overlayAnimatedIconPaths.archive;
         if (key === "export") return overlayAnimatedIconPaths.export;
         if (key === "logout" || key === "exit" || label.includes("выйти") || label.includes("logout")) {
             return overlayAnimatedIconPaths.logout;

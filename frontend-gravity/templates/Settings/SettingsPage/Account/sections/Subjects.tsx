@@ -1,5 +1,5 @@
-import { Alert, Button, Icon, Text, TextInput } from "@gravity-ui/uikit";
-import { Plus } from "@gravity-ui/icons";
+import { Alert, Button, Text, TextInput } from "@gravity-ui/uikit";
+import { Plus, TrashBin } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import AnimatedSidebarIcon from "@/components/AnimatedSidebarIcon";
 import FormField from "../FormField";
@@ -25,9 +25,14 @@ const SubjectsSection = ({
     <SectionCard
         title="Предметы"
         action={
-            <Button view="outlined" size="m" onClick={onAdd} className="repeto-settings-add-btn">
-                <Icon data={Plus as IconData} size={16} />
-                Добавить предмет
+            <Button view="flat" size="m" onClick={onAdd} className="repeto-settings-add-btn repeto-settings-add-btn--section">
+                <AnimatedSidebarIcon
+                    src={accountAnimatedIconPaths.add}
+                    fallbackIcon={Plus as IconData}
+                    play
+                    size={16}
+                />
+                Добавить
             </Button>
         }
     >
@@ -41,9 +46,17 @@ const SubjectsSection = ({
                         size={24}
                     />
                 </div>
-                <Text variant="body-1" color="secondary">Добавьте предметы</Text>
-                <div style={{ marginTop: 12 }}>
-                    <Button view="action" size="s" onClick={onAdd}>Добавить</Button>
+                <Text variant="body-1" color="secondary">Предметы появятся на публичной странице и в записи.</Text>
+                <div className="repeto-settings-empty__actions">
+                    <Button view="flat" size="m" onClick={onAdd} className="repeto-settings-add-btn">
+                        <AnimatedSidebarIcon
+                            src={accountAnimatedIconPaths.add}
+                            fallbackIcon={Plus as IconData}
+                            play
+                            size={16}
+                        />
+                        Добавить предмет
+                    </Button>
                 </div>
             </div>
         ) : (
@@ -88,6 +101,7 @@ const SubjectsSection = ({
                                     <Button
                                         view="flat-danger"
                                         size="m"
+                                        className="repeto-subject-row__delete"
                                         onClick={() => {
                                             if (!isSavedSubject) {
                                                 onRemove(i);
@@ -97,8 +111,14 @@ const SubjectsSection = ({
                                         }}
                                         disabled={saving}
                                         title="Удалить предмет"
+                                        aria-label="Удалить предмет"
                                     >
-                                        Удалить
+                                        <AnimatedSidebarIcon
+                                            src={accountAnimatedIconPaths.remove}
+                                            fallbackIcon={TrashBin as IconData}
+                                            play
+                                            size={16}
+                                        />
                                     </Button>
                                 </div>
                             </div>

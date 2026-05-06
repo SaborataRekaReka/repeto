@@ -10,7 +10,7 @@ import {
     DropdownMenu,
 } from "@gravity-ui/uikit";
 import type { IconData } from "@gravity-ui/uikit";
-import { Magnifier, Ellipsis, ArrowDown, Persons, Receipt, Calendar, ChevronDown, Clock } from "@gravity-ui/icons";
+import { Magnifier, Ellipsis, ArrowDown, Persons, Person, Plus, Receipt, Calendar, ChevronDown, Clock } from "@gravity-ui/icons";
 
 const GDropdownMenu = DropdownMenu as any;
 import GravityLayout from "@/components/GravityLayout";
@@ -23,6 +23,7 @@ import CreateStudentModal from "@/components/CreateStudentModal";
 import CreatePaymentModal from "@/components/CreatePaymentModal";
 import LessonPanelV2 from "@/components/LessonPanelV2";
 import RemindModal from "@/components/RemindModal";
+import LessonBlock from "@/templates/Schedule/CalendarPage/LessonBlock";
 import { useStudents, updateStudent } from "@/hooks/useStudents";
 import { useLessons } from "@/hooks/useLessons";
 import {
@@ -301,7 +302,7 @@ const StudentsListPage = () => {
             if (student.balance < 0) {
                 actionMap.set(student.id, {
                     kind: "debt",
-                    label: "Напомнить об оплате",
+                    label: "Напомнить о долге",
                     detail: `долг ${formatDebtAmount(student.balance).replace("&nbsp;", " ")}`,
                     tone: "danger",
                     priority: 0,
@@ -354,6 +355,31 @@ const StudentsListPage = () => {
         });
 
         return actionMap;
+    }, [allLessons, allStudents]);
+
+    const nearestLessonByStudent = useMemo(() => {
+        const lessonsByStudent = new Map<string, Lesson[]>();
+        allLessons.forEach((lesson) => {
+            if (!lesson.studentId) return;
+            const list = lessonsByStudent.get(lesson.studentId) || [];
+            list.push(lesson);
+            lessonsByStudent.set(lesson.studentId, list);
+        });
+
+        const now = Date.now();
+        const lessonMap = new Map<string, Lesson>();
+
+        allStudents.forEach((student) => {
+            const nextLesson = (lessonsByStudent.get(student.id) || [])
+                .filter((lesson) => lesson.status === "planned" && getLessonTimeValue(lesson) >= now - 60 * 60 * 1000)
+                .sort((first, second) => getLessonTimeValue(first) - getLessonTimeValue(second))[0];
+
+            if (nextLesson) {
+                lessonMap.set(student.id, nextLesson);
+            }
+        });
+
+        return lessonMap;
     }, [allLessons, allStudents]);
 
     const filtered = useMemo(() => {
@@ -705,7 +731,7 @@ const StudentsListPage = () => {
                 activeNav={type}
                 onNavChange={handleOverlayNav}
             >
-                <div className="repeto-sl-table">
+                <div className="repeto-sl-table repeto-sl-table--students">
                     <div className="repeto-sl-table-toolbar">
                         <div className="repeto-sl-filter-row">
                             <FilterPill
@@ -803,14 +829,13 @@ const StudentsListPage = () => {
                     ) : (
                         <>
                             <div className="repeto-sl-table-scroll">
-                                <div className="repeto-sl-list-header">
+                                <div className="repeto-sl-list-header repeto-sl-list-header--students">
                                     <span className="repeto-sl-lh__col repeto-sl-lh__col--name">Ученик</span>
                                     <span className="repeto-sl-lh__col repeto-sl-lh__col--grade">Класс</span>
                                     <span className="repeto-sl-lh__col repeto-sl-lh__col--status">Статус</span>
-                                    <span className="repeto-sl-lh__col repeto-sl-lh__col--next">Действие</span>
+                                    <span className="repeto-sl-lh__col repeto-sl-lh__col--upcoming">Ближайшее занятие</span>
                                     <span className="repeto-sl-lh__col repeto-sl-lh__col--rate">Ставка</span>
                                     <span className="repeto-sl-lh__col repeto-sl-lh__col--balance">Баланс</span>
-                                    <span className="repeto-sl-lh__col repeto-sl-lh__col--actions">&nbsp;</span>
                                 </div>
 
                                 <div className="repeto-sl-list">
@@ -822,24 +847,96 @@ const StudentsListPage = () => {
                                             tone: "neutral",
                                             priority: 9,
                                         } as StudentNextAction;
+                                        const nextActionIcon: IconData | null =
+                                            nextAction.kind === "debt"
+                                                ? Receipt as IconData
+                                                : nextAction.kind === "lesson" || nextAction.kind === "schedule"
+                                                    ? Calendar as IconData
+                                                    : nextAction.kind === "activate"
+                                                        ? Persons as IconData
+                                                    : null;
+                                        const quickActionClassName = [
+                                            "repeto-sl-row__menu-btn",
+                                            "repeto-sl-row__menu-btn--quick",
+                                            nextAction.kind === "debt" ? "repeto-sl-row__menu-btn--quick-debt" : "",
+                                        ].filter(Boolean).join(" ");
+                                        const nearestLesson = nearestLessonByStudent.get(student.id);
+                                        const openActionTitle = `Открыть: ${student.name}`;
+                                        const addActionTitle = `Добавить занятие: ${student.name}`;
+                                        const quickActionTitle = nextAction.detail && nextAction.kind !== "none"
+                                            ? `${nextAction.label}: ${nextAction.detail}`
+                                            : nextAction.label;
 
                                         return (
                                         <div
                                             key={student.id}
-                                            className="repeto-sl-row"
+                                            className="repeto-sl-row repeto-sl-row--students"
                                             onClick={() => router.push(`/students/${student.id}`)}
                                         >
                                             <div className="repeto-sl-row__cell repeto-sl-row__cell--name">
                                                 <StudentAvatar student={student} size="m" />
                                                 <div className="repeto-sl-row__name-text">
                                                     <span className="repeto-sl-row__primary">
-                                                        <StudentNameWithBadge
-                                                            name={student.name}
-                                                            hasRepetoAccount={Boolean(student.accountId)}
-                                                            truncate
+                                                        <span
+                                                            className={`repeto-sl-status-dot repeto-sl-status-dot--${student.status}`}
+                                                            aria-hidden="true"
                                                         />
+                                                        <span className="repeto-sl-row__primary-name">
+                                                            <StudentNameWithBadge
+                                                                name={student.name}
+                                                                hasRepetoAccount={Boolean(student.accountId)}
+                                                                truncate
+                                                            />
+                                                        </span>
                                                     </span>
                                                     <span className="repeto-sl-row__secondary">{student.subject}</span>
+                                                </div>
+                                                <div
+                                                    className="repeto-sl-row__hover-actions"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <button
+                                                        type="button"
+                                                        className="repeto-sl-row__menu-btn repeto-sl-row__menu-btn--add"
+                                                        onClick={() => handleScheduleLesson(student)}
+                                                        title={addActionTitle}
+                                                        aria-label={addActionTitle}
+                                                    >
+                                                        <Icon data={Plus as IconData} size={12} />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        className="repeto-sl-row__menu-btn repeto-sl-row__menu-btn--open"
+                                                        onClick={() => router.push(`/students/${student.id}`)}
+                                                        title={openActionTitle}
+                                                        aria-label={openActionTitle}
+                                                    >
+                                                        <Icon data={Person as IconData} size={12} />
+                                                    </button>
+                                                    {nextActionIcon && (
+                                                        <button
+                                                            type="button"
+                                                            className={quickActionClassName}
+                                                            onClick={(event) => handleNextAction(event, student, nextAction)}
+                                                            disabled={nextAction.kind === "none" || statusUpdatingId === student.id}
+                                                            title={quickActionTitle}
+                                                            aria-label={quickActionTitle}
+                                                        >
+                                                            <Icon data={nextActionIcon} size={12} />
+                                                        </button>
+                                                    )}
+                                                    <GDropdownMenu
+                                                        items={getMenuItems(student)}
+                                                        renderSwitcher={(props: any) => (
+                                                            <button
+                                                                className="repeto-sl-row__menu-btn repeto-sl-row__menu-btn--menu"
+                                                                {...props}
+                                                                title="Действия"
+                                                            >
+                                                                <Icon data={Ellipsis as IconData} size={14} />
+                                                            </button>
+                                                        )}
+                                                    />
                                                 </div>
                                             </div>
                                             <div className="repeto-sl-row__cell repeto-sl-row__cell--grade">
@@ -852,16 +949,24 @@ const StudentsListPage = () => {
                                                     {getStatusLabel(student.status)}
                                                 </span>
                                             </div>
-                                            <div className="repeto-sl-row__cell repeto-sl-row__cell--next">
-                                                <button
-                                                    type="button"
-                                                    className={`repeto-sl-next-action repeto-sl-next-action--${nextAction.tone}`}
-                                                    onClick={(event) => handleNextAction(event, student, nextAction)}
-                                                    disabled={nextAction.kind === "none" || statusUpdatingId === student.id}
-                                                >
-                                                    <span className="repeto-sl-next-action__label">{nextAction.label}</span>
-                                                    <span className="repeto-sl-next-action__detail">{nextAction.detail}</span>
-                                                </button>
+                                            <div className="repeto-sl-row__cell repeto-sl-row__cell--upcoming">
+                                                {nearestLesson ? (
+                                                    <span
+                                                        className="repeto-sl-upcoming-lesson-wrap"
+                                                        onClick={(event) => event.stopPropagation()}
+                                                    >
+                                                        <LessonBlock
+                                                            lesson={nearestLesson}
+                                                            titleOverride={nearestLesson.subject}
+                                                            metaOverride={nearestLesson.startTime || ""}
+                                                            onClick={(lesson) => {
+                                                                router.push(`/students/${student.id}?tab=lessons&lessonId=${lesson.id}`);
+                                                            }}
+                                                        />
+                                                    </span>
+                                                ) : (
+                                                    <span className="repeto-sl-upcoming-empty">—</span>
+                                                )}
                                             </div>
                                             <div className="repeto-sl-row__cell repeto-sl-row__cell--rate">
                                                 <span className="repeto-sl-cell-money">
@@ -880,23 +985,6 @@ const StudentsListPage = () => {
                                                 >
                                                     {formatBalance(student.balance)}
                                                 </span>
-                                            </div>
-                                            <div
-                                                className="repeto-sl-row__cell repeto-sl-row__cell--actions"
-                                                onClick={(e) => e.stopPropagation()}
-                                            >
-                                                <GDropdownMenu
-                                                    items={getMenuItems(student)}
-                                                    renderSwitcher={(props: any) => (
-                                                        <button
-                                                            className="repeto-sl-row__menu-btn"
-                                                            {...props}
-                                                            title="Действия"
-                                                        >
-                                                            <Icon data={Ellipsis as IconData} size={16} />
-                                                        </button>
-                                                    )}
-                                                />
                                             </div>
                                         </div>
                                         );
@@ -935,6 +1023,9 @@ const StudentsListPage = () => {
                         hasRepetoAccount={Boolean(reminderStudent.accountId)}
                         hasDebt={reminderStudent.balance < 0}
                         hasParentEmail={!!reminderStudent.parentEmail}
+                        hasTelegramChannel={Boolean(reminderStudent.telegramChatId || reminderStudent.telegram)}
+                        hasMaxChannel={Boolean(reminderStudent.maxChatId)}
+                        estimatedDebtAmount={Math.max(0, -reminderStudent.balance)}
                         initialType={reminderInitialType}
                     />
                 )}

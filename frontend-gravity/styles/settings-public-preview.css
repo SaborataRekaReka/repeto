@@ -1,0 +1,293 @@
+/* Public page settings: final layer after yandex-shell.css. */
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-layout {
+    width: min(100%, var(--repeto-settings-form-wide, 858px));
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    align-items: stretch;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-main {
+    min-width: 0;
+    width: 100%;
+    order: 2;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-main .repeto-settings-public-page-grid {
+    width: 100% !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 10px !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-slug-block {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-slug-field .app-field__error {
+    margin-top: 6px;
+    padding-left: 0;
+    font-size: 12px;
+    line-height: 16px;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-slug-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 30px;
+    flex-wrap: wrap;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-slug-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 30px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: var(--repeto-settings-field-bg, #f5f6f8);
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 16px;
+    font-weight: 600;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-slug-status__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: currentColor;
+    opacity: 0.62;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-slug-status--available {
+    background: color-mix(in srgb, var(--g-color-text-positive) 12%, #ffffff);
+    color: var(--g-color-text-positive);
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-slug-status--danger {
+    background: color-mix(in srgb, var(--g-color-text-danger) 10%, #ffffff);
+    color: var(--g-color-text-danger);
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-slug-status--checking {
+    background: color-mix(in srgb, var(--accent) 10%, #ffffff);
+    color: var(--accent);
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-slug-status--empty {
+    color: var(--text-tertiary);
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-page-suggestion {
+    min-height: 30px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--accent) 11%, #ffffff);
+    color: var(--accent);
+    font-size: 13px;
+    line-height: 16px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-page-suggestion:hover {
+    background: color-mix(in srgb, var(--accent) 16%, #ffffff);
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-consent {
+    width: 100%;
+    margin: 12px 0 2px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: var(--repeto-settings-field-bg, #f5f6f8);
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-consent span {
+    font-size: 13px;
+    line-height: 18px;
+    color: var(--text-secondary);
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-preview {
+    min-width: 0;
+    width: 100%;
+    max-width: none;
+    padding: 14px;
+    border: 1px solid color-mix(in srgb, var(--repeto-line-subtle) 86%, transparent);
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--repeto-settings-field-bg, #f5f6f8) 72%, #ffffff);
+    order: 1;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-preview__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-publish-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: #ffffff;
+    color: var(--text-tertiary);
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-publish-badge--on {
+    background: color-mix(in srgb, var(--g-color-text-positive) 12%, #ffffff);
+    color: var(--g-color-text-positive);
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-widget-preview.repeto-tp-widget {
+    margin: 0 !important;
+    padding: 13px !important;
+    border-radius: 12px !important;
+    border-color: color-mix(in srgb, var(--repeto-line-subtle) 88%, transparent) !important;
+    background: #ffffff !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-widget-preview .repeto-tp-widget__head {
+    gap: 12px;
+    align-items: center;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-widget-preview .repeto-tp-widget__avatar {
+    width: 58px;
+    height: 58px;
+    max-height: 58px;
+    border-radius: 50%;
+    align-self: center;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-widget-preview .repeto-tp-widget__avatar .g-avatar,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-widget-preview .repeto-tp-widget__avatar-img {
+    border-radius: 50% !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-widget-preview .repeto-tp-widget__name {
+    font-size: 16px !important;
+    line-height: 20px !important;
+    font-weight: 700 !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-widget-preview .repeto-tp-widget__subjects {
+    margin-top: 2px;
+    font-size: 12px;
+    line-height: 16px;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-widget-preview .repeto-tp-widget__stats {
+    margin-top: 6px;
+    gap: 8px;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-widget-preview .repeto-tp-widget__stats .g-text {
+    font-size: 12px;
+    line-height: 16px;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-widget-preview .repeto-tp-widget__meta-row {
+    margin-top: 8px;
+    padding-top: 8px;
+    align-items: center;
+    gap: 8px;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-widget-preview .repeto-tp-widget__contacts {
+    column-gap: 7px;
+    row-gap: 7px;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-widget-preview .repeto-tp-contact-chip {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-widget-preview .repeto-tp-policy-hint__trigger {
+    min-height: 28px;
+    font-size: 12px;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-widget-preview .repeto-tp-policy-hint__tooltip {
+    display: none !important;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-preview__link-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid color-mix(in srgb, var(--repeto-line-subtle) 86%, transparent);
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-preview__url {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 18px;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-preview__open,
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-preview__disabled-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+    min-height: 30px;
+    padding: 0 10px;
+    border-radius: 999px;
+    font-size: 13px;
+    line-height: 16px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-preview__open {
+    background: color-mix(in srgb, var(--accent) 11%, #ffffff);
+    color: var(--accent);
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-preview__open:hover {
+    background: color-mix(in srgb, var(--accent) 16%, #ffffff);
+}
+
+.page-overlay--shell.repeto-settings-overlay .repeto-settings-public-preview__disabled-link {
+    background: #ffffff;
+    color: var(--text-tertiary);
+}
+
+@media (max-width: 1180px) {
+    .page-overlay--shell.repeto-settings-overlay .repeto-settings-public-layout {
+        gap: 12px;
+    }
+}
+
+@media (max-width: 640px) {
+    .page-overlay--shell.repeto-settings-overlay .repeto-settings-public-preview__head,
+    .page-overlay--shell.repeto-settings-overlay .repeto-settings-public-preview__link-row {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .page-overlay--shell.repeto-settings-overlay .repeto-settings-public-widget-preview .repeto-tp-widget__head {
+        align-items: flex-start;
+    }
+}
