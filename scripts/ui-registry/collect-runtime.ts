@@ -32,6 +32,143 @@ const BACKEND_BASE = process.env.UI_REGISTRY_API_URL || "http://127.0.0.1:3200";
 
 const DEMO_EMAIL = String(process.env.E2E_TUTOR_EMAIL || process.env.E2E_EMAIL || "demo@repeto.ru").trim();
 const DEMO_PASSWORD = String(process.env.E2E_TUTOR_PASSWORD || process.env.E2E_PASSWORD || "demo1234").trim();
+const RUNTIME_COLLECTOR_SOURCE = `function(currentRoute) {
+  const roleTargets = ["button", "link", "menuitem", "tab", "switch", "checkbox", "radio", "dialog", "tooltip"];
+  const selectors = [
+    "button",
+    "a[href]",
+    "input",
+    "textarea",
+    "select",
+    "form",
+    "[aria-label]",
+    "[role='button']",
+    "[role='link']",
+    "[role='menuitem']",
+    "[role='tab']",
+    "[role='switch']",
+    "[role='checkbox']",
+    "[role='radio']",
+    "[role='dialog']",
+    "[role='tooltip']",
+    "[onclick]",
+    "[tabindex]",
+    "div[role]",
+    "span[role]"
+  ];
+
+  const set = new Set();
+  selectors.forEach((s) => document.querySelectorAll(s).forEach((el) => set.add(el)));
+
+  return Array.from(set).map((el, idx) => {
+    const style = window.getComputedStyle(el);
+    const rect = el.getBoundingClientRect();
+    const visible = !(style.display === "none" || style.visibility === "hidden" || Number(style.opacity) === 0) && rect.width > 0 && rect.height > 0;
+    const role = el.getAttribute("role");
+
+    let selector = "";
+    const testId = el.getAttribute("data-testid");
+    if (testId) {
+      selector = "[data-testid=\\"" + testId + "\\"]";
+    } else if (el.id) {
+      selector = "#" + el.id;
+    } else {
+      const parts = [];
+      let cur = el;
+      while (cur && parts.length < 5) {
+        const tag = cur.tagName.toLowerCase();
+        const className = cur.className;
+        if (className && typeof className === "string") {
+          const cn = className.trim().split(/\\s+/).filter(Boolean)[0];
+          if (cn) {
+            parts.unshift(tag + "." + cn);
+            cur = cur.parentElement;
+            continue;
+          }
+        }
+        const parent = cur.parentElement;
+        if (!parent) {
+          parts.unshift(tag);
+          break;
+        }
+        const siblings = Array.from(parent.children).filter((x) => x.tagName === cur.tagName);
+        const nth = siblings.indexOf(cur) + 1;
+        parts.unshift(tag + ":nth-of-type(" + nth + ")");
+        cur = parent;
+      }
+      selector = parts.join(" > ");
+    }
+
+    let heading = null;
+    let headingCur = el;
+    for (let i = 0; i < 6 && headingCur; i += 1) {
+      const scope = headingCur.closest("section,article,main,aside,nav,div") || headingCur;
+      const h = scope.querySelector("h1, h2, h3, h4, h5, h6");
+      if (h && h.textContent && h.textContent.trim()) {
+        heading = h.textContent.trim();
+        break;
+      }
+      headingCur = headingCur.parentElement;
+    }
+
+    const aria = el.getAttribute("aria-label");
+    const labelledBy = el.getAttribute("aria-labelledby");
+    let accessibleName = null;
+    if (aria && aria.trim()) {
+      accessibleName = aria.trim();
+    } else if (labelledBy) {
+      const fromIds = labelledBy
+        .split(/\\s+/)
+        .map((id) => {
+          const target = document.getElementById(id);
+          return target && target.textContent ? target.textContent.trim() : "";
+        })
+        .filter(Boolean)
+        .join(" ")
+        .trim();
+      if (fromIds) accessibleName = fromIds;
+    }
+    if (!accessibleName) {
+      const txt = (el.textContent || "").replace(/\\s+/g, " ").trim();
+      if (txt) accessibleName = txt;
+    }
+    if (!accessibleName) {
+      const title = el.getAttribute("title");
+      if (title && title.trim()) accessibleName = title.trim();
+    }
+    if (!accessibleName && "placeholder" in el) {
+      const placeholder = el.placeholder || "";
+      if (placeholder.trim()) accessibleName = placeholder.trim();
+    }
+
+    const tagName = el.tagName.toLowerCase();
+    const textContent = (el.textContent || "").replace(/\\s+/g, " ").trim() || null;
+    const disabled = Boolean(el.disabled || el.getAttribute("aria-disabled") === "true");
+    const safeRole = role && roleTargets.includes(role) ? role : null;
+
+    return {
+      id: "runtime." + currentRoute.replace(/[^a-z0-9]+/gi, "-") + "." + idx,
+      route: currentRoute,
+      selector,
+      tagName,
+      role: safeRole,
+      textContent,
+      accessibleName,
+      ariaLabel: aria || null,
+      placeholder: "placeholder" in el ? (el.placeholder || null) : null,
+      href: "href" in el ? (el.getAttribute("href")) : null,
+      type: "type" in el ? (el.type || null) : null,
+      disabled,
+      visible,
+      boundingBox: Number.isFinite(rect.width)
+        ? { x: Math.round(rect.x), y: Math.round(rect.y), width: Math.round(rect.width), height: Math.round(rect.height) }
+        : null,
+      parentSectionHeading: heading,
+      testId: testId || null,
+      screenshotPath: null
+    };
+  });
+}`;
 
 async function health(url: string): Promise<boolean> {
   try {
@@ -87,136 +224,13 @@ async function gotoReady(page: Page, route: string): Promise<boolean> {
 }
 
 async function collectRouteElements(page: Page, route: string): Promise<RuntimeElement[]> {
-  const rows = await page.evaluate((currentRoute) => {
-    const roleTargets = ["button", "link", "menuitem", "tab", "switch", "checkbox", "radio", "dialog", "tooltip"];
-    const selectors = [
-      "button",
-      "a[href]",
-      "input",
-      "textarea",
-      "select",
-      "form",
-      "[aria-label]",
-      "[role='button']",
-      "[role='link']",
-      "[role='menuitem']",
-      "[role='tab']",
-      "[role='switch']",
-      "[role='checkbox']",
-      "[role='radio']",
-      "[role='dialog']",
-      "[role='tooltip']",
-      "[onclick]",
-      "[tabindex]",
-      "div[role]",
-      "span[role]",
-    ];
-
-    const isVisible = (el: Element) => {
-      const style = window.getComputedStyle(el as HTMLElement);
-      if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity) === 0) return false;
-      const rect = (el as HTMLElement).getBoundingClientRect();
-      return rect.width > 0 && rect.height > 0;
-    };
-
-    const cssPath = (el: Element): string => {
-      const testId = el.getAttribute("data-testid");
-      if (testId) return `[data-testid=\"${testId}\"]`;
-      if (el.id) return `#${el.id}`;
-      const parts: string[] = [];
-      let cur: Element | null = el;
-      while (cur && parts.length < 5) {
-        const tag = cur.tagName.toLowerCase();
-        const className = (cur as HTMLElement).className;
-        if (className && typeof className === "string") {
-          const cn = className.trim().split(/\s+/).filter(Boolean)[0];
-          if (cn) {
-            parts.unshift(`${tag}.${cn}`);
-            cur = cur.parentElement;
-            continue;
-          }
-        }
-        const parent = cur.parentElement;
-        if (!parent) {
-          parts.unshift(tag);
-          break;
-        }
-        const siblings = Array.from(parent.children).filter((x) => x.tagName === cur!.tagName);
-        const idx = siblings.indexOf(cur) + 1;
-        parts.unshift(`${tag}:nth-of-type(${idx})`);
-        cur = parent;
-      }
-      return parts.join(" > ");
-    };
-
-    const headingFor = (el: Element): string | null => {
-      let cur: Element | null = el;
-      for (let i = 0; i < 6 && cur; i += 1) {
-        const scope = cur.closest("section,article,main,aside,nav,div") || cur;
-        const heading = scope.querySelector("h1, h2, h3, h4, h5, h6");
-        if (heading?.textContent?.trim()) return heading.textContent.trim();
-        cur = cur.parentElement;
-      }
-      return null;
-    };
-
-    const accessName = (el: Element): string | null => {
-      const aria = el.getAttribute("aria-label");
-      if (aria?.trim()) return aria.trim();
-      const labelledBy = el.getAttribute("aria-labelledby");
-      if (labelledBy) {
-        const fromIds = labelledBy
-          .split(/\s+/)
-          .map((id) => document.getElementById(id)?.textContent?.trim())
-          .filter(Boolean)
-          .join(" ")
-          .trim();
-        if (fromIds) return fromIds;
-      }
-      const txt = (el.textContent || "").replace(/\s+/g, " ").trim();
-      if (txt) return txt;
-      const title = el.getAttribute("title");
-      if (title?.trim()) return title.trim();
-      const placeholder = (el as HTMLInputElement).placeholder;
-      if (placeholder?.trim()) return placeholder.trim();
-      return null;
-    };
-
-    const set = new Set<Element>();
-    selectors.forEach((s) => document.querySelectorAll(s).forEach((el) => set.add(el)));
-
-    return Array.from(set).map((el, idx) => {
-      const rect = (el as HTMLElement).getBoundingClientRect();
-      const role = el.getAttribute("role");
-      const tagName = el.tagName.toLowerCase();
-      const disabled = (el as HTMLInputElement).disabled || el.getAttribute("aria-disabled") === "true";
-      const record = {
-        id: `runtime.${currentRoute.replace(/[^a-z0-9]+/gi, "-")}.${idx}`,
-        route: currentRoute,
-        selector: cssPath(el),
-        tagName,
-        role,
-        textContent: (el.textContent || "").replace(/\s+/g, " ").trim() || null,
-        accessibleName: accessName(el),
-        ariaLabel: el.getAttribute("aria-label"),
-        placeholder: (el as HTMLInputElement).placeholder || null,
-        href: (el as HTMLAnchorElement).getAttribute("href"),
-        type: (el as HTMLInputElement).type || null,
-        disabled,
-        visible: isVisible(el),
-        boundingBox: Number.isFinite(rect.width)
-          ? { x: Math.round(rect.x), y: Math.round(rect.y), width: Math.round(rect.width), height: Math.round(rect.height) }
-          : null,
-        parentSectionHeading: headingFor(el),
-        testId: el.getAttribute("data-testid"),
-        screenshotPath: null,
-      };
-      if (record.role && !roleTargets.includes(record.role)) {
-        record.role = null;
-      }
-      return record;
-    });
-  }, route);
+  const rows = await page.evaluate(
+    ({ currentRoute, collectorSource }) => {
+      const collector = new Function(`return (${collectorSource})`)();
+      return collector(currentRoute);
+    },
+    { currentRoute: route, collectorSource: RUNTIME_COLLECTOR_SOURCE },
+  );
 
   const important = rows.filter((x) => x.visible && (["button", "a", "input", "textarea", "select"].includes(x.tagName) || !!x.role));
   let shotCounter = 0;

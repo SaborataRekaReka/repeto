@@ -22,3 +22,5 @@
 | ui_settings_toggle_changed | Изменение switch/toggle в settings |
 
 Рекомендуемые common properties: route, area, widget, component, elementType, label, testId, isMobile.
+Рекомендуемый формат события: `ui_{action}_{area}_{target}`.
+Рекомендуемый формат testid: `ui-{area}-{target}-{variant?}` (kebab-case).

@@ -1,6 +1,6 @@
 # UI routes coverage
 
-Generated: 2026-05-07T16:36:00.288Z
+Generated: 2026-05-07T18:46:19.198Z
 
 | Route | Elements |
 |---|---:|
