@@ -1,0 +1,12 @@
+{
+  "generatedAt": "2026-05-07T16:35:49.861Z",
+  "source": "runtime",
+  "incomplete": true,
+  "reasons": [
+    "Frontend is unreachable at http://localhost:3300. Start frontend on port 3300 and backend on port 3200, then rerun npm run ui-registry:runtime."
+  ],
+  "routesAttempted": [],
+  "routesSucceeded": [],
+  "routesFailed": [],
+  "elements": []
+}
