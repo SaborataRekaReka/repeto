@@ -7,19 +7,12 @@ import {
     type StudentAuthResponse,
 } from "@/lib/studentAuth";
 import { codedErrorMessage } from "@/lib/errorCodes";
+import AppField from "@/components/AppField";
 
 type StudentSignInProps = {
     onBack: () => void;
     initialEmail?: string;
     onSignedIn?: (result: StudentAuthResponse) => void | Promise<void>;
-};
-
-const LABEL_STYLE: React.CSSProperties = {
-    display: "block",
-    marginBottom: 6,
-    fontSize: 13,
-    fontWeight: 600,
-    color: "var(--g-color-text-primary)",
 };
 
 const CODE_LENGTH = 6;
@@ -138,23 +131,31 @@ const StudentSignIn = ({ onBack, initialEmail, onSignedIn }: StudentSignInProps)
     };
 
     return (
-        <form onSubmit={step === "email" ? handleRequestCode : handleVerify} noValidate>
-            <Text variant="header-2" style={{ display: "block", marginBottom: step === "code" ? 16 : 6 }}>
+        <form
+            className="repeto-student-auth"
+            onSubmit={step === "email" ? handleRequestCode : handleVerify}
+            noValidate
+        >
+            <Text
+                variant="header-2"
+                className={`repeto-student-auth__title${
+                    step === "code" ? " repeto-student-auth__title--code" : ""
+                }`}
+            >
                 Вход ученика
             </Text>
-            <Text
-                variant="body-1"
-                color="secondary"
-                style={{ display: step === "email" ? "block" : "none", marginBottom: 24 }}
-            >
-                {step === "email"
-                    ? "Введите email, на который ваш репетитор отправил приглашение"
-                    : ""}
-            </Text>
+            {step === "email" ? (
+                <Text
+                    variant="body-1"
+                    color="secondary"
+                    className="repeto-student-auth__subtitle"
+                >
+                    Введите email, на который ваш репетитор отправил приглашение
+                </Text>
+            ) : null}
 
             {step === "email" && (
-                <div style={{ marginBottom: 16 }}>
-                    <span style={LABEL_STYLE}>Email</span>
+                <AppField label="Email" className="repeto-student-auth__field">
                     <TextInput
                         size="l"
                         type="email"
@@ -164,7 +165,7 @@ const StudentSignIn = ({ onBack, initialEmail, onSignedIn }: StudentSignInProps)
                         autoComplete="email"
                         autoFocus
                     />
-                </div>
+                </AppField>
             )}
 
             {step === "code" && (
@@ -172,30 +173,22 @@ const StudentSignIn = ({ onBack, initialEmail, onSignedIn }: StudentSignInProps)
                     <Text
                         variant="subheader-1"
                         color="secondary"
-                        style={{
-                            display: "block",
-                            marginBottom: 30,
-                            lineHeight: 1.55,
-                            fontWeight: 500,
-                            letterSpacing: "0.01em",
-                        }}
+                        className="repeto-student-auth__code-hint"
                     >
                         Мы отправили 6-значный код на{" "}
-                        <strong style={{ color: "var(--g-color-text-primary)" }}>{email}</strong>
+                        <strong className="repeto-student-auth__strong">{email}</strong>
                     </Text>
 
-                    <div
-                        style={{
-                            display: "grid",
-                            gridTemplateColumns: `repeat(${CODE_LENGTH}, minmax(0, 1fr))`,
-                            gap: 8,
-                            marginBottom: 18,
-                            width: "100%",
-                        }}
-                    >
+                    <div className="repeto-student-auth__code-grid">
                         {Array.from({ length: CODE_LENGTH }).map((_, index) => {
                             const value = codeDigits[index] || "";
                             const isFocused = focusedCodeIndex === index;
+                            const inputClassName = [
+                                "repeto-student-auth__code-input",
+                                value ? "repeto-student-auth__code-input--filled" : "",
+                                isFocused ? "repeto-student-auth__code-input--focused" : "",
+                            ].filter(Boolean).join(" ");
+
                             return (
                                 <input
                                     key={index}
@@ -213,31 +206,14 @@ const StudentSignIn = ({ onBack, initialEmail, onSignedIn }: StudentSignInProps)
                                         fillCodeFrom(index, event.clipboardData.getData("text"));
                                     }}
                                     onKeyDown={(event) => handleCodeKeyDown(index, event)}
-                                    style={{
-                                        width: "100%",
-                                        minWidth: 0,
-                                        height: 54,
-                                        borderRadius: 12,
-                                        border: `1px solid ${isFocused ? "var(--g-color-line-brand)" : "var(--g-color-line-generic)"}`,
-                                        textAlign: "center",
-                                        fontSize: 24,
-                                        fontWeight: 700,
-                                        color: "var(--g-color-text-primary)",
-                                        background: value
-                                            ? "var(--g-color-base-simple-hover)"
-                                            : "var(--g-color-base-background)",
-                                        outline: "none",
-                                        boxShadow: isFocused
-                                            ? "0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent)"
-                                            : "none",
-                                    }}
+                                    className={inputClassName}
                                     aria-label={`Цифра кода ${index + 1}`}
                                 />
                             );
                         })}
                     </div>
 
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
+                    <div className="repeto-student-auth__links">
                         <button
                             type="button"
                             onClick={() => {
@@ -246,14 +222,7 @@ const StudentSignIn = ({ onBack, initialEmail, onSignedIn }: StudentSignInProps)
                                 setInfo("");
                                 setError("");
                             }}
-                            style={{
-                                background: "none",
-                                border: "none",
-                                color: "var(--g-color-text-brand)",
-                                cursor: "pointer",
-                                padding: 0,
-                                fontSize: 13,
-                            }}
+                            className="repeto-student-auth__link"
                         >
                             Изменить email
                         </button>
@@ -261,14 +230,7 @@ const StudentSignIn = ({ onBack, initialEmail, onSignedIn }: StudentSignInProps)
                             type="button"
                             onClick={handleResend}
                             disabled={loading}
-                            style={{
-                                background: "none",
-                                border: "none",
-                                color: "var(--g-color-text-brand)",
-                                cursor: "pointer",
-                                padding: 0,
-                                fontSize: 13,
-                            }}
+                            className="repeto-student-auth__link"
                         >
                             Прислать ещё раз
                         </button>
@@ -280,35 +242,28 @@ const StudentSignIn = ({ onBack, initialEmail, onSignedIn }: StudentSignInProps)
                 <Text
                     variant="body-1"
                     color="secondary"
-                    style={{ marginBottom: 20, lineHeight: 1.5, fontWeight: 500 }}
+                    className="repeto-student-auth__status"
                 >
                     {info}
                 </Text>
             )}
             {error && (
-                <Text variant="body-2" color="danger" style={{ marginBottom: 12 }}>
+                <Text variant="body-2" color="danger" className="repeto-student-auth__error">
                     {error}
                 </Text>
             )}
 
-            <Button view="action" size="l" type="submit" width="max" loading={loading}>
+            <Button view="action" size="l" type="submit" width="max" loading={loading} className="repeto-student-auth__submit">
                 {step === "email" ? "Получить код" : "Войти"}
             </Button>
 
-            <div style={{ textAlign: "center", marginTop: 16 }}>
+            <div className="repeto-student-auth__back">
                 <button
                     type="button"
                     onClick={onBack}
-                    style={{
-                        background: "none",
-                        border: "none",
-                        color: "var(--g-color-text-secondary)",
-                        cursor: "pointer",
-                        padding: 0,
-                        fontSize: 13,
-                    }}
+                    className="repeto-student-auth__back-btn"
                 >
-                    ← Я репетитор
+                    Я репетитор
                 </button>
             </div>
         </form>

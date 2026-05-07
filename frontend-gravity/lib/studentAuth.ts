@@ -9,6 +9,11 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "/api";
 const ACCESS_KEY = "repeto:student:accessToken";
 const REFRESH_KEY = "repeto:student:refreshToken";
 
+function emitStudentAuthChanged() {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(new CustomEvent("repeto:student-auth-changed"));
+}
+
 export type StudentAccount = {
     id: string;
     email: string;
@@ -43,12 +48,14 @@ export function setStudentTokens(access: string, refresh?: string) {
     if (refresh) {
         window.localStorage.setItem(REFRESH_KEY, refresh);
     }
+    emitStudentAuthChanged();
 }
 
 export function clearStudentTokens() {
     if (typeof window === "undefined") return;
     window.localStorage.removeItem(ACCESS_KEY);
     window.localStorage.removeItem(REFRESH_KEY);
+    emitStudentAuthChanged();
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {

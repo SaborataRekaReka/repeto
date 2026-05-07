@@ -105,7 +105,15 @@ const TutorProfilePage = () => {
                     <div className="card">
                         <div className="p-5">
                             <div className="flex items-center justify-center w-[7.5rem] h-[7.5rem] mx-auto mb-4 rounded-full bg-purple-3 text-2xl font-bold text-n-1 dark:bg-purple-1/20">
-                                {getInitials(user?.name || "")}
+                                {user?.avatar ? (
+                                    <img
+                                        src={user.avatar}
+                                        alt={user?.name ? `Аватар ${user.name}` : "Аватар преподавателя"}
+                                        className="w-full h-full object-cover rounded-full"
+                                    />
+                                ) : (
+                                    getInitials(user?.name || "")
+                                )}
                             </div>
                             <div className="text-center">
                                 <div className="text-h5">

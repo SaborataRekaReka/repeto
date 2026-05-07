@@ -62,7 +62,6 @@ export class AdminService {
     avatarUrl: string | null;
     subjects: string[];
     subjectDetails: unknown;
-    tagline: string | null;
     aboutText: string | null;
     format: string | null;
     offlineAddress: string | null;
@@ -121,7 +120,6 @@ export class AdminService {
       avatarUrl: user.avatarUrl,
       subjects: user.subjects,
       subjectDetails: user.subjectDetails,
-      tagline: user.tagline,
       aboutText: user.aboutText,
       format: user.format,
       offlineAddress: user.offlineAddress,
@@ -159,7 +157,6 @@ export class AdminService {
         avatarUrl: true,
         subjects: true,
         subjectDetails: true,
-        tagline: true,
         aboutText: true,
         format: true,
         offlineAddress: true,

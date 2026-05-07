@@ -178,7 +178,6 @@ export class PublicService {
         slug: true,
         subjects: true,
         subjectDetails: true,
-        tagline: true,
         aboutText: true,
         avatarUrl: true,
         lessonsCount: true,
@@ -283,6 +282,7 @@ export class PublicService {
           studentName: note.student.name,
           rating: parsed.rating,
           feedback: parsed.feedback || null,
+          tags: parsed.tags || [],
           date: note.createdAt,
         };
       })
@@ -293,9 +293,27 @@ export class PublicService {
           studentName: string;
           rating: number;
           feedback: string | null;
+          tags: string[];
           date: Date;
         } => !!item,
       );
+
+    const reviewTagCounts = new Map<string, { label: string; count: number }>();
+    for (const review of reviews) {
+      for (const tag of review.tags) {
+        const label = tag.trim();
+        if (!label) continue;
+        const key = label.toLowerCase();
+        const current = reviewTagCounts.get(key);
+        reviewTagCounts.set(key, {
+          label: current?.label || label,
+          count: (current?.count || 0) + 1,
+        });
+      }
+    }
+    const reviewTags = Array.from(reviewTagCounts.values())
+      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, 'ru'))
+      .slice(0, 3);
 
     const reviewsCount = reviews.length;
     const averageReviewRating =
@@ -364,7 +382,6 @@ export class PublicService {
     return {
       slug: user.slug,
       name: user.name,
-      tagline: user.tagline,
       subjects: enrichedSubjects,
       showPublicPackages: user.showPublicPackages,
       publicPackages,
@@ -374,6 +391,7 @@ export class PublicService {
       rating: profileRating,
       reviewsCount,
       reviews,
+      reviewTags,
       contacts: {
         phone: user.phone,
         whatsapp: user.whatsapp,

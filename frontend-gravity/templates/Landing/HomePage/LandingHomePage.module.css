@@ -28,7 +28,7 @@
     font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     -webkit-font-smoothing: antialiased;
     color: var(--lp-ink);
-    background: #ffffff;
+    background: #EFEEF2;
 }
 
 .siteFooter {
@@ -589,7 +589,7 @@
 
 .featuresContinuation {
     padding: 0 20px 96px;
-    background: #ffffff;
+    background: transparent;
     overflow: hidden;
 }
 
@@ -626,7 +626,7 @@
 
 .integrationsSection {
     padding: 96px 20px 96px;
-    background: var(--landing-section-bg);
+    background: transparent;
 }
 
 .integrationsInner {
@@ -656,6 +656,15 @@
     font-weight: 700;
 }
 
+.integrationsSubtitle {
+    margin: 14px auto 0;
+    max-width: 700px;
+    text-align: center;
+    color: var(--lp-body);
+    font-size: 16px;
+    line-height: 1.55;
+}
+
 .integrationsGrid {
     margin-top: 42px;
     display: grid;
@@ -665,11 +674,11 @@
 
 .integrationsCard {
     position: relative;
-    min-height: 362px;
-    border-radius: 44px;
+    min-height: 292px;
+    border-radius: 20px;
     background: #ffffff;
     border: 1px solid var(--landing-border);
-    padding: 42px 40px 36px;
+    padding: 28px 26px 24px;
     overflow: hidden;
 }
 
@@ -942,7 +951,7 @@
 
 .tariffsSection {
     padding: 96px 20px 112px;
-    background: var(--landing-section-bg);
+    background: transparent;
 }
 
 .tariffsInner {
@@ -1678,7 +1687,7 @@
     --lp-brand-solid: #7c4dd8;
     --lp-green-solid: #2f9f5d;
     overflow-x: clip;
-    background: #ffffff;
+    background: #EFEEF2;
 }
 
 .heroSurface {
@@ -1686,7 +1695,7 @@
     min-height: 100dvh;
     padding: 28px 24px 64px;
     overflow: visible;
-    background: linear-gradient(180deg, #ffffff 0%, #f6f7fb 64%, #ffffff 100%);
+    background: transparent;
     color: var(--lp-ink);
 }
 
@@ -2005,7 +2014,7 @@
 
 .controlSection {
     padding: 92px 24px 70px;
-    background: #ffffff;
+    background: transparent;
 }
 
 .controlSectionInner {
@@ -2094,7 +2103,7 @@
 .integrationsSection,
 .capabilitiesSection,
 .tariffsSection {
-    background: #ffffff;
+    background: transparent;
 }
 
 .featuresContinuation {
@@ -2279,7 +2288,7 @@
 
 .integrationsSection,
 .tariffsSection {
-    background: var(--lp-wash);
+    background: transparent;
 }
 
 .tariffsSection {
@@ -2821,5 +2830,1523 @@
 
     .capabilitiesCardText {
         font-size: 15px;
+    }
+}
+
+/* Landing consistency patch: align palette and buttons with app shell tokens. */
+.page {
+    --lp-brand-solid: var(--accent);
+    --lp-green-solid: var(--repeto-status-success, #22c55e);
+    --lp-wash: color-mix(in srgb, var(--surface-page, #f0eef2) 70%, #ffffff 30%);
+    --lp-line: color-mix(in srgb, var(--text-primary, #141414) 12%, transparent);
+}
+
+.headerButton,
+.heroButton,
+.tariffButtonPrimary,
+.tariffsSwitchButton {
+    border-radius: 10px;
+}
+
+.headerButtonPrimary,
+.heroButtonPrimary,
+.tariffButtonPrimary,
+.tariffCardFeatured .tariffButtonPrimary {
+    background: var(--accent);
+    color: var(--repeto-on-brand, #ffffff);
+}
+
+.headerButtonPrimary:hover,
+.heroButtonPrimary:hover,
+.tariffButtonPrimary:hover,
+.tariffCardFeatured .tariffButtonPrimary:hover {
+    background: var(--accent-hover);
+    color: var(--repeto-on-brand, #ffffff);
+    opacity: 1;
+}
+
+.stickyHeader .headerButtonPrimary {
+    background: var(--accent);
+    color: var(--repeto-on-brand, #ffffff);
+}
+
+.stickyHeader .headerButtonPrimary:hover {
+    background: var(--accent-hover);
+}
+
+.headerButtonGhost,
+.heroButtonGhost,
+.stickyHeader .headerButtonGhost {
+    border-color: var(--lp-line);
+    color: var(--lp-ink);
+}
+
+.heroKicker {
+    color: var(--accent);
+    border-color: color-mix(in srgb, var(--accent) 24%, transparent);
+    background: color-mix(in srgb, var(--accent) 8%, #ffffff);
+}
+
+.scheduleTag,
+.integrationsLabel,
+.capabilitiesLabel,
+.tariffsLabel,
+.stepsLabel,
+.comparisonLabel,
+.faqLabel,
+.reviewsLabel {
+    color: var(--accent);
+}
+
+.tariffsSwitchButtonActive,
+.tariffsSwitchButtonActive:hover {
+    background: var(--accent);
+    color: #ffffff;
+}
+
+.tariffCardFeatured {
+    background: linear-gradient(180deg, #ffffff 0%, color-mix(in srgb, var(--accent) 8%, #ffffff) 100%);
+    border-color: color-mix(in srgb, var(--accent) 36%, transparent);
+    box-shadow: 0 18px 50px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.tariffBadge {
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    color: var(--accent);
+}
+
+.capabilitiesCardPurple {
+    background: color-mix(in srgb, var(--accent) 7%, #ffffff);
+    border-color: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.capabilitiesCardDark {
+    background: linear-gradient(165deg, #0f3f75 0%, #0b2f5a 100%);
+}
+
+.capabilitiesCardSoft {
+    background: #f6f9fc;
+}
+
+.featureRow,
+.integrationsCard,
+.capabilitiesCard,
+.tariffCard {
+    border-radius: 12px;
+}
+
+/* ===== Landing widget showcase (replaces capabilities) ===== */
+.showcaseSection {
+    padding: 96px 20px 96px;
+    background: transparent;
+    position: relative;
+}
+
+.showcaseInner {
+    max-width: var(--lp-inner);
+    margin: 0 auto;
+}
+
+.showcaseLabel {
+    display: block;
+    width: fit-content;
+    margin: 0 auto;
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.showcaseTitle {
+    margin: 14px 0 12px;
+    text-align: center;
+    color: var(--lp-ink);
+    font-size: 40px;
+    line-height: 1.12;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.showcaseSubtitle {
+    margin: 0 auto 48px;
+    max-width: 620px;
+    text-align: center;
+    color: var(--lp-body);
+    font-size: 16px;
+    line-height: 1.55;
+}
+
+.showcaseGrid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    grid-auto-rows: minmax(0, auto);
+    gap: 20px;
+}
+
+.showcaseCard {
+    position: relative;
+    background: #ffffff;
+    border: 1px solid #e6e8ee;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 1px 0 rgba(20, 20, 20, 0.02), 0 16px 40px -28px rgba(20, 33, 60, 0.18);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.showcaseCardCopy {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid #edf1f6;
+}
+
+.showcaseCardCopyTitle {
+    margin: 0;
+    color: var(--lp-ink);
+    font-size: 16px;
+    line-height: 1.3;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.showcaseCardCopyText {
+    margin: 8px 0 0;
+    color: var(--lp-body);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.showcaseCard:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 1px 0 rgba(20, 20, 20, 0.02), 0 24px 48px -24px rgba(20, 33, 60, 0.22);
+}
+
+.bentoCardWide {
+    grid-column: span 7;
+    min-height: 380px;
+}
+
+.bentoCardTall {
+    grid-column: span 5;
+    min-height: 380px;
+}
+
+.bentoCardCompact {
+    grid-column: span 4;
+    min-height: 276px;
+}
+
+.bentoCardDark {
+    background: linear-gradient(160deg, #0f3f75 0%, #0b2f5a 100%);
+    border-color: transparent;
+    box-shadow: 0 24px 48px -28px rgba(11, 47, 90, 0.52);
+}
+
+.bentoCardMeta {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.bentoCardTag {
+    display: inline-flex;
+    width: fit-content;
+    align-items: center;
+    padding: 7px 10px;
+    border-radius: 999px;
+    background: #eef4fb;
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.bentoCardTitle {
+    margin: 0;
+    color: var(--lp-ink);
+    font-size: clamp(22px, 2.2vw, 34px);
+    line-height: 1.12;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.bentoCardText {
+    margin: 0;
+    color: var(--lp-body);
+    font-size: 15px;
+    line-height: 1.55;
+}
+
+.bentoCardVisual {
+    margin-top: 20px;
+    min-height: 160px;
+    border-radius: 20px;
+    overflow: hidden;
+    background: #f2f5fa;
+    border: 1px solid #e6ebf3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.bentoCardImage {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: contain;
+}
+
+.showcaseFilesWidget {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin-top: 0;
+    padding: 10px 12px;
+    border-radius: 14px;
+    border: 1px solid #d9e2ee;
+    background: #f3f7fb;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-self: stretch;
+    overflow: hidden;
+    pointer-events: none;
+    max-height: 136px;
+}
+
+.showcaseFilesSimpleHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.showcaseFilesSimpleProvider {
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: #3f5b7a;
+}
+
+.showcaseFilesSimpleCount {
+    font-size: 11px;
+    line-height: 1.2;
+    color: #718198;
+}
+
+.showcaseFilesSimpleList {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 6px;
+}
+
+.showcaseFilesSimpleItem {
+    display: flex;
+    align-items: center;
+    column-gap: 8px;
+    min-width: 0;
+    padding: 3px 0;
+}
+
+.showcaseFilesSimpleIcon {
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.showcaseFilesSimpleMain {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.showcaseFilesSimpleName {
+    font-size: 12px;
+    line-height: 1.2;
+    color: #26374d;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.showcaseFilesSimpleMeta {
+    font-size: 10px;
+    line-height: 1.2;
+    color: #8392a7;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bentoCardMaterials {
+    padding-bottom: 0;
+}
+
+.bentoCardMaterials .bentoCardList {
+    order: 2;
+    margin-top: 14px;
+}
+
+.bentoCardMaterials .bentoCardVisual {
+    order: 3;
+    margin-top: auto;
+    min-height: 114px;
+    border: 0;
+    background: transparent;
+    overflow: visible;
+    align-items: flex-end;
+    justify-content: stretch;
+}
+
+.bentoCardAnalytics {
+    padding-bottom: 0;
+}
+
+.bentoCardAnalytics .bentoCardList {
+    order: 2;
+    margin-top: 14px;
+}
+
+.bentoCardAnalytics .bentoCardVisual {
+    order: 3;
+    margin-top: auto;
+    margin-bottom: 8px;
+    min-height: 114px;
+    border: 0;
+    background: transparent;
+    overflow: visible;
+    align-items: stretch;
+    justify-content: stretch;
+}
+
+.bentoCardAnalytics .showcaseIncomeWidget {
+    margin-top: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    width: 100% !important;
+    min-width: 0;
+    align-self: stretch;
+}
+
+.bentoCardAnalytics .showcaseIncomeWidget :global(.g-card),
+.bentoCardAnalytics .showcaseIncomeWidget :global(.repeto-income-chart-card) {
+    width: 100% !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+.bentoCardAnalytics .showcaseIncomeWidget :global(.repeto-income-chart__header),
+.bentoCardAnalytics .showcaseIncomeWidget :global(.repeto-income-chart__total),
+.bentoCardAnalytics .showcaseIncomeWidget :global(.repeto-income-chart__title-group) {
+    display: none !important;
+}
+
+.bentoCardAnalytics .showcaseIncomeWidget :global(.repeto-income-chart__body) {
+    min-height: 108px;
+    gap: 6px;
+    padding: 4px 6px 0 !important;
+    align-items: stretch !important;
+}
+
+.bentoCardAnalytics .showcaseIncomeWidget :global(.repeto-income-chart__columns) {
+    min-height: 84px;
+    gap: 8px;
+    width: 100%;
+    align-self: stretch;
+}
+
+.bentoCardAnalytics .showcaseIncomeWidget :global(.repeto-income-chart__col) {
+    align-items: stretch;
+    gap: 4px;
+}
+
+.bentoCardAnalytics .showcaseIncomeWidget :global(.repeto-income-chart__bar-wrap) {
+    width: 100%;
+    max-width: none;
+    flex: 0 0 64px;
+}
+
+.bentoCardAnalytics .showcaseIncomeWidget :global(.repeto-income-chart__bar) {
+    border-radius: 8px;
+    gap: 1px;
+}
+
+.bentoCardAnalytics .showcaseIncomeWidget :global(.repeto-income-chart__seg) {
+    cursor: pointer !important;
+}
+
+.bentoCardAnalytics .showcaseIncomeWidget :global(.repeto-income-chart__col-total) {
+    font-size: 11px;
+    line-height: 1.1;
+}
+
+.bentoCardAnalytics .showcaseIncomeWidget :global(.repeto-income-chart__col-label) {
+    font-size: 11px;
+    line-height: 1.15;
+}
+
+.bentoCardList {
+    list-style: none;
+    margin: 18px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+}
+
+.bentoCardList li {
+    position: relative;
+    padding-left: 16px;
+    color: var(--lp-body);
+    font-size: 14px;
+    line-height: 1.48;
+}
+
+.bentoCardList li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 7px;
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--accent);
+}
+
+.bentoCardDark .bentoCardTag {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+}
+
+.bentoCardDark .bentoCardTitle {
+    color: #ffffff;
+}
+
+.bentoCardDark .bentoCardText,
+.bentoCardDark .bentoCardList li {
+    color: rgba(255, 255, 255, 0.84);
+}
+
+.bentoCardDark .bentoCardVisual {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.14);
+}
+
+.bentoCardDark .bentoCardList li::before {
+    background: #98e9ab;
+}
+
+.bentoCardStudentScreenshot {
+    padding-bottom: 0;
+}
+
+.bentoCardStudentScreenshot .bentoCardList {
+    order: 2;
+    margin-top: 16px;
+}
+
+.bentoCardStudentScreenshot .bentoCardVisual {
+    order: 3;
+    margin-top: auto;
+    margin-bottom: 0;
+    min-height: clamp(166px, 17vw, 220px);
+    position: relative;
+    border: 0;
+    background: transparent;
+    overflow: visible;
+    align-items: stretch;
+    justify-content: flex-start;
+}
+
+.bentoCardStudentScreenshot .bentoCardImage {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+    border-radius: 22px;
+    border: 1px solid #d2dbe8;
+    box-shadow: 0 20px 44px -24px rgba(15, 23, 42, 0.35), 0 0 0 1px rgba(230, 236, 245, 0.8);
+    transform-origin: top left;
+    transform: translateY(120px) scale(1.24);
+}
+
+.showcaseCardIncome {
+    grid-column: span 7;
+    min-height: 360px;
+    background: #f2f4f8;
+    border-color: #e0e5ee;
+    padding: 16px;
+}
+.showcaseCardToday {
+    grid-column: span 5;
+    min-height: 320px;
+    padding: 16px;
+    background: #f2f4f8;
+    border-color: #e0e5ee;
+}
+.showcaseCardWeek { grid-column: span 5; min-height: 260px; }
+.showcaseCardBars { grid-column: span 4; min-height: 260px; }
+.showcaseCardIntegrations { grid-column: span 3; min-height: 260px; }
+.showcaseCardPwa { grid-column: span 12; min-height: 200px; }
+
+.showcaseCardHead {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.showcaseCardKicker {
+    margin: 0 0 6px;
+    color: #6b7280;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.showcaseCardValue {
+    margin: 0;
+    color: var(--lp-ink);
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1;
+}
+
+.showcaseCardValue span {
+    margin-left: 4px;
+    color: #9aa1ad;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.showcaseCardSubvalue {
+    margin: 0;
+    color: var(--lp-body);
+    font-size: 14px;
+}
+
+.showcaseCardDelta {
+    margin: 6px 0 0;
+    color: #16a34a;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.showcaseChip {
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: #eef2f8;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.showcaseIncomeWidget {
+    margin-top: 8px;
+    padding: 10px;
+    border-radius: 18px;
+    background: #e8edf3;
+    border: 1px solid #dbe3ee;
+    --chart-brand: #005bac;
+    --chart-lavender: #2d7fbe;
+    --chart-info: #5a9dd1;
+    --chart-success: #87b9e0;
+    --chart-warning: #b3d5ee;
+    --chart-brand-soft: #9cc4e3;
+}
+
+.showcaseIncomeWidget :global(.repeto-income-students-card) {
+    margin: 0;
+}
+
+.showcaseIncomeWidget :global(.repeto-income-chart-card) {
+    position: relative;
+    overflow: hidden;
+    border-radius: 18px !important;
+}
+
+.showcaseIncomeWidget :global(.repeto-income-chart__header) {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.showcaseIncomeWidget :global(.repeto-income-chart__title-group) {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.showcaseIncomeWidget :global(.repeto-income-chart__total) {
+    font-size: 22px;
+    line-height: 28px;
+    font-weight: 600;
+    color: var(--lp-title);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+}
+
+.showcaseIncomeWidget :global(.repeto-income-chart__seg) {
+    all: unset;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 6px;
+    cursor: default !important;
+    border-radius: 6px;
+    transition: filter 140ms ease, transform 140ms ease;
+}
+
+.showcaseIncomeWidget :global(.repeto-income-chart__seg:hover) {
+    filter: none !important;
+    transform: none !important;
+}
+
+.showcaseIncomeWidget :global(.repeto-income-chart__body) {
+    padding: 18px 20px 6px !important;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    flex: 1 1 auto;
+    gap: 16px;
+    min-height: 240px;
+}
+
+.showcaseIncomeWidget :global(.repeto-income-chart__columns) {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    align-items: end;
+    height: 100%;
+    min-height: 200px;
+    margin-top: auto;
+    position: relative;
+    isolation: isolate;
+}
+
+.showcaseIncomeWidget :global(.repeto-income-chart__links) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.showcaseIncomeWidget :global(.repeto-income-chart__col) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    height: 100%;
+    min-width: 0;
+    position: relative;
+    z-index: 2;
+}
+
+.showcaseIncomeWidget :global(.repeto-income-chart__col-total) {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--lp-title);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.showcaseIncomeWidget :global(.repeto-income-chart__bar-wrap) {
+    flex: 1;
+    width: 100%;
+    max-width: 72px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.showcaseIncomeWidget :global(.repeto-income-chart__bar) {
+    width: 100%;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 2px;
+    border-radius: 10px;
+    overflow: hidden;
+    min-height: 4px;
+    background: transparent;
+}
+
+.showcaseIncomeWidget :global(.repeto-income-chart__bar--placeholder) {
+    background: #f2f5fa;
+    border: 1px solid #dfe6f1;
+    padding: 2px;
+    gap: 2px;
+}
+
+.showcaseIncomeWidget :global(.repeto-income-chart__seg-placeholder) {
+    display: block;
+    width: 100%;
+    border-radius: 4px;
+    background: #dbe4f0;
+}
+
+.showcaseIncomeWidget :global(.repeto-income-chart__col-label) {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--lp-body);
+    letter-spacing: -0.005em;
+}
+
+.showcaseTodaySchedule {
+    margin-top: 8px;
+    padding: 10px;
+    border-radius: 18px;
+    background: #e8edf3;
+    border: 1px solid #dbe3ee;
+}
+
+.showcaseTodaySchedule :global(.g-card) {
+    border-radius: 18px;
+    border: 1px solid #edf0f4;
+    box-shadow: none;
+}
+
+.showcaseTodaySchedule :global(.repeto-week-lesson-row) {
+    color: inherit;
+    cursor: default;
+    text-decoration: none;
+    border-radius: 10px;
+}
+
+.showcaseTodaySchedule :global(.repeto-week-lesson-row:hover) {
+    background: transparent;
+}
+
+.showcaseTodaySchedule :global(.repeto-card-header) {
+    padding: 16px 20px 10px;
+}
+
+.showcaseTodaySchedule :global(.repeto-week-lesson-row) {
+    gap: 10px;
+    padding: 8px 16px;
+}
+
+.showcaseTodaySchedule :global(.repeto-week-lesson-row .g-avatar) {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+}
+
+.showcaseTodaySchedule :global(.repeto-week-lesson-row .g-text_variant_body-2) {
+    font-size: 17px;
+    line-height: 1.25;
+}
+
+.showcaseTodaySchedule :global(.repeto-week-lesson-row .g-text_variant_body-1) {
+    font-size: 14px;
+    line-height: 1.25;
+}
+
+.showcaseTodaySchedule :global(.repeto-week-lesson-row .g-label) {
+    border-radius: 12px;
+    padding-inline: 12px;
+}
+
+.showcaseTodayChevron {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.showcaseDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--accent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+/* Income chart */
+.showcaseChartWrap {
+    position: relative;
+    flex: 1 1 auto;
+    margin-top: 8px;
+    min-height: 160px;
+}
+
+.showcaseChartSvg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.showcaseTooltip {
+    position: absolute;
+    top: 18%;
+    left: 64%;
+    transform: translate(-50%, -100%);
+    background: #0f172a;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 12px;
+    line-height: 1.3;
+    box-shadow: 0 12px 24px -12px rgba(15, 23, 42, 0.4);
+    white-space: nowrap;
+}
+
+.showcaseTooltip p { margin: 0; opacity: 0.7; font-size: 11px; }
+.showcaseTooltip strong { font-weight: 700; }
+
+.showcaseChartLegend {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    color: #9aa1ad;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+/* Today list */
+.showcaseTodayList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1 1 auto;
+}
+
+.showcaseTodayList li {
+    display: grid;
+    grid-template-columns: 48px 32px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: #f8fafc;
+    border-radius: 12px;
+    font-size: 13px;
+}
+
+.showcaseTime {
+    color: var(--lp-ink);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.showcaseAvatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+.showcaseAvatar[data-tone="blue"] { background: linear-gradient(135deg, #3b82f6, #1e40af); }
+.showcaseAvatar[data-tone="violet"] { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+.showcaseAvatar[data-tone="amber"] { background: linear-gradient(135deg, #f59e0b, #b45309); }
+.showcaseAvatar[data-tone="green"] { background: linear-gradient(135deg, #10b981, #047857); }
+
+.showcaseTodayName {
+    display: flex;
+    flex-direction: column;
+    color: var(--lp-ink);
+    font-weight: 600;
+    line-height: 1.25;
+    min-width: 0;
+}
+.showcaseTodayName em {
+    font-style: normal;
+    color: #6b7280;
+    font-weight: 500;
+    font-size: 12px;
+}
+
+.showcaseStatus {
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: #eef2f8;
+    color: #475569;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.showcaseStatusDone { background: #dcfce7; color: #15803d; }
+.showcaseStatusNow { background: color-mix(in srgb, var(--accent) 14%, #ffffff); color: var(--accent); }
+
+/* Week schedule */
+.showcaseWeekGrid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    flex: 1 1 auto;
+    align-items: end;
+}
+
+.showcaseWeekCol {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+}
+
+.showcaseWeekDay {
+    color: #9aa1ad;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+.showcaseWeekSlots {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.showcaseWeekSlot {
+    height: 14px;
+    border-radius: 4px;
+    background: #eef1f6;
+}
+
+.showcaseWeekSlotFilled {
+    background: color-mix(in srgb, var(--accent) 20%, #ffffff);
+}
+
+.showcaseWeekSlotAccent {
+    background: var(--accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+/* Bars */
+.showcaseBars {
+    display: flex;
+    align-items: flex-end;
+    gap: 14px;
+    flex: 1 1 auto;
+    padding-top: 16px;
+}
+
+.showcaseBarCol {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+    height: 100%;
+}
+
+.showcaseBar {
+    width: 100%;
+    border-radius: 8px 8px 4px 4px;
+    background: linear-gradient(180deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 70%, #ffffff) 100%);
+    min-height: 8px;
+}
+
+.showcaseBarCol:nth-child(4) .showcaseBar {
+    background: linear-gradient(180deg, #0f172a 0%, #334155 100%);
+}
+
+.showcaseBarCol span {
+    color: #9aa1ad;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+/* Integrations */
+.showcaseIntegrations {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1 1 auto;
+}
+
+.showcaseIntegrations li {
+    display: grid;
+    grid-template-columns: 36px 1fr;
+    grid-template-rows: auto auto;
+    column-gap: 12px;
+    align-items: center;
+    padding: 10px 12px;
+    background: #f8fafc;
+    border-radius: 12px;
+    font-size: 13px;
+    color: var(--lp-ink);
+    font-weight: 600;
+}
+
+.showcaseIntegrations li em {
+    grid-column: 2;
+    grid-row: 2;
+    font-style: normal;
+    color: #6b7280;
+    font-weight: 500;
+    font-size: 12px;
+}
+
+.showcaseIntBadge {
+    grid-row: 1 / span 2;
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+}
+.showcaseIntBadge[data-svc="tg"] { background: linear-gradient(135deg, #2aabee, #229ed9); }
+.showcaseIntBadge[data-svc="wa"] { background: linear-gradient(135deg, #25d366, #128c7e); }
+.showcaseIntBadge[data-svc="yk"] { background: linear-gradient(135deg, #5b21b6, #7c3aed); }
+.showcaseIntBadge[data-svc="gc"] { background: linear-gradient(135deg, #4285f4, #1a73e8); }
+
+/* Tablet */
+@media (max-width: 1024px) {
+    .showcaseGrid { gap: 16px; }
+    .bentoCardWide,
+    .bentoCardTall {
+        grid-column: span 12;
+    }
+    .bentoCardCompact {
+        grid-column: span 6;
+    }
+    .showcaseCardIncome { grid-column: span 12; min-height: 280px; }
+    .showcaseCardToday { grid-column: span 12; }
+    .showcaseCardWeek { grid-column: span 12; }
+    .showcaseCardBars { grid-column: span 6; }
+    .showcaseCardIntegrations { grid-column: span 6; }
+    .showcaseCardPwa { grid-column: span 12; }
+}
+
+@media (max-width: 640px) {
+    .showcaseSection { padding: 64px 16px; }
+    .showcaseTitle { font-size: 28px; }
+    .integrationsSubtitle { font-size: 15px; }
+    .bentoCardCompact { grid-column: span 12; }
+    .bentoCardTitle { font-size: 24px; }
+    .showcaseCardBars,
+    .showcaseCardIntegrations,
+    .showcaseCardPwa { grid-column: span 12; }
+    .showcaseCardValue { font-size: 26px; }
+    .showcaseTodaySchedule :global(.repeto-week-lesson-row) { padding-inline: 12px; }
+}
+
+.showcasePwaBody {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: 18px;
+    margin-top: 6px;
+    align-items: start;
+}
+
+.showcasePwaBody p {
+    margin: 0;
+    color: var(--lp-body);
+    font-size: 15px;
+    line-height: 1.55;
+}
+
+.showcasePwaList {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 8px;
+}
+
+.showcasePwaList li {
+    position: relative;
+    padding-left: 18px;
+    color: var(--lp-mid);
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.showcasePwaList li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 7px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+}
+
+.stepsSection {
+    padding: 92px 20px;
+    background: #ffffff;
+}
+
+.stepsInner,
+.comparisonInner,
+.faqInner,
+.reviewsInner,
+.finalCtaInner {
+    max-width: var(--lp-inner);
+    margin: 0 auto;
+}
+
+.stepsLabel,
+.comparisonLabel,
+.faqLabel,
+.reviewsLabel {
+    display: block;
+    width: fit-content;
+    margin: 0 auto;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.stepsTitle,
+.comparisonTitle,
+.faqTitle,
+.reviewsTitle {
+    margin: 14px auto 0;
+    max-width: 860px;
+    text-align: center;
+    color: var(--lp-ink);
+    font-size: clamp(30px, 3.6vw, 50px);
+    line-height: 1.04;
+    letter-spacing: -0.02em;
+    font-weight: 740;
+}
+
+.stepsGrid {
+    margin-top: 34px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.stepCard {
+    min-height: 210px;
+    border: 1px solid var(--lp-line);
+    border-radius: 14px;
+    background: #f9fbff;
+    padding: 20px;
+}
+
+.stepBadge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 30px;
+    border-radius: 10px;
+    border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.stepCard h3 {
+    margin: 44px 0 0;
+    color: var(--lp-ink);
+    font-size: 23px;
+    line-height: 1.12;
+    font-weight: 700;
+}
+
+.stepCard p {
+    margin: 10px 0 0;
+    color: var(--lp-body);
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+.stepsAction {
+    margin-top: 26px;
+    display: flex;
+    justify-content: center;
+}
+
+.stepsActionButton,
+.finalCtaButton {
+    height: 50px;
+    padding: 0 24px;
+    border-radius: var(--btn-radius);
+    background: var(--accent);
+    color: #ffffff;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 650;
+    line-height: 1;
+    transition: background-color 0.18s ease;
+}
+
+.stepsActionButton:hover,
+.finalCtaButton:hover {
+    background: var(--accent-hover);
+}
+
+.comparisonSection {
+    padding: 90px 20px;
+    background: transparent;
+}
+
+.comparisonTable {
+    margin-top: 30px;
+    border: 1px solid var(--lp-line);
+    border-radius: 16px;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+.comparisonHead,
+.comparisonRow {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.comparisonHead {
+    background: #f4f7fc;
+    border-bottom: 1px solid var(--lp-line);
+}
+
+.comparisonHead span {
+    padding: 14px 16px;
+    color: var(--lp-ink);
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.comparisonHead span:nth-child(3) {
+    color: var(--accent);
+}
+
+.comparisonRow {
+    border-bottom: 1px solid #edf2f8;
+}
+
+.comparisonRow:last-child {
+    border-bottom: 0;
+}
+
+.comparisonRow p {
+    margin: 0;
+    padding: 14px 16px;
+    color: var(--lp-body);
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.comparisonRow p:first-child {
+    color: var(--lp-ink);
+    font-weight: 600;
+}
+
+.comparisonRow p:nth-child(3) {
+    color: #0e7a41;
+}
+
+.tariffsLead {
+    margin: 14px auto 0;
+    max-width: 680px;
+    text-align: center;
+    color: var(--lp-body);
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.faqSection {
+    padding: 90px 20px;
+    background: #ffffff;
+}
+
+.faqList {
+    margin: 30px auto 0;
+    max-width: 900px;
+    display: grid;
+    gap: 10px;
+}
+
+.faqItem {
+    border: 1px solid var(--lp-line);
+    border-radius: 12px;
+    background: #fbfdff;
+    padding: 0 16px;
+}
+
+.faqItem summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 16px 0;
+    color: var(--lp-ink);
+    font-size: 16px;
+    font-weight: 620;
+}
+
+.faqItem summary::-webkit-details-marker {
+    display: none;
+}
+
+.faqItem p {
+    margin: 0;
+    padding: 0 0 16px;
+    color: var(--lp-body);
+    font-size: 14px;
+    line-height: 1.55;
+}
+
+.reviewsSection {
+    padding: 86px 20px;
+    background: transparent;
+}
+
+.reviewsPlaceholder {
+    margin: 24px auto 0;
+    max-width: 780px;
+    text-align: center;
+    color: var(--lp-body);
+    font-size: 18px;
+    line-height: 1.55;
+    border: 1px solid var(--lp-line);
+    border-radius: 16px;
+    padding: 30px 22px;
+    background: #ffffff;
+}
+
+.finalCtaSection {
+    padding: 72px 20px 96px;
+    background: transparent;
+}
+
+.finalCtaInner {
+    border-radius: 24px;
+    padding: 42px 32px;
+    background: linear-gradient(130deg, color-mix(in srgb, var(--accent) 18%, #ffffff), #ffffff 55%);
+    border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
+    text-align: center;
+}
+
+.finalCtaTitle {
+    margin: 0;
+    color: var(--lp-ink);
+    font-size: clamp(28px, 3.2vw, 42px);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    font-weight: 740;
+}
+
+.finalCtaText {
+    margin: 14px auto 0;
+    max-width: 680px;
+    color: var(--lp-body);
+    font-size: 16px;
+    line-height: 1.55;
+}
+
+.finalCtaActions {
+    margin-top: 24px;
+    display: flex;
+    justify-content: center;
+}
+
+@media (max-width: 1100px) {
+    .stepsGrid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .showcasePwaBody {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 760px) {
+    .stepsSection,
+    .comparisonSection,
+    .faqSection,
+    .reviewsSection,
+    .finalCtaSection {
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+
+    .stepsGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .stepCard h3 {
+        margin-top: 26px;
+        font-size: 20px;
+    }
+
+    .comparisonHead {
+        display: none;
+    }
+
+    .comparisonRow {
+        grid-template-columns: 1fr;
+        border-bottom: 1px solid #e7edf5;
+        padding: 10px 0;
+    }
+
+    .comparisonRow p {
+        padding: 6px 14px;
+    }
+
+    .comparisonRow p:first-child {
+        font-size: 15px;
+        padding-top: 10px;
+    }
+
+    .comparisonRow p:nth-child(2)::before,
+    .comparisonRow p:nth-child(3)::before {
+        display: inline-block;
+        margin-right: 6px;
+        color: var(--lp-muted);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        content: "";
+    }
+
+    .comparisonRow p:nth-child(2)::before {
+        content: "Как обычно:";
+    }
+
+    .comparisonRow p:nth-child(3)::before {
+        content: "С Repeto:";
+    }
+
+    .finalCtaInner {
+        padding: 28px 18px;
+        border-radius: 18px;
     }
 }

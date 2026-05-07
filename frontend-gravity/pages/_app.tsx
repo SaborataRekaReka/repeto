@@ -84,9 +84,27 @@ function AppContent({ Component, pageProps }: { Component: AppProps["Component"]
     const isLandingRoute = router.pathname === "/";
 
     useEffect(() => {
-        if (isLandingRoute) return;
         if (typeof window === "undefined") return;
         if (!("serviceWorker" in navigator)) return;
+        const isLocalHost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+
+        if (isLandingRoute && isLocalHost) {
+            navigator.serviceWorker
+                .getRegistrations()
+                .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
+                .catch(() => null);
+
+            if ("caches" in window) {
+                caches
+                    .keys()
+                    .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+                    .catch(() => null);
+            }
+
+            return;
+        }
+
+        if (isLandingRoute) return;
         if (!window.isSecureContext && window.location.hostname !== "localhost") return;
 
         navigator.serviceWorker

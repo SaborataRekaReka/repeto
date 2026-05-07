@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import AnimatedSidebarIcon from "@/components/AnimatedSidebarIcon";
-import { Card, Text, Button, Switch, TextInput, Checkbox } from "@gravity-ui/uikit";
-import { ArrowUpRightFromSquare, CircleCheck, Xmark } from "@gravity-ui/icons";
+import { Card, Text, Button, Switch, TextInput, Checkbox, Icon } from "@gravity-ui/uikit";
+import { ArrowUpRightFromSquare, CircleCheck, Lock } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import { useAuth } from "@/contexts/AuthContext";
 import AppField from "@/components/AppField";
@@ -26,7 +25,6 @@ type PublicPageSnapshot = {
     slug: string;
     published: boolean;
     showPublicPackages: boolean;
-    tagline: string;
 };
 
 function sanitizeSlug(value: string): string {
@@ -89,12 +87,10 @@ const PublicPage = () => {
     const { data: settings, mutate } = useSettings();
 
     const [slug, setSlug] = useState("");
-    const [tagline, setTagline] = useState("");
     const [published, setPublished] = useState(false);
     const [showPublicPackages, setShowPublicPackages] = useState(true);
 
     const [slugStatus, setSlugStatus] = useState<SlugStatus>("idle");
-    const [slugHint, setSlugHint] = useState("");
     const [slugSuggestion, setSlugSuggestion] = useState("");
     const [slugTyping, setSlugTyping] = useState(false);
 
@@ -102,6 +98,7 @@ const PublicPage = () => {
     const [saveMsg, setSaveMsg] = useState<string | null>(null);
     const [dirty, setDirty] = useState(false);
     const [publicationConsentAccepted, setPublicationConsentAccepted] = useState(false);
+    const [publicationConsentAttention, setPublicationConsentAttention] = useState(false);
 
     const hydratedRef = useRef(false);
     const slugRequestIdRef = useRef(0);
@@ -109,7 +106,6 @@ const PublicPage = () => {
         slug: "",
         published: false,
         showPublicPackages: true,
-        tagline: "",
     });
 
     useEffect(() => {
@@ -119,22 +115,20 @@ const PublicPage = () => {
             slug: settings.slug || "",
             published: Boolean(settings.published),
             showPublicPackages: settings.showPublicPackages !== false,
-            tagline: settings.tagline || "",
         };
 
         snapshotRef.current = nextSnapshot;
         setSlug(nextSnapshot.slug);
         setPublished(nextSnapshot.published);
         setShowPublicPackages(nextSnapshot.showPublicPackages);
-        setTagline(nextSnapshot.tagline);
         setSlugStatus("idle");
-        setSlugHint("");
         setSlugSuggestion("");
         setSaveMsg(null);
         setDirty(false);
         setPublicationConsentAccepted(false);
+        setPublicationConsentAttention(false);
         hydratedRef.current = true;
-    }, [settings?.slug, settings?.published, settings?.showPublicPackages, settings?.tagline]);
+    }, [settings?.slug, settings?.published, settings?.showPublicPackages]);
 
     useEffect(() => {
         if (!hydratedRef.current) return;
@@ -142,16 +136,14 @@ const PublicPage = () => {
         const isDirty =
             snapshot.slug !== slug
             || snapshot.published !== published
-            || snapshot.showPublicPackages !== showPublicPackages
-            || snapshot.tagline !== tagline;
+            || snapshot.showPublicPackages !== showPublicPackages;
         setDirty(isDirty);
-    }, [slug, published, showPublicPackages, tagline]);
+    }, [slug, published, showPublicPackages]);
 
     const requestSlugStatus = useCallback(async (rawSlug: string) => {
         const normalized = sanitizeSlug(rawSlug);
         if (!normalized) {
             setSlugStatus("idle");
-            setSlugHint("");
             setSlugSuggestion("");
             setSlugTyping(false);
             return null;
@@ -159,7 +151,6 @@ const PublicPage = () => {
 
         if (normalized === snapshotRef.current.slug) {
             setSlugStatus("available");
-            setSlugHint("Текущий адрес страницы");
             setSlugSuggestion("");
             setSlugTyping(false);
             return { requested: normalized, isAvailable: true, suggested: "" };
@@ -168,7 +159,6 @@ const PublicPage = () => {
         const requestId = slugRequestIdRef.current + 1;
         slugRequestIdRef.current = requestId;
         setSlugStatus("checking");
-        setSlugHint("Проверяем адрес...");
         setSlugSuggestion("");
 
         try {
@@ -183,13 +173,11 @@ const PublicPage = () => {
 
             if (result.isAvailable) {
                 setSlugStatus("available");
-                setSlugHint("Адрес свободен");
                 setSlugSuggestion("");
                 return result;
             }
 
             setSlugStatus("taken");
-            setSlugHint("Такой адрес уже занят.");
             setSlugSuggestion(result.suggested || "");
             return result;
         } catch {
@@ -197,7 +185,6 @@ const PublicPage = () => {
                 return null;
             }
             setSlugStatus("error");
-            setSlugHint("Не удалось проверить адрес");
             setSlugSuggestion("");
             return null;
         }
@@ -214,7 +201,6 @@ const PublicPage = () => {
 
         if (!normalized) {
             setSlugStatus("idle");
-            setSlugHint("");
             setSlugSuggestion("");
             setSlugTyping(false);
             return;
@@ -235,6 +221,33 @@ const PublicPage = () => {
         if (!slugSuggestion) return;
         setSlug(slugSuggestion);
         setSlugTyping(false);
+        setSaveMsg(null);
+    };
+
+    const handlePublicationConsentUpdate = (checked: boolean) => {
+        setPublicationConsentAccepted(checked);
+        if (checked) {
+            setPublicationConsentAttention(false);
+            setSaveMsg(null);
+        }
+    };
+
+    const handlePublishedToggle = (nextPublished: boolean) => {
+        const isTryingToPublish = nextPublished && !published;
+        const requiresConsentBeforePublish = !snapshotRef.current.published;
+
+        if (
+            isTryingToPublish
+            && requiresConsentBeforePublish
+            && !publicationConsentAccepted
+        ) {
+            setPublicationConsentAttention(true);
+            setSaveMsg("Сначала подтвердите согласие на публикацию анкеты.");
+            return;
+        }
+
+        setPublicationConsentAttention(false);
+        setPublished(nextPublished);
         setSaveMsg(null);
     };
 
@@ -289,7 +302,6 @@ const PublicPage = () => {
                 slug: normalizedSlug,
                 published,
                 showPublicPackages,
-                tagline: tagline.trim(),
                 legalVersion: LEGAL_VERSION,
                 legalDocumentHash: LEGAL_DOCUMENT_HASH,
                 publicationConsentAccepted: needsPublicationConsent ? publicationConsentAccepted : undefined,
@@ -303,7 +315,6 @@ const PublicPage = () => {
                 slug: normalizedSlug,
                 published,
                 showPublicPackages,
-                tagline: tagline.trim(),
             };
 
             setDirty(false);
@@ -315,22 +326,6 @@ const PublicPage = () => {
             setSaving(false);
         }
     };
-
-    const slugStatusIcon = slug && !slugTyping && slugStatus !== "checking"
-        ? (slugStatus === "available"
-            ? CircleCheck
-            : slugStatus === "taken" || slugStatus === "error"
-                ? Xmark
-                : null)
-        : null;
-
-    const slugStatusAnimatedIconPath = slug && !slugTyping && slugStatus !== "checking"
-        ? (slugStatus === "available"
-            ? "/icons/sidebar-animated/user-tick.json"
-            : slugStatus === "taken" || slugStatus === "error"
-                ? "/icons/sidebar-animated/folder-cross.json"
-                : null)
-        : null;
 
     const normalizedSlug = sanitizeSlug(slug);
     const slugIsCurrent = Boolean(normalizedSlug && normalizedSlug === snapshotRef.current.slug);
@@ -344,37 +339,31 @@ const PublicPage = () => {
             : published && !normalizedSlug
                 ? "Для публикации нужен свободный адрес страницы."
                 : undefined;
-    const slugStatusTone = slugIsChecking
+    const slugIndicatorTone = slugIsChecking
         ? "checking"
         : !normalizedSlug
             ? "empty"
-            : slugStatus === "available"
+            : slugStatus === "available" || slugIsCurrent
                 ? "available"
                 : slugStatus === "taken" || slugStatus === "error"
-                    ? "danger"
+                    ? "taken"
                     : "neutral";
-    const slugStatusText = slugIsChecking
-        ? "Проверяем адрес"
-        : !normalizedSlug
-            ? "Адрес не указан"
-            : slugIsCurrent
-                ? "Текущий адрес"
-                : slugStatus === "available"
-                    ? "Адрес свободен"
-                : slugStatus === "taken"
-                    ? "Адрес занят"
-                    : slugStatus === "error"
-                        ? "Проверка недоступна"
-                        : slugHint || "Адрес будет проверен автоматически";
 
     const previewName = settings?.name || user?.name || "Репетитор";
     const previewAvatarUrl = resolveApiAssetUrl(settings?.avatarUrl) || user?.avatar || null;
+    const previewReviewsCount = Number.isFinite(Number(settings?.reviewsCount))
+        ? Math.max(0, Number(settings?.reviewsCount))
+        : 0;
+    const previewRatingRaw = Number(settings?.rating);
+    const previewRating = Number.isFinite(previewRatingRaw)
+        ? previewRatingRaw
+        : null;
     const subjectSource = Array.isArray(settings?.subjectDetails) && settings.subjectDetails.length > 0
         ? settings.subjectDetails
         : Array.isArray(settings?.subjects) && settings.subjects.length > 0
             ? settings.subjects
             : Array.isArray(user?.subjects)
-                ? user.subjects
+                ? user?.subjects ?? []
                 : [];
     const previewSubjectsText = subjectSource
         .map(getSubjectName)
@@ -426,6 +415,7 @@ const PublicPage = () => {
 
     const requiresPublicationConsent =
         !snapshotRef.current.published && published;
+    const showPublicationConsent = !snapshotRef.current.published;
 
     return (
         <div className="repeto-settings-stack">
@@ -444,66 +434,78 @@ const PublicPage = () => {
                                         className="repeto-settings-public-slug-field"
                                         error={slugFieldError}
                                     >
-                                        <TextInput
-                                            size="l"
-                                            value={slug}
-                                            onUpdate={(value) => {
-                                                const nextSlug = sanitizeSlug(value);
-                                                setSlug(nextSlug);
-                                                setSlugTyping(Boolean(nextSlug));
-                                                setSlugStatus(nextSlug ? "checking" : "idle");
-                                                setSlugHint(nextSlug ? "Проверяем адрес..." : "");
-                                                setSlugSuggestion("");
-                                                setSaveMsg(null);
-                                            }}
-                                            onBlur={() => {
-                                                setSlugTyping(false);
-                                                if (sanitizeSlug(slug)) {
-                                                    void requestSlugStatus(slug);
-                                                }
-                                            }}
-                                            placeholder="demo-tutor"
-                                        />
+                                        {published && publicPagePath ? (
+                                            <Link
+                                                href={publicPagePath}
+                                                target="_blank"
+                                                className="repeto-settings-public-slug-link-field"
+                                            >
+                                                <span className="repeto-settings-public-slug-link-field__value">
+                                                    <span className="repeto-settings-public-slug-link-field__text">{publicPageLabel}</span>
+                                                    <Icon data={ArrowUpRightFromSquare as IconData} size={13} className="repeto-settings-public-slug-link-field__open" />
+                                                </span>
+                                                <Icon data={Lock as IconData} size={14} className="repeto-settings-public-slug-link-field__lock" />
+                                            </Link>
+                                        ) : (
+                                            <div className="repeto-settings-public-slug-input-wrap">
+                                                <TextInput
+                                                    className="repeto-settings-public-slug-input repeto-settings-public-slug-input--with-indicator"
+                                                    size="l"
+                                                    value={slug}
+                                                    onUpdate={(value) => {
+                                                        const nextSlug = sanitizeSlug(value);
+                                                        setSlug(nextSlug);
+                                                        setSlugTyping(Boolean(nextSlug));
+                                                        setSlugStatus(nextSlug ? "checking" : "idle");
+                                                        setSlugSuggestion("");
+                                                        setSaveMsg(null);
+                                                    }}
+                                                    onBlur={() => {
+                                                        setSlugTyping(false);
+                                                        if (sanitizeSlug(slug)) {
+                                                            void requestSlugStatus(slug);
+                                                        }
+                                                    }}
+                                                    placeholder="demo-tutor"
+                                                />
+
+                                                {slugIndicatorTone !== "empty" && slugIndicatorTone !== "neutral" && (
+                                                    <span
+                                                        className={`repeto-settings-public-slug-indicator repeto-settings-public-slug-indicator--${slugIndicatorTone}`}
+                                                        aria-hidden="true"
+                                                    >
+                                                        {slugIndicatorTone === "available" ? (
+                                                            <Icon data={CircleCheck as IconData} size={14} />
+                                                        ) : slugIndicatorTone === "taken" ? (
+                                                            <span className="repeto-settings-public-slug-indicator__ban" />
+                                                        ) : (
+                                                            <span className="repeto-settings-public-slug-indicator__dot" />
+                                                        )}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        )}
                                     </AppField>
 
-                                    <div className="repeto-settings-public-slug-meta">
-                                        <span className={`repeto-settings-public-slug-status repeto-settings-public-slug-status--${slugStatusTone}`}>
-                                            {slugStatusIcon && slugStatusAnimatedIconPath ? (
-                                                <AnimatedSidebarIcon
-                                                    src={slugStatusAnimatedIconPath}
-                                                    fallbackIcon={slugStatusIcon as IconData}
-                                                    play
-                                                    size={18}
-                                                />
-                                            ) : (
-                                                <span className="repeto-settings-public-slug-status__dot" aria-hidden="true" />
-                                            )}
-                                            {slugStatusText}
-                                        </span>
+                                    {!published && (
+                                        <div className="repeto-settings-public-slug-meta">
+                                            <span className="repeto-settings-public-slug-link repeto-settings-public-slug-link--muted">
+                                                {publicPageLabel}
+                                            </span>
 
-                                        {slugStatus === "taken" && slugSuggestion && (
-                                            <button
-                                                type="button"
-                                                className="repeto-settings-public-page-suggestion"
-                                                onClick={applySuggestedSlug}
-                                            >
-                                                Использовать {slugSuggestion}
-                                            </button>
-                                        )}
-                                    </div>
+                                            {slugStatus === "taken" && slugSuggestion && (
+                                                <button
+                                                    type="button"
+                                                    className="repeto-settings-public-page-suggestion"
+                                                    onClick={applySuggestedSlug}
+                                                >
+                                                    Использовать {slugSuggestion}
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
 
-                                <AppField label="Подзаголовок">
-                                    <TextInput
-                                        value={tagline}
-                                        onUpdate={(value) => {
-                                            setTagline(value);
-                                            setSaveMsg(null);
-                                        }}
-                                        placeholder="Репетитор по математике и физике"
-                                        size="l"
-                                    />
-                                </AppField>
                             </div>
 
                             <div className="repeto-settings-switch-row repeto-settings-public-page-switch">
@@ -513,20 +515,23 @@ const PublicPage = () => {
                                         Страница станет доступна по персональной ссылке.
                                     </Text>
                                 </div>
-                                <Switch checked={published} onUpdate={setPublished} size="m" />
+                                <Switch checked={published} onUpdate={handlePublishedToggle} size="m" />
                             </div>
 
-                            {requiresPublicationConsent && (
-                                <div className="repeto-settings-public-consent">
+                            {showPublicationConsent && (
+                                <div className={`repeto-settings-public-consent${publicationConsentAttention ? " repeto-settings-public-consent--attention" : ""}`}>
                                     <Checkbox
                                         checked={publicationConsentAccepted}
-                                        onUpdate={setPublicationConsentAccepted}
+                                        onUpdate={handlePublicationConsentUpdate}
                                         size="l"
                                     >
-                                        <span>
+                                        <span className="repeto-settings-public-consent__text">
                                             Даю согласие на <Link href="/legal#tutor-publication-consent" target="_blank">публикацию анкеты и распространение указанных данных</Link>.
                                         </span>
                                     </Checkbox>
+                                    <Text variant="caption-2" color="secondary" className="repeto-settings-public-consent__note">
+                                        Подтверждение требуется один раз перед первой публикацией.
+                                    </Text>
                                 </div>
                             )}
 
@@ -571,9 +576,8 @@ const PublicPage = () => {
                                 name={previewName}
                                 avatarUrl={previewAvatarUrl || undefined}
                                 subjectsText={previewSubjectsText || undefined}
-                                rating={null}
-                                reviewsCount={0}
-                                noReviewsLabel="Предпросмотр"
+                                rating={previewReviewsCount > 0 ? previewRating : null}
+                                reviewsCount={previewReviewsCount}
                                 contacts={previewContacts}
                                 policy={{
                                     freeHours,
@@ -582,23 +586,6 @@ const PublicPage = () => {
                                     noShowActionLabel,
                                 }}
                             />
-
-                            <div className="repeto-settings-public-preview__link-row">
-                                <span className="repeto-settings-public-preview__url">{publicPageLabel}</span>
-                                {published && publicPagePath ? (
-                                    <Link href={publicPagePath} target="_blank" className="repeto-settings-public-preview__open">
-                                        <AnimatedSidebarIcon
-                                            src="/icons/sidebar-animated/global.json"
-                                            fallbackIcon={ArrowUpRightFromSquare as IconData}
-                                            play
-                                            size={14}
-                                        />
-                                        Открыть
-                                    </Link>
-                                ) : (
-                                    <span className="repeto-settings-public-preview__disabled-link">После публикации</span>
-                                )}
-                            </div>
                         </aside>
                     </div>
                 </div>

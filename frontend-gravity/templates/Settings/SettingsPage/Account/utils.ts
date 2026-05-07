@@ -4,6 +4,14 @@ export const DEFAULT_SUBJECT: SubjectDraft = { name: "", price: "", duration: "6
 
 export type EducationEntry = { id: string; institution: string; program: string; years: string };
 export type CertificateEntry = { id: string; title: string; fileUrl: string; uploadedAt: string };
+export type WorkExperienceEntry = {
+    id: string;
+    place: string;
+    role: string;
+    years: string;
+    verified?: boolean;
+    verificationLabel?: string | null;
+};
 
 export const formatOptions = [
     { value: "online", content: "Онлайн (Zoom / Google Meet)" },
@@ -22,6 +30,60 @@ export function createDraftEducationId() {
         return `edu-${globalThis.crypto.randomUUID()}`;
     }
     return `edu-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+export function createDraftWorkExperienceId() {
+    if (typeof globalThis !== "undefined" && globalThis.crypto?.randomUUID) {
+        return `exp-${globalThis.crypto.randomUUID()}`;
+    }
+    return `exp-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+export function parseWorkExperienceLine(text: string): Pick<WorkExperienceEntry, "place" | "role" | "years"> {
+    const raw = String(text || "").trim();
+    if (!raw) {
+        return { place: "", role: "", years: "" };
+    }
+
+    let main = raw;
+    let years = "";
+
+    const yearsMatch = main.match(/\(([^()]+)\)\s*$/);
+    if (yearsMatch && yearsMatch.index !== undefined) {
+        years = yearsMatch[1].trim();
+        main = main.slice(0, yearsMatch.index).trim();
+    }
+
+    const roleMatch = main.match(/^(.*?)\s+[—–-]\s+(.+)$/);
+    if (!roleMatch) {
+        return { place: main, role: "", years };
+    }
+
+    return {
+        place: roleMatch[1].trim(),
+        role: roleMatch[2].trim(),
+        years,
+    };
+}
+
+export function formatWorkExperienceLine(entry: Pick<WorkExperienceEntry, "place" | "role" | "years">): string {
+    const place = entry.place.trim();
+    const role = entry.role.trim();
+    const years = entry.years.trim();
+
+    if (!place) {
+        return "";
+    }
+
+    let value = place;
+    if (role) {
+        value += ` — ${role}`;
+    }
+    if (years) {
+        value += ` (${years})`;
+    }
+
+    return value;
 }
 
 export function isPdfUrl(value?: string | null): boolean {

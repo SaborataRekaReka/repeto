@@ -6,39 +6,60 @@ import {
     Avatar,
     Icon,
     Button,
-    TextInput,
 } from "@gravity-ui/uikit";
-import { ChevronDown, Gear, Sun, Moon } from "@gravity-ui/icons";
+import { Gear, Calendar, CircleInfo, FolderOpen, Receipt } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import type { StudentPortalData } from "@/types/student-portal";
 import PublicTutorWidget, {
     type PublicTutorWidgetContactItem,
 } from "@/components/PublicTutorWidget";
+import AnimatedSidebarIcon from "@/components/AnimatedSidebarIcon";
 import LessonsTab from "./LessonsTab";
 import HomeworkTab from "./HomeworkTab";
 import MaterialsTab from "./MaterialsTab";
 import PaymentTab from "./PaymentTab";
 import SignUpBanner from "./SignUpBanner";
 import { PublicPageFooter, PublicPageHeader } from "../PublicPageChrome";
+import StudentSettingsDialog from "../StudentSettingsDialog";
 
 import Image from "next/image";
-import { useThemeMode } from "@/contexts/ThemeContext";
-import { Lp2Field, Lp2Row } from "@/components/Lp2Field";
-import { Lp2PlannerLayout, Lp2PlannerSection, Lp2PortalShell } from "@/components/Lp2PlannerShell";
-import PhoneInput from "@/components/PhoneInput";
 import StudentAvatar from "@/components/StudentAvatar";
 import { resolveApiAssetUrl } from "@/lib/api";
-import { studentApi } from "@/lib/studentAuth";
 import {
     formatCancelPolicyActionLabel,
     formatCancelPolicyHoursWord,
 } from "@/lib/cancelPolicy";
 
-const tabItems = [
-    { value: "lessons", label: "Занятия" },
-    { value: "homework", label: "Домашка" },
-    { value: "materials", label: "Материалы" },
-    { value: "payment", label: "Оплата" },
+const tabItems: Array<{
+    value: "lessons" | "homework" | "materials" | "payment";
+    label: string;
+    animatedIconPath: string;
+    fallbackIcon: IconData;
+}> = [
+    {
+        value: "lessons",
+        label: "Занятия",
+        animatedIconPath: "/icons/student-sidebar-animated/lessons.json",
+        fallbackIcon: Calendar as IconData,
+    },
+    {
+        value: "homework",
+        label: "Домашка",
+        animatedIconPath: "/icons/student-sidebar-animated/homework.json",
+        fallbackIcon: CircleInfo as IconData,
+    },
+    {
+        value: "materials",
+        label: "Материалы",
+        animatedIconPath: "/icons/student-sidebar-animated/materials.json",
+        fallbackIcon: FolderOpen as IconData,
+    },
+    {
+        value: "payment",
+        label: "Оплата",
+        animatedIconPath: "/icons/student-sidebar-animated/payment.json",
+        fallbackIcon: Receipt as IconData,
+    },
 ];
 
 type TutorLink = {
@@ -72,43 +93,17 @@ const StudentPortalPage = ({
 }: Props) => {
     const router = useRouter();
     const [tab, setTab] = useState("lessons");
+    const [hoveredSidebarTab, setHoveredSidebarTab] = useState<string | null>(null);
     const [tutorSwitcherExpanded, setTutorSwitcherExpanded] = useState(false);
     const [settingsOpen, setSettingsOpen] = useState(false);
-    const [settingsName, setSettingsName] = useState(data.studentName || "");
-    const [settingsPhone, setSettingsPhone] = useState(data.studentPhone || "");
-    const [settingsGrade, setSettingsGrade] = useState("");
-    const [settingsAge, setSettingsAge] = useState("");
-    const [settingsParentName, setSettingsParentName] = useState("");
-    const [settingsParentPhone, setSettingsParentPhone] = useState("");
-    const [settingsParentEmail, setSettingsParentEmail] = useState("");
-    const [settingsSaving, setSettingsSaving] = useState(false);
-    const [settingsLoading, setSettingsLoading] = useState(false);
-    const [settingsError, setSettingsError] = useState("");
-    const [settingsAvatarSrc, setSettingsAvatarSrc] = useState<string | null>(
-        data.studentAvatarUrl ? resolveApiAssetUrl(data.studentAvatarUrl) || null : null
-    );
     const settingsQueryHandledRef = useRef(false);
-    const avatarInputRef = useRef<HTMLInputElement>(null);
-    const avatarUploadRef = useRef<Promise<unknown> | null>(null);
-    const { theme, setTheme } = useThemeMode();
+    const studentAvatarSrc = data.studentAvatarUrl
+        ? resolveApiAssetUrl(data.studentAvatarUrl) || null
+        : null;
 
-    const openSettings = useCallback(async () => {
+    const openSettings = useCallback(() => {
         setSettingsOpen(true);
-        setSettingsError("");
-        setSettingsLoading(true);
-        try {
-            const d = await studentApi<any>(`/student-portal/students/${studentId}/data`);
-            setSettingsName(d.studentName || "");
-            setSettingsPhone(d.studentPhone || "");
-            setSettingsGrade(d.studentGrade || "");
-            setSettingsAge(d.studentAge ? String(d.studentAge) : "");
-            setSettingsParentName(d.studentParentName || "");
-            setSettingsParentPhone(d.studentParentPhone || "");
-            setSettingsParentEmail(d.studentParentEmail || "");
-            setSettingsAvatarSrc(d.studentAvatarUrl ? resolveApiAssetUrl(d.studentAvatarUrl) || null : null);
-        } catch { /* use defaults */ }
-        finally { setSettingsLoading(false); }
-    }, [studentId]);
+    }, []);
 
     const closeSettings = useCallback(() => {
         setSettingsOpen(false);
@@ -158,61 +153,6 @@ const StudentPortalPage = ({
             { shallow: true },
         );
     }, [openSettings, router]);
-
-    const handleAvatarChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file || !file.type.startsWith("image/") || file.size > 5 * 1024 * 1024) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => setSettingsAvatarSrc(ev.target?.result as string);
-        reader.readAsDataURL(file);
-        const uploadPromise = (async () => {
-            try {
-                const formData = new FormData();
-                formData.append("file", file);
-                const result = await studentApi<{ avatarUrl: string }>("/student-portal/avatar", {
-                    method: "POST",
-                    body: formData,
-                });
-                setSettingsAvatarSrc(resolveApiAssetUrl(result.avatarUrl) || null);
-            } catch { /* preview stays */ }
-        })();
-        avatarUploadRef.current = uploadPromise;
-        await uploadPromise;
-        avatarUploadRef.current = null;
-    }, []);
-
-    const handleSettingsSave = useCallback(async () => {
-        setSettingsSaving(true);
-        setSettingsError("");
-        if (avatarUploadRef.current) {
-            await avatarUploadRef.current;
-        }
-        const normalizedAge = Number(String(settingsAge || "").trim());
-        const safeAge = Number.isFinite(normalizedAge) && normalizedAge > 0 ? Math.floor(normalizedAge) : null;
-        try {
-            await studentApi(
-                `/student-portal/students/${studentId}/profile`,
-                {
-                    method: "PATCH",
-                    body: JSON.stringify({
-                        name: settingsName.trim(),
-                        phone: settingsPhone.trim() || null,
-                        grade: settingsGrade.trim() || null,
-                        age: safeAge,
-                        parentName: settingsParentName.trim() || null,
-                        parentPhone: settingsParentPhone.trim() || null,
-                        parentEmail: settingsParentEmail.trim() || null,
-                    }),
-                }
-            );
-            closeSettings();
-            window.location.reload();
-        } catch {
-            setSettingsError("Не удалось сохранить. Попробуйте ещё раз.");
-        } finally {
-            setSettingsSaving(false);
-        }
-    }, [studentId, settingsName, settingsPhone, settingsGrade, settingsAge, settingsParentName, settingsParentPhone, settingsParentEmail, closeSettings]);
 
     const tutorKey = (item: TutorLink) => item.tutorId || item.tutorSlug || item.tutorName;
     const tutorPriority = (status?: string) => {
@@ -322,19 +262,19 @@ const StudentPortalPage = ({
             <Head>
                 <title>Мои занятия — Repeto</title>
             </Head>
-            <div className="repeto-portal-page">
+            <div className="repeto-portal-page repeto-tp-page repeto-student-portal-page">
                 <PublicPageHeader
-                    containerClassName="repeto-portal-container"
+                    containerClassName="repeto-tp-container repeto-student-portal-container"
                     rightContent={
                         <>
                             <StudentAvatar
                                 student={{
                                     name: data.studentName || "Ученик",
-                                    avatarUrl: settingsAvatarSrc || undefined,
+                                    avatarUrl: studentAvatarSrc || undefined,
                                 }}
                                 size="s"
                             />
-                            <Text variant="body-1" style={{ fontWeight: 500 }}>
+                            <Text variant="body-1" className="repeto-portal-header__student-name">
                                 {data.studentName}
                             </Text>
                             <Button
@@ -349,341 +289,229 @@ const StudentPortalPage = ({
                     }
                 />
 
-                <div className="repeto-portal-container repeto-portal-main">
-                    {error && (
-                        <Text
-                            variant="body-2"
-                            color="danger"
-                            style={{ display: "block", marginBottom: 12 }}
-                        >
-                            {error}
-                        </Text>
-                    )}
+                <div className="repeto-tp-container repeto-portal-main repeto-student-portal-main">
+                    <div className="repeto-tp-layout repeto-student-portal-layout">
+                        <aside className="repeto-tp-sidebar repeto-student-portal-sidebar">
+                            <h2 className="repeto-tp-sidebar__title repeto-student-portal-sidebar__title">
+                                Кабинет ученика
+                            </h2>
 
-                    <Text
-                        variant="subheader-2"
-                        as="div"
-                        className="repeto-portal-plain-section-title"
-                    >
-                        Ваш репетитор
-                    </Text>
-                    <PublicTutorWidget
-                        className="repeto-portal-section--spaced"
-                        name={tutorName}
-                        avatarUrl={resolvedTutorAvatarUrl}
-                        subjectsText={activeTutor?.subject || undefined}
-                        contacts={widgetContacts}
-                        rating={tutorRating}
-                        reviewsCount={tutorReviewsCount}
-                        onOpenReviews={tutorReviewsCount > 0 ? openTutorReviews : undefined}
-                        policy={
-                            data.cancelPolicy
-                                ? {
-                                      freeHours,
-                                      freeHoursWord: formatCancelPolicyHoursWord(freeHours),
-                                      lateActionLabel,
-                                      noShowActionLabel,
-                                  }
-                                : undefined
-                        }
-                        switcher={
-                            uniqueTutors.length > 1
-                                ? {
-                                      expanded: tutorSwitcherExpanded,
-                                      onToggle: () => setTutorSwitcherExpanded((prev) => !prev),
-                                      label: tutorSwitcherExpanded
-                                          ? "Скрыть список репетиторов"
-                                          : "Показать список репетиторов",
-                                      panel: (
-                                          <>
-                                              <Text
-                                                  variant="caption-1"
-                                                  color="secondary"
-                                                  className="repeto-portal-tutor-switcher-title"
-                                              >
-                                                  Другие репетиторы
-                                              </Text>
+                            <nav
+                                className="repeto-tp-sidebar__nav page-overlay__nav page-overlay__nav--section"
+                                role="tablist"
+                                aria-label="Разделы портала"
+                            >
+                                {tabItems.map((item) => {
+                                    const isActive = tab === item.value;
+                                    const playIcon = isActive || hoveredSidebarTab === item.value;
+                                    return (
+                                        <button
+                                            key={item.value}
+                                            type="button"
+                                            role="tab"
+                                            aria-selected={isActive}
+                                            className={`repeto-tp-sidebar__item repeto-student-portal-sidebar__tab page-overlay__nav-item page-overlay__nav-item--section${
+                                                isActive
+                                                    ? " repeto-tp-sidebar__item--active page-overlay__nav-item--active"
+                                                    : ""
+                                            }`}
+                                            onClick={() => setTab(item.value)}
+                                            onMouseEnter={() => setHoveredSidebarTab(item.value)}
+                                            onMouseLeave={() => setHoveredSidebarTab((prev) => (prev === item.value ? null : prev))}
+                                            onFocus={() => setHoveredSidebarTab(item.value)}
+                                            onBlur={() => setHoveredSidebarTab((prev) => (prev === item.value ? null : prev))}
+                                        >
+                                            <span className="repeto-student-portal-sidebar__tab-icon">
+                                                <AnimatedSidebarIcon
+                                                    src={item.animatedIconPath}
+                                                    play={playIcon}
+                                                    fallbackIcon={item.fallbackIcon}
+                                                    size={24}
+                                                />
+                                            </span>
+                                            <span className="repeto-tp-sidebar__item-text">{item.label}</span>
+                                        </button>
+                                    );
+                                })}
+                            </nav>
+                        </aside>
 
-                                              {otherTutors.length > 0 ? (
-                                                  otherTutors.map((item) => {
-                                                      const itemInitials = item.tutorName
-                                                          .split(" ")
-                                                          .filter(Boolean)
-                                                          .slice(0, 2)
-                                                          .map((word) => word[0])
-                                                          .join("")
-                                                          .toUpperCase();
+                        <div className="repeto-tp-content repeto-student-portal-content">
+                            {error && (
+                                <Text variant="body-2" color="danger" className="repeto-portal-error">
+                                    {error}
+                                </Text>
+                            )}
 
-                                                      return (
-                                                          <button
-                                                              key={item.studentId}
-                                                              type="button"
-                                                              className="repeto-portal-tutor-switcher-item"
-                                                              onClick={() => {
-                                                                  setTutorSwitcherExpanded(false);
-                                                                  onSelectStudent(item.studentId);
-                                                              }}
+                            <Text
+                                variant="subheader-2"
+                                as="div"
+                                className="repeto-portal-plain-section-title"
+                            >
+                                Ваш репетитор
+                            </Text>
+                            <PublicTutorWidget
+                                className="repeto-portal-section--spaced"
+                                name={tutorName}
+                                avatarUrl={resolvedTutorAvatarUrl}
+                                subjectsText={activeTutor?.subject || undefined}
+                                contacts={widgetContacts}
+                                rating={tutorRating}
+                                reviewsCount={tutorReviewsCount}
+                                onOpenReviews={tutorReviewsCount > 0 ? openTutorReviews : undefined}
+                                policy={
+                                    data.cancelPolicy
+                                        ? {
+                                              freeHours,
+                                              freeHoursWord: formatCancelPolicyHoursWord(freeHours),
+                                              lateActionLabel,
+                                              noShowActionLabel,
+                                          }
+                                        : undefined
+                                }
+                                switcher={
+                                    uniqueTutors.length > 1
+                                        ? {
+                                              expanded: tutorSwitcherExpanded,
+                                              onToggle: () => setTutorSwitcherExpanded((prev) => !prev),
+                                              label: tutorSwitcherExpanded
+                                                  ? "Скрыть список репетиторов"
+                                                  : "Показать список репетиторов",
+                                              panel: (
+                                                  <>
+                                                      <Text
+                                                          variant="caption-1"
+                                                          color="secondary"
+                                                          className="repeto-portal-tutor-switcher-title"
+                                                      >
+                                                          Другие репетиторы
+                                                      </Text>
+
+                                                      {otherTutors.length > 0 ? (
+                                                          otherTutors.map((item) => {
+                                                              const itemInitials = item.tutorName
+                                                                  .split(" ")
+                                                                  .filter(Boolean)
+                                                                  .slice(0, 2)
+                                                                  .map((word) => word[0])
+                                                                  .join("")
+                                                                  .toUpperCase();
+
+                                                              return (
+                                                                  <button
+                                                                      key={item.studentId}
+                                                                      type="button"
+                                                                      className="repeto-portal-tutor-switcher-item"
+                                                                      onClick={() => {
+                                                                          setTutorSwitcherExpanded(false);
+                                                                          onSelectStudent(item.studentId);
+                                                                      }}
+                                                                  >
+                                                                      <span className="repeto-portal-tutor-switcher-item__avatar">
+                                                                          {item.tutorAvatarUrl ? (
+                                                                              <Image
+                                                                                  className="repeto-cover-image"
+                                                                                  src={
+                                                                                      resolveApiAssetUrl(item.tutorAvatarUrl) ||
+                                                                                      item.tutorAvatarUrl
+                                                                                  }
+                                                                                  fill
+                                                                                  alt={item.tutorName}
+                                                                              />
+                                                                          ) : (
+                                                                              <Avatar
+                                                                                  text={itemInitials || "Р"}
+                                                                                  size="xs"
+                                                                                  theme="brand"
+                                                                              />
+                                                                          )}
+                                                                      </span>
+                                                                      <span className="repeto-portal-tutor-switcher-item__meta">
+                                                                          <span className="repeto-portal-tutor-switcher-item__name">
+                                                                              {item.tutorName}
+                                                                          </span>
+                                                                          <span className="repeto-portal-tutor-switcher-item__subject">
+                                                                              {item.subject}
+                                                                          </span>
+                                                                      </span>
+                                                                  </button>
+                                                              );
+                                                          })
+                                                      ) : (
+                                                          <Text
+                                                              variant="body-1"
+                                                              color="secondary"
+                                                              className="repeto-portal-tutor-switcher-empty"
                                                           >
-                                                              <span className="repeto-portal-tutor-switcher-item__avatar">
-                                                                  {item.tutorAvatarUrl ? (
-                                                                      <Image
-                                                                          style={{ objectFit: "cover" }}
-                                                                          src={
-                                                                              resolveApiAssetUrl(item.tutorAvatarUrl) ||
-                                                                              item.tutorAvatarUrl
-                                                                          }
-                                                                          fill
-                                                                          alt={item.tutorName}
-                                                                      />
-                                                                  ) : (
-                                                                      <Avatar
-                                                                          text={itemInitials || "Р"}
-                                                                          size="xs"
-                                                                          theme="brand"
-                                                                      />
-                                                                  )}
-                                                              </span>
-                                                              <span className="repeto-portal-tutor-switcher-item__meta">
-                                                                  <span className="repeto-portal-tutor-switcher-item__name">
-                                                                      {item.tutorName}
-                                                                  </span>
-                                                                  <span className="repeto-portal-tutor-switcher-item__subject">
-                                                                      {item.subject}
-                                                                  </span>
-                                                              </span>
-                                                          </button>
-                                                      );
-                                                  })
-                                              ) : (
-                                                  <Text
-                                                      variant="body-1"
-                                                      color="secondary"
-                                                      className="repeto-portal-tutor-switcher-empty"
-                                                  >
-                                                      Других репетиторов пока нет
-                                                  </Text>
-                                              )}
-                                          </>
-                                      ),
-                                  }
-                                : undefined
-                        }
-                    />
+                                                              Других репетиторов пока нет
+                                                          </Text>
+                                                      )}
+                                                  </>
+                                              ),
+                                          }
+                                        : undefined
+                                }
+                            />
 
-                    <div className="repeto-scroll-x repeto-portal-tabs">
-                        <div
-                            className="repeto-packages-type-tabs repeto-portal-type-tabs"
-                            role="tablist"
-                            aria-label="Разделы портала"
-                        >
-                            {tabItems.map((item) => {
-                                const isActive = tab === item.value;
-                                return (
-                                    <button
-                                        key={item.value}
-                                        type="button"
-                                        role="tab"
-                                        aria-selected={isActive}
-                                        className={`repeto-packages-type-tab repeto-portal-type-tab${
-                                            isActive
-                                                ? " repeto-packages-type-tab--active repeto-portal-type-tab--active"
-                                                : ""
-                                        }`}
-                                        onClick={() => setTab(item.value)}
-                                    >
-                                        <span>{item.label}</span>
-                                    </button>
-                                );
-                            })}
+                            <div className="repeto-scroll-x repeto-portal-tabs repeto-portal-tabs--mobile">
+                                <div
+                                    className="repeto-packages-type-tabs repeto-portal-type-tabs"
+                                    role="tablist"
+                                    aria-label="Разделы портала"
+                                >
+                                    {tabItems.map((item) => {
+                                        const isActive = tab === item.value;
+                                        return (
+                                            <button
+                                                key={item.value}
+                                                type="button"
+                                                role="tab"
+                                                aria-selected={isActive}
+                                                className={`repeto-packages-type-tab repeto-portal-type-tab${
+                                                    isActive
+                                                        ? " repeto-packages-type-tab--active repeto-portal-type-tab--active"
+                                                        : ""
+                                                }`}
+                                                onClick={() => setTab(item.value)}
+                                            >
+                                                <span>{item.label}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {tab === "lessons" && (
+                                <LessonsTab data={data} studentId={studentId} />
+                            )}
+                            {tab === "homework" && (
+                                <HomeworkTab homework={data.homework} studentId={studentId} />
+                            )}
+                            {tab === "materials" && (
+                                <MaterialsTab files={data.files} homework={data.homework} />
+                            )}
+                            {tab === "payment" && <PaymentTab data={data} />}
+
+                            <SignUpBanner notifications={data.notifications} />
+
+                            <PublicPageFooter />
                         </div>
                     </div>
-
-                    {tab === "lessons" && (
-                        <LessonsTab data={data} studentId={studentId} />
-                    )}
-                    {tab === "homework" && (
-                        <HomeworkTab homework={data.homework} studentId={studentId} />
-                    )}
-                    {tab === "materials" && (
-                        <MaterialsTab files={data.files} homework={data.homework} />
-                    )}
-                    {tab === "payment" && <PaymentTab data={data} />}
-
-                    <SignUpBanner notifications={data.notifications} />
-
-                    <PublicPageFooter />
                 </div>
             </div>
 
-            <Lp2PortalShell
+            <StudentSettingsDialog
                 open={settingsOpen}
                 onClose={closeSettings}
-                ariaLabel="Настройки профиля"
-                overlayClassName="repeto-portal-settings-overlay"
-                overlayOpenClassName="repeto-portal-settings-overlay--open"
-                className="lp2--homework repeto-portal-settings-panel"
-                style={{ zIndex: 960 }}
-                onBack={closeSettings}
-                backAriaLabel="Закрыть"
-                title="Настройки профиля"
-                footer={(
-                    <div className="lp2__actions">
-                        <Button
-                            view="action"
-                            size="xl"
-                            width="max"
-                            onClick={handleSettingsSave}
-                            loading={settingsSaving}
-                            disabled={!settingsName.trim()}
-                        >
-                            Сохранить
-                        </Button>
-                        <Button
-                            view="flat-danger"
-                            size="l"
-                            width="max"
-                            onClick={() => void onLogout()}
-                        >
-                            Выйти из аккаунта
-                        </Button>
-                    </div>
-                )}
-            >
-                <Lp2PlannerLayout>
-                    <Lp2PlannerSection title="Профиль">
-                            {/* Avatar */}
-                            <div style={{ textAlign: "center", marginBottom: 20 }}>
-                                <div
-                                    onClick={() => avatarInputRef.current?.click()}
-                                    style={{
-                                        width: 88, height: 88, borderRadius: "50%", margin: "0 auto",
-                                        cursor: "pointer", overflow: "hidden", transition: "box-shadow 0.2s",
-                                        boxShadow: "0 0 0 3px rgba(174,122,255,0.15)",
-                                    }}
-                                    onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "0 0 0 4px rgba(174,122,255,0.3)")}
-                                    onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "0 0 0 3px rgba(174,122,255,0.15)")}
-                                >
-                                    <StudentAvatar
-                                        student={{
-                                            name: settingsName || data.studentName || "Ученик",
-                                            avatarUrl: settingsAvatarSrc || undefined,
-                                        }}
-                                        size="l"
-                                        style={{ width: "100%", height: "100%", minWidth: "100%" }}
-                                    />
-                                </div>
-                                <input ref={avatarInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={handleAvatarChange} />
-                                <div style={{ marginTop: 12 }}>
-                                    <Button view="outlined" size="s" onClick={() => avatarInputRef.current?.click()}>
-                                        Изменить фото
-                                    </Button>
-                                </div>
-                            </div>
-
-                            <Lp2Field label="ФИО *">
-                                <TextInput
-                                    value={settingsName}
-                                    onUpdate={setSettingsName}
-                                    placeholder="Иванов Пётр Сергеевич"
-                                    size="l"
-                                />
-                            </Lp2Field>
-
-                            <Lp2Field label="Email">
-                                <TextInput
-                                    value={data.studentEmail || ""}
-                                    size="l"
-                                    disabled
-                                />
-                            </Lp2Field>
-
-                            <Lp2Field label="Телефон">
-                                <PhoneInput
-                                    value={settingsPhone}
-                                    onUpdate={setSettingsPhone}
-                                />
-                            </Lp2Field>
-
-                            <Lp2Row>
-                                <Lp2Field label="Класс" half>
-                                    <TextInput
-                                        value={settingsGrade}
-                                        onUpdate={setSettingsGrade}
-                                        placeholder="11"
-                                        size="l"
-                                    />
-                                </Lp2Field>
-                                <Lp2Field label="Возраст" half>
-                                    <TextInput
-                                        value={settingsAge}
-                                        onUpdate={setSettingsAge}
-                                        placeholder="15"
-                                        size="l"
-                                        type="number"
-                                    />
-                                </Lp2Field>
-                            </Lp2Row>
-                    </Lp2PlannerSection>
-
-                    <Lp2PlannerSection title="Контакт родителя">
-                            <Lp2Field label="ФИО родителя">
-                                <TextInput
-                                    value={settingsParentName}
-                                    onUpdate={setSettingsParentName}
-                                    placeholder="Иванова Мария Петровна"
-                                    size="l"
-                                />
-                            </Lp2Field>
-
-                            <Lp2Row>
-                                <Lp2Field label="Телефон родителя" half>
-                                    <PhoneInput
-                                        value={settingsParentPhone}
-                                        onUpdate={setSettingsParentPhone}
-                                    />
-                                </Lp2Field>
-                                <Lp2Field label="Email родителя" half>
-                                    <TextInput
-                                        value={settingsParentEmail}
-                                        onUpdate={setSettingsParentEmail}
-                                        placeholder="parent@email.com"
-                                        size="l"
-                                        type="email"
-                                    />
-                                </Lp2Field>
-                            </Lp2Row>
-                    </Lp2PlannerSection>
-
-                    <Lp2PlannerSection title="Тема оформления">
-                            <div style={{ display: "flex", gap: 8 }}>
-                                <Button
-                                    view={theme === "light" ? "action" : "outlined"}
-                                    size="m"
-                                    onClick={() => setTheme("light")}
-                                >
-                                    <Icon data={Sun as IconData} size={16} />
-                                    <span style={{ marginLeft: 6 }}>Светлая</span>
-                                </Button>
-                                <Button
-                                    view={theme === "dark" ? "action" : "outlined"}
-                                    size="m"
-                                    onClick={() => setTheme("dark")}
-                                >
-                                    <Icon data={Moon as IconData} size={16} />
-                                    <span style={{ marginLeft: 6 }}>Тёмная</span>
-                                </Button>
-                            </div>
-                    </Lp2PlannerSection>
-
-                    {settingsError && (
-                        <Lp2PlannerSection>
-                            <Text as="div" variant="body-1" style={{ color: "var(--g-color-text-danger)" }}>
-                                {settingsError}
-                            </Text>
-                        </Lp2PlannerSection>
-                    )}
-                </Lp2PlannerLayout>
-            </Lp2PortalShell>
+                fallbackProfile={{
+                    name: data.studentName,
+                    email: data.studentEmail,
+                    phone: data.studentPhone,
+                    avatarUrl: data.studentAvatarUrl,
+                }}
+                onLogout={onLogout}
+                reloadOnSave
+            />
         </>
     );
 };

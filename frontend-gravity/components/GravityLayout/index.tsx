@@ -410,6 +410,7 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
     const isPlatformAccessExpired = user?.platformAccessState === "expired";
     const [isMobileViewport, setIsMobileViewport] = useState(false);
     const tutorName = user?.name?.trim() || "Репетитор";
+    const tutorAvatarUrl = user?.avatar?.trim() || undefined;
     const tutorSlug = user?.slug?.trim() || "";
     const { data: unreadData, refetch: refetchUnread } = useUnreadCount({
         skip: isPlatformAccessExpired,
@@ -1082,7 +1083,7 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                                         onKeyDown={onKeyDown}
                                         aria-label="Профиль"
                                     >
-                                        <Avatar text={getInitials(user?.name || "U")} size="xs" theme="brand" />
+                                        <Avatar imgUrl={tutorAvatarUrl} text={getInitials(user?.name || "U")} size="xs" theme="brand" />
                                         <span className="repeto-top-header__profile-name">{tutorName}</span>
                                         <span className="repeto-top-header__profile-chevron" aria-hidden="true">
                                             <GIcon data={ChevronDown as IconData} size={14} />
@@ -1374,7 +1375,7 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                                     className="repeto-sidebar__profile-btn"
                                     onClick={() => router.push("/settings")}
                                 >
-                                    <Avatar text={getInitials(user?.name || "U")} size="xs" theme="brand" />
+                                    <Avatar imgUrl={tutorAvatarUrl} text={getInitials(user?.name || "U")} size="xs" theme="brand" />
                                     <span className="repeto-sidebar__item-text">{tutorName}</span>
                                 </button>
                             </GTooltip>
@@ -1383,7 +1384,7 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                                 className="repeto-sidebar__profile-btn"
                                 onClick={() => router.push("/settings")}
                             >
-                                <Avatar text={getInitials(user?.name || "U")} size="xs" theme="brand" />
+                                <Avatar imgUrl={tutorAvatarUrl} text={getInitials(user?.name || "U")} size="xs" theme="brand" />
                                 <span className="repeto-sidebar__item-text">{tutorName}</span>
                             </button>
                         )}
@@ -1689,7 +1690,7 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                                             onKeyDown={onKeyDown}
                                             aria-label="Профиль"
                                         >
-                                            <Avatar text={getInitials(user?.name || "U")} size="xs" theme="brand" />
+                                            <Avatar imgUrl={tutorAvatarUrl} text={getInitials(user?.name || "U")} size="xs" theme="brand" />
                                             <span className="repeto-top-header__profile-name">{tutorName}</span>
                                             <span className="repeto-top-header__profile-chevron" aria-hidden="true">
                                                 <GIcon data={ChevronDown as IconData} size={14} />

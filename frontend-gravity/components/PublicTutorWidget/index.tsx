@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useState } from "react";
-import { Avatar, Icon, Text } from "@gravity-ui/uikit";import type { IconData } from "@gravity-ui/uikit";
+import { Avatar, Icon, Text } from "@gravity-ui/uikit";
+import type { IconData } from "@gravity-ui/uikit";
 import {
     ChevronDown,
     CircleInfo,

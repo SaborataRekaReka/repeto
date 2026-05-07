@@ -40,6 +40,16 @@ type PendingRescheduleResponse = {
 };
 
 const LESSONS_BATCH_SIZE = 5;
+const FEEDBACK_TAGS = [
+    "Понятное объяснение",
+    "Хороший темп",
+    "Много практики",
+    "Полезная обратная связь",
+    "Комфортная атмосфера",
+    "Структура занятия",
+    "Было интересно",
+    "Домашка по делу",
+];
 
 const LessonsTab = ({ data, studentId }: LessonsTabProps) => {
     const [lessons, setLessons] = useState(data.upcomingLessons);
@@ -71,6 +81,7 @@ const LessonsTab = ({ data, studentId }: LessonsTabProps) => {
     const [feedbackIdx, setFeedbackIdx] = useState<number | null>(null);
     const [feedbackRating, setFeedbackRating] = useState(0);
     const [feedbackText, setFeedbackText] = useState("");
+    const [feedbackTags, setFeedbackTags] = useState<string[]>([]);
     const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
     const [upcomingShown, setUpcomingShown] = useState(LESSONS_BATCH_SIZE);
     const [recentShown, setRecentShown] = useState(LESSONS_BATCH_SIZE);
@@ -101,6 +112,7 @@ const LessonsTab = ({ data, studentId }: LessonsTabProps) => {
         setFeedbackIdx(null);
         setFeedbackRating(0);
         setFeedbackText("");
+        setFeedbackTags([]);
         setUpcomingShown(LESSONS_BATCH_SIZE);
         setRecentShown(LESSONS_BATCH_SIZE);
         setActionError(null);
@@ -338,6 +350,29 @@ const LessonsTab = ({ data, studentId }: LessonsTabProps) => {
         }
     };
 
+    const resetFeedback = () => {
+        setFeedbackIdx(null);
+        setFeedbackRating(0);
+        setFeedbackText("");
+        setFeedbackTags([]);
+    };
+
+    const openFeedback = (index: number, rating?: number) => {
+        const lesson = recentLessons[index];
+        setFeedbackIdx(index);
+        setFeedbackRating(rating ?? lesson?.rating ?? 0);
+        setFeedbackText(lesson?.feedback || "");
+        setFeedbackTags(lesson?.tags || []);
+    };
+
+    const toggleFeedbackTag = (tag: string) => {
+        setFeedbackTags((prev) =>
+            prev.includes(tag)
+                ? prev.filter((item) => item !== tag)
+                : [...prev, tag]
+        );
+    };
+
     const handleFeedbackSubmit = async () => {
         if (feedbackIdx === null || feedbackRating === 0) return;
 
@@ -357,6 +392,7 @@ const LessonsTab = ({ data, studentId }: LessonsTabProps) => {
                     body: JSON.stringify({
                         rating: feedbackRating,
                         feedback: feedbackText.trim() || undefined,
+                        tags: feedbackTags,
                     }),
                 }
             );
@@ -368,13 +404,12 @@ const LessonsTab = ({ data, studentId }: LessonsTabProps) => {
                               ...l,
                               rating: feedbackRating,
                               feedback: feedbackText.trim() || undefined,
+                              tags: feedbackTags,
                           }
                         : l
                 )
             );
-            setFeedbackIdx(null);
-            setFeedbackRating(0);
-            setFeedbackText("");
+            resetFeedback();
         } catch {
             setActionError("Не удалось сохранить отзыв. Попробуйте снова.");
         } finally {
@@ -907,9 +942,7 @@ const LessonsTab = ({ data, studentId }: LessonsTabProps) => {
                                                         type="button"
                                                         onClick={() => {
                                                             if (!l.rating) {
-                                                                setFeedbackIdx(i);
-                                                                setFeedbackRating(star);
-                                                                setFeedbackText(l.feedback || "");
+                                                                openFeedback(i, star);
                                                             }
                                                         }}
                                                         className={`repeto-portal-rating-dot ${
@@ -927,9 +960,7 @@ const LessonsTab = ({ data, studentId }: LessonsTabProps) => {
                                                 view="flat"
                                                 size="xs"
                                                 onClick={() => {
-                                                    setFeedbackIdx(i);
-                                                    setFeedbackRating(l.rating || 0);
-                                                    setFeedbackText(l.feedback || "");
+                                                    openFeedback(i);
                                                 }}
                                             >
                                                 {l.rating || l.feedback ? "Открыть отзыв" : "Оставить отзыв"}
@@ -1211,20 +1242,12 @@ const LessonsTab = ({ data, studentId }: LessonsTabProps) => {
 
             <AppDialog
                 open={feedbackIdx !== null}
-                onClose={() => {
-                    setFeedbackIdx(null);
-                    setFeedbackRating(0);
-                    setFeedbackText("");
-                }}
+                onClose={resetFeedback}
                 size="s"
                 caption="Как прошло занятие?"
                 footer={{
                     onClickButtonApply: handleFeedbackSubmit,
-                    onClickButtonCancel: () => {
-                        setFeedbackIdx(null);
-                        setFeedbackRating(0);
-                        setFeedbackText("");
-                    },
+                    onClickButtonCancel: resetFeedback,
                     textButtonApply: feedbackSubmitting ? "Сохранение..." : "Отправить",
                     textButtonCancel: "Пропустить",
                     propsButtonApply: {
@@ -1279,6 +1302,33 @@ const LessonsTab = ({ data, studentId }: LessonsTabProps) => {
                                     {star}
                                 </button>
                             ))}
+                        </div>
+                    </div>
+                    <div>
+                        <Text
+                            variant="caption-1"
+                            color="secondary"
+                            as="div"
+                            className="repeto-portal-feedback-label"
+                        >
+                            Что понравилось
+                        </Text>
+                        <div className="repeto-portal-feedback-tags" aria-label="Что понравилось на занятии">
+                            {FEEDBACK_TAGS.map((tag) => {
+                                const selected = feedbackTags.includes(tag);
+                                return (
+                                    <button
+                                        key={tag}
+                                        type="button"
+                                        className={`repeto-portal-feedback-tag${
+                                            selected ? " repeto-portal-feedback-tag--active" : ""
+                                        }`}
+                                        onClick={() => toggleFeedbackTag(tag)}
+                                    >
+                                        {tag}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
                     <div>

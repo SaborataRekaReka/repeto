@@ -27,7 +27,6 @@ model User {
   subjects       String[] @default([])
   subjectDetails Json?    @map("subject_details")
   aboutText      String?  @map("about_text")
-  tagline        String?
   vk             String?
   website        String?
   format         String?

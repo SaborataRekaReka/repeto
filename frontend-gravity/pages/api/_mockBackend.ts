@@ -1,4 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import fs from 'fs';
+import path from 'path';
 import { students as seedStudents } from '@/mocks/students';
 import {
   financeChartData as seedFinanceChartData,
@@ -28,10 +30,20 @@ type HttpMethod =
 
 type JsonObject = Record<string, unknown>;
 
+type MultipartFilePayload = {
+  fieldName: string;
+  filename: string;
+  mimeType: string;
+  base64: string;
+};
+
 const MS_IN_DAY = 24 * 60 * 60 * 1000;
 const MOCK_ACCESS_TOKEN = 'mock-access-token';
 const MOCK_STUDENT_ACCESS_TOKEN = 'mock-student-access-token';
 const MOCK_STUDENT_REFRESH_TOKEN = 'mock-student-refresh-token';
+const SHOWCASE_STUDENT_EMAIL = 'showcase.student@repeto.local';
+const SHOWCASE_STUDENT_OTP = '123456';
+const MOCK_STATE_SCHEMA_VERSION = '2026-05-07-student-showcase-v1';
 
 type MockUser = {
   id: string;
@@ -89,7 +101,6 @@ type MockSettings = {
   slug: string;
   published: boolean;
   showPublicPackages: boolean;
-  tagline: string;
   vk: string;
   website: string;
   offlineAddress: string;
@@ -290,6 +301,7 @@ type MockState = {
 
 const globalForMock = globalThis as typeof globalThis & {
   __repetoMockState?: MockState;
+  __repetoMockStateVersion?: string;
 };
 
 const PLATFORM_PLAN_RANK = {
@@ -372,6 +384,31 @@ function addDays(date: Date, days: number): Date {
   return new Date(date.getTime() + days * MS_IN_DAY);
 }
 
+function resolveLatestMockAvatarUrl(): string | null {
+  const uploadsDir = path.join(process.cwd(), 'public', 'mock-uploads', 'avatars');
+
+  try {
+    const candidates = fs
+      .readdirSync(uploadsDir, { withFileTypes: true })
+      .filter((entry) => entry.isFile())
+      .map((entry) => entry.name)
+      .filter((name) => /\.(png|jpe?g|webp|gif|svg)$/i.test(name))
+      .map((name) => {
+        const stat = fs.statSync(path.join(uploadsDir, name));
+        return { name, mtimeMs: stat.mtimeMs };
+      })
+      .sort((a, b) => b.mtimeMs - a.mtimeMs);
+
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    return `/mock-uploads/avatars/${candidates[0].name}`;
+  } catch {
+    return null;
+  }
+}
+
 function slugify(value: string): string {
   return value
     .trim()
@@ -403,16 +440,135 @@ function paginate<T>(items: T[], page: number, limit: number) {
   };
 }
 
+function parseMultipartFormData(
+  contentType: string,
+  rawBuffer: Buffer,
+): { fields: JsonObject; files: MultipartFilePayload[] } {
+  const boundaryMatch = contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/i);
+  const boundary = String(boundaryMatch?.[1] || boundaryMatch?.[2] || '').trim();
+  if (!boundary) return { fields: {}, files: [] };
+
+  const boundaryToken = `--${boundary}`;
+  const raw = rawBuffer.toString('latin1');
+  const parts = raw.split(boundaryToken).slice(1, -1);
+  const fields: JsonObject = {};
+  const files: MultipartFilePayload[] = [];
+
+  for (const rawPart of parts) {
+    let part = rawPart;
+    if (part.startsWith('\r\n')) part = part.slice(2);
+    if (part.endsWith('\r\n')) part = part.slice(0, -2);
+
+    const headerEnd = part.indexOf('\r\n\r\n');
+    if (headerEnd < 0) continue;
+
+    const headersBlock = part.slice(0, headerEnd);
+    const contentBlock = part.slice(headerEnd + 4);
+    const contentValue = contentBlock.endsWith('\r\n')
+      ? contentBlock.slice(0, -2)
+      : contentBlock;
+
+    const headers = headersBlock.split('\r\n');
+    const disposition = headers.find((line) =>
+      line.toLowerCase().startsWith('content-disposition:'),
+    );
+    if (!disposition) continue;
+
+    const fieldNameMatch = disposition.match(/name="([^"]+)"/i);
+    const fieldName = fieldNameMatch?.[1];
+    if (!fieldName) continue;
+
+    const filenameMatch = disposition.match(/filename="([^"]*)"/i);
+    const contentTypeHeader = headers.find((line) =>
+      line.toLowerCase().startsWith('content-type:'),
+    );
+    const valueBuffer = Buffer.from(contentValue, 'latin1');
+
+    if (filenameMatch && filenameMatch[1]) {
+      files.push({
+        fieldName,
+        filename: filenameMatch[1],
+        mimeType: (contentTypeHeader?.split(':')[1] || 'application/octet-stream')
+          .trim()
+          .toLowerCase(),
+        base64: valueBuffer.toString('base64'),
+      });
+      continue;
+    }
+
+    fields[fieldName] = valueBuffer.toString('utf8');
+  }
+
+  return { fields, files };
+}
+
+function getMultipartFiles(body: JsonObject): MultipartFilePayload[] {
+  const rawFiles = body.__files;
+  if (!Array.isArray(rawFiles)) return [];
+
+  return rawFiles
+    .map((item) => {
+      if (!item || typeof item !== 'object') return null;
+
+      const record = item as Record<string, unknown>;
+      if (
+        typeof record.fieldName !== 'string' ||
+        typeof record.filename !== 'string' ||
+        typeof record.mimeType !== 'string' ||
+        typeof record.base64 !== 'string'
+      ) {
+        return null;
+      }
+
+      const normalized: MultipartFilePayload = {
+        fieldName: record.fieldName,
+        filename: record.filename,
+        mimeType: record.mimeType,
+        base64: record.base64,
+      };
+
+      return normalized;
+    })
+    .filter((item): item is MultipartFilePayload => Boolean(item));
+}
+
+function resolveUploadExt(filename: string, mimeType: string): string {
+  const extMatch = filename.toLowerCase().match(/\.[a-z0-9]{1,8}$/);
+  if (extMatch) return extMatch[0];
+
+  if (mimeType === 'image/jpeg') return '.jpg';
+  if (mimeType === 'image/webp') return '.webp';
+  if (mimeType === 'image/gif') return '.gif';
+  if (mimeType === 'image/png') return '.png';
+
+  return '.bin';
+}
+
+function saveMockUploadFile(
+  file: MultipartFilePayload,
+  subdir: string,
+  prefix: string,
+): string | null {
+  if (!file.base64) return null;
+
+  const ext = resolveUploadExt(file.filename, file.mimeType);
+  const filename = `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}${ext}`;
+  const targetDir = path.join(process.cwd(), 'public', 'mock-uploads', subdir);
+  const targetFile = path.join(targetDir, filename);
+
+  fs.mkdirSync(targetDir, { recursive: true });
+  fs.writeFileSync(targetFile, Buffer.from(file.base64, 'base64'));
+
+  return `/mock-uploads/${subdir}/${filename}`;
+}
+
 async function readJsonBody(req: NextApiRequest): Promise<JsonObject> {
   if (req.method === 'GET' || req.method === 'HEAD') {
     return {};
   }
 
-  const contentType = String(req.headers['content-type'] || '').toLowerCase();
-  if (contentType.includes('multipart/form-data')) {
-    return {};
-  }
-
+  const rawContentType = String(req.headers['content-type'] || '');
+  const contentType = rawContentType.toLowerCase();
   const chunks: Buffer[] = [];
   for await (const chunk of req) {
     chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
@@ -420,7 +576,17 @@ async function readJsonBody(req: NextApiRequest): Promise<JsonObject> {
 
   if (chunks.length === 0) return {};
 
-  const raw = Buffer.concat(chunks).toString('utf8').trim();
+  const rawBuffer = Buffer.concat(chunks);
+
+  if (contentType.includes('multipart/form-data')) {
+    const parsed = parseMultipartFormData(rawContentType, rawBuffer);
+    if (parsed.files.length > 0) {
+      return { ...parsed.fields, __files: parsed.files };
+    }
+    return parsed.fields;
+  }
+
+  const raw = rawBuffer.toString('utf8').trim();
   if (!raw) return {};
 
   if (contentType.includes('application/x-www-form-urlencoded')) {
@@ -643,18 +809,20 @@ function createInitialMockState(): MockState {
   const now = new Date();
   const nextMonth = addDays(now, 30).toISOString();
   const activatedAt = addDays(now, -20).toISOString();
+  const seededAvatarUrl = resolveLatestMockAvatarUrl() || '/images/avatars/avatar-11.jpg';
 
   const user: MockUser = {
     id: 'u_demo',
     email: 'demo@repeto.local',
-    name: 'Демо Репетитор',
+    name: 'Анна Сергеевна Белова',
     phone: '+7 999 000-00-00',
     whatsapp: '+7 999 000-00-00',
     slug: 'demo-tutor',
     role: 'tutor',
     subjects: ['Математика', 'Английский', 'Физика'],
-    avatarUrl: null,
-    aboutText: 'Демо-режим для разработки интерфейса без backend.',
+    avatarUrl: seededAvatarUrl,
+    aboutText:
+      'Помогаю школьникам и студентам системно закрывать пробелы и уверенно выходить на высокий результат. Работаю по индивидуальному учебному плану, веду прогресс, домашние задания и регулярную обратную связь для родителей.',
     platformAccessState: 'active',
     platformAccess: {
       status: 'active',
@@ -774,6 +942,446 @@ function createInitialMockState(): MockState {
     });
   });
 
+  const featuredStudentId = students[0]?.id || null;
+
+  if (featuredStudentId) {
+    const featuredStudent = students.find((student) => student.id === featuredStudentId);
+    const at = (dayOffset: number, hour: number, minute = 0) => {
+      const value = addDays(startOfDay(now), dayOffset);
+      value.setHours(hour, minute, 0, 0);
+      return value.toISOString();
+    };
+
+    if (featuredStudent) {
+      featuredStudent.name = 'Иванов Пётр Сергеевич';
+      featuredStudent.subject = 'Математика';
+      featuredStudent.grade = '11';
+      featuredStudent.age = 17;
+      featuredStudent.rate = 2200;
+      featuredStudent.balance = -7600;
+      featuredStudent.phone = '+7 910 321-45-67';
+      featuredStudent.whatsapp = '+7 910 321-45-67';
+      featuredStudent.telegram = '@petya_repeto';
+      featuredStudent.email = SHOWCASE_STUDENT_EMAIL;
+      featuredStudent.parentName = 'Иванова Мария Алексеевна';
+      featuredStudent.parentPhone = '+7 999 654-32-10';
+      featuredStudent.parentWhatsapp = '+7 999 654-32-10';
+      featuredStudent.parentTelegram = '@mama_petya';
+      featuredStudent.parentEmail = 'parent.petya@repeto.local';
+      featuredStudent.accountId = 'acc_showcase_student';
+      featuredStudent.notes = 'Готовится к ЕГЭ, ведем трекер прогресса и пакет занятий.';
+      featuredStudent.avatarUrl = '/images/avatar.jpg';
+    }
+
+    const featuredLessons = lessons
+      .filter((lesson) => lesson.studentId === featuredStudentId)
+      .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
+
+    const showcaseLessonPlan: Array<{
+      dayOffset: number;
+      hour: number;
+      minute: number;
+      status: MockLesson['status'];
+      format: MockLesson['format'];
+      duration: number;
+      note: string;
+    }> = [
+      {
+        dayOffset: -18,
+        hour: 18,
+        minute: 0,
+        status: 'COMPLETED',
+        format: 'ONLINE',
+        duration: 60,
+        note: 'Разобрали пробник ЕГЭ №1 и стратегию решения параметров.',
+      },
+      {
+        dayOffset: -14,
+        hour: 17,
+        minute: 30,
+        status: 'COMPLETED',
+        format: 'OFFLINE',
+        duration: 90,
+        note: 'Очная тренировка второй части ЕГЭ, акцент на задачи 18-19.',
+      },
+      {
+        dayOffset: -10,
+        hour: 18,
+        minute: 0,
+        status: 'NO_SHOW',
+        format: 'ONLINE',
+        duration: 60,
+        note: 'Неявка без предупреждения.',
+      },
+      {
+        dayOffset: -6,
+        hour: 19,
+        minute: 0,
+        status: 'CANCELLED_STUDENT',
+        format: 'ONLINE',
+        duration: 60,
+        note: 'Поздняя отмена учеником.',
+      },
+      {
+        dayOffset: -2,
+        hour: 17,
+        minute: 0,
+        status: 'COMPLETED',
+        format: 'OFFLINE',
+        duration: 60,
+        note: 'Разбор домашней и фиксация ошибок в трекере прогресса.',
+      },
+      {
+        dayOffset: 2,
+        hour: 18,
+        minute: 30,
+        status: 'PLANNED',
+        format: 'ONLINE',
+        duration: 60,
+        note: 'Запланирован разбор задач на производную.',
+      },
+      {
+        dayOffset: 5,
+        hour: 19,
+        minute: 0,
+        status: 'RESCHEDULE_PENDING',
+        format: 'ONLINE',
+        duration: 60,
+        note: 'Ожидает подтверждения переноса.',
+      },
+    ];
+
+    showcaseLessonPlan.forEach((plan, index) => {
+      const lesson = featuredLessons[index];
+      if (!lesson) return;
+
+      lesson.scheduledAt = at(plan.dayOffset, plan.hour, plan.minute);
+      lesson.status = plan.status;
+      lesson.format = plan.format;
+      lesson.duration = plan.duration;
+      lesson.subject = featuredStudent?.subject || lesson.subject;
+      lesson.rate = featuredStudent?.rate || lesson.rate;
+      lesson.notes = plan.note;
+    });
+
+    const showcasePayments: MockPayment[] = [
+      {
+        id: 'pay_show_1',
+        studentId: featuredStudentId,
+        lessonId: featuredLessons[4]?.id || null,
+        amount: 8800,
+        date: at(-1, 11, 20),
+        method: 'SBP',
+        status: 'PAID',
+        comment: 'Пакет 4 занятия со скидкой.',
+        externalPaymentId: 'demo_sbp_1',
+      },
+      {
+        id: 'pay_show_2',
+        studentId: featuredStudentId,
+        lessonId: featuredLessons[4]?.id || null,
+        amount: 2200,
+        date: at(-4, 20, 10),
+        method: 'TRANSFER',
+        status: 'PAID',
+        comment: 'Доплата за очное занятие.',
+        externalPaymentId: null,
+      },
+      {
+        id: 'pay_show_3',
+        studentId: featuredStudentId,
+        lessonId: featuredLessons[3]?.id || null,
+        amount: 1500,
+        date: at(-7, 10, 40),
+        method: 'CASH',
+        status: 'PAID',
+        comment: 'Частичная оплата наличными.',
+        externalPaymentId: null,
+      },
+      {
+        id: 'pay_show_4',
+        studentId: featuredStudentId,
+        lessonId: featuredLessons[2]?.id || null,
+        amount: 4400,
+        date: at(-9, 9, 25),
+        method: 'YUKASSA',
+        status: 'PAID',
+        comment: 'Онлайн-оплата через ЮKassa.',
+        externalPaymentId: 'demo_yk_1',
+      },
+      {
+        id: 'pay_show_5',
+        studentId: featuredStudentId,
+        lessonId: featuredLessons[1]?.id || null,
+        amount: 3300,
+        date: at(-13, 14, 50),
+        method: 'SBP',
+        status: 'PAID',
+        comment: 'Аванс за следующую неделю.',
+        externalPaymentId: 'demo_sbp_2',
+      },
+      {
+        id: 'pay_show_6',
+        studentId: featuredStudentId,
+        lessonId: featuredLessons[1]?.id || null,
+        amount: 2200,
+        date: at(-16, 12, 5),
+        method: 'CASH',
+        status: 'PAID',
+        comment: 'Оплата после очной встречи.',
+        externalPaymentId: null,
+      },
+      {
+        id: 'pay_show_7',
+        studentId: featuredStudentId,
+        lessonId: featuredLessons[0]?.id || null,
+        amount: 2200,
+        date: at(-19, 19, 30),
+        method: 'TRANSFER',
+        status: 'PAID',
+        comment: 'Банковский перевод.',
+        externalPaymentId: null,
+      },
+      {
+        id: 'pay_show_8',
+        studentId: featuredStudentId,
+        lessonId: featuredLessons[0]?.id || null,
+        amount: 6600,
+        date: at(-21, 18, 15),
+        method: 'YUKASSA',
+        status: 'PAID',
+        comment: 'Пакетная оплата через сайт.',
+        externalPaymentId: 'demo_yk_2',
+      },
+    ];
+
+    const nonFeaturedPayments = payments.filter((payment) => payment.studentId !== featuredStudentId);
+    payments.splice(0, payments.length, ...nonFeaturedPayments, ...showcasePayments);
+
+    notesByStudent[featuredStudentId] = [
+      {
+        id: 'note_show_1',
+        studentId: featuredStudentId,
+        content: 'Собрали персональный трекер ошибок по задачам 13, 17 и 19.',
+        createdAt: at(-7, 21, 5),
+        updatedAt: at(-7, 21, 5),
+        lessonId: featuredLessons[3]?.id || null,
+      },
+      {
+        id: 'note_show_2',
+        studentId: featuredStudentId,
+        content: 'Хороший прогресс по параметрам, но нужно подтянуть стереометрию.',
+        createdAt: at(-5, 20, 45),
+        updatedAt: at(-5, 20, 45),
+        lessonId: featuredLessons[4]?.id || null,
+      },
+      {
+        id: 'note_show_3',
+        studentId: featuredStudentId,
+        content: 'Родитель запросил еженедельный отчёт и материалы в Google Drive.',
+        createdAt: at(-3, 19, 40),
+        updatedAt: at(-3, 19, 40),
+        lessonId: featuredLessons[4]?.id || null,
+      },
+      {
+        id: 'note_show_4',
+        studentId: featuredStudentId,
+        content: 'Перед пробником сделать мини-интенсив на 3 коротких занятия.',
+        createdAt: at(-1, 20, 15),
+        updatedAt: at(-1, 20, 15),
+        lessonId: featuredLessons[5]?.id || null,
+      },
+    ];
+
+    homeworkByStudent[featuredStudentId] = [
+      {
+        id: 'hw_show_1',
+        studentId: featuredStudentId,
+        task: 'Пробник ЕГЭ: решить задачи 13, 15, 17 и 19, оформить решения аккуратно в один PDF.',
+        dueAt: at(3, 23, 59),
+        status: 'NOT_DONE',
+        createdAt: at(-1, 20, 0),
+        updatedAt: at(-1, 20, 0),
+        lessonId: featuredLessons[5]?.id || null,
+        linkedFiles: [
+          {
+            id: 'hw_show_file_1',
+            name: 'Разбор задачи 17.pdf',
+            url: '#',
+            cloudUrl: '#',
+            cloudProvider: 'yandex-disk',
+            extension: 'pdf',
+            size: '2.8 MB',
+          },
+          {
+            id: 'hw_show_file_2',
+            name: 'Шаблон оформления решений.docx',
+            url: '#',
+            cloudUrl: '#',
+            cloudProvider: 'google-drive',
+            extension: 'docx',
+            size: '0.4 MB',
+          },
+        ],
+        studentUploads: [],
+      },
+      {
+        id: 'hw_show_2',
+        studentId: featuredStudentId,
+        task: 'Доделать 2 вариант пробника и прислать фото/скан решений.',
+        dueAt: at(-1, 23, 59),
+        status: 'DONE',
+        createdAt: at(-4, 19, 40),
+        updatedAt: at(-1, 21, 10),
+        lessonId: featuredLessons[4]?.id || null,
+        linkedFiles: [
+          {
+            id: 'hw_show_file_3',
+            name: 'Вариант №2.pdf',
+            url: '#',
+            cloudUrl: '#',
+            cloudProvider: 'yandex-disk',
+            extension: 'pdf',
+            size: '1.9 MB',
+          },
+        ],
+        studentUploads: [
+          {
+            id: 'hw_show_upload_1',
+            name: 'Решения_вариант2.pdf',
+            size: '1.3 MB',
+            uploadedAt: at(-1, 21, 5),
+            expiresAt: at(29, 0, 0),
+            url: '/uploads/student-solution-1.pdf',
+          },
+        ],
+      },
+      {
+        id: 'hw_show_3',
+        studentId: featuredStudentId,
+        task: 'Параметры: 6 задач повышенной сложности из архива ФИПИ.',
+        dueAt: at(-5, 23, 59),
+        status: 'OVERDUE',
+        createdAt: at(-10, 20, 10),
+        updatedAt: at(-5, 23, 59),
+        lessonId: featuredLessons[2]?.id || null,
+        linkedFiles: [
+          {
+            id: 'hw_show_file_4',
+            name: 'Параметры_архив_ФИПИ.pdf',
+            url: '#',
+            cloudUrl: '#',
+            cloudProvider: 'google-drive',
+            extension: 'pdf',
+            size: '3.5 MB',
+          },
+          {
+            id: 'hw_show_file_5',
+            name: 'Видеоразбор_параметры.mp4',
+            url: '#',
+            cloudUrl: '#',
+            cloudProvider: 'yandex-disk',
+            extension: 'mp4',
+            size: '48.0 MB',
+          },
+        ],
+        studentUploads: [],
+      },
+      {
+        id: 'hw_show_4',
+        studentId: featuredStudentId,
+        task: 'Стереометрия: 10 задач на углы и расстояния. Отметить, где были затруднения.',
+        dueAt: at(6, 23, 59),
+        status: 'NOT_DONE',
+        createdAt: at(-2, 18, 55),
+        updatedAt: at(-2, 18, 55),
+        lessonId: featuredLessons[5]?.id || null,
+        linkedFiles: [
+          {
+            id: 'hw_show_file_6',
+            name: 'Стереометрия_лист_заданий.pdf',
+            url: '#',
+            cloudUrl: '#',
+            cloudProvider: 'yandex-disk',
+            extension: 'pdf',
+            size: '2.2 MB',
+          },
+        ],
+        studentUploads: [],
+      },
+      {
+        id: 'hw_show_5',
+        studentId: featuredStudentId,
+        task: 'Мини-сочинение по задаче 19: описать стратегию и типичные ловушки.',
+        dueAt: at(-8, 22, 0),
+        status: 'DONE',
+        createdAt: at(-12, 20, 20),
+        updatedAt: at(-8, 21, 45),
+        lessonId: featuredLessons[1]?.id || null,
+        linkedFiles: [
+          {
+            id: 'hw_show_file_7',
+            name: 'Памятка_задача19.docx',
+            url: '#',
+            cloudUrl: '#',
+            cloudProvider: 'google-drive',
+            extension: 'docx',
+            size: '0.3 MB',
+          },
+        ],
+        studentUploads: [
+          {
+            id: 'hw_show_upload_2',
+            name: 'Черновик_19.jpg',
+            size: '0.7 MB',
+            uploadedAt: at(-9, 21, 0),
+            expiresAt: at(20, 0, 0),
+            url: '/uploads/student-solution-2.jpg',
+          },
+          {
+            id: 'hw_show_upload_3',
+            name: 'Финальный_ответ_19.pdf',
+            size: '1.0 MB',
+            uploadedAt: at(-8, 21, 40),
+            expiresAt: at(21, 0, 0),
+            url: '/uploads/student-solution-3.pdf',
+          },
+        ],
+      },
+      {
+        id: 'hw_show_6',
+        studentId: featuredStudentId,
+        task: 'Повторение перед контрольной: 20 коротких заданий с таймером 45 минут.',
+        dueAt: at(9, 23, 59),
+        status: 'NOT_DONE',
+        createdAt: at(0, 19, 15),
+        updatedAt: at(0, 19, 15),
+        lessonId: featuredLessons[6]?.id || null,
+        linkedFiles: [
+          {
+            id: 'hw_show_file_8',
+            name: 'Чек-лист_повторения.xlsx',
+            url: '#',
+            cloudUrl: '#',
+            cloudProvider: 'yandex-disk',
+            extension: 'xlsx',
+            size: '0.2 MB',
+          },
+        ],
+        studentUploads: [],
+      },
+    ];
+  }
+
+  const packageComments = [
+    'Интенсивная подготовка к ЕГЭ с еженедельным трекингом прогресса.',
+    'Разговорная практика + грамматика, отчёт после каждого занятия.',
+    'Пакет с упором на задачи повышенной сложности и олимпиады.',
+    '',
+    'Подходит для ровного учебного ритма в течение всего месяца.',
+    '',
+  ];
+
   const packages: MockPackage[] = students.slice(0, 6).map((student, index) => {
     const lessonsTotal = 8 + (index % 3) * 4;
     const lessonsUsed = Math.min(lessonsTotal, 3 + index * 2);
@@ -795,9 +1403,24 @@ function createInitialMockState(): MockState {
       createdAt: addDays(now, -(50 - index * 3)).toISOString(),
       status,
       isPublic: false,
-      comment: '',
+      comment: packageComments[index] || '',
     };
   });
+
+  if (featuredStudentId) {
+    const featuredPackage = packages.find(
+      (pkg) => pkg.studentId === featuredStudentId && pkg.status === 'ACTIVE',
+    );
+
+    if (featuredPackage) {
+      featuredPackage.subject = 'Математика';
+      featuredPackage.lessonsTotal = 20;
+      featuredPackage.lessonsUsed = 11;
+      featuredPackage.totalPrice = 39600;
+      featuredPackage.validUntil = addDays(now, 52).toISOString();
+      featuredPackage.comment = 'Семейный пакет с отчётом по прогрессу и доп. мини-интенсивами.';
+    }
+  }
 
   const notifications: MockNotification[] = seedNotifications.map((item, index) => ({
     id: item.id,
@@ -823,6 +1446,190 @@ function createInitialMockState(): MockState {
 
   const filesOverview = buildSeedFiles(students);
 
+  if (featuredStudentId) {
+    const atDate = (base: Date, dayOffset: number) => addDays(base, dayOffset).toISOString();
+
+    const showcaseFiles: FileItem[] = [
+      {
+        id: 'file_show_root_exam',
+        name: 'ЕГЭ 2026',
+        type: 'folder',
+        modifiedAt: atDate(now, -1),
+        cloudProvider: 'yandex-disk',
+        cloudUrl: '#',
+        parentId: null,
+        sharedWith: [featuredStudentId],
+        childrenCount: 3,
+      },
+      {
+        id: 'file_show_root_hw',
+        name: 'Домашки и шаблоны',
+        type: 'folder',
+        modifiedAt: atDate(now, -2),
+        cloudProvider: 'google-drive',
+        cloudUrl: '#',
+        parentId: null,
+        sharedWith: [featuredStudentId],
+        childrenCount: 2,
+      },
+      {
+        id: 'file_show_root_progress',
+        name: 'Прогресс и отчёты',
+        type: 'folder',
+        modifiedAt: atDate(now, -3),
+        cloudProvider: 'yandex-disk',
+        cloudUrl: '#',
+        parentId: null,
+        sharedWith: [featuredStudentId],
+        childrenCount: 2,
+      },
+      {
+        id: 'file_show_exam_1',
+        name: 'Пробник_май_вариант_1.pdf',
+        type: 'file',
+        extension: 'pdf',
+        size: '3.2 MB',
+        modifiedAt: atDate(now, -1),
+        cloudProvider: 'yandex-disk',
+        cloudUrl: '#',
+        parentId: 'file_show_root_exam',
+        sharedWith: [featuredStudentId],
+      },
+      {
+        id: 'file_show_exam_2',
+        name: 'Свод_ошибок_ЕГЭ.xlsx',
+        type: 'file',
+        extension: 'xlsx',
+        size: '0.5 MB',
+        modifiedAt: atDate(now, -2),
+        cloudProvider: 'yandex-disk',
+        cloudUrl: '#',
+        parentId: 'file_show_root_exam',
+        sharedWith: [featuredStudentId],
+      },
+      {
+        id: 'file_show_exam_archive',
+        name: 'Архив 2025',
+        type: 'folder',
+        modifiedAt: atDate(now, -20),
+        cloudProvider: 'yandex-disk',
+        cloudUrl: '#',
+        parentId: 'file_show_root_exam',
+        sharedWith: [featuredStudentId],
+        childrenCount: 1,
+      },
+      {
+        id: 'file_show_exam_archive_1',
+        name: 'Пробник_декабрь_2025.pdf',
+        type: 'file',
+        extension: 'pdf',
+        size: '2.6 MB',
+        modifiedAt: atDate(now, -25),
+        cloudProvider: 'yandex-disk',
+        cloudUrl: '#',
+        parentId: 'file_show_exam_archive',
+        sharedWith: [featuredStudentId],
+      },
+      {
+        id: 'file_show_hw_1',
+        name: 'Шаблон_оформления_ДЗ.docx',
+        type: 'file',
+        extension: 'docx',
+        size: '0.3 MB',
+        modifiedAt: atDate(now, -1),
+        cloudProvider: 'google-drive',
+        cloudUrl: '#',
+        parentId: 'file_show_root_hw',
+        sharedWith: [featuredStudentId],
+      },
+      {
+        id: 'file_show_hw_2',
+        name: 'Чеклист_перед_пробником.pptx',
+        type: 'file',
+        extension: 'pptx',
+        size: '1.1 MB',
+        modifiedAt: atDate(now, -4),
+        cloudProvider: 'google-drive',
+        cloudUrl: '#',
+        parentId: 'file_show_root_hw',
+        sharedWith: [featuredStudentId],
+      },
+      {
+        id: 'file_show_progress_1',
+        name: 'Трекер_прогресса.csv',
+        type: 'file',
+        extension: 'csv',
+        size: '0.1 MB',
+        modifiedAt: atDate(now, -2),
+        cloudProvider: 'yandex-disk',
+        cloudUrl: '#',
+        parentId: 'file_show_root_progress',
+        sharedWith: [featuredStudentId],
+      },
+      {
+        id: 'file_show_progress_2',
+        name: 'Снимок_доски_урок_18.jpg',
+        type: 'file',
+        extension: 'jpg',
+        size: '1.4 MB',
+        modifiedAt: atDate(now, -3),
+        cloudProvider: 'yandex-disk',
+        cloudUrl: '#',
+        parentId: 'file_show_root_progress',
+        sharedWith: [featuredStudentId],
+      },
+    ];
+
+    filesOverview.files = [...filesOverview.files, ...showcaseFiles];
+
+    const yandexConnection = filesOverview.cloudConnections.find(
+      (connection) => connection.provider === 'yandex-disk',
+    );
+    const googleConnection = filesOverview.cloudConnections.find(
+      (connection) => connection.provider === 'google-drive',
+    );
+
+    if (yandexConnection) {
+      yandexConnection.connected = true;
+      yandexConnection.email = 'showcase.yandex@repeto.local';
+      yandexConnection.lastSynced = new Date().toISOString();
+    }
+
+    if (googleConnection) {
+      googleConnection.connected = true;
+      googleConnection.email = 'showcase.google@repeto.local';
+      googleConnection.lastSynced = new Date().toISOString();
+    }
+
+    const yandexFilesCount = filesOverview.files.filter(
+      (file) => file.cloudProvider === 'yandex-disk' && file.type === 'file',
+    ).length;
+    const yandexFoldersCount = filesOverview.files.filter(
+      (file) => file.cloudProvider === 'yandex-disk' && file.type === 'folder',
+    ).length;
+
+    const googleFilesCount = filesOverview.files.filter(
+      (file) => file.cloudProvider === 'google-drive' && file.type === 'file',
+    ).length;
+    const googleFoldersCount = filesOverview.files.filter(
+      (file) => file.cloudProvider === 'google-drive' && file.type === 'folder',
+    ).length;
+
+    if (yandexConnection) {
+      yandexConnection.fileCount = yandexFilesCount;
+      yandexConnection.folderCount = yandexFoldersCount;
+      yandexConnection.sizeGb = 0.9;
+    }
+
+    if (googleConnection) {
+      googleConnection.fileCount = googleFilesCount;
+      googleConnection.folderCount = googleFoldersCount;
+      googleConnection.sizeGb = 0.4;
+    }
+
+    filesOverview.studentAccess = buildStudentAccessEntries(filesOverview.files, students);
+  }
+
   const settings: MockSettings = {
     name: user.name,
     email: user.email,
@@ -834,27 +1641,30 @@ function createInitialMockState(): MockState {
       name,
       rate: students.find((student) => student.subject === name)?.rate,
     })),
-    format: 'online',
-    experience: '5 лет',
-    hasYandexCalendar: false,
-    hasGoogleCalendar: false,
+    format: 'both',
+    experience: [
+      'Онлайн-школа "Пифагор" — преподаватель математики и физики (2018-2021)',
+      'Учебный центр "Формула" — старший методист, подготовка к ЕГЭ/ОГЭ (2021-2024)',
+      'Частная практика — индивидуальные программы и мини-группы (2024-н.в.)',
+    ].join('\n'),
+    hasYandexCalendar: true,
+    hasGoogleCalendar: true,
     hasYandexDisk: true,
-    hasGoogleDrive: false,
-    yandexCalendarEmail: '',
-    googleCalendarEmail: '',
+    hasGoogleDrive: true,
+    yandexCalendarEmail: 'anna.belova@yandex.ru',
+    googleCalendarEmail: 'anna.belova@gmail.com',
     yandexDiskEmail: 'demo@yandex.ru',
-    googleDriveEmail: '',
+    googleDriveEmail: 'anna.belova@gmail.com',
     yandexDiskRootPath: '/Repeto',
     googleDriveRootPath: '/Repeto',
     homeworkDefaultCloud: 'YANDEX_DISK',
     account: { slug: user.slug },
     slug: user.slug,
-    published: false,
+    published: true,
     showPublicPackages: true,
-    tagline: 'Персональные занятия для школьников и взрослых',
-    vk: '',
-    website: '',
-    offlineAddress: '',
+    vk: 'https://vk.com/anna.repeto',
+    website: 'https://belova-math.ru',
+    offlineAddress: 'Москва, м. Белорусская, 3-я Тверская-Ямская, 8',
     notificationSettings: {
       lessonReminders: true,
       debtReminders: true,
@@ -866,20 +1676,107 @@ function createInitialMockState(): MockState {
       lateCancelAction: '50%',
       noShowAction: '100%',
     },
-    paymentRequisites: '',
-    paymentCardNumber: '',
-    paymentSbpPhone: '',
+    paymentRequisites: 'Получатель: ИП Белова А.С., ИНН 770000000000',
+    paymentCardNumber: '2200701234567890',
+    paymentSbpPhone: '+7 999 000-00-00',
     paymentSettings: {
       studentPaymentDetails: {
-        requisites: '',
-        cardNumber: '',
-        sbpPhone: '',
+        requisites: 'ИП Белова А.С., оплата занятий',
+        cardNumber: '2200701234567890',
+        sbpPhone: '+7 999 000-00-00',
       },
     },
-    certificates: [],
-    education: [],
+    certificates: [
+      {
+        id: 'cert_1',
+        title: 'Диплом МГУ, механико-математический факультет',
+        fileUrl: '/images/course-photo-1.jpg',
+        uploadedAt: addDays(now, -1500).toISOString(),
+        verified: true,
+        verificationLabel: 'Подтверждено',
+      },
+      {
+        id: 'cert_2',
+        title: 'Сертификат повышения квалификации по подготовке к ЕГЭ',
+        fileUrl: '/images/course-photo-2.jpg',
+        uploadedAt: addDays(now, -640).toISOString(),
+        verified: true,
+        verificationLabel: 'Подтверждено',
+      },
+      {
+        id: 'cert_3',
+        title: 'Сертификат преподавания онлайн-курсов',
+        fileUrl: '/images/course-photo-3.jpg',
+        uploadedAt: addDays(now, -380).toISOString(),
+        verified: true,
+        verificationLabel: 'Подтверждено',
+      },
+      {
+        id: 'cert_4',
+        title: 'Свидетельство о прохождении методического интенсива',
+        fileUrl: '/images/course-photo-4.jpg',
+        uploadedAt: addDays(now, -120).toISOString(),
+        verified: false,
+        verificationLabel: null,
+      },
+    ],
+    education: [
+      {
+        id: 'edu_1',
+        institution: 'МГУ им. М.В. Ломоносова',
+        program: 'Математика, специалист',
+        years: '2012-2017',
+        verified: true,
+        verificationLabel: 'Подтверждено',
+      },
+      {
+        id: 'edu_2',
+        institution: 'НИУ ВШЭ',
+        program: 'Педагогический дизайн и цифровые практики',
+        years: '2019-2020',
+        verified: true,
+        verificationLabel: 'Подтверждено',
+      },
+      {
+        id: 'edu_3',
+        institution: 'ФИПИ',
+        program: 'Экспертная подготовка к ЕГЭ по математике',
+        years: '2023',
+        verified: true,
+        verificationLabel: 'Подтверждено',
+      },
+    ],
+    experienceLines: [
+      {
+        id: 'exp_1',
+        text: 'Онлайн-школа "Пифагор" — преподаватель математики и физики (2018-2021)',
+        verified: true,
+        verificationLabel: 'Подтверждено',
+      },
+      {
+        id: 'exp_2',
+        text: 'Учебный центр "Формула" — старший методист, подготовка к ЕГЭ/ОГЭ (2021-2024)',
+        verified: true,
+        verificationLabel: 'Подтверждено',
+      },
+      {
+        id: 'exp_3',
+        text: 'Частная практика — индивидуальные программы и мини-группы (2024-н.в.)',
+        verified: true,
+        verificationLabel: 'Подтверждено',
+      },
+    ],
     qualificationVerified: true,
   };
+
+  const notesCount = Object.values(notesByStudent).reduce(
+    (sum, rows) => sum + rows.length,
+    0,
+  );
+  const homeworkCount = Object.values(homeworkByStudent).reduce(
+    (sum, rows) => sum + rows.length,
+    0,
+  );
 
   return {
     user,
@@ -897,26 +1794,30 @@ function createInitialMockState(): MockState {
     counters: {
       lesson: lessons.length + 1,
       payment: payments.length + 1,
-      note: seedStudentNotes.length + 1,
-      homework: seedStudentHomeworks.length + 1,
+      note: notesCount + 1,
+      homework: homeworkCount + 1,
       package: packages.length + 1,
       notification: notifications.length + 1,
       certificate: 1,
       file: filesOverview.files.length + 1,
     },
     studentAccount: {
-      id: 'student_account_1',
-      email: 'student@example.com',
-      name: students[0]?.name || 'Ученик',
+      id: 'student_account_showcase',
+      email: SHOWCASE_STUDENT_EMAIL,
+      name: students.find((student) => student.id === featuredStudentId)?.name || 'Ученик',
       status: 'ACTIVE',
     },
-    studentPortalStudentId: students[0]?.id || '1',
+    studentPortalStudentId: featuredStudentId || students[0]?.id || '1',
   };
 }
 
 function getState(): MockState {
-  if (!globalForMock.__repetoMockState) {
+  if (
+    !globalForMock.__repetoMockState ||
+    globalForMock.__repetoMockStateVersion !== MOCK_STATE_SCHEMA_VERSION
+  ) {
     globalForMock.__repetoMockState = createInitialMockState();
+    globalForMock.__repetoMockStateVersion = MOCK_STATE_SCHEMA_VERSION;
   }
   return globalForMock.__repetoMockState;
 }
@@ -1111,21 +2012,34 @@ function resolvePortalData(state: MockState, studentId: string) {
     .slice(0, 6)
     .map((lesson) => {
       const date = new Date(lesson.scheduledAt);
+      const time = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+      const status =
+        lesson.status === 'PLANNED'
+          ? 'upcoming'
+          : lesson.status === 'COMPLETED'
+            ? 'completed'
+            : lesson.status === 'RESCHEDULE_PENDING'
+              ? 'reschedule_pending'
+              : 'cancelled';
+
       return {
         id: lesson.id,
         date: toIsoDate(date),
         dayOfWeek: date.toLocaleDateString('ru-RU', { weekday: 'short' }),
-        time: date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+        time,
         subject: lesson.subject,
         modality: lesson.format === 'OFFLINE' ? 'offline' : 'online',
         price: lesson.rate,
-        status:
-          lesson.status === 'PLANNED'
-            ? 'upcoming'
-            : lesson.status === 'COMPLETED'
-              ? 'completed'
-              : 'cancelled',
-        canCancelFree: true,
+        status,
+        canCancelFree: status === 'upcoming',
+        rescheduleFrom:
+          status === 'reschedule_pending'
+            ? `${toIsoDate(date)}, ${time}`
+            : undefined,
+        rescheduleTo:
+          status === 'reschedule_pending'
+            ? `${toIsoDate(addDays(date, 1))}, ${time}`
+            : undefined,
       };
     });
 
@@ -1141,7 +2055,14 @@ function resolvePortalData(state: MockState, studentId: string) {
         time: date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
         subject: lesson.subject,
         modality: lesson.format === 'OFFLINE' ? 'offline' : 'online',
-        status: lesson.status.toLowerCase(),
+        status:
+          lesson.status === 'COMPLETED'
+            ? 'completed'
+            : lesson.status === 'CANCELLED_STUDENT' ||
+                lesson.status === 'CANCELLED_TUTOR' ||
+                lesson.status === 'NO_SHOW'
+              ? 'cancelled'
+              : lesson.status.toLowerCase(),
         price: lesson.rate,
       };
     });
@@ -1156,6 +2077,29 @@ function resolvePortalData(state: MockState, studentId: string) {
       amount: payment.amount,
       method: payment.method,
       status: 'paid' as const,
+    }));
+
+  const paymentOperations = recentPayments.map((payment) => ({
+    id: `bo_payment_${payment.id}`,
+    kind: 'payment' as const,
+    direction: 'credit' as const,
+    amount: payment.amount,
+    title: 'Оплата',
+    subtitle: payment.method,
+    occurredAt: payment.date,
+  }));
+
+  const lessonOperations = recentLessons
+    .filter((lesson) => lesson.status === 'completed')
+    .slice(0, 4)
+    .map((lesson, index) => ({
+      id: `bo_lesson_${lesson.id || index}`,
+      kind: 'lesson' as const,
+      direction: 'debit' as const,
+      amount: lesson.price,
+      title: `Занятие · ${lesson.subject}`,
+      subtitle: `${lesson.date}${lesson.time ? `, ${lesson.time}` : ''}`,
+      occurredAt: `${lesson.date}${lesson.time ? ` ${lesson.time}` : ''}`,
     }));
 
   const homework = (state.homeworkByStudent[student.id] || []).map((item) => ({
@@ -1191,6 +2135,18 @@ function resolvePortalData(state: MockState, studentId: string) {
   const pkg = state.packages.find(
     (item) => item.studentId === student.id && item.status === 'ACTIVE',
   );
+
+  const pendingBookings = upcoming.length > 0
+    ? [
+        {
+          id: `pending_${student.id}`,
+          subject: upcoming[0].subject,
+          date: upcoming[0].date,
+          startTime: upcoming[0].time,
+          duration: 60,
+        },
+      ]
+    : [];
 
   const firstTutorPhone = state.user.phone || '+7 999 000-00-00';
 
@@ -1229,18 +2185,10 @@ function resolvePortalData(state: MockState, studentId: string) {
     upcomingLessons: upcoming,
     recentLessons,
     recentPayments,
-    balanceOperations: recentPayments.map((payment) => ({
-      id: `bo_${payment.id}`,
-      kind: 'payment' as const,
-      direction: 'credit' as const,
-      amount: payment.amount,
-      title: 'Оплата',
-      subtitle: payment.method,
-      occurredAt: payment.date,
-    })),
+    balanceOperations: [...paymentOperations, ...lessonOperations],
     homework,
     files,
-    pendingBookings: [],
+    pendingBookings,
     paymentUrl: '',
     notifications: {
       telegram: { connected: true },
@@ -1548,6 +2496,10 @@ function handleSettingsAndProfile(
       state.user.aboutText = updates.aboutText;
     }
 
+    if (typeof updates.experience === 'string' && !Array.isArray((updates as Record<string, unknown>).experienceLines)) {
+      delete state.settings.experienceLines;
+    }
+
     if (typeof updates.slug === 'string') {
       const nextSlug = slugify(updates.slug);
       state.settings.slug = nextSlug;
@@ -1591,7 +2543,13 @@ function handleSettingsAndProfile(
   }
 
   if (second === 'avatar' && method === 'POST') {
-    const avatarUrl = `/uploads/mock-avatar-${Date.now()}.png`;
+    const avatarFile = getMultipartFiles(body).find((file) => file.fieldName === 'file');
+    let avatarUrl = '/images/avatar.jpg';
+
+    if (avatarFile && avatarFile.mimeType.startsWith('image/')) {
+      avatarUrl = saveMockUploadFile(avatarFile, 'avatars', 'mock-avatar') || avatarUrl;
+    }
+
     state.user.avatarUrl = avatarUrl;
     res.status(200).json({ avatarUrl });
     return true;
@@ -3226,10 +4184,161 @@ function buildPublicTutorProfile(state: MockState, slug: string): JsonObject {
       comment: pkg.comment || null,
     }));
 
+  const education = Array.isArray(state.settings.education)
+    ? state.settings.education
+        .map((entry, index) => {
+          const record = entry && typeof entry === 'object'
+            ? (entry as Record<string, unknown>)
+            : {};
+          const institution = typeof record.institution === 'string' ? record.institution.trim() : '';
+          if (!institution) return null;
+
+          return {
+            id:
+              typeof record.id === 'string' && record.id
+                ? record.id
+                : `edu_${index + 1}`,
+            institution,
+            program: typeof record.program === 'string' ? record.program : '',
+            years: typeof record.years === 'string' ? record.years : '',
+            verified: record.verified !== false,
+            verificationLabel:
+              typeof record.verificationLabel === 'string'
+                ? record.verificationLabel
+                : record.verified === false
+                  ? null
+                  : 'Подтверждено',
+          };
+        })
+        .filter(Boolean)
+    : [];
+
+  const certificates = Array.isArray(state.settings.certificates)
+    ? state.settings.certificates
+        .map((entry, index) => {
+          const record = entry && typeof entry === 'object'
+            ? (entry as Record<string, unknown>)
+            : {};
+          const title = typeof record.title === 'string' ? record.title.trim() : '';
+          const fileUrl = typeof record.fileUrl === 'string' ? record.fileUrl.trim() : '';
+          if (!title || !fileUrl) return null;
+
+          return {
+            id:
+              typeof record.id === 'string' && record.id
+                ? record.id
+                : `cert_${index + 1}`,
+            title,
+            fileUrl,
+            uploadedAt:
+              typeof record.uploadedAt === 'string' && record.uploadedAt
+                ? record.uploadedAt
+                : new Date().toISOString(),
+            verified: record.verified !== false,
+            verificationLabel:
+              typeof record.verificationLabel === 'string'
+                ? record.verificationLabel
+                : record.verified === false
+                  ? null
+                  : 'Подтверждено',
+          };
+        })
+        .filter(Boolean)
+    : [];
+
+  const experienceArrayCandidates = [
+    state.settings.experienceLines,
+    state.settings.workplaces,
+    state.settings.workExperience,
+    state.settings.experienceEntries,
+    state.settings.experienceItems,
+  ];
+  const rawExperienceArray = experienceArrayCandidates.find((item) => Array.isArray(item));
+
+  const configuredExperienceLines = Array.isArray(rawExperienceArray)
+    ? (rawExperienceArray
+        .map((entry, index) => {
+          const record = entry && typeof entry === 'object'
+            ? (entry as Record<string, unknown>)
+            : {};
+
+          const directText = [record.text, record.title, record.workplace, record.company, record.organization]
+            .find((value) => typeof value === 'string' && value.trim().length > 0);
+          const role = typeof record.role === 'string'
+            ? record.role.trim()
+            : typeof record.position === 'string'
+              ? record.position.trim()
+              : typeof record.program === 'string'
+                ? record.program.trim()
+                : '';
+          const years = typeof record.years === 'string'
+            ? record.years.trim()
+            : typeof record.period === 'string'
+              ? record.period.trim()
+              : '';
+
+          let text = typeof directText === 'string' ? directText.trim() : '';
+          if (!text) {
+            const place = typeof record.institution === 'string' ? record.institution.trim() : '';
+            if (place) {
+              text = `${place}${role ? ` — ${role}` : ''}${years ? ` (${years})` : ''}`;
+            }
+          }
+          if (!text) return null;
+
+          return {
+            id:
+              typeof record.id === 'string' && record.id
+                ? record.id
+                : `exp_${index + 1}`,
+            text,
+            verified: record.verified !== false,
+            verificationLabel:
+              typeof record.verificationLabel === 'string'
+                ? record.verificationLabel
+                : record.verified === false
+                  ? null
+                  : 'Подтверждено',
+          };
+        })
+        .filter(Boolean) as Array<{
+          id: string;
+          text: string;
+          verified: boolean;
+          verificationLabel: string | null;
+        }>)
+    : [];
+
+  const experienceLinesFromText = typeof state.settings.experience === 'string'
+    ? state.settings.experience
+        .replace(/\r\n/g, '\n')
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0)
+        .map((text, index) => ({
+          id: `exp_text_${index + 1}`,
+          text,
+          verified: true,
+          verificationLabel: 'Подтверждено',
+        }))
+    : [];
+
+  const experienceLines = configuredExperienceLines.length > 0
+    ? configuredExperienceLines
+    : experienceLinesFromText.length > 0
+      ? experienceLinesFromText
+      : [
+          {
+            id: 'exp_1',
+            text: 'Подготовка к экзаменам и олимпиадам, индивидуальная стратегия обучения.',
+            verified: true,
+            verificationLabel: 'Подтверждено',
+          },
+        ];
+
   return {
     name: state.user.name,
     slug,
-    tagline: state.settings.tagline,
     subjects,
     aboutText: state.settings.aboutText || state.user.aboutText || null,
     avatarUrl: state.user.avatarUrl || null,
@@ -3256,19 +4365,12 @@ function buildPublicTutorProfile(state: MockState, slug: string): JsonObject {
     hasWorkingDays: true,
     showPublicPackages: state.settings.showPublicPackages,
     publicPackages,
-    education: state.settings.education,
+    education,
     experience: state.settings.experience,
-    experienceLines: [
-      {
-        id: 'exp_1',
-        text: 'Подготовка к экзаменам и олимпиадам, индивидуальная стратегия обучения.',
-        verified: true,
-        verificationLabel: 'Подтверждено',
-      },
-    ],
+    experienceLines,
     qualificationVerified: state.settings.qualificationVerified,
     qualificationLabel: state.settings.qualificationVerified ? 'Верифицирован' : null,
-    certificates: state.settings.certificates,
+    certificates,
   };
 }
 
@@ -3378,7 +4480,12 @@ function handlePublicAndStudent(
           ? body.email.trim().toLowerCase()
           : state.studentAccount.email;
       state.studentAccount.email = email;
-      res.status(200).json({ email, expiresInMinutes: 10, cooldown: false });
+      res.status(200).json({
+        email,
+        expiresInMinutes: 10,
+        cooldown: false,
+        demoPassword: SHOWCASE_STUDENT_OTP,
+      });
       return true;
     }
 
@@ -3454,7 +4561,13 @@ function handlePublicAndStudent(
 
     if (second === 'avatar' && method === 'POST') {
       const student = state.students.find((item) => item.id === state.studentPortalStudentId);
-      const avatarUrl = `/uploads/student-avatar-${Date.now()}.png`;
+      const avatarFile = getMultipartFiles(body).find((file) => file.fieldName === 'file');
+      let avatarUrl = '/images/avatar.jpg';
+
+      if (avatarFile && avatarFile.mimeType.startsWith('image/')) {
+        avatarUrl = saveMockUploadFile(avatarFile, 'student-avatars', 'student-avatar') || avatarUrl;
+      }
+
       if (student) {
         student.avatarUrl = avatarUrl;
       }

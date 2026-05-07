@@ -70,12 +70,6 @@ export class UpdateAccountDto {
   @MaxLength(5000)
   aboutText?: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  @MaxLength(200)
-  tagline?: string;
-
   @ApiPropertyOptional({ example: 'https://vk.com/user' })
   @IsOptional()
   @IsString()

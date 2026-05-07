@@ -69,6 +69,19 @@ type LinkRibbon = {
     fill: string;
 };
 
+type IncomeByStudentsPayment = {
+    id: string;
+    studentId: string;
+    studentName: string;
+    amount: number;
+    date: string;
+};
+
+type IncomeByStudentsProps = {
+    paymentsOverride?: IncomeByStudentsPayment[];
+    disableInteractions?: boolean;
+};
+
 const ribbonsEqual = (a: LinkRibbon[], b: LinkRibbon[]): boolean => {
     if (a.length !== b.length) return false;
     for (let i = 0; i < a.length; i++) {
@@ -82,12 +95,13 @@ const ribbonsEqual = (a: LinkRibbon[], b: LinkRibbon[]): boolean => {
 const withAlpha = (color: string, alpha: number): string =>
     `color-mix(in srgb, ${color} ${Math.round(alpha * 100)}%, transparent)`;
 
-const IncomeByStudents = () => {
+const IncomeByStudents = ({ paymentsOverride, disableInteractions = false }: IncomeByStudentsProps) => {
     const router = useRouter();
     const [tooltip, setTooltip] = useState<TooltipState>(null);
     const [ribbons, setRibbons] = useState<LinkRibbon[]>([]);
     const columnsRef = useRef<HTMLDivElement | null>(null);
     const segmentRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+    const hasOverrideData = Array.isArray(paymentsOverride);
 
     const { startISO, endISO } = useMemo(() => {
         const now = new Date();
@@ -101,8 +115,12 @@ const IncomeByStudents = () => {
         from: startISO,
         to: endISO,
         limit: 500,
-    });
-    const payments = useMemo(() => paymentsResp?.data ?? [], [paymentsResp?.data]);
+    }, { skip: hasOverrideData });
+    const payments = useMemo(
+        () => (hasOverrideData ? (paymentsOverride ?? []) : (paymentsResp?.data ?? [])) as IncomeByStudentsPayment[],
+        [hasOverrideData, paymentsOverride, paymentsResp?.data]
+    );
+    const isLoading = hasOverrideData ? false : loading;
 
     const { months, grandTotal } = useMemo(() => {
         const now = new Date();
@@ -272,6 +290,7 @@ const IncomeByStudents = () => {
     }, [recalcRibbons]);
 
     const handleEnter = (e: React.MouseEvent, seg: Segment, monthLabel: string) => {
+        if (disableInteractions) return;
         setTooltip({
             x: e.clientX,
             y: e.clientY,
@@ -281,9 +300,13 @@ const IncomeByStudents = () => {
         });
     };
     const handleMove = (e: React.MouseEvent) => {
+        if (disableInteractions) return;
         setTooltip((t) => (t ? { ...t, x: e.clientX, y: e.clientY } : t));
     };
-    const handleLeave = () => setTooltip(null);
+    const handleLeave = () => {
+        if (disableInteractions) return;
+        setTooltip(null);
+    };
 
     return (
         <Card
@@ -299,7 +322,7 @@ const IncomeByStudents = () => {
                 </div>
             </div>
 
-            {loading ? (
+            {isLoading ? (
                 <div className="repeto-card-body repeto-income-students-card__state">
                     <Loader size="s" />
                 </div>
@@ -354,6 +377,7 @@ const IncomeByStudents = () => {
                                                       style={{
                                                           flex: `${seg.amount} 0 0`,
                                                           background: seg.color,
+                                                          cursor: disableInteractions ? "default" : "pointer",
                                                       }}
                                                       ref={setSegmentRef(`${m.key}-${seg.id}`)}
                                                       title={`${seg.name} · ${formatRub(seg.amount)}`}
@@ -363,6 +387,7 @@ const IncomeByStudents = () => {
                                                       onMouseMove={handleMove}
                                                       onMouseLeave={handleLeave}
                                                       onClick={() =>
+                                                          !disableInteractions &&
                                                           seg.id !== "__others__" &&
                                                           router.push(`/students/${seg.id}`)
                                                       }
@@ -390,7 +415,7 @@ const IncomeByStudents = () => {
                 </div>
             )}
 
-            {tooltip && (
+            {tooltip && !disableInteractions && (
                 <div
                     className="repeto-income-chart__tooltip"
                     style={{ top: tooltip.y + 14, left: tooltip.x + 14 }}

@@ -13,11 +13,15 @@ import {
     SubjectDraft,
     EducationEntry,
     CertificateEntry,
+    WorkExperienceEntry,
     DEFAULT_SUBJECT,
     createDraftEducationId,
+    createDraftWorkExperienceId,
+    formatWorkExperienceLine,
     getSavedPaymentRequisites,
     getSavedPaymentCardNumber,
     getSavedPaymentSbpPhone,
+    parseWorkExperienceLine,
 } from "./utils";
 import PersonalDataSection from "./sections/PersonalData";
 import PortraitSection from "./sections/Portrait";
@@ -50,7 +54,7 @@ const Account = () => {
     const [saving, setSaving] = useState(false);
     const [saveMsg, setSaveMsg] = useState<string | null>(null);
     const [education, setEducation] = useState<EducationEntry[]>([]);
-    const [experience, setExperience] = useState("");
+    const [workExperience, setWorkExperience] = useState<WorkExperienceEntry[]>([]);
     const [certificates, setCertificates] = useState<CertificateEntry[]>([]);
     const [certUploading, setCertUploading] = useState(false);
     const certInputRef = useRef<HTMLInputElement>(null);
@@ -74,7 +78,49 @@ const Account = () => {
         setWebsite(settings?.website || "");
         setOfflineAddress(settings?.offlineAddress || "");
         setFormat(settings?.format || "online");
-        setExperience(settings?.experience || "");
+
+        const expLinesRaw = Array.isArray(settings?.experienceLines)
+            ? settings.experienceLines
+            : [];
+
+        if (expLinesRaw.length > 0) {
+            const mapped = expLinesRaw
+                .map((line: any) => {
+                    const text = typeof line?.text === "string" ? line.text.trim() : "";
+                    if (!text) return null;
+                    const parsed = parseWorkExperienceLine(text);
+                    return {
+                        id: typeof line?.id === "string" && line.id.trim().length > 0
+                            ? line.id
+                            : createDraftWorkExperienceId(),
+                        place: parsed.place,
+                        role: parsed.role,
+                        years: parsed.years,
+                        verified: line?.verified !== false,
+                        verificationLabel: typeof line?.verificationLabel === "string" ? line.verificationLabel : null,
+                    };
+                })
+                .filter((entry: WorkExperienceEntry | null): entry is WorkExperienceEntry => Boolean(entry));
+            setWorkExperience(mapped);
+        } else {
+            const fallback = String(settings?.experience || "")
+                .split(/\r?\n/)
+                .map((line) => line.trim())
+                .filter(Boolean)
+                .map((line) => {
+                    const parsed = parseWorkExperienceLine(line);
+                    return {
+                        id: createDraftWorkExperienceId(),
+                        place: parsed.place,
+                        role: parsed.role,
+                        years: parsed.years,
+                        verified: false,
+                        verificationLabel: null,
+                    };
+                });
+            setWorkExperience(fallback);
+        }
+
         const eduData = settings?.education as EducationEntry[] | null;
         if (eduData && Array.isArray(eduData) && eduData.length > 0) {
             setEducation(
@@ -121,6 +167,8 @@ const Account = () => {
     }, [settings?.name, settings?.email, settings?.phone, settings?.whatsapp, settings?.aboutText,
         settings?.paymentRequisites, settings?.paymentCardNumber, settings?.paymentSbpPhone,
         settings?.vk, settings?.website,
+        settings?.education, settings?.certificates,
+        settings?.experience, settings?.experienceLines,
         settings?.format, settings?.offlineAddress, settings?.subjectDetails, settings?.subjects,
         user?.id, user?.name, user?.email, user?.phone, user?.whatsapp]);
 
@@ -238,7 +286,10 @@ const Account = () => {
                 vk: vk.trim(), website: website.trim(),
                 format, offlineAddress: offlineAddress.trim(),
                 education: education.filter((e) => e.institution.trim()),
-                experience: experience.trim(),
+                experience: workExperience
+                    .map((entry) => formatWorkExperienceLine(entry))
+                    .filter(Boolean)
+                    .join("\n"),
             });
             await Promise.all([mutateSettings(), refreshUser()]);
             setSavedSubjectFlags(subjects.map((s) => Boolean(s.name.trim())));
@@ -297,7 +348,7 @@ const Account = () => {
             <EducationSection education={education} setEducation={setEducation} />
 
             <QualificationSection
-                experience={experience} setExperience={setExperience}
+                workExperience={workExperience} setWorkExperience={setWorkExperience}
                 qualificationVerified={qualificationVerified}
             />
 

@@ -18,7 +18,9 @@ export const PublicPageHeader = ({
     return (
         <div className="repeto-portal-header">
             <div className={`${containerClassName} repeto-portal-header__inner`}>
-                <Text variant="subheader-2">Repeto</Text>
+                <Link href="/" className="repeto-public-brand" aria-label="Repeto">
+                    <Text variant="subheader-2">Repeto</Text>
+                </Link>
                 {rightContent ? (
                     <div className="repeto-portal-header__right">{rightContent}</div>
                 ) : null}
@@ -34,22 +36,14 @@ export const PublicPageFooter = ({ className }: PublicPageFooterProps) => {
                 Работает на{" "}
                 <Link
                     href="/"
-                    style={{
-                        fontWeight: 600,
-                        textDecoration: "none",
-                        color: "inherit",
-                    }}
+                    className="repeto-public-footer__link"
                 >
                     Repeto
                 </Link>
                 {" · "}
                 <Link
                     href="/legal"
-                    style={{
-                        fontWeight: 600,
-                        textDecoration: "none",
-                        color: "inherit",
-                    }}
+                    className="repeto-public-footer__link"
                 >
                     Юридическая информация
                 </Link>

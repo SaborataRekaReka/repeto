@@ -18,6 +18,7 @@ import { mapCancelPolicy, calculatePenalty } from '../common/utils/cancel-policy
 import {
   PORTAL_REVIEW_PREFIX,
   buildPortalReviewNote,
+  normalizePortalReviewTags,
   parsePortalReviewNote,
 } from '../common/utils/lesson-note';
 import {
@@ -761,6 +762,7 @@ export class PortalService {
           price: l.rate,
           rating: review?.rating,
           feedback: review?.feedback,
+          tags: review?.tags || [],
         };
       });
 
@@ -1436,6 +1438,7 @@ export class PortalService {
     lessonId: string,
     rating: number,
     feedback?: string,
+    tags?: string[],
   ) {
     const normalizedRating = Number(rating);
     if (!Number.isFinite(normalizedRating) || normalizedRating < 1 || normalizedRating > 5) {
@@ -1466,9 +1469,11 @@ export class PortalService {
     }
 
     const trimmedFeedback = feedback?.trim();
+    const normalizedTags = normalizePortalReviewTags(tags);
     const serializedReview = buildPortalReviewNote({
       rating: normalizedRating,
       feedback: trimmedFeedback || null,
+      tags: normalizedTags,
     });
 
     const existing = await this.prisma.lessonNote.findFirst({
@@ -1540,6 +1545,7 @@ export class PortalService {
       ok: true,
       rating: average,
       feedback: trimmedFeedback || null,
+      tags: normalizedTags,
     };
   }
 

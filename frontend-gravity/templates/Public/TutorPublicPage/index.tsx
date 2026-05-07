@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type CSSProperties } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import Link from "next/link";
@@ -9,10 +9,14 @@ import {
     GraduationCap,
     FileCheck,
     ShieldCheck,
+    CircleInfo,
+    Receipt,
+    ChevronLeft,
+    ChevronRight,
 } from "@gravity-ui/icons";
 import AppDialog from "@/components/AppDialog";
 import CancelPolicyBlock from "@/components/CancelPolicyBlock";
-import StudentAvatar from "@/components/StudentAvatar";
+import AnimatedSidebarIcon from "@/components/AnimatedSidebarIcon";
 import { PublicPageFooter, PublicPageHeader } from "../PublicPageChrome";
 import StudentHeaderRight from "../StudentHeaderRight";
 import PublicTutorWidget, {
@@ -30,7 +34,13 @@ type TutorReview = {
     studentName: string;
     rating: number;
     feedback: string | null;
+    tags?: string[];
     date: string;
+};
+
+type ReviewTagSummary = {
+    label: string;
+    count: number;
 };
 
 type PublicPackage = {
@@ -39,6 +49,9 @@ type PublicPackage = {
     lessonsTotal: number;
     totalPrice: number;
     pricePerLesson: number;
+    originalTotalPrice?: number | null;
+    discountAmount?: number;
+    discountPercent?: number;
     validUntil?: string | null;
     comment?: string | null;
 };
@@ -77,6 +90,7 @@ type TutorProfile = {
     rating: number | null;
     reviewsCount: number;
     reviews: TutorReview[];
+    reviewTags?: ReviewTagSummary[];
     contacts: {
         phone: string | null;
         whatsapp: string | null;
@@ -117,6 +131,25 @@ function formatReviewDate(raw: string): string {
         "июля", "августа", "сентября", "октября", "ноября", "декабря",
     ];
     return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function formatCountWord(count: number, one: string, few: string, many: string): string {
+    const mod10 = count % 10;
+    const mod100 = count % 100;
+    if (mod10 === 1 && mod100 !== 11) return one;
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
+    return many;
+}
+
+function formatPublicPackageDate(raw?: string | null): string {
+    if (!raw) return "";
+    const d = new Date(raw);
+    if (isNaN(d.getTime())) return "";
+    return d.toLocaleDateString("ru-RU", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+    });
 }
 
 function resolveTelegramLink(value: string): string {
@@ -207,7 +240,12 @@ function VerificationIcon({ label, className }: { label: string; className?: str
     );
 }
 
-type SidebarSection = { id: string; label: string };
+type SidebarSection = {
+    id: string;
+    label: string;
+    animatedIconPath: string;
+    fallbackIcon: IconData;
+};
 
 const TutorPublicPage = () => {
     const router = useRouter();
@@ -215,11 +253,13 @@ const TutorPublicPage = () => {
     const [profile, setProfile] = useState<TutorProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const [notFound, setNotFound] = useState(false);
-    const [reviewsOpen, setReviewsOpen] = useState(false);
     const [isOwner, setIsOwner] = useState(false);
     const [certPreviewIndex, setCertPreviewIndex] = useState<number | null>(null);
     const [policyPopupOpen, setPolicyPopupOpen] = useState(false);
     const [activeSection, setActiveSection] = useState<string>("about");
+    const [hoveredSidebarSection, setHoveredSidebarSection] = useState<string | null>(null);
+    const [reviewCarouselIndex, setReviewCarouselIndex] = useState(0);
+    const [reviewCardsPerPage, setReviewCardsPerPage] = useState(3);
 
     useEffect(() => {
         if (!slug) return;
@@ -295,6 +335,29 @@ const TutorPublicPage = () => {
         return () => observers.forEach((o) => o.disconnect());
     }, [profile]);
 
+    useEffect(() => {
+        const updateCardsPerPage = () => {
+            if (typeof window === "undefined") return;
+            if (window.innerWidth < 680) {
+                setReviewCardsPerPage(1);
+            } else if (window.innerWidth < 1080) {
+                setReviewCardsPerPage(2);
+            } else {
+                setReviewCardsPerPage(3);
+            }
+        };
+
+        updateCardsPerPage();
+        window.addEventListener("resize", updateCardsPerPage);
+        return () => window.removeEventListener("resize", updateCardsPerPage);
+    }, []);
+
+    useEffect(() => {
+        const reviewsLength = profile?.reviews?.length || 0;
+        const maxIndex = Math.max(0, reviewsLength - reviewCardsPerPage);
+        setReviewCarouselIndex((prev) => Math.min(prev, maxIndex));
+    }, [profile?.reviews?.length, reviewCardsPerPage]);
+
     if (loading) {
         return (
             <div className="repeto-portal-page repeto-tp-page">
@@ -309,7 +372,7 @@ const TutorPublicPage = () => {
         return (
             <div className="repeto-portal-page repeto-tp-page">
                 <div className="repeto-tp-loading">
-                    <Text variant="header-2" style={{ display: "block", marginBottom: 8 }}>Репетитор не найден</Text>
+                    <Text variant="header-2" className="repeto-public-state__title">Репетитор не найден</Text>
                     <Text variant="body-2" color="secondary">Страница не существует или была удалена</Text>
                 </div>
             </div>
@@ -448,22 +511,82 @@ const TutorPublicPage = () => {
 
     // Build sidebar sections dynamically
     const sidebarSections: SidebarSection[] = [
-        { id: "about", label: "О специалисте" },
+        {
+            id: "about",
+            label: "О специалисте",
+            animatedIconPath: "/icons/tutor-sidebar-animated/about.json",
+            fallbackIcon: CircleInfo as IconData,
+        },
     ];
-    if (educationList.length > 0) sidebarSections.push({ id: "education", label: "Образование" });
-    if (hasExperience) sidebarSections.push({ id: "experience", label: "Опыт" });
-    if (certsList.length > 0) sidebarSections.push({ id: "certificates", label: "Документы" });
-    sidebarSections.push({ id: "subjects", label: "Предметы и цены" });
-    if (showPublicPackages && publicPackages.length > 0) sidebarSections.push({ id: "packages", label: "Пакеты" });
-    if (t.reviews && t.reviews.length > 0) sidebarSections.push({ id: "reviews", label: "Отзывы" });
-
-    // Rating distribution for the reviews section
-    const ratingCounts = [0, 0, 0, 0, 0];
-    (t.reviews || []).forEach((r) => {
-        const idx = Math.min(Math.max(Math.round(r.rating) - 1, 0), 4);
-        ratingCounts[idx]++;
+    if (educationList.length > 0) {
+        sidebarSections.push({
+            id: "education",
+            label: "Образование",
+            animatedIconPath: "/icons/tutor-sidebar-animated/education.json",
+            fallbackIcon: GraduationCap as IconData,
+        });
+    }
+    if (hasExperience) {
+        sidebarSections.push({
+            id: "experience",
+            label: "Опыт",
+            animatedIconPath: "/icons/tutor-sidebar-animated/experience.json",
+            fallbackIcon: Pencil as IconData,
+        });
+    }
+    if (certsList.length > 0) {
+        sidebarSections.push({
+            id: "certificates",
+            label: "Документы",
+            animatedIconPath: "/icons/tutor-sidebar-animated/certificates.json",
+            fallbackIcon: FileCheck as IconData,
+        });
+    }
+    sidebarSections.push({
+        id: "subjects",
+        label: "Предметы и цены",
+        animatedIconPath: "/icons/tutor-sidebar-animated/subjects.json",
+        fallbackIcon: GraduationCap as IconData,
     });
-    const maxReviewCount = Math.max(...ratingCounts, 1);
+    if (showPublicPackages && publicPackages.length > 0) {
+        sidebarSections.push({
+            id: "packages",
+            label: "Пакеты",
+            animatedIconPath: "/icons/tutor-sidebar-animated/packages.json",
+            fallbackIcon: Receipt as IconData,
+        });
+    }
+    if (t.reviews && t.reviews.length > 0) {
+        sidebarSections.push({
+            id: "reviews",
+            label: "Отзывы",
+            animatedIconPath: "/icons/tutor-sidebar-animated/reviews.json",
+            fallbackIcon: Pencil as IconData,
+        });
+    }
+
+    const allReviews = t.reviews || [];
+    const reviewsCount = Math.max(Number(t.reviewsCount || 0), allReviews.length);
+    const maxReviewCarouselIndex = Math.max(0, allReviews.length - reviewCardsPerPage);
+    const visibleReviews = allReviews.slice(
+        reviewCarouselIndex,
+        reviewCarouselIndex + reviewCardsPerPage,
+    );
+    const reviewCarouselStyle = {
+        "--repeto-review-card-count": reviewCardsPerPage,
+    } as CSSProperties;
+    const canShowReviewArrows = allReviews.length > reviewCardsPerPage;
+    const reviewTags = (t.reviewTags || []).slice(0, 3);
+    const ratingLabel = Number.isFinite(Number(t.rating))
+        ? Number(t.rating).toFixed(1).replace(".", ",")
+        : "—";
+    const reviewsCountLabel = `${reviewsCount} ${formatCountWord(reviewsCount, "оценка", "оценки", "оценок")}`;
+    const scrollToReviews = () => {
+        setActiveSection("reviews");
+        if (typeof document !== "undefined") {
+            document.getElementById("reviews")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+    };
 
     return (
         <>
@@ -489,19 +612,40 @@ const TutorPublicPage = () => {
                             <h2 className="repeto-tp-sidebar__title">Профиль</h2>
 
                             <nav className="repeto-tp-sidebar__nav page-overlay__nav page-overlay__nav--section">
-                                {sidebarSections.map((sec) => (
-                                    <a
-                                        key={sec.id}
-                                        href={`#${sec.id}`}
-                                        onClick={() => setActiveSection(sec.id)}
-                                        className={`repeto-tp-sidebar__item page-overlay__nav-item page-overlay__nav-item--section${activeSection === sec.id ? " repeto-tp-sidebar__item--active page-overlay__nav-item--active" : ""}`}
-                                    >
-                                        <span className="repeto-tp-sidebar__item-text">{sec.label}</span>
-                                    </a>
-                                ))}
+                                {sidebarSections.map((sec) => {
+                                    const isActive = activeSection === sec.id;
+                                    const playIcon = isActive || hoveredSidebarSection === sec.id;
+
+                                    return (
+                                        <a
+                                            key={sec.id}
+                                            href={`#${sec.id}`}
+                                            onClick={() => setActiveSection(sec.id)}
+                                            onMouseEnter={() => setHoveredSidebarSection(sec.id)}
+                                            onMouseLeave={() =>
+                                                setHoveredSidebarSection((prev) => (prev === sec.id ? null : prev))
+                                            }
+                                            onFocus={() => setHoveredSidebarSection(sec.id)}
+                                            onBlur={() =>
+                                                setHoveredSidebarSection((prev) => (prev === sec.id ? null : prev))
+                                            }
+                                            className={`repeto-tp-sidebar__item page-overlay__nav-item page-overlay__nav-item--section${isActive ? " repeto-tp-sidebar__item--active page-overlay__nav-item--active" : ""}`}
+                                        >
+                                            <span className="repeto-tp-sidebar__item-icon repeto-tp-sidebar__item-icon--animated" aria-hidden="true">
+                                                <AnimatedSidebarIcon
+                                                    src={sec.animatedIconPath}
+                                                    play={playIcon}
+                                                    fallbackIcon={sec.fallbackIcon}
+                                                    size={24}
+                                                />
+                                            </span>
+                                            <span className="repeto-tp-sidebar__item-text">{sec.label}</span>
+                                        </a>
+                                    );
+                                })}
                             </nav>
                             {canBook && (
-                                <Link href={`/t/${slug}/book`} style={{ textDecoration: "none", display: "block", marginTop: 16 }}>
+                                <Link href={`/t/${slug}/book`} className="repeto-tp-sidebar__cta-link">
                                     <Button view="action" size="l" className="repeto-tp-sidebar__cta">
                                         Записаться
                                     </Button>
@@ -522,7 +666,7 @@ const TutorPublicPage = () => {
                                 }
                                 rating={t.rating}
                                 reviewsCount={t.reviewsCount}
-                                onOpenReviews={() => setReviewsOpen(true)}
+                                onOpenReviews={reviewsCount > 0 ? scrollToReviews : undefined}
                                 policy={{
                                     freeHours,
                                     freeHoursWord: formatCancelPolicyHoursWord(freeHours),
@@ -539,7 +683,7 @@ const TutorPublicPage = () => {
                         </Text>
                         <div className="repeto-tp-section__body">
                             {t.aboutText ? (
-                                <Text variant="body-2" style={{ lineHeight: 1.7 }}>{t.aboutText}</Text>
+                                <Text variant="body-2" className="repeto-tp-copy">{t.aboutText}</Text>
                             ) : (
                                 <Text variant="body-2" color="secondary">
                                     Репетитор пока не добавил описание
@@ -565,7 +709,7 @@ const TutorPublicPage = () => {
                                                 </span>
                                                 <div className="repeto-tp-edu-item__text">
                                                     <div className="repeto-tp-edu-item__head">
-                                                        <Text variant="body-2" style={{ fontWeight: 600 }}>{edu.institution}</Text>
+                                                        <Text variant="body-2" className="repeto-tp-item-title">{edu.institution}</Text>
                                                         {educationVerified && (
                                                             <VerificationIcon label={DEFAULT_VERIFICATION_LABEL} />
                                                         )}
@@ -590,7 +734,7 @@ const TutorPublicPage = () => {
                                 <div className="repeto-tp-experience-list">
                                     {experienceList.map((line) => (
                                         <div key={line.id} className="repeto-tp-experience-item">
-                                            <Text variant="body-2" style={{ lineHeight: 1.7 }}>{line.text}</Text>
+                                            <Text variant="body-2" className="repeto-tp-copy">{line.text}</Text>
                                             {line.verified && (
                                                 <VerificationIcon label={DEFAULT_VERIFICATION_LABEL} />
                                             )}
@@ -660,14 +804,14 @@ const TutorPublicPage = () => {
                                                         <Icon data={GraduationCap as IconData} size={16} />
                                                     </span>
                                                     <div>
-                                                        <Text variant="body-2" style={{ fontWeight: 600 }}>{name}</Text>
+                                                        <Text variant="body-2" className="repeto-tp-item-title">{name}</Text>
                                                         {duration ? (
                                                             <Text variant="body-1" color="secondary"> · {duration} мин</Text>
                                                         ) : null}
                                                     </div>
                                                 </div>
                                                 {price ? (
-                                                    <Text variant="body-2" style={{ fontWeight: 600, whiteSpace: "nowrap" }}>
+                                                    <Text variant="body-2" className="repeto-tp-item-price">
                                                         {price.toLocaleString("ru-RU")} ₽
                                                     </Text>
                                                 ) : null}
@@ -688,26 +832,61 @@ const TutorPublicPage = () => {
                             <Text variant="subheader-2" as="div" className="repeto-portal-plain-section-title">
                                 Пакеты занятий
                             </Text>
-                            <div className="repeto-tp-section__body">
-                                <div className="repeto-tp-item-list">
-                                    {publicPackages.map((pkg) => (
-                                        <div key={pkg.id} className="repeto-tp-item-row repeto-tp-item-row--pkg">
-                                            <div className="repeto-tp-item-row__left">
-                                                <div>
-                                                    <Text variant="body-2" style={{ fontWeight: 600 }}>{pkg.subject}</Text>
-                                                    <Text variant="body-1" color="secondary" as="div">
-                                                        {pkg.lessonsTotal} занятий · {pkg.pricePerLesson.toLocaleString("ru-RU")} ₽ / занятие
-                                                    </Text>
-                                                    {pkg.comment ? (
-                                                        <Text variant="caption-1" color="secondary" as="div" style={{ marginTop: 2 }}>{pkg.comment}</Text>
+                            <div className="repeto-tp-section__body repeto-tp-section__body--packages">
+                                <div className="repeto-tp-packages-grid">
+                                    {publicPackages.map((pkg) => {
+                                        const validUntilLabel = formatPublicPackageDate(pkg.validUntil);
+
+                                        return (
+                                            <article key={pkg.id} className="repeto-tp-package-card">
+                                                <div className="repeto-tp-package-card__head">
+                                                    <div>
+                                                        <Text variant="body-2" as="div" className="repeto-tp-package-card__subject">
+                                                            {pkg.subject}
+                                                        </Text>
+                                                        <Text variant="body-1" color="secondary" as="div" className="repeto-tp-package-card__meta">
+                                                            {pkg.lessonsTotal} {formatCountWord(pkg.lessonsTotal, "занятие", "занятия", "занятий")}
+                                                        </Text>
+                                                    </div>
+                                                    {pkg.discountPercent ? (
+                                                        <span className="repeto-tp-package-card__badge">
+                                                            −{pkg.discountPercent}%
+                                                        </span>
                                                     ) : null}
                                                 </div>
-                                            </div>
-                                            <Text variant="body-2" style={{ fontWeight: 700, whiteSpace: "nowrap" }}>
-                                                {pkg.totalPrice.toLocaleString("ru-RU")} ₽
-                                            </Text>
-                                        </div>
-                                    ))}
+
+                                                <div className="repeto-tp-package-card__price-row">
+                                                    <Text variant="header-1" as="div" className="repeto-tp-package-card__total">
+                                                        {pkg.totalPrice.toLocaleString("ru-RU")} ₽
+                                                    </Text>
+                                                    {pkg.originalTotalPrice ? (
+                                                        <span className="repeto-tp-package-card__old-price">
+                                                            {pkg.originalTotalPrice.toLocaleString("ru-RU")} ₽
+                                                        </span>
+                                                    ) : null}
+                                                </div>
+
+                                                <Text variant="body-1" color="secondary" as="div" className="repeto-tp-package-card__per-lesson">
+                                                    {pkg.pricePerLesson.toLocaleString("ru-RU")} ₽ за занятие
+                                                </Text>
+
+                                                {pkg.comment || validUntilLabel ? (
+                                                    <div className="repeto-tp-package-card__footer">
+                                                        {pkg.comment ? (
+                                                            <Text variant="caption-1" color="secondary" as="span">
+                                                                {pkg.comment}
+                                                            </Text>
+                                                        ) : null}
+                                                        {validUntilLabel ? (
+                                                            <Text variant="caption-1" color="secondary" as="span">
+                                                                до {validUntilLabel}
+                                                            </Text>
+                                                        ) : null}
+                                                    </div>
+                                                ) : null}
+                                            </article>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         </div>
@@ -718,61 +897,82 @@ const TutorPublicPage = () => {
                             <Text variant="subheader-2" as="div" className="repeto-portal-plain-section-title">
                                 Отзывы
                             </Text>
-                            <div className="repeto-tp-section__body">
-                                <div className="repeto-tp-reviews-summary">
-                                    <div className="repeto-tp-reviews-summary__left">
-                                        <Text variant="display-1" as="div" className="repeto-tp-reviews-summary__score">
-                                            {t.rating ? Number(t.rating).toFixed(1) : "—"}
-                                        </Text>
-                                        {t.rating && renderStars(Math.round(t.rating))}
-                                        <Text variant="body-1" color="secondary">
-                                            {t.reviewsCount} {t.reviewsCount === 1 ? "отзыв" : t.reviewsCount < 5 ? "отзыва" : "отзывов"}
-                                        </Text>
-                                    </div>
-                                    <div className="repeto-tp-reviews-summary__bars">
-                                        {[5, 4, 3, 2, 1].map((star) => (
-                                            <div key={star} className="repeto-tp-reviews-bar">
-                                                <Text variant="caption-2" color="secondary" className="repeto-tp-reviews-bar__label">{star}</Text>
-                                                <div className="repeto-tp-reviews-bar__track">
-                                                    <div
-                                                        className="repeto-tp-reviews-bar__fill"
-                                                        style={{ width: `${(ratingCounts[star - 1] / maxReviewCount) * 100}%` }}
-                                                    />
-                                                </div>
-                                                <Text variant="caption-2" color="secondary" className="repeto-tp-reviews-bar__count">
-                                                    {ratingCounts[star - 1]}
-                                                </Text>
-                                            </div>
+                            <div className="repeto-tp-reviews-market">
+                                <div className="repeto-tp-reviews-market__top">
+                                    <div className="repeto-tp-reviews-market__hero">
+                                        <div className="repeto-tp-market-score" aria-label={`Средняя оценка ${ratingLabel}`}>
+                                            <span className="repeto-tp-market-score__value">{ratingLabel}</span>
+                                        </div>
+                                        <div className="repeto-tp-market-summary">
+                                            <Text variant="body-2" as="div" className="repeto-tp-market-summary__title">
+                                                Выбор учеников
+                                            </Text>
+                                            <Text variant="body-1" color="secondary" as="div">
+                                                {reviewsCountLabel}
+                                            </Text>
+                                        </div>
+                                        {reviewTags.map((tag) => (
+                                            <span key={tag.label} className="repeto-tp-market-chip">
+                                                {tag.label}
+                                            </span>
                                         ))}
                                     </div>
-                                </div>
 
-                                <div className="repeto-tp-reviews-list">
-                                    {t.reviews.slice(0, 5).map((r, i) => (
-                                        <div key={i} className="repeto-tp-review">
-                                            <StudentAvatar
-                                                student={{ name: r.studentName, avatarUrl: undefined }}
+                                    {canShowReviewArrows && (
+                                        <div className="repeto-tp-review-carousel__actions">
+                                            <Button
+                                                view="outlined"
                                                 size="m"
-                                            />
-                                            <div className="repeto-tp-review__body">
-                                                <div className="repeto-tp-review__head">
-                                                    <Text variant="body-2" style={{ fontWeight: 700 }}>{r.studentName}</Text>
-                                                    {renderStars(r.rating)}
-                                                    <Text variant="caption-2" color="secondary">{formatReviewDate(r.date)}</Text>
-                                                </div>
-                                                {r.feedback && (
-                                                    <Text variant="body-2" style={{ lineHeight: 1.65, marginTop: 8 }}>{r.feedback}</Text>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-                                    {t.reviews.length > 5 && (
-                                        <div style={{ textAlign: "center", marginTop: 8 }}>
-                                            <Button view="outlined" size="m" onClick={() => setReviewsOpen(true)}>
-                                                Все отзывы ({t.reviewsCount})
+                                                className="repeto-tp-review-carousel__arrow"
+                                                disabled={reviewCarouselIndex === 0}
+                                                onClick={() => setReviewCarouselIndex((prev) => Math.max(0, prev - 1))}
+                                                aria-label="Предыдущие отзывы"
+                                            >
+                                                <Icon data={ChevronLeft as IconData} size={16} />
+                                            </Button>
+                                            <Button
+                                                view="outlined"
+                                                size="m"
+                                                className="repeto-tp-review-carousel__arrow"
+                                                disabled={reviewCarouselIndex >= maxReviewCarouselIndex}
+                                                onClick={() =>
+                                                    setReviewCarouselIndex((prev) =>
+                                                        Math.min(maxReviewCarouselIndex, prev + 1)
+                                                    )
+                                                }
+                                                aria-label="Следующие отзывы"
+                                            >
+                                                <Icon data={ChevronRight as IconData} size={16} />
                                             </Button>
                                         </div>
                                     )}
+                                </div>
+
+                                <div className="repeto-tp-review-carousel" style={reviewCarouselStyle}>
+                                    {visibleReviews.map((r, i) => (
+                                        <article key={`${r.studentName}-${r.date}-${reviewCarouselIndex + i}`} className="repeto-tp-review-card">
+                                            <div className="repeto-tp-review-card__head">
+                                                <div className="repeto-tp-review-card__author">
+                                                    <Text variant="body-2" as="div" className="repeto-tp-reviewer">
+                                                        {r.studentName}
+                                                    </Text>
+                                                    <Text variant="caption-2" color="secondary" as="div">
+                                                        {formatReviewDate(r.date)}
+                                                    </Text>
+                                                </div>
+                                                {renderStars(r.rating)}
+                                            </div>
+                                            {r.feedback ? (
+                                                <Text variant="body-2" className="repeto-tp-review-text">
+                                                    {r.feedback}
+                                                </Text>
+                                            ) : (
+                                                <Text variant="body-2" color="secondary" className="repeto-tp-review-text">
+                                                    Оценка без текстового комментария
+                                                </Text>
+                                            )}
+                                        </article>
+                                    ))}
                                 </div>
                             </div>
                         </div>
@@ -780,7 +980,7 @@ const TutorPublicPage = () => {
 
                     <div className="repeto-tp-cta repeto-tp-cta--mobile">
                         {canBook ? (
-                            <Link href={`/t/${slug}/book`} style={{ textDecoration: "none", display: "block" }}>
+                            <Link href={`/t/${slug}/book`} className="repeto-tp-cta-link">
                                 <Button view="action" size="xl" className="repeto-tp-cta-btn">
                                     Записаться на занятие
                                 </Button>
@@ -807,44 +1007,6 @@ const TutorPublicPage = () => {
                     </Button>
                 </div>
             )}
-
-            <AppDialog
-                open={reviewsOpen}
-                onClose={() => setReviewsOpen(false)}
-                size="l"
-                caption="Отзывы"
-                footer={{
-                    textButtonCancel: "Закрыть",
-                    onClickButtonCancel: () => setReviewsOpen(false),
-                }}
-            >
-                {t.reviews && t.reviews.length > 0 ? (
-                    <div className="repeto-tp-reviews-list">
-                        {t.reviews.map((r, i) => (
-                            <div key={i} className="repeto-tp-review">
-                                <StudentAvatar
-                                    student={{ name: r.studentName, avatarUrl: undefined }}
-                                    size="m"
-                                />
-                                <div className="repeto-tp-review__body">
-                                    <div className="repeto-tp-review__head">
-                                        <Text variant="body-2" style={{ fontWeight: 700 }}>{r.studentName}</Text>
-                                        {renderStars(r.rating)}
-                                        <Text variant="caption-2" color="secondary">{formatReviewDate(r.date)}</Text>
-                                    </div>
-                                    {r.feedback && (
-                                        <Text variant="body-2" style={{ lineHeight: 1.6, marginTop: 6 }}>{r.feedback}</Text>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <Text variant="body-2" color="hint" style={{ display: "block", textAlign: "center", fontStyle: "italic" }}>
-                        Отзывов пока нет
-                    </Text>
-                )}
-            </AppDialog>
 
             <AppDialog
                 open={!!activeCertificate}
@@ -874,8 +1036,8 @@ const TutorPublicPage = () => {
                 footer={undefined}
             >
                 <div className="repeto-tp-policy-popup">
-                    <Text variant="body-2" style={{ lineHeight: 1.6 }}>{policySummaryText}</Text>
-                    <div style={{ marginTop: 10 }}>
+                    <Text variant="body-2" className="repeto-tp-policy-copy">{policySummaryText}</Text>
+                    <div className="repeto-tp-policy-block">
                         <CancelPolicyBlock
                             freeHours={t.cancelPolicy?.freeHours}
                             lateCancelAction={t.cancelPolicy?.lateCancelAction}

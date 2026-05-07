@@ -91,6 +91,7 @@ export type RecentLesson = {
     price: number;
     rating?: number;
     feedback?: string;
+    tags?: string[];
 };
 
 export type PortalNotificationChannel = {

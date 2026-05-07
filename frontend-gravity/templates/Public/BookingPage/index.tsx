@@ -61,7 +61,6 @@ type TutorProfile = {
     showPublicPackages?: boolean;
     publicPackages?: PublicPackage[];
     slug?: string;
-    tagline?: string;
 };
 
 type BookingCreateResponse = {
@@ -256,7 +255,10 @@ const BookingPage = ({ slug }: { slug: string }) => {
         };
     }, [slug]);
 
-    const t = profile || { name: "", subjects: [], publicPackages: [], tagline: "" };
+    const t = profile || { name: "", subjects: [], publicPackages: [] };
+    const subjectsLabel = t.subjects.length
+        ? t.subjects.map((subject) => subject.name).join(", ")
+        : "Предметы не указаны";
 
     const [step, setStep] = useState(0);
     const [selectedSubject, setSelectedSubject] = useState<
@@ -773,15 +775,15 @@ const BookingPage = ({ slug }: { slug: string }) => {
                 )}
                 {!loading && loadError && (
                     <div className="repeto-tp-loading">
-                        <Text variant="header-2" style={{ display: "block", marginBottom: 8 }}>Не удалось открыть запись</Text>
-                        <Text variant="body-2" color="secondary" style={{ display: "block", marginBottom: 16 }}>
+                        <Text variant="header-2" className="repeto-public-state__title">Не удалось открыть запись</Text>
+                        <Text variant="body-2" color="secondary" className="repeto-public-state__text">
                             {loadError}
                         </Text>
                         <div className="repeto-bk-error-actions">
                             <Button size="l" onClick={() => window.location.reload()}>
                                 Обновить страницу
                             </Button>
-                            <Link href={`/t/${slug}`} style={{ textDecoration: "none" }}>
+                            <Link href={`/t/${slug}`} className="repeto-public-link-block">
                                 <Button view="flat" size="l">К странице преподавателя</Button>
                             </Link>
                         </div>
@@ -789,8 +791,8 @@ const BookingPage = ({ slug }: { slug: string }) => {
                 )}
                 {!loading && !loadError && !profile && (
                     <div className="repeto-tp-loading">
-                        <Text variant="header-2" style={{ display: "block", marginBottom: 8 }}>Репетитор не найден</Text>
-                        <Link href="/" style={{ color: "var(--g-color-text-brand)", fontSize: 14, textDecoration: "none" }}>На главную</Link>
+                        <Text variant="header-2" className="repeto-public-state__title">Репетитор не найден</Text>
+                        <Link href="/" className="repeto-public-link">На главную</Link>
                     </div>
                 )}
                 {!loading && !loadError && profile && (
@@ -802,7 +804,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
                             <Icon data={ArrowLeft as IconData} size={18} />
                         </Button>
                     ) : step === 0 ? (
-                        <Link href={`/t/${slug}`} style={{ textDecoration: "none" }}>
+                        <Link href={`/t/${slug}`} className="repeto-public-link-block">
                             <Button view="flat" size="m" className="repeto-bk-back-btn">
                                 <Icon data={ArrowLeft as IconData} size={18} />
                             </Button>
@@ -810,7 +812,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
                     ) : null}
                     <div className="repeto-bk-header-info">
                         <Text variant="body-2" className="repeto-bk-header-info__name">{t.name}</Text>
-                        {t.tagline && <Text variant="body-1" color="secondary">{t.tagline}</Text>}
+                        <Text variant="body-1" color="secondary">{subjectsLabel}</Text>
                     </div>
                 </div>
 
@@ -979,7 +981,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                 <div className="repeto-bk-time-groups">
                                     {groupedSlots.map((group) => (
                                         <div key={group.label} className="repeto-bk-time-group">
-                                            <Text variant="subheader-2" as="div" style={{ marginBottom: 10 }}>{group.label}</Text>
+                                            <Text variant="subheader-2" as="div" className="repeto-bk-time-group__title">{group.label}</Text>
                                             <div className="repeto-bk-time-slots">
                                                 {group.slots.map((slot) => {
                                                     const active = selectedTime === slot.time;
@@ -1078,21 +1080,21 @@ const BookingPage = ({ slug }: { slug: string }) => {
 
                             {showInitialLegalGate ? (
                                 <>
-                                    <div className="repeto-bk-autofill-hint" style={{ marginBottom: 18 }}>
+                                    <div className="repeto-bk-autofill-hint repeto-bk-autofill-hint--legal">
                                         <Text variant="body-2" as="div">
                                             Для первого бронирования подтвердите пользовательское соглашение и согласие на обработку персональных данных.
                                         </Text>
                                     </div>
 
-                                    <div style={{ marginBottom: 24, display: "grid", gap: 10 }}>
+                                    <div className="repeto-bk-legal-stack">
                                         <Checkbox checked={initialUserAgreementAccepted} onUpdate={setInitialUserAgreementAccepted} size="l">
-                                            <span style={{ fontSize: 13, color: "var(--g-color-text-secondary)", lineHeight: 1.4 }}>
+                                            <span className="repeto-bk-legal-text">
                                                 {INITIAL_USER_AGREEMENT_TEXT}
                                             </span>
                                         </Checkbox>
 
                                         <Checkbox checked={initialUserPdAccepted} onUpdate={setInitialUserPdAccepted} size="l">
-                                            <span style={{ fontSize: 13, color: "var(--g-color-text-secondary)", lineHeight: 1.4 }}>
+                                            <span className="repeto-bk-legal-text">
                                                 {INITIAL_USER_PD_TEXT}
                                             </span>
                                         </Checkbox>
@@ -1150,7 +1152,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                             })}
                                         </div>
                                         {selectedReminderMethods.length > 0 && (
-                                            <div className="repeto-bk-chips" style={{ marginTop: 8 }}>
+                                            <div className="repeto-bk-chips repeto-bk-chips--secondary">
                                                 {REMINDER_TIME_OPTIONS.map((option) => (
                                                     <button
                                                         key={option.minutes}
@@ -1190,9 +1192,9 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                         </div>
                                     </div>
 
-                                    <div style={{ marginBottom: 14, display: "grid", gap: 10 }}>
+                                    <div className="repeto-bk-legal-stack repeto-bk-legal-stack--compact">
                                         <Checkbox checked={bookingTermsConfirmed} onUpdate={setBookingTermsConfirmed} size="l">
-                                            <span style={{ fontSize: 13, color: "var(--g-color-text-secondary)", lineHeight: 1.4 }}>
+                                            <span className="repeto-bk-legal-text">
                                                 {BOOKING_TERMS_CONFIRMED_TEXT}
                                             </span>
                                         </Checkbox>
@@ -1203,14 +1205,14 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                                 onUpdate={setChildLegalRepresentativeConfirmed}
                                                 size="l"
                                             >
-                                                <span style={{ fontSize: 13, color: "var(--g-color-text-secondary)", lineHeight: 1.4 }}>
+                                                <span className="repeto-bk-legal-text">
                                                     {CHILD_LEGAL_REPRESENTATIVE_TEXT}
                                                 </span>
                                             </Checkbox>
                                         )}
                                     </div>
 
-                                    <Text variant="body-1" color="secondary" style={{ display: "block", marginBottom: 20 }}>
+                                    <Text variant="body-1" color="secondary" className="repeto-bk-contact-info">
                                         {CONTACT_TRANSFER_INFO_TEXT}
                                     </Text>
 
@@ -1234,7 +1236,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                     </div>
 
                                     {selectedPackage && Number(selectedPackage.discountAmount || 0) > 0 && (
-                                        <Text variant="body-1" color="positive" style={{ display: "block", marginBottom: 16 }}>
+                                        <Text variant="body-1" color="positive" className="repeto-bk-savings">
                                             Вы экономите {Number(selectedPackage.discountAmount || 0).toLocaleString("ru-RU")} ₽
                                             {Number(selectedPackage.discountPercent || 0) > 0 ? ` (${selectedPackage.discountPercent}%)` : ""}
                                         </Text>
@@ -1310,7 +1312,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
                             </AppField>
 
                             {otpError && (
-                                <div style={{ marginBottom: 16 }}>
+                                <div className="repeto-bk-inline-alert">
                                     <Alert theme="danger" title="Не удалось подтвердить" message={otpError} />
                                 </div>
                             )}

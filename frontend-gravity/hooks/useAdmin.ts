@@ -52,7 +52,6 @@ export type AdminTutorDetail = {
   avatarUrl: string | null;
   subjects: string[];
   subjectDetails: unknown;
-  tagline: string | null;
   aboutText: string | null;
   format: string | null;
   offlineAddress: string | null;

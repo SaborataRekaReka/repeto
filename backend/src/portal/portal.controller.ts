@@ -182,9 +182,10 @@ export class PortalController {
     @Param('lessonId') lessonId: string,
     @Body('rating') rating: number,
     @Body('feedback') feedback?: string,
+    @Body('tags') tags?: string[],
   ) {
     await this.assertOwnership(accountId, studentId);
-    return this.portalService.submitLessonFeedback(studentId, lessonId, rating, feedback);
+    return this.portalService.submitLessonFeedback(studentId, lessonId, rating, feedback, tags);
   }
 
   @Patch('students/:studentId/profile')

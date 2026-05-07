@@ -41,7 +41,6 @@ interface TutorSeed {
   subjects: string[];
   subjectDetails?: Array<{ name: string; duration: number; price: number }> | null;
   aboutText?: string | null;
-  tagline?: string | null;
   website?: string | null;
   vk?: string | null;
   format?: string | null;
@@ -189,7 +188,6 @@ async function upsertTutor(seed: TutorSeed, passwordHash: string): Promise<User>
     subjects: seed.subjects,
     subjectDetails: seed.subjectDetails ? toJsonValue(seed.subjectDetails) : Prisma.DbNull,
     aboutText: seed.aboutText ?? null,
-    tagline: seed.tagline ?? null,
     website: seed.website ?? null,
     vk: seed.vk ?? null,
     format: seed.format ?? null,
@@ -228,7 +226,6 @@ async function upsertTutor(seed: TutorSeed, passwordHash: string): Promise<User>
     subjects: seed.subjects,
     subjectDetails: seed.subjectDetails ? toJsonValue(seed.subjectDetails) : Prisma.DbNull,
     aboutText: seed.aboutText ?? null,
-    tagline: seed.tagline ?? null,
     website: seed.website ?? null,
     vk: seed.vk ?? null,
     format: seed.format ?? null,
@@ -672,7 +669,6 @@ async function main(): Promise<void> {
       ],
       aboutText:
         'Два года плотной работы в сервисе: регулярные уроки, пакетная система, отчеты родителям, контроль прогресса и интеграции с облаками.',
-      tagline: 'Системная подготовка к экзаменам и олимпиадам',
       website: 'https://alpha-demo.repeto.ru',
       vk: 'https://vk.com/demo_tutor_alpha',
       format: 'both',
@@ -749,7 +745,6 @@ async function main(): Promise<void> {
       ],
       aboutText:
         'Профиль с акцентом на разговорный английский, устойчивые абонементы, домашние задания и прозрачный финансовый поток.',
-      tagline: 'Английский для подростков и взрослых',
       website: 'https://beta-demo.repeto.ru',
       vk: null,
       format: 'online',

@@ -622,6 +622,11 @@ const StudentDetailPage = ({ student, onRefresh }: StudentDetailPageProps) => {
                 <StudentNameWithBadge
                     name={local.name}
                     hasRepetoAccount={Boolean(local.accountId)}
+                    truncate
+                    smartTruncate
+                    smartTruncateMaxLength={16}
+                    iconSize={15}
+                    mirrorIcon
                 />
             }
             breadcrumb="Ученики"

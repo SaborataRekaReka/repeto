@@ -15,7 +15,7 @@ export function isSystemLessonNoteContent(content: unknown): content is string {
 
 export function parsePortalReviewNote(
   content: unknown,
-): { rating: number; feedback?: string } | null {
+): { rating: number; feedback?: string; tags: string[] } | null {
   if (!isPortalReviewNoteContent(content)) {
     return null;
   }
@@ -24,6 +24,7 @@ export function parsePortalReviewNote(
     const parsed = JSON.parse(content.slice(PORTAL_REVIEW_PREFIX.length)) as {
       rating?: unknown;
       feedback?: unknown;
+      tags?: unknown;
     };
     const rating = Number(parsed.rating);
     if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
@@ -35,15 +36,37 @@ export function parsePortalReviewNote(
         ? parsed.feedback.trim()
         : undefined;
 
-    return { rating, feedback };
+    const tags = normalizePortalReviewTags(parsed.tags);
+
+    return { rating, feedback, tags };
   } catch {
     return null;
   }
 }
 
+export function normalizePortalReviewTags(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+
+  const seen = new Set<string>();
+  const tags: string[] = [];
+
+  for (const item of value) {
+    if (typeof item !== 'string') continue;
+    const tag = item.trim().slice(0, 48);
+    const key = tag.toLowerCase();
+    if (!tag || seen.has(key)) continue;
+    seen.add(key);
+    tags.push(tag);
+    if (tags.length >= 8) break;
+  }
+
+  return tags;
+}
+
 export function buildPortalReviewNote(payload: {
   rating: number;
   feedback?: string | null;
+  tags?: unknown;
 }): string {
   const feedback =
     typeof payload.feedback === 'string' && payload.feedback.trim().length > 0
@@ -53,5 +76,6 @@ export function buildPortalReviewNote(payload: {
   return `${PORTAL_REVIEW_PREFIX}${JSON.stringify({
     rating: payload.rating,
     feedback,
+    tags: normalizePortalReviewTags(payload.tags),
   })}`;
 }

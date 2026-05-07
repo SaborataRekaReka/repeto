@@ -1,13 +1,13 @@
-import { useEffect, useState } from "react";
-import { useRouter } from "next/router";
+import { useCallback, useEffect, useState } from "react";
 import { Button, Icon, Text } from "@gravity-ui/uikit";
 import type { IconData } from "@gravity-ui/uikit";
 import { Gear, Person } from "@gravity-ui/icons";
 import AppDialog from "@/components/AppDialog";
 import StudentAvatar from "@/components/StudentAvatar";
 import StudentSignIn from "@/templates/RegistrationPage/StudentSignIn";
+import StudentSettingsDialog from "./StudentSettingsDialog";
 import { resolveApiAssetUrl } from "@/lib/api";
-import { getStudentAccessToken, studentApi } from "@/lib/studentAuth";
+import { getStudentAccessToken, studentApi, studentLogout } from "@/lib/studentAuth";
 
 type StudentSetupResponse = {
     name?: string | null;
@@ -26,9 +26,14 @@ type StudentProfileInfo = {
  * Shared by TutorPublicPage and BookingPage so the shell looks identical.
  */
 const StudentHeaderRight = () => {
-    const router = useRouter();
     const [profile, setProfile] = useState<StudentProfileInfo | null>(null);
     const [signInOpen, setSignInOpen] = useState(false);
+    const [settingsOpen, setSettingsOpen] = useState(false);
+    const [reloadKey, setReloadKey] = useState(0);
+
+    const triggerReload = useCallback(() => {
+        setReloadKey((prev) => prev + 1);
+    }, []);
 
     useEffect(() => {
         let canceled = false;
@@ -58,7 +63,29 @@ const StudentHeaderRight = () => {
         return () => {
             canceled = true;
         };
-    }, []);
+    }, [reloadKey]);
+
+    useEffect(() => {
+        const handleAuthChanged = () => {
+            triggerReload();
+        };
+
+        const handleVisibilityChange = () => {
+            if (typeof document !== "undefined" && document.visibilityState === "visible") {
+                triggerReload();
+            }
+        };
+
+        window.addEventListener("repeto:student-auth-changed", handleAuthChanged as EventListener);
+        window.addEventListener("focus", handleAuthChanged);
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+
+        return () => {
+            window.removeEventListener("repeto:student-auth-changed", handleAuthChanged as EventListener);
+            window.removeEventListener("focus", handleAuthChanged);
+            document.removeEventListener("visibilitychange", handleVisibilityChange);
+        };
+    }, [triggerReload]);
 
     if (profile) {
         return (
@@ -73,11 +100,22 @@ const StudentHeaderRight = () => {
                 <Button
                     view="flat"
                     size="s"
-                    onClick={() => void router.push("/student?settings=1")}
+                    onClick={() => setSettingsOpen(true)}
                     aria-label="Настройки профиля ученика"
                 >
                     <Icon data={Gear as IconData} size={16} />
                 </Button>
+                <StudentSettingsDialog
+                    open={settingsOpen}
+                    onClose={() => setSettingsOpen(false)}
+                    fallbackProfile={profile}
+                    onSaved={() => triggerReload()}
+                    onLogout={async () => {
+                        await studentLogout();
+                        setSettingsOpen(false);
+                        setProfile(null);
+                    }}
+                />
             </>
         );
     }
@@ -99,7 +137,13 @@ const StudentHeaderRight = () => {
                 caption={undefined}
                 footer={undefined}
             >
-                <StudentSignIn onBack={() => setSignInOpen(false)} />
+                <StudentSignIn
+                    onBack={() => setSignInOpen(false)}
+                    onSignedIn={async () => {
+                        setSignInOpen(false);
+                        triggerReload();
+                    }}
+                />
             </AppDialog>
         </>
     );

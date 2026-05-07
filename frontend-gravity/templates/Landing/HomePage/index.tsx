@@ -2,18 +2,23 @@ import { useEffect, useRef, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { Avatar, DropdownMenu } from "@gravity-ui/uikit";
+import { Avatar, Card, DropdownMenu, Icon, Label, Text } from "@gravity-ui/uikit";
+import type { IconData } from "@gravity-ui/uikit";
+import { ChevronRight, FolderOpen } from "@gravity-ui/icons";
 import Image from "@/components/Image";
 import { useAuth } from "@/contexts/AuthContext";
-import { getInitials } from "@/lib/formatters";
+import { getInitials, shortName } from "@/lib/formatters";
+import StudentAvatar from "@/components/StudentAvatar";
+import StudentNameWithBadge from "@/components/StudentNameWithBadge";
+import IncomeByStudents from "@/templates/Finance/FinanceOverviewPage/IncomeByStudents";
 import styles from "./LandingHomePage.module.css";
 
 const GDropdownMenu = DropdownMenu as any;
 
 const navigation = [
     { href: "#features", label: "Возможности" },
-    { href: "#pricing", label: "Стоимость" },
-    { href: "#faq", label: "FAQ" },
+    { href: "#pricing", label: "Тарифы" },
+    { href: "#reviews", label: "Отзывы" },
 ];
 
 const heroMetrics = [
@@ -24,174 +29,382 @@ const heroMetrics = [
 
 const controlCards = [
     {
-        title: "Ученики",
-        text: "Карточки, тарифы, предметы, контакты родителей и история занятий в одном месте.",
+        title: "Больше не нужно искать ученика в трех местах",
+        text: "Имя, предмет, тариф, контакты родителей и история занятий лежат в одной карточке.",
     },
     {
-        title: "Расписание",
-        text: "Повторяющиеся уроки, переносы, отмены и синхронизация с календарями.",
+        title: "Переносы больше не ломают вам неделю",
+        text: "Расписание, окна, отмены и статусы обновляются в одной системе без ручной сверки.",
     },
     {
-        title: "Оплаты",
-        text: "Баланс, долги, пакеты занятий и понятная история платежей без ручных таблиц.",
+        title: "Больше не нужно спрашивать: «А вы оплатили?»",
+        text: "Баланс, пакеты, предоплата и долги видны сразу по каждому ученику.",
     },
     {
-        title: "Портал",
-        text: "Родители и ученики видят расписание, домашку, остатки пакета и правила отмен.",
+        title: "Родители сами видят, что у них по занятиям",
+        text: "Расписание, домашка, история уроков и остаток по пакету открываются без переписки с вами.",
     },
 ];
+
+type ShowcaseLessonStatus = "planned" | "completed" | "cancelled_student" | "cancelled_tutor" | "no_show";
+
+const showcaseStatusTheme = (status: ShowcaseLessonStatus): "success" | "danger" | "normal" => {
+    switch (status) {
+        case "completed":
+            return "success";
+        case "cancelled_student":
+        case "cancelled_tutor":
+            return "danger";
+        case "no_show":
+            return "normal";
+        default:
+            return "normal";
+    }
+};
+
+const showcaseStatusLabel = (status: ShowcaseLessonStatus) => {
+    switch (status) {
+        case "planned":
+            return "Запланировано";
+        case "completed":
+            return "Проведено";
+        case "cancelled_student":
+        case "cancelled_tutor":
+            return "Отменено";
+        case "no_show":
+            return "Не явился";
+        default:
+            return "Запланировано";
+    }
+};
+
+const showcaseTodayLessons: Array<{
+    id: string;
+    studentName: string;
+    subject: string;
+    startTime: string;
+    endTime: string;
+    status: ShowcaseLessonStatus;
+    hasRepetoAccount: boolean;
+}> = [
+    {
+        id: "lesson-1",
+        studentName: "Artem L.",
+        subject: "Physics",
+        startTime: "03:30",
+        endTime: "04:30",
+        status: "planned",
+        hasRepetoAccount: false,
+    },
+    {
+        id: "lesson-2",
+        studentName: "Pavel K.",
+        subject: "Math",
+        startTime: "03:00",
+        endTime: "04:00",
+        status: "planned",
+        hasRepetoAccount: false,
+    },
+];
+
+const toRuDate = (date: Date) => {
+    const dd = String(date.getDate()).padStart(2, "0");
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const yyyy = date.getFullYear();
+    return `${dd}.${mm}.${yyyy}`;
+};
+
+const relativeRuDate = (monthOffset: number, day: number) => {
+    const now = new Date();
+    return toRuDate(new Date(now.getFullYear(), now.getMonth() + monthOffset, day));
+};
+
+const showcaseIncomePayments = [
+    { id: "pay-1", studentId: "student-anna", studentName: "Анна К.", amount: 7800, date: relativeRuDate(-2, 5) },
+    { id: "pay-2", studentId: "student-pavel", studentName: "Павел К.", amount: 6400, date: relativeRuDate(-2, 19) },
+    { id: "pay-3", studentId: "student-anna", studentName: "Анна К.", amount: 9200, date: relativeRuDate(-1, 8) },
+    { id: "pay-4", studentId: "student-pavel", studentName: "Павел К.", amount: 7100, date: relativeRuDate(-1, 22) },
+    { id: "pay-5", studentId: "student-anna", studentName: "Анна К.", amount: 9800, date: relativeRuDate(0, 4) },
+    { id: "pay-6", studentId: "student-pavel", studentName: "Павел К.", amount: 8300, date: relativeRuDate(0, 18) },
+];
+
+type ShowcaseFilesItem = {
+    id: string;
+    type: "folder" | "file";
+    name: string;
+    size: string;
+    modifiedAt: string;
+    subtitle?: string;
+    extension?: string;
+};
+
+const showcaseFilesRows: ShowcaseFilesItem[] = [
+    {
+        id: "files-root-yandex",
+        type: "folder",
+        name: "Яндекс.Диск",
+        size: "—",
+        modifiedAt: "Сейчас",
+        subtitle: "2 файлов",
+    },
+    {
+        id: "files-doc-kinematics",
+        type: "file",
+        name: "Кинематика.pdf",
+        size: "2.4 МБ",
+        modifiedAt: "06.05",
+        extension: "pdf",
+    },
+    {
+        id: "files-doc-plan",
+        type: "file",
+        name: "План занятия.docx",
+        size: "460 КБ",
+        modifiedAt: "05.05",
+        extension: "docx",
+    },
+];
+
+const showcaseFileIcon = (ext?: string) => {
+    switch ((ext || "").toLowerCase()) {
+        case "pdf":
+            return "/images/pdf.svg";
+        case "xlsx":
+        case "xls":
+            return "/images/xlsx.svg";
+        case "doc":
+        case "docx":
+            return "/images/document.svg";
+        default:
+            return "/images/document.svg";
+    }
+};
+
+const steps = [
+    { step: "1", title: "Зарегистрируйтесь", text: "Через email или Telegram — 30 секунд" },
+    { step: "2", title: "Добавьте учеников", text: "Имя, предмет, тариф. Остальное — потом" },
+    { step: "3", title: "Запланируйте занятия", text: "Повторяющиеся уроки — одной кнопкой" },
+    { step: "4", title: "Забудьте про хаос", text: "Repeto напомнит, посчитает, покажет" },
+];
+
+const comparisonRows = [
+    {
+        scenario: "Ученик отменил за 2 часа",
+        before: "Придется напоминать про оплату или забить",
+        after: "Долг начислится автоматически — родитель увидит",
+    },
+    {
+        scenario: "А мы оплатили?",
+        before: "Ищете в мессенджере / Excel",
+        after: "Баланс и история видны мгновенно",
+    },
+    {
+        scenario: "Расписание на неделю",
+        before: "Google Calendar + ручная сверка",
+        after: "Одно расписание, синхронизация с вашим календарем",
+    },
+    {
+        scenario: "Мама спрашивает: когда урок?",
+        before: "Пишете ей сами",
+        after: "Родитель видит все в своем кабинете",
+    },
+    {
+        scenario: "Домашка",
+        before: "WhatsApp, теряется в потоке",
+        after: "Задание с дедлайном, статусом и файлами",
+    },
+    {
+        scenario: "Конец месяца — сколько заработали?",
+        before: "Excel-таблица (если не забыли вести)",
+        after: "Дашборд: доход, уроки, отмены — моментально",
+    },
+];
+
+const faqItems = [
+    {
+        q: "Это действительно бесплатно до 5 учеников?",
+        a: "Да. До 5 учеников Repeto бесплатен навсегда. Это не пробный период: вы можете вести расписание, оплаты и заметки без скрытых ограничений по времени.",
+    },
+    {
+        q: "Я работаю как самозанятый — подойдет ли мне Repeto?",
+        a: "Да. Repeto показывает доход по периодам и позволяет экспортировать данные для формирования чеков в Мой налог.",
+    },
+    {
+        q: "Что увидит родитель / ученик?",
+        a: "Родитель получит ссылку на портал без регистрации: расписание, остаток по пакету, домашние задания и историю уроков.",
+    },
+    {
+        q: "Нужно ли устанавливать приложение?",
+        a: "Нет. Repeto — это PWA: открываете в браузере, добавляете на экран телефона и пользуетесь как обычным приложением.",
+    },
+];
+
+type BentoCard = {
+    id: string;
+    tag: string;
+    title: string;
+    text: string;
+    points: string[];
+    imageSrc: string;
+    imageAlt: string;
+    imageWidth: number;
+    imageHeight: number;
+    variant: "wide" | "tall" | "compact";
+    tone?: "default" | "dark";
+};
 
 const featureBlocks = [
     {
         id: "schedule",
-        tag: "Расписание и календарь",
-        title: "Расписание, которое работает за вас",
-        text: "Создавайте повторяющиеся занятия — вторник/четверг 17:00 — одним действием. Переносите, отменяйте, ставьте «неявку» — всё в два тапа. Синхронизация с Google Calendar и Яндекс.Календарём: занятия появляются в привычном приложении, без двойного ввода.",
+        tag: "Три главных преимущества",
+        title: "Расписание остается в порядке, даже когда все двигается",
+        text: "Создайте постоянные уроки один раз и дальше работайте по готовому ритму. Перенос, отмена или неявка фиксируются за пару нажатий, а у вас не расползается неделя и не теряются свободные окна.",
         points: [
-            "Повторяющиеся занятия на нужные дни",
-            "Статусы: проведено, отменено учеником, неявка, перенос",
-            "Двусторонняя синхронизация с Google / Яндекс.Календарём",
-            "Онлайн и офлайн форматы с указанием места",
+            "Повторяющиеся занятия на нужные дни и время",
+            "Статусы: проведено, перенос, отмена, неявка",
+            "Синхронизация с Google / Яндекс.Календарем",
+            "Онлайн и офлайн форматы с адресом или ссылкой",
         ],
-        imageSrc: "/images/landing/screen-schedule.png?v=2026042903",
+        imageSrc: "/images/landing/screen-schedule.png?v=2026050701",
         imageAlt: "Расписание в Repeto",
     },
     {
         id: "payments",
-        tag: "Учёт оплат и пакеты",
-        title: "Деньги под контролем — без неловких разговоров",
-        text: "У каждого ученика — баланс и история оплат. Записали занятие — сумма рассчиталась автоматически. Видите долги, предоплату, оплаченные и просроченные платежи. Продаёте пакеты — Repeto сам считает, сколько занятий осталось. Больше не нужно вспоминать «а Маша заплатила за март?».",
+        tag: "Три главных преимущества",
+        title: "Система сама показывает, где деньги и где риск потерять оплату",
+        text: "У каждого ученика виден баланс, история оплат и остаток по пакету. Записали урок — сумма посчиталась. Настроили правило поздней отмены — долг начислился сам. Вам не нужно вспоминать, кто заплатил и почему цифры не сошлись.",
         points: [
             "Автоматический расчёт суммы по тарифу ученика",
-            "Пакеты занятий: 8 уроков за 4 000 ₽ — остаток виден всегда",
-            "СБП, наличные, перевод, ЮKassa — все способы оплаты",
-            "Экспорт в Excel для налоговой отчётности",
+            "Пакеты занятий и остаток уроков видны сразу",
+            "Поздние отмены начисляются по вашей политике",
+            "Экспорт оплат для отчетности и чеков",
         ],
-        imageSrc: "/images/landing/screen-finance.png?v=2026042903",
-    },
-    {
-        id: "public-page",
-        tag: "Личная страница репетитора",
-        title: "Публичная страница преподавателя",
-        text: "Покажите предметы, формат занятий, стоимость и свободные окна. Одну ссылку можно отправлять новым ученикам и родителям.",
-        points: [
-            "Покажите предметы, формат занятий, стоимость и свободные окна",
-            "Одну ссылку можно отправлять новым ученикам и родителям",
-        ],
-        imageSrc: "/images/landing/screen-public-page.png?v=2026042903",
-    },
-    {
-        id: "cancel-policy",
-        tag: "Политики отмен",
-        title: "Правила отмен — один раз настроить, больше не спорить",
-        text: "Задайте политику: «отмена менее чем за 24 часа — занятие оплачивается». Когда ученик отменяет поздно — долг начисляется автоматически. Родитель видит это в своём кабинете. Без конфликтов и «ну вы же понимаете».",
-        points: [
-            "Гибкие правила: срок отмены, штраф, процент от стоимости",
-            "Автоматическое начисление при поздней отмене",
-            "Прозрачность: родитель видит причину долга",
-        ],
-        imageSrc: "/images/landing/screen-cancel-policy.png?v=2026042904",
-    },
-    {
-        id: "reminders",
-        tag: "Напоминания",
-        title: "Напоминания, которые снижают пропуски",
-        text: "Repeto напоминает ученику и родителю о занятии заранее — в Telegram, WhatsApp, Max, по email или push-уведомлением. Напоминание об оплате отправляется автоматически. Не нужно писать самому, шаблоны готовы.",
-        points: [
-            "6 каналов: Telegram, WhatsApp, Max, email, SMS, push",
-            "Напоминания об уроках и об оплатах",
-            "Вы видите статус доставки каждого сообщения",
-            "Настраиваемое время: за 1 час, за день, за 3 дня",
-        ],
-        imageSrc: "/images/landing/screen-reminders-settings.png?v=2026042904",
+        imageSrc: "/images/landing/screen-finance.png?v=2026050701",
+        imageAlt: "Финансы в Repeto",
     },
     {
         id: "portal",
-        tag: "Портал для родителей и учеников",
-        title: "Родитель всё видит сам — и перестаёт звонить",
-        text: "Отправьте родителю ссылку — без регистрации. Он откроет личный кабинет, где видно расписание, остаток по пакету, домашние задания и историю занятий. Может сам отменить урок (с учётом вашей политики), оставить отзыв и загрузить файл с домашкой.",
+        tag: "Три главных преимущества",
+        title: "Расписание, домашка и пакет видны без вашего участия",
+        text: "Отправьте ссылку на портал — без регистрации и без отдельного приложения. Родитель видит расписание, остаток по пакету, домашние задания и историю уроков. Вы перестаете быть справочной службой в мессенджере.",
         points: [
-            "Доступ по ссылке — никакой регистрации",
-            "Видны: расписание, пакет, домашка, заметки",
-            "Родитель может отменять / переносить уроки",
-            "Ребёнок сдаёт ДЗ прямо в портале",
+            "Доступ по ссылке без регистрации",
+            "Видны расписание, пакет, домашка и заметки",
+            "Отмена или перенос работают по вашим правилам",
+            "Меньше вопросов: когда урок и что по оплате",
         ],
-        imageSrc: "/images/landing/screen-student-portal.png?v=2026042904",
-    },
-    {
-        id: "homework",
-        tag: "Домашние задания и записи уроков",
-        title: "Журнал уроков — что прошли, что задали",
-        text: "После каждого занятия — запишите, что прошли и что задали. Прикрепите файл или ссылку. Домашка видна ученику и родителю, со сроком и статусом. Вы видите, кто сделал, кто нет — до следующего урока.",
-        points: [
-            "Заметки к каждому уроку: что пройдено",
-            "Домашнее задание: описание, срок, файлы",
-            "Статусы: задано → выполнено / просрочено",
-            "Доступ ученика/родителя через портал",
-        ],
-        imageSrc: "/images/landing/screen-homework.png?v=2026042904",
-    },
-    {
-        id: "files",
-        tag: "Файлы и материалы",
-        title: "Все материалы — в одном месте",
-        text: "Храните учебные материалы в Repeto. Создавайте папки, загружайте файлы, делитесь ими с конкретными учениками. Интеграция с Яндекс.Диском и Google Drive — работайте с привычным хранилищем, не перетаскивая файлы вручную.",
-        points: [
-            "Папки и файлы, как в файловом менеджере",
-            "Общий доступ к отдельным файлам для учеников",
-            "Синхронизация с Яндекс.Диском и Google Drive",
-        ],
-        imageSrc: "/images/landing/screen-files.png?v=2026042904",
-    },
-    {
-        id: "dashboard",
-        tag: "Дашборд и финансовая аналитика",
-        title: "Сколько вы заработали — одним взглядом",
-        text: "На главном экране — доход за месяц, количество уроков, средний чек, процент отмен. Видите, куда уходит время и где теряете деньги. Без ручных подсчётов, без Excel.",
-        points: [
-            "Доход за месяц / неделю / период",
-            "Количество проведённых занятий",
-            "Средний тариф и процент отмен",
-            "Экспорт данных для самозанятых",
-        ],
-        imageSrc: "/images/landing/screen-dashboard.png?v=2026042903",
+        imageSrc: "/images/landing/screen-student-portal.png?v=2026050701",
+        imageAlt: "Портал для родителей и учеников",
     },
 ];
 
 const realScreenFeatureIds = new Set([
     "schedule",
     "payments",
-    "public-page",
-    "cancel-policy",
-    "reminders",
     "portal",
-    "homework",
-    "files",
-    "dashboard",
 ]);
 
-const integrationsCards = [
+const bentoCards: BentoCard[] = [
     {
-        id: "drive",
-        title: "Облачные диски",
-        text: "Материалы, домашние задания и документы хранятся в одном потоке: ничего не теряется и всегда под рукой.",
-        imageSrc: "/images/landing/yandex_google.png",
+        id: "reminders",
+        tag: "Напоминания",
+        title: "Перед уроками не нужно писать вручную",
+        text: "Repeto сам напоминает об уроках и об оплатах в нужное время, чтобы вы не держали это в голове и не тратили вечер на ручные сообщения.",
+        points: [
+            "Telegram, WhatsApp, Max, email и push",
+            "Гибкое время отправки для уроков и оплат",
+        ],
+        imageSrc: "/images/landing/screen-reminders-settings.png?v=2026050701",
+        imageAlt: "Напоминания в Repeto",
+        imageWidth: 1440,
+        imageHeight: 1000,
+        variant: "wide",
     },
+    {
+        id: "parents-access",
+        tag: "Доступ для родителей",
+        title: "Родитель видит расписание, домашку и пакет без сообщений вам",
+        text: "Вы просто отправляете ссылку, а дальше вопросы про время урока, остаток пакета и задания закрываются без бесконечных уточнений в мессенджере.",
+        points: [
+            "Доступ по ссылке без регистрации",
+            "Расписание, заметки, домашка и остаток пакета",
+        ],
+        imageSrc: "/images/landing/screen-student-portal.png?v=2026050701",
+        imageAlt: "Доступ для родителей в Repeto",
+        imageWidth: 1440,
+        imageHeight: 1000,
+        variant: "tall",
+        tone: "dark",
+    },
+    {
+        id: "homework",
+        tag: "Домашка и журнал",
+        title: "Все в одном месте",
+        text: "Что прошли, что задано и что нужно приложить к следующему занятию видно сразу и вам, и семье ученика.",
+        points: [
+            "Заметки к занятию и дедлайны",
+            "Статусы выполнения домашки",
+        ],
+        imageSrc: "/images/landing/screen-student-live.png?v=2026050701",
+        imageAlt: "Кабинет ученика в Repeto",
+        imageWidth: 1360,
+        imageHeight: 900,
+        variant: "compact",
+    },
+    {
+        id: "materials",
+        tag: "Материалы",
+        title: "Материалы не теряются в чатах",
+        text: "Учебные материалы лежат структурно, открываются нужным ученикам и не тонут в переписке.",
+        points: [
+            "Папки, файлы и общий доступ",
+            "Подключение Яндекс.Диска и Google Drive",
+        ],
+        imageSrc: "/images/landing/screen-files.png?v=2026050701",
+        imageAlt: "Материалы и файлы в Repeto",
+        imageWidth: 1440,
+        imageHeight: 1000,
+        variant: "compact",
+    },
+    {
+        id: "analytics",
+        tag: "Аналитика",
+        title: "Операционка на глазах",
+        text: "Не нужно считать вручную: дашборд сразу показывает, где вы растёте, а где теряете деньги и время.",
+        points: [
+            "Доход за период и средний чек",
+            "Загрузка недели и процент отмен",
+        ],
+        imageSrc: "/images/landing/screen-dashboard.png?v=2026050701",
+        imageAlt: "Аналитика в Repeto",
+        imageWidth: 1440,
+        imageHeight: 1000,
+        variant: "compact",
+    },
+];
+
+const integrationCards = [
     {
         id: "calendar",
         title: "Календари",
-        text: "Занятия и переносы автоматически синхронизируются в календарях, чтобы расписание оставалось актуальным без ручного дубляжа.",
+        text: "Google и Яндекс.Календарь синхронизируются с занятиями, переносами и свободными окнами без ручного дубляжа.",
         imageSrc: "/images/landing/calendars.png",
     },
     {
-        id: "notifications",
-        title: "Telegram, Max",
-        text: "Удобные уведомления о занятиях и оплатах приходят в привычные каналы: вы не тратите время на ручные напоминания.",
+        id: "drive",
+        title: "Облачные диски",
+        text: "Материалы можно хранить и подтягивать из Яндекс.Диска и Google Drive без лишних копий и пересылок.",
+        imageSrc: "/images/landing/yandex_google.png",
+    },
+    {
+        id: "channels",
+        title: "Мессенджеры",
+        text: "Привычные каналы связи и платёжные сценарии встраиваются в рабочий процесс, а не живут отдельно от расписания.",
         imageSrc: "/images/landing/telegram_max.png",
     },
 ];
 
-const capabilitiesCards = [
+const _capabilitiesCardsLegacy = [
     {
         id: "public-page",
         title: "Публичная страница преподавателя",
@@ -246,57 +459,57 @@ const capabilitiesCards = [
 const tariffPlans = [
     {
         id: "start",
-        name: "Старт",
+        name: "Free",
         price: "0 ₽",
         yearlyPrice: "0 ₽",
         period: "в месяц",
         yearlyPeriod: "навсегда",
-        subtitle: "Полный доступ для старта",
-        description: "Доступен весь функционал Repeto, но вести можно только одного ученика.",
+        subtitle: "До 5 учеников",
+        description: "Полный доступ к ключевым функциям Repeto без ограничений по времени.",
         ctaPrimary: "Начать бесплатно",
-        ctaSecondary: "Подходит для теста",
+        ctaSecondary: "Без карты",
         features: [
-            "Все разделы и инструменты платформы",
-            "Только 1 активный ученик",
-            "Расписание, финансы, уведомления",
-            "Портал ученика и домашние задания",
+            "До 5 активных учеников",
+            "Расписание, финансы, домашка и портал",
+            "Напоминания и учет пакетов",
+            "Подходит для старта и теста системы",
         ],
     },
     {
         id: "profi",
-        name: "Практика",
-        price: "300 ₽",
-        yearlyPrice: "250 ₽",
+        name: "Standard",
+        price: "490 ₽",
+        yearlyPrice: "4 990 ₽",
         period: "в месяц",
-        yearlyPeriod: "в мес. при оплате за год",
-        subtitle: "Оптимально для частного репетитора",
-        description: "До 15 учеников в одном аккаунте и полный набор функций для стабильной работы.",
+        yearlyPeriod: "в год",
+        subtitle: "До 30 учеников",
+        description: "Тариф для частного репетитора со стабильным потоком и полной автоматизацией рутины.",
         ctaPrimary: "Выбрать тариф",
-        ctaSecondary: "14 дней на проверку",
+        ctaSecondary: "Популярный выбор",
         featured: true,
         features: [
-            "До 15 активных учеников",
-            "Пакеты занятий и скидки",
-            "Интеграции и автоматические напоминания",
-            "Аналитика дохода и отмен",
+            "До 30 активных учеников",
+            "Пакеты занятий и гибкие правила отмен",
+            "Автоматические напоминания в нужные каналы",
+            "Аналитика, отчеты и портал для родителей",
         ],
     },
     {
         id: "center",
-        name: "Репетиторский центр",
-        price: "1 500 ₽",
-        yearlyPrice: "1 250 ₽",
+        name: "Pro",
+        price: "890 ₽",
+        yearlyPrice: "8 990 ₽",
         period: "в месяц",
-        yearlyPeriod: "в мес. при оплате за год",
-        subtitle: "Для команды и роста без ограничений",
-        description: "Для репетиторских центров: учеников можно добавлять без лимита.",
-        ctaPrimary: "Подключить центр",
-        ctaSecondary: "Без ограничений по масштабу",
+        yearlyPeriod: "в год",
+        subtitle: "До 100 учеников",
+        description: "Для репетитора с большой базой или небольшой команды с высокой загрузкой.",
+        ctaPrimary: "Перейти на Pro",
+        ctaSecondary: "Для роста",
         features: [
-            "Без лимита по количеству учеников",
-            "Единая система расписания и финансов",
-            "Отчеты и контроль оплаты по всем направлениям",
-            "Гибкая коммуникация с родителями и учениками",
+            "До 100 активных учеников",
+            "Все возможности Standard",
+            "Расширенная аналитика и контроль нагрузки",
+            "Приоритетная поддержка",
         ],
     },
 ];
@@ -309,6 +522,7 @@ export default function LandingHomePage() {
     const lastScrollYRef = useRef(0);
     const isAuthorized = Boolean(user);
     const profileName = user?.name?.trim() || "Профиль";
+    const profileAvatarUrl = user?.avatar?.trim() || undefined;
     const profileInitials = getInitials(profileName || "U");
 
     const renderHeaderActions = (isSticky: boolean) => {
@@ -317,11 +531,11 @@ export default function LandingHomePage() {
         if (!isAuthorized) {
             return (
                 <div className={actionsClassName}>
-                    <Link href="/auth?view=signup" className={`${styles.headerButton} ${styles.headerButtonGhost}`}>
-                        Регистрация
-                    </Link>
-                    <Link href="/auth?view=signin" className={`${styles.headerButton} ${styles.headerButtonPrimary}`}>
+                    <Link href="/auth?view=signin" className={`${styles.headerButton} ${styles.headerButtonGhost}`}>
                         Войти
+                    </Link>
+                    <Link href="/auth?view=signup" className={`${styles.headerButton} ${styles.headerButtonPrimary}`}>
+                        До 5 учеников бесплатно
                     </Link>
                 </div>
             );
@@ -332,7 +546,7 @@ export default function LandingHomePage() {
                 <GDropdownMenu
                     switcher={
                         <button type="button" className={styles.headerProfileTrigger}>
-                            <Avatar text={profileInitials} size="xs" theme="brand" />
+                            <Avatar imgUrl={profileAvatarUrl} text={profileInitials} size="xs" theme="brand" />
                             <span className={styles.headerProfileName}>{profileName}</span>
                         </button>
                     }
@@ -379,16 +593,16 @@ export default function LandingHomePage() {
     return (
         <>
             <Head>
-                <title>Repeto — журнал репетитора: расписание, оплаты, напоминания</title>
+                <title>Repeto — CRM для репетиторов: расписание, оплаты и кабинет родителей</title>
                 <meta
                     name="description"
-                    content="CRM для репетиторов. Расписание занятий, учёт оплат и пакетов, напоминания и портал для родителей."
+                    content="CRM для репетиторов и небольших центров: расписание, оплаты, пакеты, напоминания и родительский портал. До 5 учеников бесплатно навсегда."
                 />
                 <meta name="mailru-domain" content="aMv8My8xlxQcqEPC" />
-                <meta property="og:title" content="Repeto — перестаньте терять деньги на отменах" />
+                <meta property="og:title" content="Repeto — репетитору больше не нужно вести хаос вручную" />
                 <meta
                     property="og:description"
-                    content="Журнал репетитора: расписание, оплаты, пакеты, напоминания, портал для родителей."
+                    content="Расписание, оплаты, домашка и родительский кабинет в одной системе. До 5 учеников бесплатно."
                 />
                 <meta property="og:image" content="/fb-og-image.jpg" />
             </Head>
@@ -444,34 +658,34 @@ export default function LandingHomePage() {
 
                         <section className={styles.hero}>
                             <div className={styles.heroCopy}>
-                                <p className={styles.heroKicker}>CRM и платформа для работы с учениками</p>
+                                <p className={styles.heroKicker}>CRM для репетиторов и небольших центров</p>
 
                                 <h1 className={styles.heroTitle}>
-                                    Ученики, занятия и оплаты в одной системе
+                                    Репетитору больше не нужно держать все в голове и таблицах
                                 </h1>
 
                                 <p className={styles.heroSubtitle}>
-                                    Repeto помогает вести расписание, считать долги, продавать пакеты,
-                                    отправлять напоминания и давать родителям понятный доступ к занятиям.
+                                    Repeto помогает вести учеников, расписание, оплаты, пакеты и домашку в одной системе.
+                                    Родители видят все в своем кабинете, а вы не тратите время на бесконечные уточнения.
                                 </p>
 
                                 <div className={styles.heroActions}>
                                     <Link href="/auth?view=signup" className={`${styles.heroButton} ${styles.heroButtonPrimary}`}>
-                                        Начать бесплатно
+                                        Начать бесплатно - до 5 учеников
                                     </Link>
                                     <a href="#features" className={`${styles.heroButton} ${styles.heroButtonGhost}`}>
-                                        Посмотреть возможности
+                                        Посмотреть как работает
                                     </a>
                                 </div>
 
-                                <p className={styles.heroTrust}>Бесплатный старт · Без карты · Для репетиторов и небольших центров</p>
+                                <p className={styles.heroTrust}>Бесплатно до 5 учеников навсегда, без карты и скрытых ограничений</p>
                             </div>
 
                             <div className={styles.productStage} aria-label="Интерфейс Repeto">
                                 <div className={styles.productHalo} aria-hidden="true" />
                                 <div className={styles.productScreen}>
                                     <Image
-                                        src="/images/landing/screen-dashboard.png?v=2026042903"
+                                        src="/images/landing/screen-dashboard.png?v=2026050701"
                                         width={1440}
                                         height={1000}
                                         alt="Дашборд Repeto"
@@ -518,11 +732,11 @@ export default function LandingHomePage() {
                 <section id="features" className={styles.controlSection}>
                     <div className={styles.controlSectionInner}>
                         <div className={styles.controlSectionHead}>
-                            <span className={styles.scheduleTag}>Под контролем</span>
-                            <h2 className={styles.controlTitle}>Вся практика видна с первого экрана</h2>
+                            <span className={styles.scheduleTag}>Все в одном месте</span>
+                            <h2 className={styles.controlTitle}>Вместо таблиц, чатов и заметок - одна система, где все под контролем</h2>
                             <p className={styles.controlText}>
-                                Repeto собирает рабочий день репетитора в понятную систему: кто учится,
-                                когда занятие, сколько должны и что видит родитель.
+                                Вы видите учеников, занятия, оплаты и домашку в едином потоке. Repeto убирает рутину,
+                                чтобы вы занимались преподаванием, а не ручным контролем хаоса.
                             </p>
                         </div>
 
@@ -541,7 +755,7 @@ export default function LandingHomePage() {
                 <section className={styles.featuresContinuation}>
                     <div className={styles.featuresContinuationInner}>
                         {featureBlocks.map((block, index) => {
-                            const isExpandedFeatureBlock = block.id === "payments" || block.id === "public-page";
+                            const isExpandedFeatureBlock = block.id === "payments" || block.id === "portal";
                             const isRealScreenFeature = realScreenFeatureIds.has(block.id);
 
                             return (
@@ -569,20 +783,16 @@ export default function LandingHomePage() {
                                             isExpandedFeatureBlock ? styles.featureVisualWrapExpanded : ""
                                         }`}
                                     >
-                                        {block.imageSrc ? (
-                                            <Image
-                                                src={block.imageSrc}
-                                                width={isRealScreenFeature ? 1440 : 960}
-                                                height={isRealScreenFeature ? 1000 : 640}
-                                                alt={block.imageAlt || block.title}
-                                                className={`${styles.featureVisualImage} ${isRealScreenFeature ? styles.featureVisualImageScreen : ""} ${
-                                                    isExpandedFeatureBlock ? styles.featureVisualImageExpanded : ""
-                                                }`}
-                                                unoptimized
-                                            />
-                                        ) : (
-                                            <div className={styles.featureStub} aria-hidden="true" />
-                                        )}
+                                        <Image
+                                            src={block.imageSrc}
+                                            width={isRealScreenFeature ? 1440 : 960}
+                                            height={isRealScreenFeature ? 1000 : 640}
+                                            alt={block.imageAlt || block.title}
+                                            className={`${styles.featureVisualImage} ${isRealScreenFeature ? styles.featureVisualImageScreen : ""} ${
+                                                isExpandedFeatureBlock ? styles.featureVisualImageExpanded : ""
+                                            }`}
+                                            unoptimized
+                                        />
                                     </div>
                                 </article>
                             );
@@ -590,15 +800,207 @@ export default function LandingHomePage() {
                     </div>
                 </section>
 
+                <section className={styles.showcaseSection} aria-labelledby="showcase-title">
+                    <div className={styles.showcaseInner}>
+                        <p className={styles.showcaseLabel}>Остальное уже внутри Repeto</p>
+                        <h2 id="showcase-title" className={styles.showcaseTitle}>
+                            Напоминания, домашка, материалы, аналитика и доступ для родителей в одном продукте
+                        </h2>
+                        <p className={styles.showcaseSubtitle}>
+                            Здесь не нужно растягивать лендинг на ещё несколько широких экранов: все вторичные возможности собраны в один бенто-блок с быстрым считыванием.
+                        </p>
+
+                        <div className={styles.showcaseGrid}>
+                            <article className={`${styles.showcaseCard} ${styles.showcaseCardIncome}`}>
+                                <header className={styles.showcaseCardHead}>
+                                    <div>
+                                        <p className={styles.showcaseCardKicker}>Доход по месяцам</p>
+                                        <p className={styles.showcaseCardSubvalue}>Сегментированный виджет из раздела «Финансы»</p>
+                                    </div>
+                                    <div className={styles.showcaseChip}>Финансы</div>
+                                </header>
+                                <div className={styles.showcaseIncomeWidget}>
+                                    <IncomeByStudents paymentsOverride={showcaseIncomePayments} disableInteractions />
+                                </div>
+                                <div className={styles.showcaseCardCopy}>
+                                    <h3 className={styles.showcaseCardCopyTitle}>Доход по месяцам, как в Финансах</h3>
+                                    <p className={styles.showcaseCardCopyText}>Сегменты показывают вклад каждого ученика по месяцам и общий итог.</p>
+                                </div>
+                            </article>
+
+                            <article className={`${styles.showcaseCard} ${styles.showcaseCardToday}`}>
+                                <header className={styles.showcaseCardHead}>
+                                    <div>
+                                        <p className={styles.showcaseCardKicker}>Занятия сегодня</p>
+                                        <p className={styles.showcaseCardSubvalue}>Копия дашборд-виджета с 2 учениками</p>
+                                    </div>
+                                    <div className={styles.showcaseChip}>Дашборд</div>
+                                </header>
+                                <div className={styles.showcaseTodaySchedule}>
+                                    <Card view="outlined" style={{ overflow: "hidden", background: "#f2f3f6" }}>
+                                        <div className="repeto-card-header">
+                                            <Text variant="subheader-2">Ближайшие занятия</Text>
+                                            <span className={`repeto-card-chevron ${styles.showcaseTodayChevron}`} aria-hidden="true">
+                                                <Icon data={ChevronRight as IconData} size={18} />
+                                            </span>
+                                        </div>
+                                        <div>
+                                            {showcaseTodayLessons.map((lesson) => (
+                                                <div
+                                                    key={lesson.id}
+                                                    className="repeto-week-lesson-row"
+                                                    style={{
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        width: "100%",
+                                                        background: "transparent",
+                                                        cursor: "default",
+                                                        textAlign: "left",
+                                                    }}
+                                                >
+                                                    <StudentAvatar
+                                                        student={{ name: lesson.studentName, avatarUrl: undefined }}
+                                                        size="s"
+                                                    />
+                                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                                        <div
+                                                            style={{
+                                                                display: "flex",
+                                                                justifyContent: "space-between",
+                                                                alignItems: "center",
+                                                                marginBottom: 2,
+                                                            }}
+                                                        >
+                                                            <Text variant="body-2" ellipsis className="repeto-dashboard-entity-name">
+                                                                <StudentNameWithBadge
+                                                                    name={shortName(lesson.studentName)}
+                                                                    hasRepetoAccount={lesson.hasRepetoAccount}
+                                                                    truncate
+                                                                />
+                                                            </Text>
+                                                            <Text
+                                                                variant="body-1"
+                                                                color="secondary"
+                                                                style={{ flexShrink: 0, marginLeft: 8, fontVariantNumeric: "tabular-nums" }}
+                                                            >
+                                                                {lesson.startTime} - {lesson.endTime}
+                                                            </Text>
+                                                        </div>
+                                                        <div
+                                                            style={{
+                                                                display: "flex",
+                                                                justifyContent: "space-between",
+                                                                alignItems: "center",
+                                                            }}
+                                                        >
+                                                            <Text variant="body-1" color="secondary">
+                                                                {lesson.subject}
+                                                            </Text>
+                                                            <Label theme={showcaseStatusTheme(lesson.status)} size="xs">
+                                                                {showcaseStatusLabel(lesson.status)}
+                                                            </Label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </Card>
+                                </div>
+                                <div className={styles.showcaseCardCopy}>
+                                    <h3 className={styles.showcaseCardCopyTitle}>Тот же виджет, как на дашборде</h3>
+                                    <p className={styles.showcaseCardCopyText}>Два ученика, время урока, предмет и статус в компактной карточке.</p>
+                                </div>
+                            </article>
+
+                            {bentoCards.map((card) => (
+                                <article
+                                    key={card.id}
+                                    className={`${styles.showcaseCard} ${
+                                        card.variant === "wide"
+                                            ? styles.bentoCardWide
+                                            : card.variant === "tall"
+                                              ? styles.bentoCardTall
+                                              : styles.bentoCardCompact
+                                    } ${card.tone === "dark" ? styles.bentoCardDark : ""} ${
+                                        card.id === "homework" ? styles.bentoCardStudentScreenshot : ""
+                                    } ${
+                                        card.id === "materials" ? styles.bentoCardMaterials : ""
+                                    } ${
+                                        card.id === "analytics" ? styles.bentoCardAnalytics : ""
+                                    }`}
+                                >
+                                    <div className={styles.bentoCardMeta}>
+                                        <span className={styles.bentoCardTag}>{card.tag}</span>
+                                        <h3 className={styles.bentoCardTitle}>{card.title}</h3>
+                                        <p className={styles.bentoCardText}>{card.text}</p>
+                                    </div>
+
+                                    <div className={styles.bentoCardVisual}>
+                                        {card.id === "analytics" ? (
+                                            <div className={styles.showcaseIncomeWidget}>
+                                                <IncomeByStudents paymentsOverride={showcaseIncomePayments} />
+                                            </div>
+                                        ) : card.id === "materials" ? (
+                                            <div className={styles.showcaseFilesWidget}>
+                                                <div className={styles.showcaseFilesSimpleHead}>
+                                                    <span className={styles.showcaseFilesSimpleProvider}>Яндекс.Диск</span>
+                                                    <span className={styles.showcaseFilesSimpleCount}>3 файла</span>
+                                                </div>
+                                                <ul className={styles.showcaseFilesSimpleList}>
+                                                    {showcaseFilesRows.slice(0, 3).map((item) => (
+                                                        <li key={item.id} className={styles.showcaseFilesSimpleItem}>
+                                                            <span className={styles.showcaseFilesSimpleIcon}>
+                                                                {item.type === "folder" ? (
+                                                                    <Icon data={FolderOpen as IconData} size={16} style={{ color: "var(--g-color-text-brand)" }} />
+                                                                ) : (
+                                                                    <Image src={showcaseFileIcon(item.extension)} width={14} height={14} alt="" unoptimized />
+                                                                )}
+                                                            </span>
+                                                            <span className={styles.showcaseFilesSimpleMain}>
+                                                                <span className={styles.showcaseFilesSimpleName}>{item.name}</span>
+                                                                <span className={styles.showcaseFilesSimpleMeta}>
+                                                                    {item.type === "folder" ? item.subtitle : `${item.size} · ${item.modifiedAt}`}
+                                                                </span>
+                                                            </span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        ) : (
+                                            <Image
+                                                src={card.imageSrc}
+                                                width={card.imageWidth}
+                                                height={card.imageHeight}
+                                                alt={card.imageAlt}
+                                                className={styles.bentoCardImage}
+                                                unoptimized
+                                            />
+                                        )}
+                                    </div>
+
+                                    <ul className={styles.bentoCardList}>
+                                        {card.points.map((point) => (
+                                            <li key={point}>{point}</li>
+                                        ))}
+                                    </ul>
+                                </article>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
                 <section className={styles.integrationsSection} aria-labelledby="integrations-title">
                     <div className={styles.integrationsInner}>
-                        <p className={styles.integrationsLabel}>Подкючите любимые сервисы</p>
+                        <p className={styles.integrationsLabel}>Интеграции</p>
                         <h2 id="integrations-title" className={styles.integrationsTitle}>
-                            Интеграция с другими сервисами
+                            Repeto работает вместе с вашими привычными сервисами
                         </h2>
+                        <p className={styles.integrationsSubtitle}>
+                            Календарь, облако и каналы связи подключаются как рабочие инструменты, а не как отдельный зоопарк приложений.
+                        </p>
 
                         <div className={styles.integrationsGrid}>
-                            {integrationsCards.map((card, index) => (
+                            {integrationCards.map((card, index) => (
                                 <article
                                     key={card.id}
                                     className={`${styles.integrationsCard} ${index === 2 ? styles.integrationsCardAccent : ""}`}
@@ -617,10 +1019,7 @@ export default function LandingHomePage() {
                                     <p className={styles.integrationsCardText}>{card.text}</p>
 
                                     {index === 2 ? (
-                                        <>
-
-                                            <span className={styles.integrationsAccentShape} aria-hidden="true" />
-                                        </>
+                                        <span className={styles.integrationsAccentShape} aria-hidden="true" />
                                     ) : null}
                                 </article>
                             ))}
@@ -628,40 +1027,45 @@ export default function LandingHomePage() {
                     </div>
                 </section>
 
-                <section className={styles.capabilitiesSection} aria-labelledby="capabilities-title">
-                    <div className={styles.capabilitiesInner}>
-                        <p className={styles.capabilitiesLabel}>Что еще</p>
-                        <h2 id="capabilities-title" className={styles.capabilitiesTitle}>
-                            Все ключевые процессы в одном месте
-                        </h2>
-
-                        <div className={styles.capabilitiesGrid}>
-                            {capabilitiesCards.map((card) => (
-                                <article
-                                    key={card.id}
-                                    className={`${styles.capabilitiesCard} ${
-                                        ({
-                                            dark:   styles.capabilitiesCardDark,
-                                            purple: styles.capabilitiesCardPurple,
-                                            gray:   styles.capabilitiesCardGray,
-                                            green:  styles.capabilitiesCardGreen,
-                                            soft:   styles.capabilitiesCardSoft,
-                                        } as Record<string, string>)[card.tone] ?? styles.capabilitiesCardSoft
-                                    }`}
-                                >
-                                    <div className={styles.capabilitiesIllustrationWrap} aria-hidden="true">
-                                        <Image
-                                            src={card.illustrationSrc}
-                                            width={900}
-                                            height={720}
-                                            alt=""
-                                            unoptimized
-                                            className={styles.capabilitiesIllustration}
-                                        />
-                                    </div>
-                                    <h3 className={styles.capabilitiesCardTitle}>{card.title}</h3>
-                                    <p className={styles.capabilitiesCardText}>{card.text}</p>
+                <section className={styles.stepsSection} aria-labelledby="steps-title">
+                    <div className={styles.stepsInner}>
+                        <p className={styles.stepsLabel}>Как это работает</p>
+                        <h2 id="steps-title" className={styles.stepsTitle}>Подключаетесь за 10 минут</h2>
+                        <div className={styles.stepsGrid}>
+                            {steps.map((item) => (
+                                <article key={item.step} className={styles.stepCard}>
+                                    <span className={styles.stepBadge}>{item.step}</span>
+                                    <h3>{item.title}</h3>
+                                    <p>{item.text}</p>
                                 </article>
+                            ))}
+                        </div>
+                        <div className={styles.stepsAction}>
+                            <Link href="/auth?view=signup" className={styles.stepsActionButton}>
+                                Попробовать бесплатно
+                            </Link>
+                        </div>
+                    </div>
+                </section>
+
+                <section className={styles.comparisonSection} aria-labelledby="comparison-title">
+                    <div className={styles.comparisonInner}>
+                        <p className={styles.comparisonLabel}>До и после</p>
+                        <h2 id="comparison-title" className={styles.comparisonTitle}>
+                            До Repeto и после Repeto
+                        </h2>
+                        <div className={styles.comparisonTable}>
+                            <div className={styles.comparisonHead}>
+                                <span>Ситуация</span>
+                                <span>Как обычно</span>
+                                <span>С Repeto</span>
+                            </div>
+                            {comparisonRows.map((row) => (
+                                <div key={row.scenario} className={styles.comparisonRow}>
+                                    <p>{row.scenario}</p>
+                                    <p>{row.before}</p>
+                                    <p>{row.after}</p>
+                                </div>
                             ))}
                         </div>
                     </div>
@@ -671,8 +1075,11 @@ export default function LandingHomePage() {
                     <div className={styles.tariffsInner}>
                         <p className={styles.tariffsLabel}>Тарифы</p>
                         <h2 id="tariffs-title" className={styles.tariffsTitle}>
-                            Выберите тариф под ваш формат работы
+                            Начните бесплатно, платите только когда растете
                         </h2>
+                        <p className={styles.tariffsLead}>
+                            До 5 учеников - бесплатно навсегда. Подключение без карты, апгрейд в один клик.
+                        </p>
 
                         <div className={styles.tariffsSwitch}>
                             <button
@@ -680,14 +1087,14 @@ export default function LandingHomePage() {
                                 className={`${styles.tariffsSwitchButton} ${!yearly ? styles.tariffsSwitchButtonActive : ""}`}
                                 onClick={() => setYearly(false)}
                             >
-                                Помесячно
+                                Оплата помесячно
                             </button>
                             <button
                                 type="button"
                                 className={`${styles.tariffsSwitchButton} ${yearly ? styles.tariffsSwitchButtonActive : ""}`}
                                 onClick={() => setYearly(true)}
                             >
-                                За год − 2 мес. в подарок
+                                Оплата за год
                             </button>
                         </div>
 
@@ -740,16 +1147,59 @@ export default function LandingHomePage() {
                     </div>
                 </section>
 
+                <section id="faq" className={styles.faqSection} aria-labelledby="faq-title">
+                    <div className={styles.faqInner}>
+                        <p className={styles.faqLabel}>FAQ</p>
+                        <h2 id="faq-title" className={styles.faqTitle}>Частые вопросы</h2>
+                        <div className={styles.faqList}>
+                            {faqItems.map((item) => (
+                                <details key={item.q} className={styles.faqItem}>
+                                    <summary>{item.q}</summary>
+                                    <p>{item.a}</p>
+                                </details>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                <section id="reviews" className={styles.reviewsSection} aria-labelledby="reviews-title">
+                    <div className={styles.reviewsInner}>
+                        <p className={styles.reviewsLabel}>Отзывы</p>
+                        <h2 id="reviews-title" className={styles.reviewsTitle}>Репетиторы уже ведут практику в Repeto</h2>
+                        <p className={styles.reviewsPlaceholder}>
+                            120+ репетиторов уже ведут практику в Repeto. Скоро здесь появятся подробные кейсы и
+                            цитаты.
+                        </p>
+                    </div>
+                </section>
+
+                <section className={styles.finalCtaSection} aria-labelledby="final-cta-title">
+                    <div className={styles.finalCtaInner}>
+                        <h2 id="final-cta-title" className={styles.finalCtaTitle}>
+                            Попробуйте Repeto бесплатно и перестаньте вести хаос вручную
+                        </h2>
+                        <p className={styles.finalCtaText}>До 5 учеников бесплатно навсегда. Подключение за 10 минут.</p>
+                        <div className={styles.finalCtaActions}>
+                            <Link href="/auth?view=signup" className={styles.finalCtaButton}>
+                                Начать бесплатно
+                            </Link>
+                        </div>
+                    </div>
+                </section>
+
                 <footer className={styles.siteFooter}>
                     <div className={styles.siteFooterInner}>
                         <span className={styles.siteFooterBrand}>Repeto</span>
                         <div className={styles.siteFooterLinks}>
                             <Link href="/legal" className={styles.siteFooterLink}>
-                                Юридическая информация
+                                Пользовательское соглашение
                             </Link>
                             <Link href="/legal#privacy" className={styles.siteFooterLink}>
                                 Политика конфиденциальности
                             </Link>
+                            <a href="mailto:help@repeto.ru" className={styles.siteFooterLink}>
+                                help@repeto.ru
+                            </a>
                         </div>
                     </div>
                 </footer>

@@ -100,9 +100,10 @@ type CompletePlatformAccessPaymentResult = {
 };
 
 function mapUser(raw: any): User {
+  const avatarCandidate = raw?.avatarUrl ?? raw?.avatar ?? raw?.photoUrl ?? null;
   return {
     ...raw,
-    avatar: resolveApiAssetUrl(raw.avatarUrl),
+    avatar: resolveApiAssetUrl(avatarCandidate),
     about: raw.aboutText ?? raw.about,
   };
 }

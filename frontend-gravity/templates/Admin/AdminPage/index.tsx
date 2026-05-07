@@ -350,11 +350,6 @@ export default function AdminPage() {
                   <Text variant="body-2" style={{ marginTop: 8 }}>
                     Предметы: {selectedTutor.subjects.length > 0 ? selectedTutor.subjects.join(', ') : 'не указаны'}
                   </Text>
-                  {selectedTutor.tagline && (
-                    <Text variant="body-2" style={{ marginTop: 8 }}>
-                      Подзаголовок: {selectedTutor.tagline}
-                    </Text>
-                  )}
                   {selectedTutor.aboutText && (
                     <Text variant="body-2" style={{ marginTop: 8, whiteSpace: 'pre-line' }}>
                       О себе: {selectedTutor.aboutText}

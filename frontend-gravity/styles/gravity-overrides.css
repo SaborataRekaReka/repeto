@@ -1523,6 +1523,9 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 
 .repeto-context-sidebar__header-title {
     min-width: 0;
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
     font-size: 16px;
     font-weight: 600;
     line-height: 1.25;
@@ -1531,6 +1534,19 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     text-overflow: ellipsis;
     white-space: nowrap;
     padding-right: 8px;
+}
+
+.repeto-context-sidebar__header-title .repeto-student-name {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.repeto-context-sidebar__header-title .repeto-student-name__text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .repeto-context-sidebar__collapse-btn {
@@ -5502,6 +5518,11 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     backdrop-filter: none;
 }
 
+.repeto-tp-page .repeto-portal-header__inner {
+    padding-left: 24px;
+    padding-right: 24px;
+}
+
 .repeto-tp-widget {
     margin-bottom: 28px;
     padding: 22px 24px;
@@ -5538,6 +5559,14 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     height: 100%;
     object-fit: cover;
     display: block;
+}
+
+@media (min-width: 961px) {
+    .repeto-tp-widget__avatar {
+        height: auto;
+        min-height: 112px;
+        max-height: none;
+    }
 }
 
 .repeto-tp-widget__main {
@@ -5739,6 +5768,51 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     color: var(--g-color-text-secondary);
 }
 
+.repeto-tp-copy,
+.repeto-tp-policy-copy {
+    display: block;
+    line-height: 1.65;
+}
+
+.repeto-tp-item-title,
+.repeto-tp-reviewer {
+    font-weight: 700;
+}
+
+.repeto-tp-item-price {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.repeto-tp-item-price--strong {
+    font-weight: 700;
+}
+
+.repeto-tp-item-note {
+    margin-top: 2px;
+}
+
+.repeto-tp-review-text {
+    display: block;
+    margin-top: 8px;
+    line-height: 1.6;
+}
+
+.repeto-tp-load-more {
+    margin-top: 8px;
+    text-align: center;
+}
+
+.repeto-tp-empty-review-note {
+    display: block;
+    text-align: center;
+    font-style: italic;
+}
+
+.repeto-tp-policy-block {
+    margin-top: 10px;
+}
+
 .repeto-tp-cta {
     margin-top: 8px;
     margin-bottom: 12px;
@@ -5810,16 +5884,265 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     background: var(--repeto-surface-elevated);
 }
 
+.repeto-tp-section__body--packages {
+    padding: 0;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.repeto-tp-section__body--packages:hover {
+    background: transparent !important;
+}
+
+.repeto-tp-packages-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.repeto-tp-package-card {
+    display: flex;
+    min-width: 0;
+    min-height: 178px;
+    flex-direction: column;
+    gap: 12px;
+    padding: 18px;
+    border: 1px solid rgba(37, 99, 235, 0.12);
+    border-radius: 16px;
+    background: var(--repeto-surface-elevated);
+}
+
+.repeto-tp-package-card__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.repeto-tp-package-card__subject {
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.repeto-tp-package-card__meta,
+.repeto-tp-package-card__per-lesson {
+    margin-top: 3px;
+}
+
+.repeto-tp-package-card__badge {
+    display: inline-flex;
+    min-height: 26px;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 0 9px;
+    border-radius: 999px;
+    color: #1f5eff;
+    background: rgba(37, 99, 235, 0.1);
+    font-weight: 700;
+    font-size: 13px;
+}
+
+.repeto-tp-package-card__price-row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: auto;
+}
+
+.repeto-tp-package-card__total {
+    font-weight: 750;
+    line-height: 1.1;
+}
+
+.repeto-tp-package-card__old-price {
+    color: var(--g-color-text-hint);
+    font-size: 14px;
+    text-decoration: line-through;
+}
+
+.repeto-tp-package-card__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--g-color-line-generic);
+}
+
+.repeto-tp-reviews-market {
+    padding: 0;
+}
+
+.repeto-tp-reviews-market__top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.repeto-tp-reviews-market__hero {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+.repeto-tp-market-score {
+    display: inline-flex;
+    align-items: center;
+    min-width: 74px;
+}
+
+.repeto-tp-market-score__value {
+    color: var(--g-color-text-primary);
+    font-size: 42px;
+    font-weight: 760;
+    line-height: 1;
+}
+
+.repeto-tp-market-summary {
+    display: flex;
+    min-width: 140px;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.repeto-tp-market-summary__title {
+    font-weight: 700;
+}
+
+.repeto-tp-market-chip {
+    display: inline-flex;
+    min-height: 32px;
+    align-items: center;
+    padding: 0 12px;
+    border-radius: 12px;
+    color: var(--g-color-text-primary);
+    background: var(--repeto-surface-muted);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.repeto-tp-market-chip--muted {
+    color: var(--g-color-text-secondary);
+}
+
+.repeto-tp-review-carousel {
+    display: grid;
+    grid-template-columns: repeat(var(--repeto-review-card-count, 3), minmax(0, 1fr));
+    gap: 16px;
+    overflow: hidden;
+    padding: 2px 0 0;
+}
+
+.repeto-tp-review-card {
+    display: flex;
+    min-width: 0;
+    min-height: 184px;
+    flex-direction: column;
+    gap: 14px;
+    padding: 20px;
+    border-radius: 16px;
+    background: var(--repeto-surface-elevated);
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.07);
+}
+
+.repeto-tp-review-carousel__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.repeto-tp-review-carousel__arrow.g-button {
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    padding: 0;
+}
+
+.repeto-tp-review-card__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+}
+
+.repeto-tp-review-card__author {
+    min-width: 0;
+}
+
+.repeto-tp-review-card .repeto-tp-stars {
+    flex-shrink: 0;
+    gap: 1px;
+}
+
+.repeto-tp-review-card .repeto-tp-star--filled {
+    color: #f0a45b;
+}
+
+.repeto-tp-load-more--reviews {
+    margin-top: 0;
+    text-align: left;
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tp-section__body--packages,
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tp-reviews-market {
+    background: transparent;
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tp-package-card,
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tp-review-card {
+    border-color: rgba(148, 163, 184, 0.18);
+    background: var(--repeto-surface-elevated);
+    box-shadow: none;
+}
+
+@media (max-width: 820px) {
+    .repeto-tp-packages-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .repeto-tp-reviews-market__hero {
+        align-items: flex-start;
+    }
+
+    .repeto-tp-reviews-market__top {
+        align-items: stretch;
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 520px) {
+    .repeto-tp-package-card {
+        min-height: 0;
+    }
+
+    .repeto-tp-package-card__footer {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .repeto-tp-market-score__value {
+        font-size: 36px;
+    }
+
+}
+
 /* â”€â”€ Tutor page: project-consistent overlay-like layout â”€â”€ */
 .repeto-tp-container {
     max-width: 1440px;
     margin: 0 auto;
-    padding: 0 24px;
+    padding: 0;
     box-sizing: border-box;
 }
 
 .repeto-tp-page .repeto-portal-main {
-    padding: 18px 0 36px;
+    padding: 18px 24px 36px;
 }
 
 .repeto-tp-layout {
@@ -5829,11 +6152,11 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 .repeto-tp-sidebar {
     position: fixed;
     top: 82px;
-    left: max(16px, calc((100vw - 1440px) / 2 + 24px));
+    left: max(24px, calc((100vw - 1440px) / 2 + 24px));
     z-index: 25;
     width: 280px;
     min-height: calc(100vh - 98px);
-    padding: 16px 28px 28px;
+    padding: 16px 24px 28px 0;
     box-sizing: border-box;
     overflow-y: auto;
     border-right: 1px solid var(--repeto-line-soft);
@@ -5842,7 +6165,7 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 
 .repeto-tp-sidebar__title {
     margin: 0 0 22px;
-    font-size: 34px;
+    font-size: 30px;
     font-weight: 700;
     line-height: 1.22;
     color: var(--g-color-text-primary);
@@ -5858,8 +6181,11 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     position: relative;
     width: 100%;
     min-height: 40px;
-    padding: 3px 0 3px 16px;
+    padding: 4px 0;
     border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
     text-decoration: none;
     color: var(--g-color-text-secondary);
     font-size: 16px;
@@ -5872,10 +6198,10 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 .repeto-tp-sidebar__item::before {
     content: "";
     position: absolute;
-    left: 6px;
+    left: 0;
     top: 50%;
     transform: translateY(-50%);
-    width: 4px;
+    width: 3px;
     height: 24px;
     border-radius: 999px;
     background: transparent;
@@ -5893,6 +6219,36 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 
 .repeto-tp-sidebar__item--active::before {
     background: var(--g-color-brand, var(--repeto-control-accent));
+}
+
+.repeto-tp-sidebar__item-icon {
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--g-color-text-secondary);
+    flex-shrink: 0;
+}
+
+.repeto-tp-sidebar__item-icon--animated .repeto-animated-sidebar-icon,
+.repeto-tp-sidebar__item-icon--animated .repeto-animated-sidebar-icon__canvas,
+.repeto-tp-sidebar__item-icon--animated .repeto-animated-sidebar-icon__fallback {
+    width: 24px;
+    height: 24px;
+}
+
+.repeto-tp-sidebar__item-icon--animated .repeto-animated-sidebar-icon__canvas :is(path, circle, ellipse, line, polyline, polygon, rect) {
+    stroke: currentColor !important;
+}
+
+.repeto-tp-sidebar__item-icon--animated .repeto-animated-sidebar-icon__canvas [fill]:not([fill="none"]) {
+    fill: currentColor !important;
+}
+
+.repeto-tp-sidebar__item:hover .repeto-tp-sidebar__item-icon--animated,
+.repeto-tp-sidebar__item.repeto-tp-sidebar__item--active .repeto-tp-sidebar__item-icon--animated {
+    color: var(--g-color-text-primary);
 }
 
 .repeto-tp-sidebar__item-text {
@@ -5988,7 +6344,16 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 /* Hide sidebar on mobile, show CTA */
 @media (max-width: 960px) {
     .repeto-tp-container {
-        padding: 0 16px;
+        padding: 0;
+    }
+
+    .repeto-tp-page .repeto-portal-main {
+        padding: 18px 16px 36px;
+    }
+
+    .repeto-tp-page .repeto-portal-header__inner {
+        padding-left: 16px;
+        padding-right: 16px;
     }
 
     .repeto-tp-widget__meta-row {
@@ -6079,10 +6444,11 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 }
 
 .repeto-tp-edu-item__head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    flex-wrap: wrap;
 }
 
 .repeto-tp-verified-icon {
@@ -6484,6 +6850,11 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     color: var(--repeto-control-text-muted);
 }
 
+.repeto-bk-time-group__title {
+    display: block;
+    margin-bottom: 10px;
+}
+
 .repeto-bk-action-btn {
     width: 100%;
     display: inline-flex;
@@ -6655,6 +7026,10 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     color: var(--repeto-control-text);
 }
 
+.repeto-bk-autofill-hint--legal {
+    margin-bottom: 18px;
+}
+
 .repeto-bk-auth-hint {
     display: flex;
     align-items: center;
@@ -6666,11 +7041,31 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     margin-bottom: 14px;
 }
 
+.repeto-bk-legal-stack {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 24px;
+}
+
+.repeto-bk-legal-stack--compact {
+    margin-bottom: 14px;
+}
+
+.repeto-bk-legal-text {
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--g-color-text-secondary);
+}
+
 /* Chips */
 .repeto-bk-chips {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+}
+
+.repeto-bk-chips--secondary {
+    margin-top: 8px;
 }
 
 .repeto-bk-chip {
@@ -6723,6 +7118,16 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     padding: 14px 0;
     border-top: none;
     margin-bottom: 20px;
+}
+
+.repeto-bk-contact-info,
+.repeto-bk-savings {
+    display: block;
+    margin-bottom: 20px;
+}
+
+.repeto-bk-savings {
+    margin-bottom: 16px;
 }
 
 .repeto-bk-summary__label {
@@ -7918,6 +8323,42 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     background: var(--g-color-base-generic);
 }
 
+.repeto-portal-feedback-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.repeto-portal-feedback-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.repeto-portal-feedback-tag {
+    min-height: 34px;
+    padding: 0 12px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    color: var(--g-color-text-primary);
+    background: var(--repeto-surface-muted);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+}
+
+.repeto-portal-feedback-tag:hover {
+    background: var(--g-color-base-simple-hover);
+}
+
+.repeto-portal-feedback-tag--active {
+    border-color: color-mix(in srgb, var(--g-color-base-brand) 28%, transparent);
+    color: var(--g-color-text-brand);
+    background: color-mix(in srgb, var(--g-color-base-brand) 12%, var(--repeto-surface-muted));
+}
+
 .repeto-portal-file-row:hover {
     background: var(--g-color-base-simple-hover);
 }
@@ -8765,12 +9206,6 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     z-index: 990;
 }
 
-.lp2.repeto-portal-settings-panel {
-    width: 420px;
-    max-width: 90vw;
-    z-index: 960;
-}
-
 .lp2--student-setup {
     top: 0;
     height: 100vh;
@@ -8993,70 +9428,6 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 
 .lp2-invite-card__subtitle {
     color: var(--g-color-text-secondary);
-}
-
-/* â”€â”€ Portal settings slide panel â”€â”€ */
-.repeto-portal-settings-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 950;
-    background: rgba(0, 0, 0, 0.32);
-    opacity: 0;
-    transition: opacity 0.26s ease;
-    pointer-events: none;
-}
-
-.repeto-portal-settings-overlay--open {
-    opacity: 1;
-    pointer-events: auto;
-}
-
-.repeto-portal-settings-panel {
-    position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    width: 420px;
-    max-width: 90vw;
-    z-index: 960;
-    background: var(--repeto-bg);
-    border-left: 1px solid var(--repeto-line-subtle);
-    box-shadow: var(--repeto-panel-shadow);
-    display: flex;
-    flex-direction: column;
-    transform: translateX(100%);
-    transition: transform 0.36s cubic-bezier(0.22, 0.9, 0.2, 1);
-    will-change: transform;
-}
-
-.repeto-portal-settings-panel--open {
-    transform: translateX(0);
-}
-
-.repeto-portal-settings-panel__topbar {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    min-height: 66px;
-    padding: 12px 24px;
-    border-bottom: 1px solid var(--repeto-line-subtle);
-    background: var(--repeto-bg);
-}
-
-.repeto-portal-settings-panel__scroll {
-    flex: 1;
-    overflow-y: auto;
-    padding: 24px;
-    background: var(--repeto-bg);
-}
-
-.repeto-portal-settings-panel__bottombar {
-    flex-shrink: 0;
-    padding: 16px 24px;
-    border-top: 1px solid var(--repeto-line-subtle);
-    background: color-mix(in srgb, var(--repeto-bg) 92%, transparent);
-    backdrop-filter: blur(10px);
 }
 
 /* â”€â”€ Top bar â”€â”€ */
@@ -10682,6 +11053,11 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     object-fit: contain;
 }
 
+.repeto-student-name__icon--mirrored {
+    transform: scaleX(-1);
+    transform-origin: center;
+}
+
 @media (max-width: 768px) {
     .profile-hero {
         flex-direction: column;
@@ -12207,6 +12583,72 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     padding: 12px 24px;
 }
 
+.repeto-cover-image {
+    object-fit: cover;
+}
+
+.repeto-portal-header__student-name {
+    font-weight: 500;
+}
+
+.repeto-portal-error {
+    display: block;
+    margin-bottom: 12px;
+}
+
+.repeto-public-brand,
+.repeto-public-footer__link,
+.repeto-public-link,
+.repeto-public-link-block,
+.repeto-tp-sidebar__cta-link,
+.repeto-tp-cta-link {
+    color: inherit;
+    text-decoration: none;
+}
+
+.repeto-public-brand {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    color: var(--g-color-text-primary);
+}
+
+.repeto-public-brand:hover,
+.repeto-public-footer__link:hover,
+.repeto-public-link:hover {
+    color: var(--g-color-text-brand);
+}
+
+.repeto-public-footer__link,
+.repeto-public-link {
+    font-weight: 600;
+}
+
+.repeto-public-link {
+    color: var(--g-color-text-brand);
+    font-size: 14px;
+}
+
+.repeto-public-link-block,
+.repeto-tp-cta-link {
+    display: block;
+}
+
+.repeto-tp-sidebar__cta-link {
+    display: block;
+    margin-top: 16px;
+}
+
+.repeto-public-state__title {
+    display: block;
+    margin-bottom: 8px;
+}
+
+.repeto-public-state__text {
+    display: block;
+    margin-bottom: 16px;
+}
+
 .repeto-portal-main {
     padding: 24px 24px 32px;
 }
@@ -12244,6 +12686,83 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     color: var(--g-color-text-primary);
 }
 
+.repeto-student-portal-page .repeto-student-portal-sidebar__title {
+    margin: 0 0 16px;
+}
+
+.repeto-tp-sidebar .page-overlay__nav--section,
+.repeto-student-portal-sidebar .page-overlay__nav--section {
+    --repeto-section-nav-item-padding-left: 0px;
+    --repeto-section-nav-indicator-offset: 0px;
+}
+
+.repeto-tp-sidebar .page-overlay__nav-item,
+.repeto-student-portal-sidebar .page-overlay__nav-item {
+    padding-left: 0 !important;
+}
+
+.repeto-tp-sidebar .page-overlay__nav-item--section::before,
+.repeto-student-portal-sidebar .page-overlay__nav-item--section::before {
+    left: 0;
+    width: 3px;
+}
+
+.repeto-student-portal-page .repeto-student-portal-sidebar__tab {
+    border: none;
+    background: transparent;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.repeto-student-portal-page .repeto-student-portal-sidebar__tab-icon {
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--g-color-text-secondary);
+    flex-shrink: 0;
+}
+
+.repeto-student-portal-page .repeto-student-portal-sidebar__tab-icon .repeto-animated-sidebar-icon,
+.repeto-student-portal-page .repeto-student-portal-sidebar__tab-icon .repeto-animated-sidebar-icon__canvas,
+.repeto-student-portal-page .repeto-student-portal-sidebar__tab-icon .repeto-animated-sidebar-icon__fallback {
+    width: 24px;
+    height: 24px;
+}
+
+.repeto-student-portal-page .repeto-student-portal-sidebar__tab-icon .repeto-animated-sidebar-icon__canvas :is(path, circle, ellipse, line, polyline, polygon, rect) {
+    stroke: currentColor !important;
+}
+
+.repeto-student-portal-page .repeto-student-portal-sidebar__tab-icon .repeto-animated-sidebar-icon__canvas [fill]:not([fill="none"]) {
+    fill: currentColor !important;
+}
+
+.repeto-student-portal-page .repeto-student-portal-sidebar__tab:hover .repeto-student-portal-sidebar__tab-icon {
+    color: var(--g-color-text-primary);
+}
+
+.repeto-student-portal-page .repeto-student-portal-sidebar__tab.repeto-tp-sidebar__item--active .repeto-student-portal-sidebar__tab-icon {
+    color: var(--g-color-text-primary);
+}
+
+.repeto-student-portal-page .repeto-student-portal-content {
+    padding-top: 0;
+}
+
+.repeto-student-portal-page .repeto-portal-tabs--mobile {
+    display: none;
+}
+
+@media (max-width: 960px) {
+    .repeto-student-portal-page .repeto-portal-tabs--mobile {
+        display: block;
+    }
+}
+
 .repeto-portal-item-card {
     border: 1px solid var(--g-color-line-generic);
     border-radius: 12px;
@@ -12258,6 +12777,126 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 .repeto-portal-footer {
     margin-top: 24px;
     opacity: 1;
+}
+
+.repeto-student-auth {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.repeto-student-auth__title {
+    display: block;
+    margin-bottom: 6px;
+}
+
+.repeto-student-auth__title--code {
+    margin-bottom: 16px;
+}
+
+.repeto-student-auth__subtitle {
+    display: block;
+    margin-bottom: 24px;
+}
+
+.repeto-student-auth__field {
+    margin-bottom: 16px;
+}
+
+.repeto-student-auth__code-hint {
+    display: block;
+    margin-bottom: 30px;
+    line-height: 1.55;
+    font-weight: 500;
+}
+
+.repeto-student-auth__strong {
+    color: var(--g-color-text-primary);
+}
+
+.repeto-student-auth__code-grid {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 18px;
+}
+
+.repeto-student-auth__code-input {
+    width: 100%;
+    min-width: 0;
+    height: 54px;
+    border-radius: 12px;
+    border: 1px solid var(--g-color-line-generic);
+    background: var(--repeto-control-surface);
+    color: var(--g-color-text-primary);
+    text-align: center;
+    font-size: 24px;
+    line-height: 1;
+    font-weight: 700;
+    outline: none;
+    transition: border-color 0.14s ease, background-color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.repeto-student-auth__code-input--filled {
+    background: var(--repeto-control-surface-hover);
+}
+
+.repeto-student-auth__code-input--focused {
+    border-color: var(--g-color-line-brand);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.repeto-student-auth__links {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.repeto-student-auth__link,
+.repeto-student-auth__back-btn {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    color: var(--g-color-text-brand);
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.repeto-student-auth__link:hover,
+.repeto-student-auth__back-btn:hover {
+    color: var(--g-color-text-brand-heavy);
+}
+
+.repeto-student-auth__link:disabled {
+    cursor: default;
+    opacity: 0.55;
+}
+
+.repeto-student-auth__status {
+    margin-bottom: 20px;
+    line-height: 1.5;
+    font-weight: 500;
+}
+
+.repeto-student-auth__error {
+    margin-bottom: 12px;
+}
+
+.repeto-student-auth__submit {
+    width: 100%;
+}
+
+.repeto-student-auth__back {
+    margin-top: 16px;
+    text-align: center;
+}
+
+.repeto-student-auth__back-btn {
+    color: var(--g-color-text-secondary);
 }
 
 @media (max-width: 768px) {
