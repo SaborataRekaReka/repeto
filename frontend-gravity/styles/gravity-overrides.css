@@ -5563,9 +5563,9 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 
 @media (min-width: 961px) {
     .repeto-tp-widget__avatar {
-        height: auto;
+        height: 112px;
         min-height: 112px;
-        max-height: none;
+        max-height: 112px;
     }
 }
 
@@ -14209,5 +14209,4 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
         width: 100%;
     }
 }
-
 
