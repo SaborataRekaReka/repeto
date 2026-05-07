@@ -14,6 +14,9 @@ const ROUTES_OUT = path.join(OUT_DIR, "routes.md");
 const A11Y_OUT = path.join(OUT_DIR, "accessibility-findings.md");
 const ANALYTICS_OUT = path.join(OUT_DIR, "analytics-events-proposal.md");
 const README_OUT = path.join(OUT_DIR, "README.md");
+const BACKLOG_JSON_OUT = path.join(OUT_DIR, "priority-backlog.json");
+const BACKLOG_MD_OUT = path.join(OUT_DIR, "priority-backlog.md");
+const BASELINE_OUT = path.join(OUT_DIR, "baseline-metrics.json");
 
 function readJson(file: string): AnyRecord {
   if (!fs.existsSync(file)) return {};
@@ -27,6 +30,10 @@ function text(v: any): string {
 
 function normalize(v: any): string {
   return text(v).trim().toLowerCase();
+}
+
+function slug(v: any): string {
+  return normalize(v).replace(/[^a-z0-9а-яё]+/gi, "-").replace(/^-+|-+$/g, "").slice(0, 120) || "unknown";
 }
 
 function csvEscape(v: any): string {
@@ -50,6 +57,23 @@ function inferElementType(x: AnyRecord): string {
   if (t === "a") return "link";
   if (["textarea", "select", "textinput"].includes(t)) return "input";
   if (t === "dialog") return "modal";
+  return "widget";
+}
+
+function inferCanonicalGroup(item: AnyRecord): "button" | "input" | "select" | "toggle" | "link" | "tab" | "menu" | "modal" | "form" | "widget" {
+  const type = inferElementType(item);
+  const component = normalize(item.component || item.widget || "");
+  if (type === "link") return "link";
+  if (type === "form") return "form";
+  if (type === "tab") return "tab";
+  if (type === "modal") return "modal";
+  if (type === "menuitem" || component.includes("dropdown") || component.includes("menu")) return "menu";
+  if (type === "switch" || type === "checkbox" || type === "radio") return "toggle";
+  if (type === "input") {
+    if (component.includes("select")) return "select";
+    return "input";
+  }
+  if (type === "button") return "button";
   return "widget";
 }
 
@@ -107,7 +131,97 @@ function buildAnalyticsProposal(): string {
     ...events.map(([name, desc]) => `| ${name} | ${desc} |`),
     "",
     "Рекомендуемые common properties: route, area, widget, component, elementType, label, testId, isMobile.",
+    "Рекомендуемый формат события: `ui_{action}_{area}_{target}`.",
+    "Рекомендуемый формат testid: `ui-{area}-{target}-{variant?}` (kebab-case).",
   ].join("\n");
+}
+
+function scorePriority(item: AnyRecord, runtimeIncomplete: boolean): { score: number; level: "high" | "medium" | "low"; reasons: string[] } {
+  let score = 0;
+  const reasons: string[] = [];
+
+  if (item.quality?.risk === "high") {
+    score += 50;
+    reasons.push("high a11y risk");
+  } else if (item.quality?.risk === "medium") {
+    score += 30;
+    reasons.push("medium a11y risk");
+  }
+
+  if (!item.quality?.hasStableTestId && ["button", "link", "tab", "switch", "menuitem", "checkbox", "radio"].includes(item.elementType)) {
+    score += 25;
+    reasons.push("missing stable testid");
+  }
+
+  if (item.quality?.needsAnalyticsEvent) {
+    score += 20;
+    reasons.push("missing analytics event mapping");
+  }
+
+  if (item.route === "/unknown") {
+    score += 15;
+    reasons.push("unknown route attribution");
+  }
+
+  if (item.matchStatus === "static-only" && ["button", "link", "tab", "menuitem", "switch", "checkbox", "radio"].includes(item.elementType)) {
+    score += 15;
+    reasons.push("runtime match missing");
+  }
+
+  if (item.unstableSelector) {
+    score += 10;
+    reasons.push("unstable runtime selector");
+  }
+
+  if (item.probableDuplicate) {
+    score += 8;
+    reasons.push("probable duplicate");
+  }
+
+  if (runtimeIncomplete) {
+    score += 5;
+    reasons.push("runtime crawl incomplete");
+  }
+
+  const level: "high" | "medium" | "low" = score >= 70 ? "high" : score >= 40 ? "medium" : "low";
+  return { score, level, reasons };
+}
+
+function standardizationClusterKey(item: AnyRecord): string {
+  const canonicalGroup = inferCanonicalGroup(item);
+  const semanticLabel = normalize(item.label || item.accessibleName || item.ariaLabel || item.text || "");
+  const href = normalize(item.href || "");
+  const area = normalize(item.area || "");
+  return [canonicalGroup, semanticLabel, href, area].join("|");
+}
+
+function buildBacklog(topClusters: AnyRecord[], generatedAt: string, runtimeIncomplete: boolean): string {
+  const lines = [
+    "# Priority backlog (top clusters)",
+    "",
+    `Generated: ${generatedAt}`,
+    "",
+    `Runtime incomplete: ${runtimeIncomplete}`,
+    "",
+    "| Rank | Cluster | Canonical group | Elements | High | Medium | Unknown route | Avg score | Routes sample |",
+    "|---:|---|---|---:|---:|---:|---:|---:|---|",
+  ];
+
+  topClusters.forEach((cluster, idx) => {
+    const routesSample = (cluster.routes as string[]).slice(0, 5).join(", ");
+    lines.push(`| ${idx + 1} | ${cluster.clusterId} | ${cluster.canonicalGroup} | ${cluster.elementCount} | ${cluster.high} | ${cluster.medium} | ${cluster.unknownRoute} | ${cluster.avgScore} | ${routesSample || "-"} |`);
+  });
+
+  lines.push(
+    "",
+    "## Recommended execution",
+    "",
+    "1. Close all high-priority clusters (high a11y + missing testid on interactive controls).",
+    "2. Resolve top unknown-route clusters to improve attribution quality.",
+    "3. Unify button/input/toggle clusters by canonical API in descending avg score.",
+  );
+
+  return lines.join("\n");
 }
 
 function main() {
@@ -263,16 +377,30 @@ function main() {
     duplicates.set(k, (duplicates.get(k) || 0) + 1);
   });
 
+  const runtimeIncomplete = Boolean(runtimeData.incomplete);
+
   const withFlags = merged.map((item) => {
     const k = `${item.route}|${normalize(item.label || item.accessibleName)}|${item.elementType}`;
     const probableDuplicate = (duplicates.get(k) || 0) > 1;
     const staticOnly = item.source.staticFound && !item.source.runtimeFound;
-    const runtimeOnlyFlag = !item.source.staticFound && item.source.runtimeFound;
     const dead = staticOnly && ["button", "link", "menuitem", "tab"].includes(item.elementType);
     const unstable = item.source.runtimeFound && !item.quality.hasStableTestId;
+    const canonicalGroup = inferCanonicalGroup(item);
+    const clusterId = `cluster.${slug(standardizationClusterKey(item))}`;
+    const priority = scorePriority(
+      {
+        ...item,
+        matchStatus: item.source.staticFound && item.source.runtimeFound ? "static+runtime" : staticOnly ? "static-only" : "runtime-only",
+        probableDuplicate,
+        unstableSelector: unstable,
+      },
+      runtimeIncomplete,
+    );
 
     return {
       ...item,
+      canonicalGroup,
+      clusterId,
       matchStatus: item.source.staticFound && item.source.runtimeFound
         ? "static+runtime"
         : staticOnly
@@ -281,15 +409,25 @@ function main() {
       probableDuplicate,
       potentiallyDead: dead,
       unstableSelector: unstable,
+      standardizationFlags: {
+        isHighRiskA11y: item.quality.risk === "high",
+        missingStableTestId: !item.quality.hasStableTestId,
+        missingAnalyticsEvent: item.quality.needsAnalyticsEvent,
+        unknownRoute: item.route === "/unknown",
+        runtimeGap: staticOnly,
+        duplicateInCluster: probableDuplicate,
+      },
+      priority,
     };
   });
 
   fs.writeFileSync(JSON_OUT, JSON.stringify(withFlags, null, 2), "utf8");
 
   const headers = [
-    "id", "route", "page", "area", "widget", "component", "elementType", "label", "accessibleName", "ariaLabel", "placeholder", "href", "action",
+    "id", "route", "page", "area", "widget", "component", "elementType", "canonicalGroup", "clusterId", "label", "accessibleName", "ariaLabel", "placeholder", "href", "action",
     "eventHandlers", "states", "sourceFile", "sourceLine", "staticFound", "runtimeFound", "selector", "role", "visible", "disabled",
-    "hasAccessibleName", "hasStableTestId", "needsAriaLabel", "needsAnalyticsEvent", "risk", "matchStatus", "probableDuplicate", "potentiallyDead", "unstableSelector", "notes",
+    "hasAccessibleName", "hasStableTestId", "needsAriaLabel", "needsAnalyticsEvent", "risk", "matchStatus", "probableDuplicate", "potentiallyDead", "unstableSelector",
+    "priorityScore", "priorityLevel", "priorityReasons", "notes",
   ];
 
   const rows = [headers.join(",")];
@@ -302,6 +440,8 @@ function main() {
       item.widget,
       item.component,
       item.elementType,
+      item.canonicalGroup,
+      item.clusterId,
       item.label,
       item.accessibleName,
       item.ariaLabel,
@@ -327,6 +467,9 @@ function main() {
       item.probableDuplicate,
       item.potentiallyDead,
       item.unstableSelector,
+      item.priority.score,
+      item.priority.level,
+      Array.isArray(item.priority.reasons) ? item.priority.reasons.join("|") : "",
       item.notes,
     ].map(csvEscape).join(","));
   });
@@ -343,7 +486,7 @@ function main() {
     "",
     "## Route runtime status",
     "",
-    `- Runtime incomplete: ${Boolean(runtimeData.incomplete)}`,
+    `- Runtime incomplete: ${runtimeIncomplete}`,
     ...((runtimeData.reasons || []) as string[]).map((x) => `- ${x}`),
     "",
     "## Required groups overview",
@@ -373,8 +516,8 @@ function main() {
     "",
     `Generated: ${new Date().toISOString()}`,
     "",
-    "| severity | route | element | problem | source file | suggested fix |",
-    "|---|---|---|---|---|---|",
+    "| severity | route | element | problem | source file | suggested fix | priority |",
+    "|---|---|---|---|---|---|---|",
   ];
 
   a11yIssues.forEach((item) => {
@@ -385,11 +528,11 @@ function main() {
         ? "Link without accessible name"
         : "Interactive control without accessible name";
     const severity = item.quality.risk === "high" ? "high" : item.quality.risk === "medium" ? "medium" : "low";
-    a11yLines.push(`| ${severity} | ${item.route} | ${elementLabel} | ${problem} | ${item.source.file} | Add visible text or aria-label, and keep role semantics explicit |`);
+    a11yLines.push(`| ${severity} | ${item.route} | ${elementLabel} | ${problem} | ${item.source.file} | Add visible text or aria-label, and keep role semantics explicit | ${item.priority.level} (${item.priority.score}) |`);
   });
 
   if (a11yIssues.length === 0) {
-    a11yLines.push("| low | - | - | No obvious missing accessible names detected in collected data | - | Keep monitoring with runtime crawl |", "");
+    a11yLines.push("| low | - | - | No obvious missing accessible names detected in collected data | - | Keep monitoring with runtime crawl | low (0) |", "");
   }
 
   fs.writeFileSync(A11Y_OUT, a11yLines.join("\n"), "utf8");
@@ -397,6 +540,90 @@ function main() {
 
   const testIdTargets = withFlags.filter((x) => !x.quality.hasStableTestId && ["button", "link", "tab", "switch", "menuitem"].includes(x.elementType));
   const analyticsTargets = withFlags.filter((x) => x.quality.needsAnalyticsEvent);
+  const unknownRouteCount = withFlags.filter((x) => x.route === "/unknown").length;
+  const highPriorityCount = withFlags.filter((x) => x.priority.level === "high").length;
+  const mediumPriorityCount = withFlags.filter((x) => x.priority.level === "medium").length;
+
+  const clusterMap = new Map<string, AnyRecord>();
+  for (const item of withFlags) {
+    const cluster = clusterMap.get(item.clusterId) || {
+      clusterId: item.clusterId,
+      canonicalGroup: item.canonicalGroup,
+      elementCount: 0,
+      high: 0,
+      medium: 0,
+      low: 0,
+      unknownRoute: 0,
+      routes: new Set<string>(),
+      totalScore: 0,
+      sampleItems: [] as string[],
+    };
+
+    cluster.elementCount += 1;
+    cluster.totalScore += Number(item.priority.score || 0);
+    cluster[item.priority.level] += 1;
+    if (item.route === "/unknown") cluster.unknownRoute += 1;
+    cluster.routes.add(item.route);
+    if (cluster.sampleItems.length < 3) {
+      cluster.sampleItems.push(item.id);
+    }
+    clusterMap.set(item.clusterId, cluster);
+  }
+
+  const clusters = Array.from(clusterMap.values())
+    .map((cluster) => ({
+      ...cluster,
+      routes: Array.from(cluster.routes),
+      avgScore: Math.round((cluster.totalScore / Math.max(cluster.elementCount, 1)) * 10) / 10,
+    }))
+    .sort((a, b) => {
+      if (b.avgScore !== a.avgScore) return b.avgScore - a.avgScore;
+      if (b.high !== a.high) return b.high - a.high;
+      return b.elementCount - a.elementCount;
+    });
+
+  const topClusters = clusters.slice(0, 20);
+  const generatedAt = new Date().toISOString();
+  const backlog = {
+    generatedAt,
+    runtimeIncomplete,
+    summary: {
+      totalClusters: clusters.length,
+      topClusters: topClusters.length,
+      highPriorityCount,
+      mediumPriorityCount,
+      unknownRouteCount,
+    },
+    clusters: topClusters,
+  };
+
+  fs.writeFileSync(BACKLOG_JSON_OUT, JSON.stringify(backlog, null, 2), "utf8");
+  fs.writeFileSync(BACKLOG_MD_OUT, buildBacklog(topClusters, generatedAt, runtimeIncomplete), "utf8");
+
+  const baselineMetrics = {
+    generatedAt,
+    totals: {
+      elements: withFlags.length,
+      runtimeCoverage: Array.isArray(runtimeData.routesSucceeded) ? runtimeData.routesSucceeded.length : 0,
+      runtimeIncomplete,
+      unknownRouteCount,
+      accessibilityIssues: a11yIssues.length,
+      missingStableTestId: testIdTargets.length,
+      missingAnalyticsEvent: analyticsTargets.length,
+      highPriorityCount,
+      mediumPriorityCount,
+    },
+    priorityByCanonicalGroup: withFlags.reduce((acc: Record<string, AnyRecord>, item) => {
+      const key = item.canonicalGroup;
+      if (!acc[key]) {
+        acc[key] = { total: 0, high: 0, medium: 0, low: 0 };
+      }
+      acc[key].total += 1;
+      acc[key][item.priority.level] += 1;
+      return acc;
+    }, {}),
+  };
+  fs.writeFileSync(BASELINE_OUT, JSON.stringify(baselineMetrics, null, 2), "utf8");
 
   const readme = [
     "# UI registry",
@@ -410,15 +637,28 @@ function main() {
     "- `routes.md` — покрытие и группировка по маршрутам",
     "- `accessibility-findings.md` — accessibility-наблюдения",
     "- `analytics-events-proposal.md` — предложение по событиям аналитики",
+    "- `priority-backlog.json` — top-20 кластеров для следующей итерации",
+    "- `priority-backlog.md` — human-readable ranked backlog",
+    "- `baseline-metrics.json` — baseline метрик для сравнения дельт",
     "",
     "## Сводка",
     "",
     `- Найдено UI-элементов: **${withFlags.length}**`,
     `- Route coverage (runtime succeeded): **${Array.isArray(runtimeData.routesSucceeded) ? runtimeData.routesSucceeded.length : 0}**`,
+    `- Runtime incomplete: **${runtimeIncomplete}**`,
+    `- Unknown route: **${unknownRouteCount}**`,
     `- Accessibility issues: **${a11yIssues.length}**`,
     `- Требуют stable data-testid: **${testIdTargets.length}**`,
     `- Требуют analytics event: **${analyticsTargets.length}**`,
-    `- Runtime incomplete: **${Boolean(runtimeData.incomplete)}**`,
+    `- High priority elements: **${highPriorityCount}**`,
+    `- Medium priority elements: **${mediumPriorityCount}**`,
+    "",
+    "## Iteration A outputs",
+    "",
+    "- Canonical group per element (`canonicalGroup`).",
+    "- Standardization cluster id per element (`clusterId`).",
+    "- Per-element priority block (`priority.score`, `priority.level`, `priority.reasons`).",
+    "- Top-20 ranked clusters in `priority-backlog.*`.",
     "",
     "## Перезапуск",
     "",
@@ -433,7 +673,7 @@ function main() {
 
   fs.writeFileSync(README_OUT, readme, "utf8");
 
-  console.log(`[ui-registry] merge complete: ${withFlags.length} elements`);
+  console.log(`[ui-registry] merge complete: ${withFlags.length} elements, ${clusters.length} clusters`);
 }
 
 main();
