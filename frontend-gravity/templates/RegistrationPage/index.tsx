@@ -129,6 +129,7 @@ const RegistrationPage = () => {
                         <div style={{ marginTop: 16 }}>
                             <button
                                 onClick={() => applyView("student")}
+                                data-testid="auth-switch-to-student"
                                 style={{
                                     width: "100%",
                                     padding: "10px 14px",
@@ -157,6 +158,7 @@ const RegistrationPage = () => {
                             {view === "signup" ? "Уже есть аккаунт? " : "Нет аккаунта? "}
                             <button
                                 onClick={() => applyView(view === "signup" ? "signin" : "signup")}
+                                data-testid={view === "signup" ? "auth-switch-to-signin" : "auth-switch-to-signup"}
                                 style={{
                                     color: "var(--g-color-text-brand)",
                                     fontWeight: 600,

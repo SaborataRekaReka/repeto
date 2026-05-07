@@ -830,6 +830,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                     return (
                                         <button
                                             key={i}
+                                            data-testid={`booking-option-subject-${i}`}
                                             className={`repeto-bk-option${active ? " repeto-bk-option--active" : ""}`}
                                             onClick={() => { setSelectedPackage(null); setSelectedSubject(s); }}
                                         >
@@ -862,6 +863,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                             return (
                                                 <button
                                                     key={pkg.id}
+                                                    data-testid={`booking-option-package-${pkg.id}`}
                                                     className={`repeto-bk-option${active ? " repeto-bk-option--active" : ""}`}
                                                     onClick={() => {
                                                         setSelectedPackage(pkg);
@@ -901,6 +903,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
                             <Button
                                 view="action"
                                 size="xl"
+                                data-testid="booking-continue-step-0"
                                 className="repeto-bk-action-btn"
                                 disabled={!selectedSubject && !selectedPackage}
                                 onClick={() => setStep(1)}
@@ -923,6 +926,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                     <Button
                                         view="outlined"
                                         size="m"
+                                        data-testid="booking-calendar-prev-month"
                                         className="repeto-bk-icon-btn"
                                         onClick={() => {
                                             const d = new Date(viewMonth);
@@ -935,6 +939,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                     <Button
                                         view="outlined"
                                         size="m"
+                                        data-testid="booking-calendar-next-month"
                                         className="repeto-bk-icon-btn"
                                         onClick={() => {
                                             const d = new Date(viewMonth);
@@ -966,6 +971,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                     return (
                                         <button
                                             key={i}
+                                            data-testid={`booking-calendar-day-${dateStr}`}
                                             disabled={!isAvailable || isPast}
                                             className={`repeto-bk-cal-day${isSelected ? " repeto-bk-cal-day--selected" : ""}${isToday && !isSelected ? " repeto-bk-cal-day--today" : ""}${!isAvailable || isPast ? " repeto-bk-cal-day--disabled" : ""}`}
                                             onClick={() => { setSelectedDate(dateStr); setSelectedTime(null); }}
@@ -988,6 +994,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                                     return (
                                                         <button
                                                             key={slot.time}
+                                                            data-testid={`booking-time-slot-${slot.time.replace(':', '-')}`}
                                                             className={`repeto-bk-time-slot${active ? " repeto-bk-time-slot--active" : ""}`}
                                                             onClick={() => setSelectedTime(slot.time)}
                                                         >
@@ -1005,6 +1012,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                 <Button
                                     view="action"
                                     size="xl"
+                                    data-testid="booking-continue-step-1"
                                     className="repeto-bk-action-btn"
                                     onClick={() => setStep(2)}
                                 >
@@ -1028,6 +1036,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                     <Button
                                         size="m"
                                         view="flat"
+                                        data-testid="booking-open-student-signin"
                                         onClick={() => setSignInOpen(true)}
                                     >
                                         Войти
@@ -1115,6 +1124,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                     <Button
                                         view="action"
                                         size="xl"
+                                        data-testid="booking-continue-legal-gate"
                                         className="repeto-bk-action-btn"
                                         disabled={
                                             Boolean(rawNameError || rawPhoneError || rawEmailError) ||
@@ -1257,6 +1267,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
                                     <Button
                                         view="action"
                                         size="xl"
+                                        data-testid="booking-submit-request"
                                         className="repeto-bk-action-btn"
                                         loading={submitting}
                                         disabled={
@@ -1320,6 +1331,7 @@ const BookingPage = ({ slug }: { slug: string }) => {
                             <Button
                                 view="action"
                                 size="xl"
+                                data-testid="booking-verify-otp"
                                 className="repeto-bk-action-btn"
                                 loading={verifying}
                                 disabled={otpCode.length !== 6}

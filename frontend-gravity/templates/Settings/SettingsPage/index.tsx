@@ -150,6 +150,7 @@ const SettingsPage = () => {
                                     key={opt.mode}
                                     type="button"
                                     onClick={() => setTheme(opt.mode)}
+                                    data-testid={`settings-theme-${opt.mode}`}
                                     className={`repeto-settings-theme-btn${themeMode === opt.mode ? " repeto-settings-theme-btn--active" : ""}`}
                                     title={opt.label}
                                     aria-label={opt.label}

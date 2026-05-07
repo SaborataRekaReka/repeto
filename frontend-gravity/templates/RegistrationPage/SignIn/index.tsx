@@ -144,6 +144,7 @@ const SignIn = ({ onRecover }: SignInProps) => {
                 view="action"
                 size="xl"
                 type="submit"
+                data-testid="auth-signin-submit"
                 loading={loading}
                 width="max"
                 style={{ borderRadius: 12 }}

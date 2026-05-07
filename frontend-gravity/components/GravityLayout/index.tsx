@@ -401,6 +401,14 @@ function writeMobileNavStartIndex(value: number) {
     } catch {}
 }
 
+function routeToTestId(prefix: string, url: string): string {
+    const slug = (url || "/dashboard")
+        .replace(/^\//, "")
+        .replace(/[^a-z0-9/\\-]+/gi, "")
+        .replace(/\//g, "-") || "dashboard";
+    return `${prefix}-${slug}`;
+}
+
 const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = false, children }: GravityLayoutProps) => {
     const useFlatLayout = true;
     const router = useRouter();
@@ -1207,6 +1215,7 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                                     <button
                                         key={item.id}
                                         type="button"
+                                        data-testid={`quick-action-${item.id}`}
                                         className="repeto-sidebar__item repeto-sidebar__item--main repeto-sidebar__item--quick"
                                         onClick={item.action}
                                         onMouseEnter={() => setHoveredSidebarIconKey(iconKey)}
@@ -1265,6 +1274,7 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                                     <Link
                                         key={item.url}
                                         href={item.url}
+                                        data-testid={routeToTestId("sidebar-link", item.url)}
                                         onMouseEnter={() => setHoveredSidebarIconKey(iconKey)}
                                         onMouseLeave={() =>
                                             setHoveredSidebarIconKey((prev) => (prev === iconKey ? null : prev))
@@ -1456,6 +1466,7 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                                                 <button
                                                     key={item.id}
                                                     type="button"
+                                                    data-testid={`context-quick-action-${item.id}`}
                                                     className="repeto-context-sidebar__item"
                                                     onMouseEnter={() => setHoveredSidebarIconKey(iconKey)}
                                                     onMouseLeave={() =>
@@ -1499,6 +1510,7 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                                     renderSwitcher={(props: any) => (
                                         <button
                                             type="button"
+                                            data-testid="context-create-menu-toggle"
                                             className="repeto-context-sidebar__item repeto-context-sidebar__item--quick repeto-context-sidebar__item--create repeto-context-sidebar__primary-action"
                                             onMouseEnter={() => setHoveredSidebarIconKey("context:primary:create")}
                                             onMouseLeave={() =>
@@ -1532,6 +1544,7 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                                                     <button
                                                         key={item.id}
                                                         type="button"
+                                                        data-testid={`context-quick-menu-${item.id}`}
                                                         className="repeto-quick-actions-menu__item"
                                                         onMouseEnter={() => setHoveredSidebarIconKey(iconKey)}
                                                         onMouseLeave={() =>
@@ -1928,6 +1941,7 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                             <button
                                 type="button"
                                 className="repeto-mobile-fab"
+                                data-testid="mobile-quick-actions-toggle"
                                 aria-label={mobileQuickActionsOpen ? "Закрыть быстрые действия" : "Открыть быстрые действия"}
                                 {...props}
                             >
@@ -1944,6 +1958,7 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                                         <button
                                             key={item.id}
                                             type="button"
+                                            data-testid={`mobile-quick-action-${item.id}`}
                                             className="repeto-quick-actions-menu__item"
                                             onMouseEnter={() => setHoveredSidebarIconKey(iconKey)}
                                             onMouseLeave={() =>
@@ -1991,6 +2006,7 @@ const GravityLayout = ({ title, back, hideSidebar = false, hideHeaderTitle = fal
                         <Link
                             key={item.url}
                             href={item.url}
+                            data-testid={routeToTestId("mobile-nav-link", item.url)}
                             ref={(node) => {
                                 mobileNavItemRefs.current[item.url] = node;
                             }}

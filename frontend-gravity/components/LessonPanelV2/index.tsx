@@ -1812,6 +1812,7 @@ const LessonPanelV2 = ({
                 <GButton
                     view="action"
                     size="xl"
+                    data-testid="create-lesson-submit"
                     disabled={hwSaving || !!hwBusyId || materialsPickerOpen}
                     loading={saving}
                     onClick={handleSubmit}
