@@ -1,6 +1,6 @@
 # Accessibility findings
 
-Generated: 2026-05-07T18:53:13.758Z
+Generated: 2026-05-07T19:21:04.627Z
 
 | severity | route | element | problem | source file | suggested fix | priority |
 |---|---|---|---|---|---|---|

@@ -1,6 +1,6 @@
 # UI routes coverage
 
-Generated: 2026-05-07T18:53:13.750Z
+Generated: 2026-05-07T19:21:04.619Z
 
 | Route | Elements |
 |---|---:|
@@ -22,7 +22,7 @@ Generated: 2026-05-07T18:53:13.750Z
 | /students/{id} | 1 |
 | /support | 12 |
 | /t/{slug}/book | 1 |
-| /unknown | 1007 |
+| /unknown | 1001 |
 
 ## Route runtime status
 

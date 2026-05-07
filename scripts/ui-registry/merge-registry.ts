@@ -51,6 +51,14 @@ function keyFor(item: AnyRecord): string {
   return [route, label, href, comp, type].join("|");
 }
 
+function keyForRouteAgnostic(item: AnyRecord): string {
+  const label = normalize(item.label || item.text || item.accessibleName || item.ariaLabel || item.textContent || "");
+  const href = normalize(item.href || "");
+  const comp = normalize(item.component || item.tagName || "");
+  const type = normalize(item.elementType || item.role || item.type || item.tagName || "");
+  return [label, href, comp, type].join("|");
+}
+
 function inferElementType(x: AnyRecord): string {
   const t = normalize(x.elementType || x.role || x.tagName || x.type || "");
   if (["button", "link", "input", "form", "tab", "switch", "modal", "widget", "menuitem", "checkbox", "radio"].includes(t)) return t;
@@ -233,11 +241,12 @@ function main() {
   const runtimeElements: AnyRecord[] = Array.isArray(runtimeData.elements) ? runtimeData.elements : [];
 
   const byKey = new Map<string, AnyRecord>();
+  const unknownRouteByAgnosticKey = new Map<string, AnyRecord[]>();
 
   for (const s of staticElements) {
     const key = keyFor(s);
     if (!byKey.has(key)) {
-      byKey.set(key, {
+      const normalizedStatic = {
         ...s,
         elementType: inferElementType(s),
         route: s.route || "/unknown",
@@ -245,38 +254,65 @@ function main() {
         widget: s.widget || "unknown",
         runtime: s.runtime || {},
         source: { ...(s.source || {}), staticFound: true, runtimeFound: false },
-      });
+      };
+      byKey.set(key, normalizedStatic);
+
+      if (normalizedStatic.route === "/unknown") {
+        const agnostic = keyForRouteAgnostic(normalizedStatic);
+        const list = unknownRouteByAgnosticKey.get(agnostic) || [];
+        list.push(normalizedStatic);
+        unknownRouteByAgnosticKey.set(agnostic, list);
+      }
     }
   }
 
   const runtimeOnly: AnyRecord[] = [];
+
+  const mergeRuntimeIntoStatic = (found: AnyRecord, r: AnyRecord) => {
+    found.runtime = {
+      selector: r.selector || found.runtime?.selector || null,
+      role: r.role || found.runtime?.role || null,
+      visible: r.visible,
+      disabled: r.disabled,
+    };
+    found.source = {
+      ...(found.source || {}),
+      runtimeFound: true,
+    };
+    if (!found.accessibleName) {
+      found.accessibleName = r.accessibleName || r.ariaLabel || r.textContent || null;
+    }
+    if (!found.label) {
+      found.label = r.textContent || r.accessibleName || r.ariaLabel || null;
+    }
+    if (!found.href) found.href = r.href || null;
+    if (!found.ariaLabel) found.ariaLabel = r.ariaLabel || null;
+    found.meta = {
+      ...(found.meta || {}),
+      testId: found.meta?.testId || r.testId || null,
+      screenshotPath: r.screenshotPath || null,
+    };
+
+    if (found.route === "/unknown" && r.route) {
+      found.route = r.route;
+      found.page = r.route === "/" ? "Home" : r.route.split("/").filter(Boolean).join(" ") || "Unknown";
+      found.area = inferArea(found.route, found.widget || "unknown");
+      found.notes = [text(found.notes), "route-attributed-from-runtime"].filter(Boolean).join("; ");
+    }
+  };
+
   for (const r of runtimeElements) {
     const key = keyFor(r);
     const found = byKey.get(key);
     if (found) {
-      found.runtime = {
-        selector: r.selector || found.runtime?.selector || null,
-        role: r.role || found.runtime?.role || null,
-        visible: r.visible,
-        disabled: r.disabled,
-      };
-      found.source = {
-        ...(found.source || {}),
-        runtimeFound: true,
-      };
-      if (!found.accessibleName) {
-        found.accessibleName = r.accessibleName || r.ariaLabel || r.textContent || null;
-      }
-      if (!found.label) {
-        found.label = r.textContent || r.accessibleName || r.ariaLabel || null;
-      }
-      if (!found.href) found.href = r.href || null;
-      if (!found.ariaLabel) found.ariaLabel = r.ariaLabel || null;
-      found.meta = {
-        ...(found.meta || {}),
-        testId: found.meta?.testId || r.testId || null,
-        screenshotPath: r.screenshotPath || null,
-      };
+      mergeRuntimeIntoStatic(found, r);
+      continue;
+    }
+
+    const agnosticKey = keyForRouteAgnostic(r);
+    const unknownCandidates = (unknownRouteByAgnosticKey.get(agnosticKey) || []).filter((x) => !x.source?.runtimeFound);
+    if (unknownCandidates.length === 1) {
+      mergeRuntimeIntoStatic(unknownCandidates[0], r);
       continue;
     }
 

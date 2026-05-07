@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-05-07T18:53:13.763Z",
+  "generatedAt": "2026-05-07T19:21:04.629Z",
   "totals": {
-    "elements": 1199,
+    "elements": 1193,
     "runtimeCoverage": 13,
     "runtimeIncomplete": true,
-    "unknownRouteCount": 1007,
+    "unknownRouteCount": 1001,
     "accessibilityIssues": 44,
-    "missingStableTestId": 878,
-    "missingAnalyticsEvent": 957,
-    "highPriorityCount": 823,
-    "mediumPriorityCount": 90
+    "missingStableTestId": 873,
+    "missingAnalyticsEvent": 951,
+    "highPriorityCount": 818,
+    "mediumPriorityCount": 89
   },
   "priorityByCanonicalGroup": {
     "modal": {
@@ -25,9 +25,9 @@
       "low": 12
     },
     "button": {
-      "total": 801,
-      "high": 700,
-      "medium": 66,
+      "total": 795,
+      "high": 695,
+      "medium": 65,
       "low": 35
     },
     "input": {

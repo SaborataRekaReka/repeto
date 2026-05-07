@@ -2591,9 +2591,9 @@
   },
   {
     "id": "ui.shared.button.согласен.button",
-    "route": "/unknown",
-    "page": "Index",
-    "area": "main",
+    "route": "/auth?view=signin",
+    "page": "auth?view=signin",
+    "area": "auth",
     "widget": "Button",
     "component": "Button",
     "elementType": "button",
@@ -2615,12 +2615,12 @@
       "file": "frontend-gravity/components/CookieBanner/index.tsx",
       "line": 41,
       "staticFound": true,
-      "runtimeFound": false
+      "runtimeFound": true
     },
     "runtime": {
-      "selector": null,
+      "selector": "div:nth-of-type(1) > div.__variable_f6fa1f > div.repeto-cookie-banner > div.repeto-cookie-banner__actions > button.g-button",
       "role": null,
-      "visible": null,
+      "visible": true,
       "disabled": false
     },
     "quality": {
@@ -2630,34 +2630,34 @@
       "needsAnalyticsEvent": true,
       "risk": "low"
     },
-    "notes": "",
+    "notes": "route-attributed-from-runtime",
     "meta": {
       "importSource": "@gravity-ui/uikit",
       "parentSection": "Button",
-      "testId": null
+      "testId": null,
+      "screenshotPath": null
     },
     "canonicalGroup": "button",
-    "clusterId": "cluster.button-согласен-main",
-    "matchStatus": "static-only",
+    "clusterId": "cluster.button-согласен-auth",
+    "matchStatus": "static+runtime",
     "probableDuplicate": false,
-    "potentiallyDead": true,
-    "unstableSelector": false,
+    "potentiallyDead": false,
+    "unstableSelector": true,
     "standardizationFlags": {
       "isHighRiskA11y": false,
       "missingStableTestId": true,
       "missingAnalyticsEvent": true,
-      "unknownRoute": true,
-      "runtimeGap": true,
+      "unknownRoute": false,
+      "runtimeGap": false,
       "duplicateInCluster": false
     },
     "priority": {
-      "score": 80,
-      "level": "high",
+      "score": 60,
+      "level": "medium",
       "reasons": [
         "missing stable testid",
         "missing analytics event mapping",
-        "unknown route attribution",
-        "runtime match missing",
+        "unstable runtime selector",
         "runtime crawl incomplete"
       ]
     }
@@ -7123,8 +7123,8 @@
   },
   {
     "id": "ui.shared.provider.свернуть-меню-раздела.button",
-    "route": "/unknown",
-    "page": "Index",
+    "route": "/students",
+    "page": "students",
     "area": "main",
     "widget": "Provider",
     "component": "button",
@@ -7147,12 +7147,12 @@
       "file": "frontend-gravity/components/GravityLayout/index.tsx",
       "line": 1448,
       "staticFound": true,
-      "runtimeFound": false
+      "runtimeFound": true
     },
     "runtime": {
-      "selector": null,
+      "selector": "aside.repeto-context-sidebar > div.repeto-context-sidebar__inner > div.repeto-context-sidebar__body > div.repeto-context-sidebar__header-row > button.repeto-context-sidebar__collapse-btn",
       "role": null,
-      "visible": null,
+      "visible": true,
       "disabled": false
     },
     "quality": {
@@ -7162,34 +7162,34 @@
       "needsAnalyticsEvent": true,
       "risk": "low"
     },
-    "notes": "",
+    "notes": "route-attributed-from-runtime",
     "meta": {
       "importSource": null,
       "parentSection": "Provider",
-      "testId": null
+      "testId": null,
+      "screenshotPath": null
     },
     "canonicalGroup": "button",
     "clusterId": "cluster.button-свернуть-меню-раздела-main",
-    "matchStatus": "static-only",
+    "matchStatus": "static+runtime",
     "probableDuplicate": false,
-    "potentiallyDead": true,
-    "unstableSelector": false,
+    "potentiallyDead": false,
+    "unstableSelector": true,
     "standardizationFlags": {
       "isHighRiskA11y": false,
       "missingStableTestId": true,
       "missingAnalyticsEvent": true,
-      "unknownRoute": true,
-      "runtimeGap": true,
+      "unknownRoute": false,
+      "runtimeGap": false,
       "duplicateInCluster": false
     },
     "priority": {
-      "score": 80,
-      "level": "high",
+      "score": 60,
+      "level": "medium",
       "reasons": [
         "missing stable testid",
         "missing analytics event mapping",
-        "unknown route attribution",
-        "runtime match missing",
+        "unstable runtime selector",
         "runtime crawl incomplete"
       ]
     }
@@ -8058,8 +8058,8 @@
   },
   {
     "id": "ui.shared.button.создать.button",
-    "route": "/unknown",
-    "page": "Index",
+    "route": "/students",
+    "page": "students",
     "area": "main",
     "widget": "Button",
     "component": "Button",
@@ -8080,49 +8080,47 @@
       "file": "frontend-gravity/components/Header/Create/index.tsx",
       "line": 42,
       "staticFound": true,
-      "runtimeFound": false
+      "runtimeFound": true
     },
     "runtime": {
-      "selector": null,
+      "selector": "[data-testid=\"context-create-menu-toggle\"]",
       "role": null,
-      "visible": null,
+      "visible": true,
       "disabled": false
     },
     "quality": {
       "hasAccessibleName": true,
-      "hasStableTestId": false,
+      "hasStableTestId": true,
       "needsAriaLabel": false,
       "needsAnalyticsEvent": true,
       "risk": "low"
     },
-    "notes": "",
+    "notes": "route-attributed-from-runtime",
     "meta": {
       "importSource": null,
       "parentSection": "Button",
-      "testId": null
+      "testId": "context-create-menu-toggle",
+      "screenshotPath": null
     },
     "canonicalGroup": "button",
     "clusterId": "cluster.button-создать-main",
-    "matchStatus": "static-only",
+    "matchStatus": "static+runtime",
     "probableDuplicate": false,
-    "potentiallyDead": true,
+    "potentiallyDead": false,
     "unstableSelector": false,
     "standardizationFlags": {
       "isHighRiskA11y": false,
-      "missingStableTestId": true,
+      "missingStableTestId": false,
       "missingAnalyticsEvent": true,
-      "unknownRoute": true,
-      "runtimeGap": true,
+      "unknownRoute": false,
+      "runtimeGap": false,
       "duplicateInCluster": false
     },
     "priority": {
-      "score": 80,
-      "level": "high",
+      "score": 25,
+      "level": "low",
       "reasons": [
-        "missing stable testid",
         "missing analytics event mapping",
-        "unknown route attribution",
-        "runtime match missing",
         "runtime crawl incomplete"
       ]
     }
@@ -49860,9 +49858,9 @@
   },
   {
     "id": "ui.shared.unknown.забыли-пароль.button",
-    "route": "/unknown",
-    "page": "Index",
-    "area": "main",
+    "route": "/auth?view=signin",
+    "page": "auth?view=signin",
+    "area": "auth",
     "widget": "unknown",
     "component": "button",
     "elementType": "button",
@@ -49884,12 +49882,12 @@
       "file": "frontend-gravity/templates/RegistrationPage/SignIn/index.tsx",
       "line": 110,
       "staticFound": true,
-      "runtimeFound": false
+      "runtimeFound": true
     },
     "runtime": {
-      "selector": null,
+      "selector": "div:nth-of-type(1) > div:nth-of-type(2) > form:nth-of-type(1) > div:nth-of-type(3) > button:nth-of-type(1)",
       "role": null,
-      "visible": null,
+      "visible": true,
       "disabled": false
     },
     "quality": {
@@ -49899,34 +49897,34 @@
       "needsAnalyticsEvent": true,
       "risk": "low"
     },
-    "notes": "",
+    "notes": "route-attributed-from-runtime",
     "meta": {
       "importSource": null,
       "parentSection": "unknown",
-      "testId": null
+      "testId": null,
+      "screenshotPath": null
     },
     "canonicalGroup": "button",
-    "clusterId": "cluster.button-забыли-пароль-main",
-    "matchStatus": "static-only",
+    "clusterId": "cluster.button-забыли-пароль-auth",
+    "matchStatus": "static+runtime",
     "probableDuplicate": false,
-    "potentiallyDead": true,
-    "unstableSelector": false,
+    "potentiallyDead": false,
+    "unstableSelector": true,
     "standardizationFlags": {
       "isHighRiskA11y": false,
       "missingStableTestId": true,
       "missingAnalyticsEvent": true,
-      "unknownRoute": true,
-      "runtimeGap": true,
+      "unknownRoute": false,
+      "runtimeGap": false,
       "duplicateInCluster": false
     },
     "priority": {
-      "score": 80,
-      "level": "high",
+      "score": 60,
+      "level": "medium",
       "reasons": [
         "missing stable testid",
         "missing analytics event mapping",
-        "unknown route attribution",
-        "runtime match missing",
+        "unstable runtime selector",
         "runtime crawl incomplete"
       ]
     }
@@ -53062,9 +53060,9 @@
   },
   {
     "id": "ui.shared.unknown.я-репетитор.button",
-    "route": "/unknown",
-    "page": "Index",
-    "area": "main",
+    "route": "/auth?view=student",
+    "page": "auth?view=student",
+    "area": "auth",
     "widget": "unknown",
     "component": "button",
     "elementType": "button",
@@ -53086,12 +53084,12 @@
       "file": "frontend-gravity/templates/RegistrationPage/StudentSignIn/index.tsx",
       "line": 261,
       "staticFound": true,
-      "runtimeFound": false
+      "runtimeFound": true
     },
     "runtime": {
-      "selector": null,
+      "selector": "[data-testid=\"auth-switch-to-tutor\"]",
       "role": null,
-      "visible": null,
+      "visible": true,
       "disabled": false
     },
     "quality": {
@@ -53101,33 +53099,32 @@
       "needsAnalyticsEvent": true,
       "risk": "low"
     },
-    "notes": "",
+    "notes": "route-attributed-from-runtime",
     "meta": {
       "importSource": null,
       "parentSection": "unknown",
-      "testId": "auth-switch-to-tutor"
+      "testId": "auth-switch-to-tutor",
+      "screenshotPath": null
     },
     "canonicalGroup": "button",
-    "clusterId": "cluster.button-я-репетитор-main",
-    "matchStatus": "static-only",
+    "clusterId": "cluster.button-я-репетитор-auth",
+    "matchStatus": "static+runtime",
     "probableDuplicate": false,
-    "potentiallyDead": true,
+    "potentiallyDead": false,
     "unstableSelector": false,
     "standardizationFlags": {
       "isHighRiskA11y": false,
       "missingStableTestId": false,
       "missingAnalyticsEvent": true,
-      "unknownRoute": true,
-      "runtimeGap": true,
+      "unknownRoute": false,
+      "runtimeGap": false,
       "duplicateInCluster": false
     },
     "priority": {
-      "score": 55,
-      "level": "medium",
+      "score": 25,
+      "level": "low",
       "reasons": [
         "missing analytics event mapping",
-        "unknown route attribution",
-        "runtime match missing",
         "runtime crawl incomplete"
       ]
     }
@@ -69178,8 +69175,8 @@
   },
   {
     "id": "ui.shared.pageoverlay.экспорт-csv.button",
-    "route": "/unknown",
-    "page": "Index",
+    "route": "/students",
+    "page": "students",
     "area": "main",
     "widget": "PageOverlay",
     "component": "button",
@@ -69202,13 +69199,13 @@
       "file": "frontend-gravity/templates/Students/StudentsListPage/index.tsx",
       "line": 769,
       "staticFound": true,
-      "runtimeFound": false
+      "runtimeFound": true
     },
     "runtime": {
-      "selector": null,
+      "selector": "div.repeto-sl-table > div.repeto-sl-table-toolbar > div.repeto-sl-filter-row > div.repeto-sl-filter-row__meta > button.repeto-sl-export-button",
       "role": null,
-      "visible": null,
-      "disabled": false
+      "visible": true,
+      "disabled": true
     },
     "quality": {
       "hasAccessibleName": true,
@@ -69217,34 +69214,34 @@
       "needsAnalyticsEvent": true,
       "risk": "low"
     },
-    "notes": "",
+    "notes": "route-attributed-from-runtime",
     "meta": {
       "importSource": null,
       "parentSection": "PageOverlay",
-      "testId": null
+      "testId": null,
+      "screenshotPath": null
     },
     "canonicalGroup": "button",
     "clusterId": "cluster.button-экспорт-csv-main",
-    "matchStatus": "static-only",
+    "matchStatus": "static+runtime",
     "probableDuplicate": false,
-    "potentiallyDead": true,
-    "unstableSelector": false,
+    "potentiallyDead": false,
+    "unstableSelector": true,
     "standardizationFlags": {
       "isHighRiskA11y": false,
       "missingStableTestId": true,
       "missingAnalyticsEvent": true,
-      "unknownRoute": true,
-      "runtimeGap": true,
+      "unknownRoute": false,
+      "runtimeGap": false,
       "duplicateInCluster": false
     },
     "priority": {
-      "score": 80,
-      "level": "high",
+      "score": 60,
+      "level": "medium",
       "reasons": [
         "missing stable testid",
         "missing analytics event mapping",
-        "unknown route attribution",
-        "runtime match missing",
+        "unstable runtime selector",
         "runtime crawl incomplete"
       ]
     }
@@ -72854,75 +72851,6 @@
     }
   },
   {
-    "id": "runtime.-auth-view-signin.1",
-    "route": "/auth?view=signin",
-    "page": "auth?view=signin",
-    "area": "auth",
-    "widget": "unknown",
-    "component": "button",
-    "elementType": "button",
-    "label": "Забыли пароль?",
-    "accessibleName": "Забыли пароль?",
-    "text": "Забыли пароль?",
-    "ariaLabel": null,
-    "placeholder": null,
-    "href": null,
-    "action": null,
-    "eventHandlers": [],
-    "states": [
-      "default"
-    ],
-    "source": {
-      "file": "runtime-dom",
-      "line": 0,
-      "staticFound": false,
-      "runtimeFound": true
-    },
-    "runtime": {
-      "selector": "div:nth-of-type(1) > div:nth-of-type(2) > form:nth-of-type(1) > div:nth-of-type(3) > button:nth-of-type(1)",
-      "role": null,
-      "visible": true,
-      "disabled": false
-    },
-    "quality": {
-      "hasAccessibleName": true,
-      "hasStableTestId": false,
-      "needsAriaLabel": false,
-      "needsAnalyticsEvent": true,
-      "risk": "low"
-    },
-    "notes": "runtime-only",
-    "meta": {
-      "parentSection": null,
-      "testId": null,
-      "screenshotPath": null
-    },
-    "canonicalGroup": "button",
-    "clusterId": "cluster.button-забыли-пароль-auth",
-    "matchStatus": "runtime-only",
-    "probableDuplicate": false,
-    "potentiallyDead": false,
-    "unstableSelector": true,
-    "standardizationFlags": {
-      "isHighRiskA11y": false,
-      "missingStableTestId": true,
-      "missingAnalyticsEvent": true,
-      "unknownRoute": false,
-      "runtimeGap": false,
-      "duplicateInCluster": false
-    },
-    "priority": {
-      "score": 60,
-      "level": "medium",
-      "reasons": [
-        "missing stable testid",
-        "missing analytics event mapping",
-        "unstable runtime selector",
-        "runtime crawl incomplete"
-      ]
-    }
-  },
-  {
     "id": "runtime.-auth-view-signin.2",
     "route": "/auth?view=signin",
     "page": "auth?view=signin",
@@ -73119,75 +73047,6 @@
       "level": "low",
       "reasons": [
         "missing analytics event mapping",
-        "runtime crawl incomplete"
-      ]
-    }
-  },
-  {
-    "id": "runtime.-auth-view-signin.5",
-    "route": "/auth?view=signin",
-    "page": "auth?view=signin",
-    "area": "auth",
-    "widget": "unknown",
-    "component": "button",
-    "elementType": "button",
-    "label": "Согласен",
-    "accessibleName": "Согласен",
-    "text": "Согласен",
-    "ariaLabel": null,
-    "placeholder": null,
-    "href": null,
-    "action": null,
-    "eventHandlers": [],
-    "states": [
-      "default"
-    ],
-    "source": {
-      "file": "runtime-dom",
-      "line": 0,
-      "staticFound": false,
-      "runtimeFound": true
-    },
-    "runtime": {
-      "selector": "div:nth-of-type(1) > div.__variable_f6fa1f > div.repeto-cookie-banner > div.repeto-cookie-banner__actions > button.g-button",
-      "role": null,
-      "visible": true,
-      "disabled": false
-    },
-    "quality": {
-      "hasAccessibleName": true,
-      "hasStableTestId": false,
-      "needsAriaLabel": false,
-      "needsAnalyticsEvent": true,
-      "risk": "low"
-    },
-    "notes": "runtime-only",
-    "meta": {
-      "parentSection": null,
-      "testId": null,
-      "screenshotPath": null
-    },
-    "canonicalGroup": "button",
-    "clusterId": "cluster.button-согласен-auth",
-    "matchStatus": "runtime-only",
-    "probableDuplicate": false,
-    "potentiallyDead": false,
-    "unstableSelector": true,
-    "standardizationFlags": {
-      "isHighRiskA11y": false,
-      "missingStableTestId": true,
-      "missingAnalyticsEvent": true,
-      "unknownRoute": false,
-      "runtimeGap": false,
-      "duplicateInCluster": false
-    },
-    "priority": {
-      "score": 60,
-      "level": "medium",
-      "reasons": [
-        "missing stable testid",
-        "missing analytics event mapping",
-        "unstable runtime selector",
         "runtime crawl incomplete"
       ]
     }
@@ -73645,73 +73504,6 @@
     },
     "canonicalGroup": "button",
     "clusterId": "cluster.button-получить-код-auth",
-    "matchStatus": "runtime-only",
-    "probableDuplicate": false,
-    "potentiallyDead": false,
-    "unstableSelector": false,
-    "standardizationFlags": {
-      "isHighRiskA11y": false,
-      "missingStableTestId": false,
-      "missingAnalyticsEvent": true,
-      "unknownRoute": false,
-      "runtimeGap": false,
-      "duplicateInCluster": false
-    },
-    "priority": {
-      "score": 25,
-      "level": "low",
-      "reasons": [
-        "missing analytics event mapping",
-        "runtime crawl incomplete"
-      ]
-    }
-  },
-  {
-    "id": "runtime.-auth-view-student.1",
-    "route": "/auth?view=student",
-    "page": "auth?view=student",
-    "area": "auth",
-    "widget": "unknown",
-    "component": "button",
-    "elementType": "button",
-    "label": "Я репетитор",
-    "accessibleName": "Я репетитор",
-    "text": "Я репетитор",
-    "ariaLabel": null,
-    "placeholder": null,
-    "href": null,
-    "action": null,
-    "eventHandlers": [],
-    "states": [
-      "default"
-    ],
-    "source": {
-      "file": "runtime-dom",
-      "line": 0,
-      "staticFound": false,
-      "runtimeFound": true
-    },
-    "runtime": {
-      "selector": "[data-testid=\"auth-switch-to-tutor\"]",
-      "role": null,
-      "visible": true,
-      "disabled": false
-    },
-    "quality": {
-      "hasAccessibleName": true,
-      "hasStableTestId": true,
-      "needsAriaLabel": false,
-      "needsAnalyticsEvent": true,
-      "risk": "low"
-    },
-    "notes": "runtime-only",
-    "meta": {
-      "parentSection": null,
-      "testId": "auth-switch-to-tutor",
-      "screenshotPath": null
-    },
-    "canonicalGroup": "button",
-    "clusterId": "cluster.button-я-репетитор-auth",
     "matchStatus": "runtime-only",
     "probableDuplicate": false,
     "potentiallyDead": false,
@@ -75027,142 +74819,6 @@
     }
   },
   {
-    "id": "runtime.-students.1",
-    "route": "/students",
-    "page": "students",
-    "area": "main",
-    "widget": "unknown",
-    "component": "button",
-    "elementType": "button",
-    "label": "Свернуть меню раздела",
-    "accessibleName": "Свернуть меню раздела",
-    "text": null,
-    "ariaLabel": "Свернуть меню раздела",
-    "placeholder": null,
-    "href": null,
-    "action": null,
-    "eventHandlers": [],
-    "states": [
-      "default"
-    ],
-    "source": {
-      "file": "runtime-dom",
-      "line": 0,
-      "staticFound": false,
-      "runtimeFound": true
-    },
-    "runtime": {
-      "selector": "aside.repeto-context-sidebar > div.repeto-context-sidebar__inner > div.repeto-context-sidebar__body > div.repeto-context-sidebar__header-row > button.repeto-context-sidebar__collapse-btn",
-      "role": null,
-      "visible": true,
-      "disabled": false
-    },
-    "quality": {
-      "hasAccessibleName": true,
-      "hasStableTestId": false,
-      "needsAriaLabel": false,
-      "needsAnalyticsEvent": true,
-      "risk": "low"
-    },
-    "notes": "runtime-only",
-    "meta": {
-      "parentSection": null,
-      "testId": null,
-      "screenshotPath": null
-    },
-    "canonicalGroup": "button",
-    "clusterId": "cluster.button-свернуть-меню-раздела-main",
-    "matchStatus": "runtime-only",
-    "probableDuplicate": false,
-    "potentiallyDead": false,
-    "unstableSelector": true,
-    "standardizationFlags": {
-      "isHighRiskA11y": false,
-      "missingStableTestId": true,
-      "missingAnalyticsEvent": true,
-      "unknownRoute": false,
-      "runtimeGap": false,
-      "duplicateInCluster": false
-    },
-    "priority": {
-      "score": 60,
-      "level": "medium",
-      "reasons": [
-        "missing stable testid",
-        "missing analytics event mapping",
-        "unstable runtime selector",
-        "runtime crawl incomplete"
-      ]
-    }
-  },
-  {
-    "id": "runtime.-students.2",
-    "route": "/students",
-    "page": "students",
-    "area": "main",
-    "widget": "unknown",
-    "component": "button",
-    "elementType": "button",
-    "label": "Создать",
-    "accessibleName": "Создать",
-    "text": "Создать",
-    "ariaLabel": null,
-    "placeholder": null,
-    "href": null,
-    "action": null,
-    "eventHandlers": [],
-    "states": [
-      "default"
-    ],
-    "source": {
-      "file": "runtime-dom",
-      "line": 0,
-      "staticFound": false,
-      "runtimeFound": true
-    },
-    "runtime": {
-      "selector": "[data-testid=\"context-create-menu-toggle\"]",
-      "role": null,
-      "visible": true,
-      "disabled": false
-    },
-    "quality": {
-      "hasAccessibleName": true,
-      "hasStableTestId": true,
-      "needsAriaLabel": false,
-      "needsAnalyticsEvent": true,
-      "risk": "low"
-    },
-    "notes": "runtime-only",
-    "meta": {
-      "parentSection": null,
-      "testId": "context-create-menu-toggle",
-      "screenshotPath": null
-    },
-    "canonicalGroup": "button",
-    "clusterId": "cluster.button-создать-main",
-    "matchStatus": "runtime-only",
-    "probableDuplicate": false,
-    "potentiallyDead": false,
-    "unstableSelector": false,
-    "standardizationFlags": {
-      "isHighRiskA11y": false,
-      "missingStableTestId": false,
-      "missingAnalyticsEvent": true,
-      "unknownRoute": false,
-      "runtimeGap": false,
-      "duplicateInCluster": false
-    },
-    "priority": {
-      "score": 25,
-      "level": "low",
-      "reasons": [
-        "missing analytics event mapping",
-        "runtime crawl incomplete"
-      ]
-    }
-  },
-  {
     "id": "runtime.-students.3",
     "route": "/students",
     "page": "students",
@@ -75691,75 +75347,6 @@
     },
     "canonicalGroup": "button",
     "clusterId": "cluster.button-все-классы-main",
-    "matchStatus": "runtime-only",
-    "probableDuplicate": false,
-    "potentiallyDead": false,
-    "unstableSelector": true,
-    "standardizationFlags": {
-      "isHighRiskA11y": false,
-      "missingStableTestId": true,
-      "missingAnalyticsEvent": true,
-      "unknownRoute": false,
-      "runtimeGap": false,
-      "duplicateInCluster": false
-    },
-    "priority": {
-      "score": 60,
-      "level": "medium",
-      "reasons": [
-        "missing stable testid",
-        "missing analytics event mapping",
-        "unstable runtime selector",
-        "runtime crawl incomplete"
-      ]
-    }
-  },
-  {
-    "id": "runtime.-students.11",
-    "route": "/students",
-    "page": "students",
-    "area": "main",
-    "widget": "unknown",
-    "component": "button",
-    "elementType": "button",
-    "label": "Экспорт .csv",
-    "accessibleName": "Экспорт .csv",
-    "text": "Экспорт .csv",
-    "ariaLabel": null,
-    "placeholder": null,
-    "href": null,
-    "action": null,
-    "eventHandlers": [],
-    "states": [
-      "disabled"
-    ],
-    "source": {
-      "file": "runtime-dom",
-      "line": 0,
-      "staticFound": false,
-      "runtimeFound": true
-    },
-    "runtime": {
-      "selector": "div.repeto-sl-table > div.repeto-sl-table-toolbar > div.repeto-sl-filter-row > div.repeto-sl-filter-row__meta > button.repeto-sl-export-button",
-      "role": null,
-      "visible": true,
-      "disabled": true
-    },
-    "quality": {
-      "hasAccessibleName": true,
-      "hasStableTestId": false,
-      "needsAriaLabel": false,
-      "needsAnalyticsEvent": true,
-      "risk": "low"
-    },
-    "notes": "runtime-only",
-    "meta": {
-      "parentSection": null,
-      "testId": null,
-      "screenshotPath": null
-    },
-    "canonicalGroup": "button",
-    "clusterId": "cluster.button-экспорт-csv-main",
     "matchStatus": "runtime-only",
     "probableDuplicate": false,
     "potentiallyDead": false,
