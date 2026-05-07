@@ -1,6 +1,6 @@
 # UI routes coverage
 
-Generated: 2026-05-07T19:21:04.619Z
+Generated: 2026-05-07T19:27:54.133Z
 
 | Route | Elements |
 |---|---:|
@@ -16,13 +16,13 @@ Generated: 2026-05-07T19:21:04.619Z
 | /payments | 12 |
 | /schedule | 12 |
 | /settings | 12 |
+| /shared | 1001 |
 | /student | 14 |
 | /student/setup | 8 |
 | /students | 37 |
 | /students/{id} | 1 |
 | /support | 12 |
 | /t/{slug}/book | 1 |
-| /unknown | 1001 |
 
 ## Route runtime status
 

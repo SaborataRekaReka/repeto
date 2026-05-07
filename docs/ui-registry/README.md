@@ -18,12 +18,12 @@
 - Найдено UI-элементов: **1193**
 - Route coverage (runtime succeeded): **13**
 - Runtime incomplete: **true**
-- Unknown route: **1001**
+- Unknown route: **0**
 - Accessibility issues: **44**
 - Требуют stable data-testid: **873**
 - Требуют analytics event: **951**
-- High priority elements: **818**
-- Medium priority elements: **89**
+- High priority elements: **70**
+- Medium priority elements: **837**
 
 ## Iteration A outputs
 

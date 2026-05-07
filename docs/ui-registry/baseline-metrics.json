@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-05-07T19:21:04.629Z",
+  "generatedAt": "2026-05-07T19:27:54.143Z",
   "totals": {
     "elements": 1193,
     "runtimeCoverage": 13,
     "runtimeIncomplete": true,
-    "unknownRouteCount": 1001,
+    "unknownRouteCount": 0,
     "accessibilityIssues": 44,
     "missingStableTestId": 873,
     "missingAnalyticsEvent": 951,
-    "highPriorityCount": 818,
-    "mediumPriorityCount": 89
+    "highPriorityCount": 70,
+    "mediumPriorityCount": 837
   },
   "priorityByCanonicalGroup": {
     "modal": {
@@ -20,14 +20,14 @@
     },
     "link": {
       "total": 116,
-      "high": 83,
-      "medium": 21,
+      "high": 17,
+      "medium": 87,
       "low": 12
     },
     "button": {
       "total": 795,
-      "high": 695,
-      "medium": 65,
+      "high": 39,
+      "medium": 721,
       "low": 35
     },
     "input": {
@@ -44,8 +44,8 @@
     },
     "toggle": {
       "total": 16,
-      "high": 16,
-      "medium": 0,
+      "high": 3,
+      "medium": 13,
       "low": 0
     },
     "select": {
@@ -56,14 +56,14 @@
     },
     "menu": {
       "total": 8,
-      "high": 8,
-      "medium": 0,
+      "high": 2,
+      "medium": 6,
       "low": 0
     },
     "tab": {
       "total": 16,
-      "high": 16,
-      "medium": 0,
+      "high": 9,
+      "medium": 7,
       "low": 0
     },
     "form": {

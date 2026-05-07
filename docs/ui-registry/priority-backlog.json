@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-05-07T19:21:04.629Z",
+  "generatedAt": "2026-05-07T19:27:54.143Z",
   "runtimeIncomplete": true,
   "summary": {
     "totalClusters": 1024,
     "topClusters": 20,
-    "highPriorityCount": 818,
-    "mediumPriorityCount": 89,
-    "unknownRouteCount": 1001
+    "highPriorityCount": 70,
+    "mediumPriorityCount": 837,
+    "unknownRouteCount": 0
   },
   "clusters": [
     {
@@ -16,17 +16,17 @@
       "high": 9,
       "medium": 0,
       "low": 0,
-      "unknownRoute": 9,
+      "unknownRoute": 0,
       "routes": [
-        "/unknown"
+        "/shared"
       ],
-      "totalScore": 1242,
+      "totalScore": 1107,
       "sampleItems": [
         "ui.shared.studentaccesstab.item-1.tab",
         "ui.shared.pilltabs.item-1.tab",
         "ui.shared.lessonstab.item-4.tab"
       ],
-      "avgScore": 138
+      "avgScore": 123
     },
     {
       "clusterId": "cluster.menu-main",
@@ -35,16 +35,16 @@
       "high": 2,
       "medium": 0,
       "low": 0,
-      "unknownRoute": 2,
+      "unknownRoute": 0,
       "routes": [
-        "/unknown"
+        "/shared"
       ],
-      "totalScore": 276,
+      "totalScore": 246,
       "sampleItems": [
         "ui.shared.dropdownmenu.item-0.menuitem",
         "ui.shared.gdropdownmenu.item-2.menuitem"
       ],
-      "avgScore": 138
+      "avgScore": 123
     },
     {
       "clusterId": "cluster.link-link-url-main",
@@ -53,15 +53,15 @@
       "high": 1,
       "medium": 0,
       "low": 0,
-      "unknownRoute": 1,
+      "unknownRoute": 0,
       "routes": [
-        "/unknown"
+        "/shared"
       ],
-      "totalScore": 138,
+      "totalScore": 123,
       "sampleItems": [
         "ui.shared.link.item-0.link"
       ],
-      "avgScore": 138
+      "avgScore": 123
     },
     {
       "clusterId": "cluster.link-t-slug-main",
@@ -70,56 +70,15 @@
       "high": 1,
       "medium": 0,
       "low": 0,
-      "unknownRoute": 1,
+      "unknownRoute": 0,
       "routes": [
-        "/unknown"
+        "/shared"
       ],
-      "totalScore": 138,
+      "totalScore": 123,
       "sampleItems": [
         "ui.shared.link.item-10.link"
       ],
-      "avgScore": 138
-    },
-    {
-      "clusterId": "cluster.button-main",
-      "canonicalGroup": "button",
-      "elementCount": 13,
-      "high": 13,
-      "medium": 0,
-      "low": 0,
-      "unknownRoute": 10,
-      "routes": [
-        "/student",
-        "/student/setup",
-        "/students/{id}",
-        "/unknown"
-      ],
-      "totalScore": 1551,
-      "sampleItems": [
-        "ui.student.loader.item-0.button",
-        "ui.student-setup.loader.item-0.button",
-        "ui.students-id.loader.item-0.button"
-      ],
-      "avgScore": 119.3
-    },
-    {
-      "clusterId": "cluster.toggle-main",
-      "canonicalGroup": "toggle",
-      "elementCount": 3,
-      "high": 3,
-      "medium": 0,
-      "low": 0,
-      "unknownRoute": 3,
-      "routes": [
-        "/unknown"
-      ],
-      "totalScore": 350,
-      "sampleItems": [
-        "ui.shared.switch.item-1.switch",
-        "ui.shared.checkbox.item-26.checkbox",
-        "ui.shared.segmentedradiogroup.item-13.radio"
-      ],
-      "avgScore": 116.7
+      "avgScore": 123
     },
     {
       "clusterId": "cluster.button-booking",
@@ -145,9 +104,9 @@
       "high": 7,
       "medium": 0,
       "low": 0,
-      "unknownRoute": 1,
+      "unknownRoute": 0,
       "routes": [
-        "/unknown",
+        "/shared",
         "/dashboard",
         "/schedule",
         "/files",
@@ -155,13 +114,13 @@
         "/support",
         "/student"
       ],
-      "totalScore": 798,
+      "totalScore": 783,
       "sampleItems": [
         "ui.shared.link.item-0.link",
         "runtime.-dashboard.6",
         "runtime.-schedule.6"
       ],
-      "avgScore": 114
+      "avgScore": 111.9
     },
     {
       "clusterId": "cluster.link-finance",
@@ -221,22 +180,63 @@
       "avgScore": 110
     },
     {
+      "clusterId": "cluster.button-main",
+      "canonicalGroup": "button",
+      "elementCount": 13,
+      "high": 10,
+      "medium": 3,
+      "low": 0,
+      "unknownRoute": 0,
+      "routes": [
+        "/student",
+        "/student/setup",
+        "/students/{id}",
+        "/shared"
+      ],
+      "totalScore": 1401,
+      "sampleItems": [
+        "ui.student.loader.item-0.button",
+        "ui.student-setup.loader.item-0.button",
+        "ui.students-id.loader.item-0.button"
+      ],
+      "avgScore": 107.8
+    },
+    {
+      "clusterId": "cluster.toggle-main",
+      "canonicalGroup": "toggle",
+      "elementCount": 3,
+      "high": 3,
+      "medium": 0,
+      "low": 0,
+      "unknownRoute": 0,
+      "routes": [
+        "/shared"
+      ],
+      "totalScore": 305,
+      "sampleItems": [
+        "ui.shared.switch.item-1.switch",
+        "ui.shared.checkbox.item-26.checkbox",
+        "ui.shared.segmentedradiogroup.item-13.radio"
+      ],
+      "avgScore": 101.7
+    },
+    {
       "clusterId": "cluster.button-публичная-страница-main",
       "canonicalGroup": "button",
       "elementCount": 2,
       "high": 2,
       "medium": 0,
       "low": 0,
-      "unknownRoute": 2,
+      "unknownRoute": 0,
       "routes": [
-        "/unknown"
+        "/shared"
       ],
-      "totalScore": 176,
+      "totalScore": 146,
       "sampleItems": [
         "ui.shared.gdropdownmenu.публичная-страница.button",
         "ui.shared.text.публичная-страница.button"
       ],
-      "avgScore": 88
+      "avgScore": 73
     },
     {
       "clusterId": "cluster.button-политика-отмен-main",
@@ -245,16 +245,16 @@
       "high": 2,
       "medium": 0,
       "low": 0,
-      "unknownRoute": 2,
+      "unknownRoute": 0,
       "routes": [
-        "/unknown"
+        "/shared"
       ],
-      "totalScore": 176,
+      "totalScore": 146,
       "sampleItems": [
         "ui.shared.unknown.политика-отмен.button",
         "ui.shared.text.политика-отмен.button"
       ],
-      "avgScore": 88
+      "avgScore": 73
     },
     {
       "clusterId": "cluster.button-formatcompletedlessonlabel-lesson-main",
@@ -263,16 +263,16 @@
       "high": 2,
       "medium": 0,
       "low": 0,
-      "unknownRoute": 2,
+      "unknownRoute": 0,
       "routes": [
-        "/unknown"
+        "/shared"
       ],
-      "totalScore": 176,
+      "totalScore": 146,
       "sampleItems": [
         "ui.shared.unknown.formatcompletedlessonlabel-lesson.button",
         "ui.shared.text.formatcompletedlessonlabel-lesson.button"
       ],
-      "avgScore": 88
+      "avgScore": 73
     },
     {
       "clusterId": "cluster.button-formatlessonlabel-lesson-main",
@@ -281,16 +281,16 @@
       "high": 2,
       "medium": 0,
       "low": 0,
-      "unknownRoute": 2,
+      "unknownRoute": 0,
       "routes": [
-        "/unknown"
+        "/shared"
       ],
-      "totalScore": 176,
+      "totalScore": 146,
       "sampleItems": [
         "ui.shared.unknown.formatlessonlabel-lesson.button",
         "ui.shared.text.formatlessonlabel-lesson.button"
       ],
-      "avgScore": 88
+      "avgScore": 73
     },
     {
       "clusterId": "cluster.button-formathomeworklabel-hw-main",
@@ -299,16 +299,16 @@
       "high": 2,
       "medium": 0,
       "low": 0,
-      "unknownRoute": 2,
+      "unknownRoute": 0,
       "routes": [
-        "/unknown"
+        "/shared"
       ],
-      "totalScore": 176,
+      "totalScore": 146,
       "sampleItems": [
         "ui.shared.unknown.formathomeworklabel-hw.button",
         "ui.shared.text.formathomeworklabel-hw.button"
       ],
-      "avgScore": 88
+      "avgScore": 73
     },
     {
       "clusterId": "cluster.button-item-title-main",
@@ -317,16 +317,16 @@
       "high": 2,
       "medium": 0,
       "low": 0,
-      "unknownRoute": 2,
+      "unknownRoute": 0,
       "routes": [
-        "/unknown"
+        "/shared"
       ],
-      "totalScore": 176,
+      "totalScore": 146,
       "sampleItems": [
         "ui.shared.unknown.item-title.button",
         "ui.shared.text.item-title.button"
       ],
-      "avgScore": 88
+      "avgScore": 73
     },
     {
       "clusterId": "cluster.button-item-label-main",
@@ -335,16 +335,16 @@
       "high": 2,
       "medium": 0,
       "low": 0,
-      "unknownRoute": 2,
+      "unknownRoute": 0,
       "routes": [
-        "/unknown"
+        "/shared"
       ],
-      "totalScore": 176,
+      "totalScore": 146,
       "sampleItems": [
         "ui.shared.button.item-label.button",
         "ui.shared.text.item-label.button"
       ],
-      "avgScore": 88
+      "avgScore": 73
     },
     {
       "clusterId": "cluster.button-вход-ученика-main",
@@ -353,16 +353,16 @@
       "high": 2,
       "medium": 0,
       "low": 0,
-      "unknownRoute": 2,
+      "unknownRoute": 0,
       "routes": [
-        "/unknown"
+        "/shared"
       ],
-      "totalScore": 176,
+      "totalScore": 146,
       "sampleItems": [
         "ui.shared.button.вход-ученика.button",
         "ui.shared.text.вход-ученика.button"
       ],
-      "avgScore": 88
+      "avgScore": 73
     },
     {
       "clusterId": "cluster.button-folder-name-main",
@@ -371,16 +371,16 @@
       "high": 2,
       "medium": 0,
       "low": 0,
-      "unknownRoute": 2,
+      "unknownRoute": 0,
       "routes": [
-        "/unknown"
+        "/shared"
       ],
-      "totalScore": 176,
+      "totalScore": 146,
       "sampleItems": [
         "ui.shared.unknown.folder-name.button",
         "ui.shared.text.folder-name.button"
       ],
-      "avgScore": 88
+      "avgScore": 73
     }
   ]
 }

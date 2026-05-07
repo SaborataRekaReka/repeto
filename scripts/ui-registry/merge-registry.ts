@@ -88,6 +88,7 @@ function inferCanonicalGroup(item: AnyRecord): "button" | "input" | "select" | "
 function inferArea(route: string, widget: string): string {
   const r = route || "";
   const w = (widget || "").toLowerCase();
+  if (r === "/shared") return "shared";
   if (r.startsWith("/t/") && r.endsWith("/book")) return "booking";
   if (r.startsWith("/t/")) return "public-profile";
   if (r.startsWith("/settings")) return "settings";
@@ -96,6 +97,20 @@ function inferArea(route: string, widget: string): string {
   if (w.includes("sidebar") || w.includes("layout") || w.includes("nav")) return "sidebar";
   if (w.includes("modal") || w.includes("dialog")) return "modal";
   return "main";
+}
+
+function normalizeRoute(route: string | null | undefined, sourceFile: string | undefined): string {
+  const raw = text(route).trim();
+  if (raw) return raw;
+  const file = text(sourceFile);
+  if (
+    file.startsWith("frontend-gravity/components/") ||
+    file.startsWith("frontend-gravity/templates/") ||
+    file.startsWith("frontend-gravity/contexts/")
+  ) {
+    return "/shared";
+  }
+  return "/unknown";
 }
 
 function stableTestId(selector: string, testId: string | null): boolean {
@@ -249,15 +264,15 @@ function main() {
       const normalizedStatic = {
         ...s,
         elementType: inferElementType(s),
-        route: s.route || "/unknown",
-        area: s.area || inferArea(s.route || "", s.widget || ""),
+        route: normalizeRoute(s.route, s?.source?.file),
+        area: s.area || inferArea(normalizeRoute(s.route, s?.source?.file), s.widget || ""),
         widget: s.widget || "unknown",
         runtime: s.runtime || {},
         source: { ...(s.source || {}), staticFound: true, runtimeFound: false },
       };
       byKey.set(key, normalizedStatic);
 
-      if (normalizedStatic.route === "/unknown") {
+      if (normalizedStatic.route === "/unknown" || normalizedStatic.route === "/shared") {
         const agnostic = keyForRouteAgnostic(normalizedStatic);
         const list = unknownRouteByAgnosticKey.get(agnostic) || [];
         list.push(normalizedStatic);
@@ -293,7 +308,7 @@ function main() {
       screenshotPath: r.screenshotPath || null,
     };
 
-    if (found.route === "/unknown" && r.route) {
+    if ((found.route === "/unknown" || found.route === "/shared") && r.route) {
       found.route = r.route;
       found.page = r.route === "/" ? "Home" : r.route.split("/").filter(Boolean).join(" ") || "Unknown";
       found.area = inferArea(found.route, found.widget || "unknown");
@@ -364,6 +379,7 @@ function main() {
   }
 
   const merged = [...byKey.values(), ...runtimeOnly].map((item) => {
+    const normalizedRoute = normalizeRoute(item.route, item?.source?.file);
     const elementType = inferElementType(item);
     const hasAccessibleName = Boolean(item.accessibleName || item.ariaLabel || item.label || item.text);
     const selector = item.runtime?.selector || "";
@@ -381,8 +397,8 @@ function main() {
 
     return {
       ...item,
-      route: item.route || "/unknown",
-      area: item.area || inferArea(item.route || "", item.widget || ""),
+      route: normalizedRoute,
+      area: item.area || inferArea(normalizedRoute, item.widget || ""),
       widget: item.widget || "unknown",
       component: item.component || "unknown",
       elementType,
