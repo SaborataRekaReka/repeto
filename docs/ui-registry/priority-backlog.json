@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-05-07T18:46:19.212Z",
+  "generatedAt": "2026-05-07T18:53:13.763Z",
   "runtimeIncomplete": true,
   "summary": {
-    "totalClusters": 957,
+    "totalClusters": 1024,
     "topClusters": 20,
-    "highPriorityCount": 811,
-    "mediumPriorityCount": 28,
+    "highPriorityCount": 823,
+    "mediumPriorityCount": 90,
     "unknownRouteCount": 1007
   },
   "clusters": [
@@ -48,23 +48,6 @@
     },
     {
       "clusterId": "cluster.link-link-url-main",
-      "canonicalGroup": "link",
-      "elementCount": 1,
-      "high": 1,
-      "medium": 0,
-      "low": 0,
-      "unknownRoute": 1,
-      "routes": [
-        "/unknown"
-      ],
-      "totalScore": 138,
-      "sampleItems": [
-        "ui.shared.link.item-0.link"
-      ],
-      "avgScore": 138
-    },
-    {
-      "clusterId": "cluster.link-main",
       "canonicalGroup": "link",
       "elementCount": 1,
       "high": 1,
@@ -154,6 +137,88 @@
         "ui.t-slug-book.bookingpage.item-0.button"
       ],
       "avgScore": 115
+    },
+    {
+      "clusterId": "cluster.link-main",
+      "canonicalGroup": "link",
+      "elementCount": 7,
+      "high": 7,
+      "medium": 0,
+      "low": 0,
+      "unknownRoute": 1,
+      "routes": [
+        "/unknown",
+        "/dashboard",
+        "/schedule",
+        "/files",
+        "/notifications",
+        "/support",
+        "/student"
+      ],
+      "totalScore": 798,
+      "sampleItems": [
+        "ui.shared.link.item-0.link",
+        "runtime.-dashboard.6",
+        "runtime.-schedule.6"
+      ],
+      "avgScore": 114
+    },
+    {
+      "clusterId": "cluster.link-finance",
+      "canonicalGroup": "link",
+      "elementCount": 3,
+      "high": 3,
+      "medium": 0,
+      "low": 0,
+      "unknownRoute": 0,
+      "routes": [
+        "/finance",
+        "/payments",
+        "/packages"
+      ],
+      "totalScore": 330,
+      "sampleItems": [
+        "runtime.-finance.6",
+        "runtime.-payments.6",
+        "runtime.-packages.6"
+      ],
+      "avgScore": 110
+    },
+    {
+      "clusterId": "cluster.link-auth",
+      "canonicalGroup": "link",
+      "elementCount": 2,
+      "high": 2,
+      "medium": 0,
+      "low": 0,
+      "unknownRoute": 0,
+      "routes": [
+        "/auth?view=signin",
+        "/auth?view=student"
+      ],
+      "totalScore": 220,
+      "sampleItems": [
+        "runtime.-auth-view-signin.6",
+        "runtime.-auth-view-student.3"
+      ],
+      "avgScore": 110
+    },
+    {
+      "clusterId": "cluster.link-settings",
+      "canonicalGroup": "link",
+      "elementCount": 1,
+      "high": 1,
+      "medium": 0,
+      "low": 0,
+      "unknownRoute": 0,
+      "routes": [
+        "/settings"
+      ],
+      "totalScore": 110,
+      "sampleItems": [
+        "runtime.-settings.6"
+      ],
+      "avgScore": 110
     },
     {
       "clusterId": "cluster.button-публичная-страница-main",
@@ -314,60 +379,6 @@
       "sampleItems": [
         "ui.shared.unknown.folder-name.button",
         "ui.shared.text.folder-name.button"
-      ],
-      "avgScore": 88
-    },
-    {
-      "clusterId": "cluster.button-материалы-main",
-      "canonicalGroup": "button",
-      "elementCount": 2,
-      "high": 2,
-      "medium": 0,
-      "low": 0,
-      "unknownRoute": 2,
-      "routes": [
-        "/unknown"
-      ],
-      "totalScore": 176,
-      "sampleItems": [
-        "ui.shared.card.материалы.button",
-        "ui.shared.text.материалы.button"
-      ],
-      "avgScore": 88
-    },
-    {
-      "clusterId": "cluster.button-title-main",
-      "canonicalGroup": "button",
-      "elementCount": 2,
-      "high": 2,
-      "medium": 0,
-      "low": 0,
-      "unknownRoute": 2,
-      "routes": [
-        "/unknown"
-      ],
-      "totalScore": 176,
-      "sampleItems": [
-        "ui.shared.text.title.button",
-        "ui.shared.unknown.title.button"
-      ],
-      "avgScore": 88
-    },
-    {
-      "clusterId": "cluster.button-удалить-аккаунт-main",
-      "canonicalGroup": "button",
-      "elementCount": 2,
-      "high": 2,
-      "medium": 0,
-      "low": 0,
-      "unknownRoute": 2,
-      "routes": [
-        "/unknown"
-      ],
-      "totalScore": 176,
-      "sampleItems": [
-        "ui.shared.text.удалить-аккаунт.button",
-        "ui.shared.button.удалить-аккаунт.button"
       ],
       "avgScore": 88
     }

@@ -1,46 +1,46 @@
 {
-  "generatedAt": "2026-05-07T18:46:19.212Z",
+  "generatedAt": "2026-05-07T18:53:13.763Z",
   "totals": {
-    "elements": 1026,
-    "runtimeCoverage": 0,
+    "elements": 1199,
+    "runtimeCoverage": 13,
     "runtimeIncomplete": true,
     "unknownRouteCount": 1007,
-    "accessibilityIssues": 32,
-    "missingStableTestId": 804,
-    "missingAnalyticsEvent": 836,
-    "highPriorityCount": 811,
-    "mediumPriorityCount": 28
+    "accessibilityIssues": 44,
+    "missingStableTestId": 878,
+    "missingAnalyticsEvent": 957,
+    "highPriorityCount": 823,
+    "mediumPriorityCount": 90
   },
   "priorityByCanonicalGroup": {
     "modal": {
-      "total": 15,
+      "total": 28,
       "high": 0,
       "medium": 0,
-      "low": 15
+      "low": 28
     },
     "link": {
-      "total": 74,
-      "high": 71,
-      "medium": 3,
-      "low": 0
+      "total": 116,
+      "high": 83,
+      "medium": 21,
+      "low": 12
     },
     "button": {
-      "total": 722,
+      "total": 801,
       "high": 700,
-      "medium": 22,
-      "low": 0
+      "medium": 66,
+      "low": 35
     },
     "input": {
-      "total": 85,
+      "total": 109,
       "high": 0,
       "medium": 2,
-      "low": 83
+      "low": 107
     },
     "widget": {
-      "total": 76,
+      "total": 79,
       "high": 0,
       "medium": 0,
-      "low": 76
+      "low": 79
     },
     "toggle": {
       "total": 16,
@@ -67,10 +67,10 @@
       "low": 0
     },
     "form": {
-      "total": 7,
+      "total": 19,
       "high": 0,
       "medium": 0,
-      "low": 7
+      "low": 19
     }
   }
 }

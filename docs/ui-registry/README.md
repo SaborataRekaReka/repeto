@@ -15,15 +15,15 @@
 
 ## Сводка
 
-- Найдено UI-элементов: **1026**
-- Route coverage (runtime succeeded): **0**
+- Найдено UI-элементов: **1199**
+- Route coverage (runtime succeeded): **13**
 - Runtime incomplete: **true**
 - Unknown route: **1007**
-- Accessibility issues: **32**
-- Требуют stable data-testid: **804**
-- Требуют analytics event: **836**
-- High priority elements: **811**
-- Medium priority elements: **28**
+- Accessibility issues: **44**
+- Требуют stable data-testid: **878**
+- Требуют analytics event: **957**
+- High priority elements: **823**
+- Medium priority elements: **90**
 
 ## Iteration A outputs
 

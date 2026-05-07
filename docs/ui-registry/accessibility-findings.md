@@ -1,6 +1,6 @@
 # Accessibility findings
 
-Generated: 2026-05-07T18:46:19.207Z
+Generated: 2026-05-07T18:53:13.758Z
 
 | severity | route | element | problem | source file | suggested fix | priority |
 |---|---|---|---|---|---|---|
@@ -36,3 +36,15 @@ Generated: 2026-05-07T18:46:19.207Z
 | high | /unknown | ProfileTab | Interactive control without accessible name | frontend-gravity/templates/Students/StudentDetailPage/index.tsx | Add visible text or aria-label, and keep role semantics explicit | high (138) |
 | high | /unknown | NotesTab | Interactive control without accessible name | frontend-gravity/templates/Students/StudentDetailPage/index.tsx | Add visible text or aria-label, and keep role semantics explicit | high (138) |
 | high | /unknown | ActivityTab | Interactive control without accessible name | frontend-gravity/templates/Students/StudentDetailPage/index.tsx | Add visible text or aria-label, and keep role semantics explicit | high (138) |
+| high | /auth?view=signin | a | Link without accessible name | runtime-dom | Add visible text or aria-label, and keep role semantics explicit | high (110) |
+| high | /auth?view=student | a | Link without accessible name | runtime-dom | Add visible text or aria-label, and keep role semantics explicit | high (110) |
+| high | /dashboard | a | Link without accessible name | runtime-dom | Add visible text or aria-label, and keep role semantics explicit | high (110) |
+| high | /schedule | a | Link without accessible name | runtime-dom | Add visible text or aria-label, and keep role semantics explicit | high (110) |
+| high | /finance | a | Link without accessible name | runtime-dom | Add visible text or aria-label, and keep role semantics explicit | high (110) |
+| high | /payments | a | Link without accessible name | runtime-dom | Add visible text or aria-label, and keep role semantics explicit | high (110) |
+| high | /packages | a | Link without accessible name | runtime-dom | Add visible text or aria-label, and keep role semantics explicit | high (110) |
+| high | /files | a | Link without accessible name | runtime-dom | Add visible text or aria-label, and keep role semantics explicit | high (110) |
+| high | /notifications | a | Link without accessible name | runtime-dom | Add visible text or aria-label, and keep role semantics explicit | high (110) |
+| high | /settings | a | Link without accessible name | runtime-dom | Add visible text or aria-label, and keep role semantics explicit | high (110) |
+| high | /support | a | Link without accessible name | runtime-dom | Add visible text or aria-label, and keep role semantics explicit | high (110) |
+| high | /student | a | Link without accessible name | runtime-dom | Add visible text or aria-label, and keep role semantics explicit | high (110) |

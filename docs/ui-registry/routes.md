@@ -1,21 +1,35 @@
 # UI routes coverage
 
-Generated: 2026-05-07T18:46:19.198Z
+Generated: 2026-05-07T18:53:13.750Z
 
 | Route | Elements |
 |---|---:|
 | /_app | 1 |
+| /auth?view=signin | 12 |
+| /auth?view=student | 8 |
+| /dashboard | 12 |
+| /files | 12 |
+| /finance | 12 |
 | /legal | 2 |
-| /student | 6 |
+| /notifications | 12 |
+| /packages | 12 |
+| /payments | 12 |
+| /schedule | 12 |
+| /settings | 12 |
+| /student | 14 |
 | /student/setup | 8 |
+| /students | 37 |
 | /students/{id} | 1 |
+| /support | 12 |
 | /t/{slug}/book | 1 |
 | /unknown | 1007 |
 
 ## Route runtime status
 
 - Runtime incomplete: true
-- Frontend is unreachable at http://localhost:3300. Start frontend on port 3300 and backend on port 3200, then rerun npm run ui-registry:runtime.
+- Backend health check did not confirm availability at http://127.0.0.1:3200
+- Authed runtime crawl could not authenticate with demo credentials/API
+- Some routes failed: /t/{slug}, /t/{slug}/book
 
 ## Required groups overview
 
