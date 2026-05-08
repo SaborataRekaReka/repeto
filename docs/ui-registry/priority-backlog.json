@@ -1,0 +1,386 @@
+{
+  "generatedAt": "2026-05-07T19:27:54.143Z",
+  "runtimeIncomplete": true,
+  "summary": {
+    "totalClusters": 1024,
+    "topClusters": 20,
+    "highPriorityCount": 70,
+    "mediumPriorityCount": 837,
+    "unknownRouteCount": 0
+  },
+  "clusters": [
+    {
+      "clusterId": "cluster.tab-main",
+      "canonicalGroup": "tab",
+      "elementCount": 9,
+      "high": 9,
+      "medium": 0,
+      "low": 0,
+      "unknownRoute": 0,
+      "routes": [
+        "/shared"
+      ],
+      "totalScore": 1107,
+      "sampleItems": [
+        "ui.shared.studentaccesstab.item-1.tab",
+        "ui.shared.pilltabs.item-1.tab",
+        "ui.shared.lessonstab.item-4.tab"
+      ],
+      "avgScore": 123
+    },
+    {
+      "clusterId": "cluster.menu-main",
+      "canonicalGroup": "menu",
+      "elementCount": 2,
+      "high": 2,
+      "medium": 0,
+      "low": 0,
+      "unknownRoute": 0,
+      "routes": [
+        "/shared"
+      ],
+      "totalScore": 246,
+      "sampleItems": [
+        "ui.shared.dropdownmenu.item-0.menuitem",
+        "ui.shared.gdropdownmenu.item-2.menuitem"
+      ],
+      "avgScore": 123
+    },
+    {
+      "clusterId": "cluster.link-link-url-main",
+      "canonicalGroup": "link",
+      "elementCount": 1,
+      "high": 1,
+      "medium": 0,
+      "low": 0,
+      "unknownRoute": 0,
+      "routes": [
+        "/shared"
+      ],
+      "totalScore": 123,
+      "sampleItems": [
+        "ui.shared.link.item-0.link"
+      ],
+      "avgScore": 123
+    },
+    {
+      "clusterId": "cluster.link-t-slug-main",
+      "canonicalGroup": "link",
+      "elementCount": 1,
+      "high": 1,
+      "medium": 0,
+      "low": 0,
+      "unknownRoute": 0,
+      "routes": [
+        "/shared"
+      ],
+      "totalScore": 123,
+      "sampleItems": [
+        "ui.shared.link.item-10.link"
+      ],
+      "avgScore": 123
+    },
+    {
+      "clusterId": "cluster.button-booking",
+      "canonicalGroup": "button",
+      "elementCount": 1,
+      "high": 1,
+      "medium": 0,
+      "low": 0,
+      "unknownRoute": 0,
+      "routes": [
+        "/t/{slug}/book"
+      ],
+      "totalScore": 115,
+      "sampleItems": [
+        "ui.t-slug-book.bookingpage.item-0.button"
+      ],
+      "avgScore": 115
+    },
+    {
+      "clusterId": "cluster.link-main",
+      "canonicalGroup": "link",
+      "elementCount": 7,
+      "high": 7,
+      "medium": 0,
+      "low": 0,
+      "unknownRoute": 0,
+      "routes": [
+        "/shared",
+        "/dashboard",
+        "/schedule",
+        "/files",
+        "/notifications",
+        "/support",
+        "/student"
+      ],
+      "totalScore": 783,
+      "sampleItems": [
+        "ui.shared.link.item-0.link",
+        "runtime.-dashboard.6",
+        "runtime.-schedule.6"
+      ],
+      "avgScore": 111.9
+    },
+    {
+      "clusterId": "cluster.link-finance",
+      "canonicalGroup": "link",
+      "elementCount": 3,
+      "high": 3,
+      "medium": 0,
+      "low": 0,
+      "unknownRoute": 0,
+      "routes": [
+        "/finance",
+        "/payments",
+        "/packages"
+      ],
+      "totalScore": 330,
+      "sampleItems": [
+        "runtime.-finance.6",
+        "runtime.-payments.6",
+        "runtime.-packages.6"
+      ],
+      "avgScore": 110
+    },
+    {
+      "clusterId": "cluster.link-auth",
+      "canonicalGroup": "link",
+      "elementCount": 2,
+      "high": 2,
+      "medium": 0,
+      "low": 0,
+      "unknownRoute": 0,
+      "routes": [
+        "/auth?view=signin",
+        "/auth?view=student"
+      ],
+      "totalScore": 220,
+      "sampleItems": [
+        "runtime.-auth-view-signin.6",
+        "runtime.-auth-view-student.3"
+      ],
+      "avgScore": 110
+    },
+    {
+      "clusterId": "cluster.link-settings",
+      "canonicalGroup": "link",
+      "elementCount": 1,
+      "high": 1,
+      "medium": 0,
+      "low": 0,
+      "unknownRoute": 0,
+      "routes": [
+        "/settings"
+      ],
+      "totalScore": 110,
+      "sampleItems": [
+        "runtime.-settings.6"
+      ],
+      "avgScore": 110
+    },
+    {
+      "clusterId": "cluster.button-main",
+      "canonicalGroup": "button",
+      "elementCount": 13,
+      "high": 10,
+      "medium": 3,
+      "low": 0,
+      "unknownRoute": 0,
+      "routes": [
+        "/student",
+        "/student/setup",
+        "/students/{id}",
+        "/shared"
+      ],
+      "totalScore": 1401,
+      "sampleItems": [
+        "ui.student.loader.item-0.button",
+        "ui.student-setup.loader.item-0.button",
+        "ui.students-id.loader.item-0.button"
+      ],
+      "avgScore": 107.8
+    },
+    {
+      "clusterId": "cluster.toggle-main",
+      "canonicalGroup": "toggle",
+      "elementCount": 3,
+      "high": 3,
+      "medium": 0,
+      "low": 0,
+      "unknownRoute": 0,
+      "routes": [
+        "/shared"
+      ],
+      "totalScore": 305,
+      "sampleItems": [
+        "ui.shared.switch.item-1.switch",
+        "ui.shared.checkbox.item-26.checkbox",
+        "ui.shared.segmentedradiogroup.item-13.radio"
+      ],
+      "avgScore": 101.7
+    },
+    {
+      "clusterId": "cluster.button-публичная-страница-main",
+      "canonicalGroup": "button",
+      "elementCount": 2,
+      "high": 2,
+      "medium": 0,
+      "low": 0,
+      "unknownRoute": 0,
+      "routes": [
+        "/shared"
+      ],
+      "totalScore": 146,
+      "sampleItems": [
+        "ui.shared.gdropdownmenu.публичная-страница.button",
+        "ui.shared.text.публичная-страница.button"
+      ],
+      "avgScore": 73
+    },
+    {
+      "clusterId": "cluster.button-политика-отмен-main",
+      "canonicalGroup": "button",
+      "elementCount": 2,
+      "high": 2,
+      "medium": 0,
+      "low": 0,
+      "unknownRoute": 0,
+      "routes": [
+        "/shared"
+      ],
+      "totalScore": 146,
+      "sampleItems": [
+        "ui.shared.unknown.политика-отмен.button",
+        "ui.shared.text.политика-отмен.button"
+      ],
+      "avgScore": 73
+    },
+    {
+      "clusterId": "cluster.button-formatcompletedlessonlabel-lesson-main",
+      "canonicalGroup": "button",
+      "elementCount": 2,
+      "high": 2,
+      "medium": 0,
+      "low": 0,
+      "unknownRoute": 0,
+      "routes": [
+        "/shared"
+      ],
+      "totalScore": 146,
+      "sampleItems": [
+        "ui.shared.unknown.formatcompletedlessonlabel-lesson.button",
+        "ui.shared.text.formatcompletedlessonlabel-lesson.button"
+      ],
+      "avgScore": 73
+    },
+    {
+      "clusterId": "cluster.button-formatlessonlabel-lesson-main",
+      "canonicalGroup": "button",
+      "elementCount": 2,
+      "high": 2,
+      "medium": 0,
+      "low": 0,
+      "unknownRoute": 0,
+      "routes": [
+        "/shared"
+      ],
+      "totalScore": 146,
+      "sampleItems": [
+        "ui.shared.unknown.formatlessonlabel-lesson.button",
+        "ui.shared.text.formatlessonlabel-lesson.button"
+      ],
+      "avgScore": 73
+    },
+    {
+      "clusterId": "cluster.button-formathomeworklabel-hw-main",
+      "canonicalGroup": "button",
+      "elementCount": 2,
+      "high": 2,
+      "medium": 0,
+      "low": 0,
+      "unknownRoute": 0,
+      "routes": [
+        "/shared"
+      ],
+      "totalScore": 146,
+      "sampleItems": [
+        "ui.shared.unknown.formathomeworklabel-hw.button",
+        "ui.shared.text.formathomeworklabel-hw.button"
+      ],
+      "avgScore": 73
+    },
+    {
+      "clusterId": "cluster.button-item-title-main",
+      "canonicalGroup": "button",
+      "elementCount": 2,
+      "high": 2,
+      "medium": 0,
+      "low": 0,
+      "unknownRoute": 0,
+      "routes": [
+        "/shared"
+      ],
+      "totalScore": 146,
+      "sampleItems": [
+        "ui.shared.unknown.item-title.button",
+        "ui.shared.text.item-title.button"
+      ],
+      "avgScore": 73
+    },
+    {
+      "clusterId": "cluster.button-item-label-main",
+      "canonicalGroup": "button",
+      "elementCount": 2,
+      "high": 2,
+      "medium": 0,
+      "low": 0,
+      "unknownRoute": 0,
+      "routes": [
+        "/shared"
+      ],
+      "totalScore": 146,
+      "sampleItems": [
+        "ui.shared.button.item-label.button",
+        "ui.shared.text.item-label.button"
+      ],
+      "avgScore": 73
+    },
+    {
+      "clusterId": "cluster.button-вход-ученика-main",
+      "canonicalGroup": "button",
+      "elementCount": 2,
+      "high": 2,
+      "medium": 0,
+      "low": 0,
+      "unknownRoute": 0,
+      "routes": [
+        "/shared"
+      ],
+      "totalScore": 146,
+      "sampleItems": [
+        "ui.shared.button.вход-ученика.button",
+        "ui.shared.text.вход-ученика.button"
+      ],
+      "avgScore": 73
+    },
+    {
+      "clusterId": "cluster.button-folder-name-main",
+      "canonicalGroup": "button",
+      "elementCount": 2,
+      "high": 2,
+      "medium": 0,
+      "low": 0,
+      "unknownRoute": 0,
+      "routes": [
+        "/shared"
+      ],
+      "totalScore": 146,
+      "sampleItems": [
+        "ui.shared.unknown.folder-name.button",
+        "ui.shared.text.folder-name.button"
+      ],
+      "avgScore": 73
+    }
+  ]
+}

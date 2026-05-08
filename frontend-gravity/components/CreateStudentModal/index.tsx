@@ -292,6 +292,7 @@ const CreateStudentModal = ({ visible, onClose, onCreated }: CreateStudentModalP
             footer={(
                 <Button
                     className="lp2__submit"
+                    data-testid="create-student-submit"
                     view="action"
                     size="xl"
                     width="max"

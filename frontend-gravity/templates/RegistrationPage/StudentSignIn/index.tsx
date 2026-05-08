@@ -253,7 +253,7 @@ const StudentSignIn = ({ onBack, initialEmail, onSignedIn }: StudentSignInProps)
                 </Text>
             )}
 
-            <Button view="action" size="l" type="submit" width="max" loading={loading} className="repeto-student-auth__submit">
+            <Button view="action" size="l" type="submit" width="max" loading={loading} className="repeto-student-auth__submit" data-testid="auth-student-submit">
                 {step === "email" ? "Получить код" : "Войти"}
             </Button>
 
@@ -261,6 +261,7 @@ const StudentSignIn = ({ onBack, initialEmail, onSignedIn }: StudentSignInProps)
                 <button
                     type="button"
                     onClick={onBack}
+                    data-testid="auth-switch-to-tutor"
                     className="repeto-student-auth__back-btn"
                 >
                     Я репетитор

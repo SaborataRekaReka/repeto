@@ -419,6 +419,7 @@ const CreatePaymentModal = ({
                     <div className="lp2__actions lp2__actions--split">
                         <Button
                             className="lp2__action lp2__action--secondary"
+                            data-testid="create-payment-delete"
                             view="outlined"
                             size="xl"
                             width="max"
@@ -435,6 +436,7 @@ const CreatePaymentModal = ({
                         </Button>
                         <Button
                             className="lp2__submit lp2__action"
+                            data-testid="create-payment-submit"
                             view="action"
                             size="xl"
                             width="max"
@@ -448,6 +450,7 @@ const CreatePaymentModal = ({
                     <div className="lp2__actions">
                         <Button
                             className="lp2__submit lp2__action"
+                            data-testid="create-payment-submit"
                             view="action"
                             size="xl"
                             width="max"
