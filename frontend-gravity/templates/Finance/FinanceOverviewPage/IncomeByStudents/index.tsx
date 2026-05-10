@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/router";
+import { createPortal } from "react-dom";
 import { Text, Card, Loader } from "@gravity-ui/uikit";
 import { usePayments } from "@/hooks/usePayments";
 
@@ -380,7 +381,6 @@ const IncomeByStudents = ({ paymentsOverride, disableInteractions = false }: Inc
                                                           cursor: disableInteractions ? "default" : "pointer",
                                                       }}
                                                       ref={setSegmentRef(`${m.key}-${seg.id}`)}
-                                                      title={`${seg.name} · ${formatRub(seg.amount)}`}
                                                       onMouseEnter={(e) =>
                                                           handleEnter(e, seg, m.label)
                                                       }
@@ -415,23 +415,27 @@ const IncomeByStudents = ({ paymentsOverride, disableInteractions = false }: Inc
                 </div>
             )}
 
-            {tooltip && !disableInteractions && (
-                <div
-                    className="repeto-income-chart__tooltip"
-                    style={{ top: tooltip.y + 14, left: tooltip.x + 14 }}
-                    role="tooltip"
-                >
-                    <div className="repeto-income-chart__tooltip-name">
-                        {tooltip.name}
-                    </div>
-                    <div className="repeto-income-chart__tooltip-amount">
-                        {formatRub(tooltip.amount)}
-                        <span className="repeto-income-chart__tooltip-month">
-                            {` · ${tooltip.monthLabel}`}
-                        </span>
-                    </div>
-                </div>
-            )}
+            {tooltip &&
+                !disableInteractions &&
+                typeof document !== "undefined" &&
+                createPortal(
+                    <div
+                        className="repeto-income-chart__tooltip"
+                        style={{ top: tooltip.y + 14, left: tooltip.x + 14 }}
+                        role="tooltip"
+                    >
+                        <div className="repeto-income-chart__tooltip-name">
+                            {tooltip.name}
+                        </div>
+                        <div className="repeto-income-chart__tooltip-amount">
+                            {formatRub(tooltip.amount)}
+                            <span className="repeto-income-chart__tooltip-month">
+                                {` · ${tooltip.monthLabel}`}
+                            </span>
+                        </div>
+                    </div>,
+                    document.body
+                )}
         </Card>
     );
 };

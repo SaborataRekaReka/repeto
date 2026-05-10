@@ -6,35 +6,35 @@ import { test, expect, waitForAPI, API_BASE } from './helpers/auth';
 
 test.describe('Оплаты — список', () => {
   test('страница оплат загружается', async ({ authedPage: page }) => {
-    await page.goto('/payments');
+    await page.goto('/finance/payments');
     await page.waitForLoadState('networkidle');
 
     // Табы должны быть
-    await expect(page.getByText('Все').first()).toBeVisible();
-    await expect(page.getByText('Оплачено').first()).toBeVisible();
+    await expect(page.getByRole('tab', { name: /^Все/i }).first()).toBeVisible();
+    await expect(page.getByRole('tab', { name: /^Оплачено/i }).first()).toBeVisible();
 
-    // Либо таблица, либо пустой state
-    const hasTable = await page.locator('table').isVisible().catch(() => false);
-    const hasEmpty = await page.getByText(/Нет оплат/).isVisible().catch(() => false);
-    expect(hasTable || hasEmpty).toBeTruthy();
+    // Либо список оплат, либо пустой state
+    const hasRows = await page.locator('.repeto-sl-list .repeto-sl-row').first().isVisible().catch(() => false);
+    const hasEmpty = await page.getByText(/Пока нет оплат|Ничего не найдено/).first().isVisible().catch(() => false);
+    expect(hasRows || hasEmpty).toBeTruthy();
   });
 
   test('табы фильтруют оплаты', async ({ authedPage: page }) => {
-    await page.goto('/payments');
+    await page.goto('/finance/payments');
     await page.waitForLoadState('networkidle');
 
-    await page.getByRole('radio', { name: 'Оплачено' }).click();
+    await page.getByRole('tab', { name: /^Оплачено/i }).first().click();
     await page.waitForTimeout(500);
 
-    await page.getByRole('radio', { name: 'Все' }).click();
+    await page.getByRole('tab', { name: /^Все/i }).first().click();
     await page.waitForTimeout(500);
   });
 
   test('поиск по оплатам', async ({ authedPage: page }) => {
-    await page.goto('/payments');
+    await page.goto('/finance/payments');
     await page.waitForLoadState('networkidle');
 
-    const search = page.getByPlaceholder('Поиск...');
+    const search = page.getByPlaceholder('Имя ученика');
     if (await search.isVisible()) {
       await search.fill('НесуществующийПоиск');
       await page.waitForTimeout(500);
@@ -65,10 +65,8 @@ test.describe('Оплаты — создание (live update)', () => {
   };
 
   test('в модалке оплаты загружается список активных учеников', async ({ authedPage: page }) => {
-    await page.goto('/payments');
+    await page.goto('/finance/payments?create=1');
     await page.waitForLoadState('networkidle');
-
-    await page.getByRole('button', { name: /Записать оплату/i }).first().click();
 
     const paymentDialog = page.getByRole('dialog', { name: 'Новая оплата' }).first();
     await expect(paymentDialog).toBeVisible({ timeout: 10000 });
@@ -85,11 +83,9 @@ test.describe('Оплаты — создание (live update)', () => {
   });
 
   test('создание оплаты через модал — видна без F5', async ({ authedPage: page }) => {
-    await page.goto('/payments');
+    await page.goto('/finance/payments?create=1');
     await page.waitForLoadState('networkidle');
 
-    // Кликаем "Записать оплату"
-    await page.getByRole('button', { name: /Записать оплату/i }).first().click();
     const paymentDialog = page.getByRole('dialog', { name: 'Новая оплата' }).first();
     await expect(paymentDialog).toBeVisible({ timeout: 10000 });
 
@@ -140,16 +136,16 @@ test.describe('Оплаты — создание (live update)', () => {
 
 test.describe('Оплаты — детали', () => {
   test('клик по оплате открывает детали', async ({ authedPage: page }) => {
-    await page.goto('/payments');
+    await page.goto('/finance/payments');
     await page.waitForLoadState('networkidle');
 
-    const firstRow = page.locator('table tbody tr').first();
+    const firstRow = page.locator('.repeto-sl-list .repeto-sl-row').first();
     if (await firstRow.isVisible().catch(() => false)) {
       await firstRow.click();
       await page.waitForTimeout(500);
 
       // Должен открыться модал деталей
-      const hasDetail = await page.getByText(/Детали оплаты|Сумма|Способ/i).first().isVisible().catch(() => false);
+      const hasDetail = await page.getByText(/Редактирование оплаты|Сумма|Способ/i).first().isVisible().catch(() => false);
       expect(hasDetail).toBeTruthy();
     }
   });

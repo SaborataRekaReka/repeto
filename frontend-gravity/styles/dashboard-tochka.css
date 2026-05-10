@@ -408,7 +408,7 @@
     --t-pad-x: 16px;
     --t-pad-y: 12px;
 
-    /* Restrained mint (derived from Repeto brand green #98E9AB), used only
+    /* Restrained mint (derived from Repeto brand green #00AA8D), used only
        for enablement/positive states. */
     --t-mint-soft: #EBF6EE;
     --t-mint-soft-strong: #DBEFE1;
@@ -1989,6 +1989,14 @@
 .repeto-tochka-dash .repeto-card-chevron .g-icon {
     color: var(--t-text-primary);
 }
+
+@media (max-width: 1024px), (max-height: 520px) and (pointer: coarse) {
+    .repeto-tochka-dash .repeto-card-chevron {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+    }
+}
 /* Hide any leftover text-arrow card links still rendered */
 
 /* IncomeChart: compact variant — shorter chart height, tighter spacing */
@@ -2556,11 +2564,11 @@
     position: fixed;
     z-index: 9999;
     pointer-events: none;
-    background: var(--t-text-primary);
-    color: var(--t-surface);
+    background: var(--t-text-primary, rgba(18, 22, 30, 0.96));
+    color: var(--t-surface, #f6f8fb);
     padding: 8px 10px;
     border-radius: 8px;
-    box-shadow: var(--t-tooltip-shadow);
+    box-shadow: var(--t-tooltip-shadow, 0 10px 24px rgba(15, 23, 42, 0.28));
     font-size: 12px;
     line-height: 16px;
     max-width: 240px;
@@ -2577,10 +2585,10 @@
 .repeto-income-chart__tooltip-amount {
     font-variant-numeric: tabular-nums;
     font-size: 12px;
-    color: var(--t-tooltip-muted);
+    color: var(--t-tooltip-muted, rgba(246, 248, 251, 0.84));
 }
 .repeto-income-chart__tooltip-month {
-    color: var(--t-text-subtle);
+    color: var(--t-text-subtle, rgba(246, 248, 251, 0.7));
 }
 
 @media (max-width: 720px) {
@@ -2998,7 +3006,7 @@
     }
 
     .repeto-mobile-nav__item {
-        min-width: calc(20% - 0.4px) !important;
-        flex: 0 0 calc(20% - 0.4px) !important;
+        min-width: 0 !important;
+        flex: 1 1 0 !important;
     }
 }

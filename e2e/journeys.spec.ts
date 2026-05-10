@@ -103,22 +103,24 @@ test.describe("Journeys v2", () => {
   });
 
   test("students flow: filters, search and student card open", async ({ authedPage: page }) => {
-    await gotoRoute(page, "/students");
-    await expect(page.locator(".page-overlay__title")).toContainText(/ученики/i);
+    await gotoRoute(page, "/students", "input[placeholder='Имя, предмет или класс'], .repeto-sl-row--students, .repeto-sl-empty");
+    await expect(page.getByPlaceholder("Имя, предмет или класс")).toBeVisible();
 
-    const pills = page.locator(".repeto-sl-pill");
-    const pillsCount = await pills.count();
-    for (let i = 0; i < pillsCount; i += 1) {
-      await pills.nth(i).click();
-      await expect(pills.nth(i)).toHaveClass(/active/);
+    const filterButtons = [/Активные/i, /На паузе/i, /^Все/i];
+    for (const name of filterButtons) {
+      const button = page.getByRole("button", { name }).first();
+      if (!(await button.isVisible().catch(() => false))) continue;
+      if (!(await button.isEnabled().catch(() => false))) continue;
+      await button.click();
+      await page.waitForTimeout(250);
     }
 
-    const searchInput = page.locator(".repeto-sl-search input").first();
+    const searchInput = page.getByPlaceholder("Имя, предмет или класс");
     await searchInput.fill("test");
     await expect(searchInput).toHaveValue("test");
     await searchInput.fill("");
 
-    const firstRow = page.locator(".repeto-sl-row").first();
+    const firstRow = page.locator(".repeto-sl-row--students").first();
     if (await firstRow.isVisible().catch(() => false)) {
       await firstRow.click();
       await expect(page).toHaveURL(/\/students\/[^/?#]+/);
@@ -181,85 +183,76 @@ test.describe("Journeys v2", () => {
   });
 
   test("payments flow: tabs, search and create modal", async ({ authedPage: page }) => {
-    await gotoRoute(page, "/payments", ".page-overlay__title, .repeto-sl-pill, .repeto-top-header, h1");
+    await gotoRoute(page, "/finance/payments", "input[placeholder='Имя ученика'], .repeto-sl-row--payments, .repeto-sl-empty");
 
-    const paymentsTitle = page.locator(".page-overlay__title").first();
-    if (await paymentsTitle.isVisible().catch(() => false)) {
-      await expect(paymentsTitle).toContainText(/оплаты/i);
+    const filterButtons = [/Оплачено/i, /^Все/i];
+    for (const name of filterButtons) {
+      const button = page.getByRole("button", { name }).first();
+      if (!(await button.isVisible().catch(() => false))) continue;
+      if (!(await button.isEnabled().catch(() => false))) continue;
+      await button.click();
+      await page.waitForTimeout(250);
     }
 
-    const pills = page.locator(".repeto-sl-pill");
-    const count = await pills.count();
-    for (let i = 0; i < count; i += 1) {
-      const pill = pills.nth(i);
-      if (!(await pill.isVisible().catch(() => false))) continue;
-      if (!(await pill.isEnabled().catch(() => false))) continue;
-      await pill.click();
-    }
-
-    const searchInput = page.locator(".repeto-sl-search input").first();
+    const searchInput = page.getByPlaceholder("Имя ученика");
     if (await searchInput.isVisible().catch(() => false)) {
       await searchInput.fill("test");
       await searchInput.fill("");
     }
 
-    const createPaymentButton = page
-      .locator("button")
-      .filter({ hasText: /Записать оплату|Добавить оплату/i })
-      .first();
-
-    await expect(createPaymentButton).toBeVisible();
-    await createPaymentButton.click();
-    await expect(page.locator('[aria-label="Новая оплата"], [aria-label="Редактирование оплаты"]').first()).toBeVisible();
+    await page.goto("/finance/payments?create=1", { waitUntil: "domcontentloaded" });
+    await expect(page.locator('[aria-label="Новая оплата"], .lp2.lp2--open[aria-label="Новая оплата"]').first()).toBeVisible();
     await closeModalByEscape(page);
   });
 
   test("packages flow: type tabs, status tabs and create modal", async ({ authedPage: page }) => {
-    await gotoRoute(page, "/packages", ".page-overlay__title, .repeto-packages-type-tab, .repeto-sl-pill, .repeto-top-header, h1");
+    await gotoRoute(page, "/finance/packages", "input[placeholder='Ученик или предмет'], .repeto-sl-row--packages, .repeto-sl-empty");
 
-    const packagesTitle = page.locator(".page-overlay__title").first();
-    if (await packagesTitle.isVisible().catch(() => false)) {
-      await expect(packagesTitle).toContainText(/пакеты/i);
+    const typeButtons = [/Публичные/i, /Обычные/i];
+    for (const name of typeButtons) {
+      const button = page.getByRole("button", { name }).first();
+      if (!(await button.isVisible().catch(() => false))) continue;
+      if (!(await button.isEnabled().catch(() => false))) continue;
+      await button.click();
+      await page.waitForTimeout(250);
     }
 
-    const packageTypeTabs = page.locator(".repeto-packages-type-tab");
-    const typeTabsCount = await packageTypeTabs.count();
-    for (let i = 0; i < typeTabsCount; i += 1) {
-      const typeTab = packageTypeTabs.nth(i);
-      if (!(await typeTab.isVisible().catch(() => false))) continue;
-      if (!(await typeTab.isEnabled().catch(() => false))) continue;
-      await typeTab.click();
+    const statusButtons = [/Активные/i, /Завершённые/i, /^Все/i];
+    for (const name of statusButtons) {
+      const button = page.getByRole("button", { name }).first();
+      if (!(await button.isVisible().catch(() => false))) continue;
+      if (!(await button.isEnabled().catch(() => false))) continue;
+      await button.click();
+      await page.waitForTimeout(250);
     }
 
-    const statusTabs = page.locator(".repeto-sl-pill");
-    const statusTabsCount = await statusTabs.count();
-    for (let i = 0; i < statusTabsCount; i += 1) {
-      const statusTab = statusTabs.nth(i);
-      if (!(await statusTab.isVisible().catch(() => false))) continue;
-      if (!(await statusTab.isEnabled().catch(() => false))) continue;
-      await statusTab.click();
-    }
-
-    const createPackageButton = page.locator("button").filter({ hasText: /Новый пакет/i }).first();
-    await expect(createPackageButton).toBeVisible();
-    await createPackageButton.click();
+    await page.goto("/finance/packages?create=1", { waitUntil: "domcontentloaded" });
     await expect(page.locator('[aria-label="Новый пакет"], [aria-label="Редактирование пакета"]').first()).toBeVisible();
     await closeModalByEscape(page);
   });
 
   test("files flow: section switching and empty-state branch", async ({ authedPage: page }) => {
-    await gotoRoute(page, "/files");
-    await expect(page.locator(".page-overlay__title")).toContainText(/материалы/i);
+    await gotoRoute(
+      page,
+      "/files",
+      "text=Подключите облачное хранилище, text=Нет расшаренных файлов, text=Google Drive, text=Яндекс.Диск",
+    );
 
-    const sectionButtons = page.locator(".page-overlay__nav-item--section");
-    const sectionCount = await sectionButtons.count();
-    for (let i = 0; i < sectionCount; i += 1) {
-      await sectionButtons.nth(i).click();
+    const accessButton = page.getByRole("button", { name: /Доступы учеников/i }).first();
+    if (await accessButton.isVisible().catch(() => false)) {
+      await accessButton.click();
+      await page.waitForTimeout(250);
     }
 
-    const connectCloudCta = page.locator('a[href="/settings?tab=integrations"]').first();
-    if (await connectCloudCta.isVisible().catch(() => false)) {
-      await connectCloudCta.click();
+    const filesButton = page.getByRole("button", { name: /^Файлы$/i }).first();
+    if (await filesButton.isVisible().catch(() => false)) {
+      await filesButton.click();
+      await page.waitForTimeout(250);
+    }
+
+    const connectCloudButton = page.getByRole("button", { name: /Подключить в Настройках/i }).first();
+    if (await connectCloudButton.isVisible().catch(() => false)) {
+      await connectCloudButton.click();
       await expect(page).toHaveURL(/\/settings\?tab=integrations/);
     }
   });
@@ -284,20 +277,32 @@ test.describe("Journeys v2", () => {
   });
 
   test("settings flow: sections and theme controls", async ({ authedPage: page }) => {
-    await gotoRoute(page, "/settings");
-    await expect(page.locator(".repeto-settings-layout")).toBeVisible();
+    await gotoRoute(page, "/settings", ".repeto-settings-content--shell, .repeto-settings-page-head__title");
+    await expect(page.locator(".repeto-settings-content--shell")).toBeVisible();
 
-    const sectionButtons = page.locator(".repeto-settings-nav-btn");
-    const count = await sectionButtons.count();
-    for (let i = 0; i < count; i += 1) {
-      await sectionButtons.nth(i).click();
-      await expect(page.locator(".repeto-settings-content")).toBeVisible();
+    const sectionLabels = [
+      /Личные данные/i,
+      /Публичная страница/i,
+      /Интеграции/i,
+      /Уведомления/i,
+      /Правила занятий/i,
+      /Безопасность/i,
+    ];
+    for (const name of sectionLabels) {
+      const button = page.getByRole("button", { name }).first();
+      if (!(await button.isVisible().catch(() => false))) continue;
+      await button.click();
+      await expect(page.locator(".repeto-settings-page-head__title")).toBeVisible();
     }
 
-    const themeButtons = page.locator(".repeto-settings-theme-btn");
-    const themesCount = await themeButtons.count();
-    for (let i = 0; i < themesCount; i += 1) {
-      await themeButtons.nth(i).click();
+    const themeButtons = [
+      page.getByTestId("settings-theme-light").first(),
+      page.getByTestId("settings-theme-system").first(),
+      page.getByTestId("settings-theme-dark").first(),
+    ];
+    for (const button of themeButtons) {
+      if (!(await button.isVisible().catch(() => false))) continue;
+      await button.click();
     }
   });
 

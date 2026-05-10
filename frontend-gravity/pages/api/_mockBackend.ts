@@ -4522,6 +4522,7 @@ function handlePublicAndStudent(
       res.status(200).json({
         name: student?.name || state.studentAccount.name,
         email: state.studentAccount.email,
+        avatarUrl: student?.avatarUrl || state.studentAccount.avatarUrl || null,
         phone: student?.phone || '',
         age: student?.age || null,
         grade: student?.grade || '',
@@ -4571,6 +4572,7 @@ function handlePublicAndStudent(
       if (student) {
         student.avatarUrl = avatarUrl;
       }
+      state.studentAccount.avatarUrl = avatarUrl;
       res.status(200).json({ avatarUrl });
       return true;
     }

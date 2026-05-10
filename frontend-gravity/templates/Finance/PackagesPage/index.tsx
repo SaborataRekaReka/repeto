@@ -201,93 +201,95 @@ const PackagesPage = () => {
                     </div>
                 ) : (
                     <div className="repeto-sl-table">
-                        <div
-                            className={`repeto-sl-list-header repeto-sl-list-header--packages${
-                                isPublicPackagesTab ? " repeto-sl-list-header--packages-public" : ""
-                            }`}
-                        >
-                            <span className="repeto-sl-lh__col">Ученик</span>
-                            {!isPublicPackagesTab && <span className="repeto-sl-lh__col">Прогресс</span>}
-                            <span className="repeto-sl-lh__col">Занятия</span>
-                            <span className="repeto-sl-lh__col repeto-sl-lh__col--rate">Сумма</span>
-                            {!isPublicPackagesTab && <span className="repeto-sl-lh__col">Действует до</span>}
-                            <span className="repeto-sl-lh__col">Статус</span>
-                            <span className="repeto-sl-lh__col">&nbsp;</span>
-                        </div>
+                        <div className="repeto-sl-table-scroll">
+                            <div
+                                className={`repeto-sl-list-header repeto-sl-list-header--packages${
+                                    isPublicPackagesTab ? " repeto-sl-list-header--packages-public" : ""
+                                }`}
+                            >
+                                <span className="repeto-sl-lh__col">Ученик</span>
+                                {!isPublicPackagesTab && <span className="repeto-sl-lh__col">Прогресс</span>}
+                                <span className="repeto-sl-lh__col">Занятия</span>
+                                <span className="repeto-sl-lh__col repeto-sl-lh__col--rate">Сумма</span>
+                                {!isPublicPackagesTab && <span className="repeto-sl-lh__col">Действует до</span>}
+                                <span className="repeto-sl-lh__col">Статус</span>
+                                <span className="repeto-sl-lh__col">&nbsp;</span>
+                            </div>
 
-                        <div className="repeto-sl-list">
-                            {filtered.map((pkg) => {
-                                const pct = pkg.lessonsTotal > 0
-                                    ? Math.min(100, (pkg.lessonsUsed / pkg.lessonsTotal) * 100)
-                                    : 0;
-                                return (
-                                    <div
-                                        key={pkg.id}
-                                        className={`repeto-sl-row repeto-sl-row--packages${
-                                            isPublicPackagesTab ? " repeto-sl-row--packages-public" : ""
-                                        }`}
-                                        onClick={() => {
-                                            setEditingPackage(pkg);
-                                        }}
-                                    >
-                                        <div className="repeto-sl-row__cell repeto-sl-row__cell--name">
-                                            <StudentAvatar
-                                                student={{ name: pkg.studentName, avatarUrl: undefined }}
-                                                size="s"
-                                                style={{ marginRight: 10, flexShrink: 0 }}
-                                            />
-                                            <div className="repeto-sl-row__name-text">
-                                                <span className="repeto-sl-row__primary">
-                                                    <StudentNameWithBadge
-                                                        name={pkg.studentName}
-                                                        hasRepetoAccount={Boolean(pkg.studentAccountId)}
-                                                        truncate
-                                                    />
-                                                </span>
-                                                <span className="repeto-sl-row__secondary">{pkg.subject}</span>
-                                            </div>
-                                        </div>
-                                        {!isPublicPackagesTab && (
-                                            <div className="repeto-sl-row__cell">
-                                                <div className="repeto-sl-progress">
-                                                    <div
-                                                        className="repeto-sl-progress__bar"
-                                                        style={{
-                                                            width: `${pct}%`,
-                                                            background: progressColor(pkg.lessonsUsed, pkg.lessonsTotal),
-                                                        }}
-                                                    />
+                            <div className="repeto-sl-list">
+                                {filtered.map((pkg) => {
+                                    const pct = pkg.lessonsTotal > 0
+                                        ? Math.min(100, (pkg.lessonsUsed / pkg.lessonsTotal) * 100)
+                                        : 0;
+                                    return (
+                                        <div
+                                            key={pkg.id}
+                                            className={`repeto-sl-row repeto-sl-row--packages${
+                                                isPublicPackagesTab ? " repeto-sl-row--packages-public" : ""
+                                            }`}
+                                            onClick={() => {
+                                                setEditingPackage(pkg);
+                                            }}
+                                        >
+                                            <div className="repeto-sl-row__cell repeto-sl-row__cell--name">
+                                                <StudentAvatar
+                                                    student={{ name: pkg.studentName, avatarUrl: undefined }}
+                                                    size="s"
+                                                    style={{ marginRight: 10, flexShrink: 0 }}
+                                                />
+                                                <div className="repeto-sl-row__name-text">
+                                                    <span className="repeto-sl-row__primary">
+                                                        <StudentNameWithBadge
+                                                            name={pkg.studentName}
+                                                            hasRepetoAccount={Boolean(pkg.studentAccountId)}
+                                                            truncate
+                                                        />
+                                                    </span>
+                                                    <span className="repeto-sl-row__secondary">{pkg.subject}</span>
                                                 </div>
                                             </div>
-                                        )}
-                                        <div className="repeto-sl-row__cell">
-                                            <span className="repeto-sl-cell-money">
-                                                {pkg.lessonsUsed}/{pkg.lessonsTotal}
-                                            </span>
-                                        </div>
-                                        <div className="repeto-sl-row__cell repeto-sl-row__cell--rate">
-                                            <span className="repeto-sl-cell-money">
-                                                {pkg.totalPrice.toLocaleString("ru-RU")}&nbsp;₽
-                                            </span>
-                                        </div>
-                                        {!isPublicPackagesTab && (
+                                            {!isPublicPackagesTab && (
+                                                <div className="repeto-sl-row__cell">
+                                                    <div className="repeto-sl-progress">
+                                                        <div
+                                                            className="repeto-sl-progress__bar"
+                                                            style={{
+                                                                width: `${pct}%`,
+                                                                background: progressColor(pkg.lessonsUsed, pkg.lessonsTotal),
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
                                             <div className="repeto-sl-row__cell">
-                                                <span className="repeto-sl-row__secondary">
-                                                    {pkg.validUntil || "—"}
+                                                <span className="repeto-sl-cell-money">
+                                                    {pkg.lessonsUsed}/{pkg.lessonsTotal}
                                                 </span>
                                             </div>
-                                        )}
-                                        <div className="repeto-sl-row__cell">
-                                            <span className={`repeto-sl-cell-chip ${statusChipClass(pkg.status)}`}>
-                                                {getPackageStatusLabel(pkg.status)}
-                                            </span>
+                                            <div className="repeto-sl-row__cell repeto-sl-row__cell--rate">
+                                                <span className="repeto-sl-cell-money">
+                                                    {pkg.totalPrice.toLocaleString("ru-RU")}&nbsp;₽
+                                                </span>
+                                            </div>
+                                            {!isPublicPackagesTab && (
+                                                <div className="repeto-sl-row__cell">
+                                                    <span className="repeto-sl-row__secondary">
+                                                        {pkg.validUntil || "—"}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            <div className="repeto-sl-row__cell">
+                                                <span className={`repeto-sl-cell-chip ${statusChipClass(pkg.status)}`}>
+                                                    {getPackageStatusLabel(pkg.status)}
+                                                </span>
+                                            </div>
+                                            <div className="repeto-sl-row__cell repeto-sl-row__cell--actions">
+                                                &nbsp;
+                                            </div>
                                         </div>
-                                        <div className="repeto-sl-row__cell repeto-sl-row__cell--actions">
-                                            &nbsp;
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })}
+                            </div>
                         </div>
                     </div>
                 )}

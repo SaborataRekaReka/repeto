@@ -179,74 +179,76 @@ const PaymentsListPage = () => {
                     </div>
                 ) : (
                     <div className="repeto-sl-table">
-                        <div className="repeto-sl-list-header repeto-sl-list-header--payments">
-                            <span className="repeto-sl-lh__col">Дата</span>
-                            <span className="repeto-sl-lh__col">Ученик</span>
-                            <span className="repeto-sl-lh__col repeto-sl-lh__col--rate">Сумма</span>
-                            <span className="repeto-sl-lh__col">Способ</span>
-                            <span className="repeto-sl-lh__col">Статус</span>
-                            <span className="repeto-sl-lh__col">&nbsp;</span>
-                        </div>
+                        <div className="repeto-sl-table-scroll">
+                            <div className="repeto-sl-list-header repeto-sl-list-header--payments">
+                                <span className="repeto-sl-lh__col">Дата</span>
+                                <span className="repeto-sl-lh__col">Ученик</span>
+                                <span className="repeto-sl-lh__col repeto-sl-lh__col--rate">Сумма</span>
+                                <span className="repeto-sl-lh__col">Способ</span>
+                                <span className="repeto-sl-lh__col">Статус</span>
+                                <span className="repeto-sl-lh__col">&nbsp;</span>
+                            </div>
 
-                        <div className="repeto-sl-list">
-                            {filtered.map((p) => (
-                                <div
-                                    key={p.id}
-                                    className="repeto-sl-row repeto-sl-row--payments"
-                                    onClick={() => setSelected(p)}
-                                >
-                                    <div className="repeto-sl-row__cell">
-                                        <span className="repeto-sl-row__secondary" style={{ color: "var(--g-color-text-primary)" }}>
-                                            {p.date}
-                                        </span>
-                                    </div>
-                                    <div className="repeto-sl-row__cell">
-                                        <span className="repeto-sl-row__primary">
-                                            <StudentNameWithBadge
-                                                name={p.studentName}
-                                                hasRepetoAccount={Boolean(p.studentAccountId)}
-                                                truncate
-                                            />
-                                        </span>
-                                    </div>
-                                    <div className="repeto-sl-row__cell repeto-sl-row__cell--rate">
-                                        <span className="repeto-sl-cell-money">
-                                            {p.amount.toLocaleString("ru-RU")}&nbsp;₽
-                                        </span>
-                                    </div>
-                                    <div className="repeto-sl-row__cell">
-                                        <span className="repeto-sl-cell-badge">{getMethodLabel(p.method)}</span>
-                                    </div>
-                                    <div className="repeto-sl-row__cell">
-                                        <span
-                                            className={`repeto-sl-cell-chip repeto-sl-cell-chip--${
-                                                p.status === "paid" ? "active" : "paused"
-                                            }`}
-                                        >
-                                            {getStatusLabel(p.status)}
-                                        </span>
-                                    </div>
+                            <div className="repeto-sl-list">
+                                {filtered.map((p) => (
                                     <div
-                                        className="repeto-sl-row__cell repeto-sl-row__cell--actions"
-                                        onClick={(e) => e.stopPropagation()}
+                                        key={p.id}
+                                        className="repeto-sl-row repeto-sl-row--payments"
+                                        onClick={() => setSelected(p)}
                                     >
-                                        {p.isManual ? (
-                                            <button
-                                                type="button"
-                                                className="repeto-sl-row__menu-btn"
-                                                title="Удалить оплату"
-                                                aria-label="Удалить оплату"
-                                                onClick={() => requestDeletePayment(p)}
-                                                disabled={!!deletingPaymentId || !!pendingDelete}
+                                        <div className="repeto-sl-row__cell">
+                                            <span className="repeto-sl-row__secondary" style={{ color: "var(--g-color-text-primary)" }}>
+                                                {p.date}
+                                            </span>
+                                        </div>
+                                        <div className="repeto-sl-row__cell">
+                                            <span className="repeto-sl-row__primary">
+                                                <StudentNameWithBadge
+                                                    name={p.studentName}
+                                                    hasRepetoAccount={Boolean(p.studentAccountId)}
+                                                    truncate
+                                                />
+                                            </span>
+                                        </div>
+                                        <div className="repeto-sl-row__cell repeto-sl-row__cell--rate">
+                                            <span className="repeto-sl-cell-money">
+                                                {p.amount.toLocaleString("ru-RU")}&nbsp;₽
+                                            </span>
+                                        </div>
+                                        <div className="repeto-sl-row__cell">
+                                            <span className="repeto-sl-cell-badge">{getMethodLabel(p.method)}</span>
+                                        </div>
+                                        <div className="repeto-sl-row__cell">
+                                            <span
+                                                className={`repeto-sl-cell-chip repeto-sl-cell-chip--${
+                                                    p.status === "paid" ? "active" : "paused"
+                                                }`}
                                             >
-                                                <Icon data={TrashBin as IconData} size={16} />
-                                            </button>
-                                        ) : (
-                                            <span style={{ color: "var(--g-color-text-hint)", fontSize: 12 }}>—</span>
-                                        )}
+                                                {getStatusLabel(p.status)}
+                                            </span>
+                                        </div>
+                                        <div
+                                            className="repeto-sl-row__cell repeto-sl-row__cell--actions"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            {p.isManual ? (
+                                                <button
+                                                    type="button"
+                                                    className="repeto-sl-row__menu-btn"
+                                                    title="Удалить оплату"
+                                                    aria-label="Удалить оплату"
+                                                    onClick={() => requestDeletePayment(p)}
+                                                    disabled={!!deletingPaymentId || !!pendingDelete}
+                                                >
+                                                    <Icon data={TrashBin as IconData} size={16} />
+                                                </button>
+                                            ) : (
+                                                <span style={{ color: "var(--g-color-text-hint)", fontSize: 12 }}>—</span>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
                     </div>
                 )}

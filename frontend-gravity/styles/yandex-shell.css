@@ -1523,6 +1523,13 @@
         border-radius: 8px !important;
     }
 
+    @media (max-width: 1024px) {
+        .repeto-context-sidebar__item,
+        .repeto-context-sidebar__item--create {
+            min-height: 44px !important;
+        }
+    }
+
     .repeto-context-sidebar__item:hover {
         background: transparent !important;
     }
@@ -2871,6 +2878,46 @@
     padding: 24px 32px 28px !important;
     border-color: color-mix(in srgb, var(--border-subtle) 68%, transparent) !important;
     border-radius: 18px !important;
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .page-overlay--shell.repeto-settings-overlay .repeto-settings-content--shell {
+    --repeto-settings-field-bg: color-mix(in srgb, var(--surface-subtle) 88%, #ffffff 12%);
+    --repeto-settings-field-bg-hover: color-mix(in srgb, var(--surface-subtle) 78%, #ffffff 22%);
+    --repeto-settings-field-bg-focus: var(--surface-card);
+    --repeto-settings-row-hover: color-mix(in srgb, var(--surface-subtle) 62%, transparent);
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-schedule-sidebar-calendar {
+    background: color-mix(in srgb, var(--surface-card) 92%, #000000 8%) !important;
+    border: 1px solid color-mix(in srgb, var(--border-subtle) 68%, transparent) !important;
+    border-radius: 12px !important;
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-schedule-sidebar-calendar__nav-btn:hover,
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-schedule-sidebar-calendar__day:hover {
+    background: color-mix(in srgb, #ffffff 10%, transparent) !important;
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-context-sidebar__item--active,
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-context-sidebar__item--active:hover {
+    color: var(--repeto-nav-active-text, var(--text-primary)) !important;
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-context-sidebar__item--active .repeto-context-sidebar__item-text,
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-context-sidebar__item--active .repeto-context-sidebar__item-icon,
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-context-sidebar__item--active .repeto-context-sidebar__item-icon .g-icon,
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-context-sidebar__item--active .repeto-animated-sidebar-icon__fallback .g-icon {
+    color: var(--repeto-nav-active-icon, var(--text-primary)) !important;
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-context-sidebar__item--active .repeto-context-sidebar__item-icon .g-icon svg [stroke],
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-context-sidebar__item--active .repeto-animated-sidebar-icon__canvas :is(path, circle, ellipse, line, polyline, polygon, rect) {
+    stroke: var(--repeto-nav-active-icon, var(--text-primary)) !important;
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-context-sidebar__item--active .repeto-context-sidebar__item-icon .g-icon svg [fill]:not([fill="none"]),
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-context-sidebar__item--active .repeto-animated-sidebar-icon__canvas [fill]:not([fill="none"]) {
+    fill: var(--repeto-nav-active-icon, var(--text-primary)) !important;
 }
 
 .page-overlay--shell.repeto-settings-overlay .repeto-settings-page-head {

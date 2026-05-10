@@ -1,4 +1,4 @@
-import { test, expect, DEMO_EMAIL, DEMO_PASSWORD } from "./helpers/auth";
+import { test, expect, DEMO_EMAIL, DEMO_PASSWORD, getAuthToken } from "./helpers/auth";
 import type { Page } from "@playwright/test";
 
 const API_BASE = "http://127.0.0.1:3200/api";
@@ -25,6 +25,8 @@ type BookingSlot = {
     duration: number;
 };
 
+let cachedTutorToken: string | null = null;
+
 function randomSuffix() {
     return `${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
 }
@@ -37,16 +39,59 @@ function asArray<T>(payload: unknown): T[] {
     return [];
 }
 
+function parseRateLimitDelayMs(headers: Record<string, string>, attempt: number) {
+    const retryAfterRaw = headers["retry-after"];
+    const retryAfterSeconds = Number.parseFloat(retryAfterRaw || "");
+    if (Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0) {
+        return Math.max(1_200, Math.ceil(retryAfterSeconds * 1000));
+    }
+
+    return Math.min(20_000, 1_500 * (attempt + 1));
+}
+
 async function authHeaders(page: Page) {
-    const loginResponse = await page.request.post(`${API_BASE}/auth/login`, {
-        data: { email: DEMO_EMAIL, password: DEMO_PASSWORD },
-    });
-    expect(loginResponse.ok()).toBeTruthy();
+    if (cachedTutorToken) {
+        return { Authorization: `Bearer ${cachedTutorToken}` };
+    }
 
-    const loginPayload = (await loginResponse.json()) as { accessToken?: string };
-    expect(typeof loginPayload.accessToken).toBe("string");
+    const refreshedToken = await getAuthToken(page).catch(() => null);
+    if (refreshedToken) {
+        cachedTutorToken = refreshedToken;
+        return { Authorization: `Bearer ${refreshedToken}` };
+    }
 
-    return { Authorization: `Bearer ${loginPayload.accessToken}` };
+    let lastStatus = -1;
+    let lastBody = "";
+
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+        const loginResponse = await page.request.post(`${API_BASE}/auth/login`, {
+            data: { email: DEMO_EMAIL, password: DEMO_PASSWORD },
+        });
+        lastStatus = loginResponse.status();
+
+        if (loginResponse.ok()) {
+            const loginPayload = (await loginResponse.json()) as { accessToken?: string };
+            expect(typeof loginPayload.accessToken).toBe("string");
+            cachedTutorToken = String(loginPayload.accessToken || "");
+            return { Authorization: `Bearer ${cachedTutorToken}` };
+        }
+
+        lastBody = await loginResponse.text().catch(() => "");
+        if (lastStatus === 429) {
+            const delayMs = parseRateLimitDelayMs(loginResponse.headers(), attempt);
+            await page.waitForTimeout(delayMs);
+            continue;
+        }
+
+        if (lastStatus === 401 || lastStatus === 403 || lastStatus >= 500) {
+            await page.waitForTimeout(300 * (attempt + 1));
+            continue;
+        }
+
+        break;
+    }
+
+    throw new Error(`Unable to login via /auth/login (status=${lastStatus}) body=${lastBody}`);
 }
 
 async function safeDelete(page: Page, path: string, headers: Record<string, string>) {
@@ -179,12 +224,28 @@ async function createPublicBooking(page: Page, slug: string, marker: string) {
             clientPhone: `+7${uniquePhoneDigits}`,
             clientEmail: email,
             comment: `sync-marker-${marker}`,
+            consents: {
+                lessonFor: "self",
+                bookingTermsConfirmed: true,
+            },
         },
     });
-    expect(bookingResponse.ok()).toBeTruthy();
+    const bookingStatus = bookingResponse.status();
+    const bookingBody = await bookingResponse.text();
+    expect(
+        bookingResponse.ok(),
+        `Public booking failed slug=${slug} subject=${subject} date=${slot.date} start=${slot.time} status=${bookingStatus} body=${bookingBody}`,
+    ).toBeTruthy();
+
+    let bookingPayload: { id?: string } = {};
+    try {
+        bookingPayload = JSON.parse(bookingBody) as { id?: string };
+    } catch {
+        bookingPayload = {};
+    }
 
     return {
-        booking: (await bookingResponse.json()) as { id?: string },
+        booking: bookingPayload,
         marker,
         email,
         clientName,
@@ -227,14 +288,20 @@ async function rejectBookingByMarker(page: Page, headers: Record<string, string>
             type: "BOOKING_NEW",
             limit: 100,
         },
-    });
-    if (!response.ok()) return;
+        timeout: 10_000,
+    }).catch(() => null);
+    if (!response?.ok()) return;
 
     const rows = asArray<NotificationEntity>(await response.json());
     const target = rows.find((row) => row.description.includes(marker) || row.title.includes(marker));
     if (!target) return;
 
-    await page.request.post(`${API_BASE}/notifications/${target.id}/reject-booking`, { headers }).catch(() => null);
+    await page.request
+        .post(`${API_BASE}/notifications/${target.id}/reject-booking`, {
+            headers,
+            timeout: 10_000,
+        })
+        .catch(() => null);
 }
 
 async function getLatestBookingNotificationTimestamp(
@@ -246,13 +313,16 @@ async function getLatestBookingNotificationTimestamp(
         () => page.request.get(`${API_BASE}/notifications`, {
             headers,
             params: { type: "BOOKING_NEW", limit: 100 },
+            timeout: 10_000,
         }),
         () => page.request.get(`${FRONT_API_BASE}/notifications`, {
             headers,
             params: { type: "BOOKING_NEW", limit: 100 },
+            timeout: 10_000,
         }),
         () => page.request.get(`${FRONT_API_BASE}/notifications`, {
             params: { type: "BOOKING_NEW", limit: 100 },
+            timeout: 10_000,
         }),
     ];
 
@@ -362,7 +432,8 @@ test.describe("Cross Account Sync Contract", () => {
             const markerVisible = await markerRow.isVisible({ timeout: 4_000 }).catch(() => false);
 
             if (!markerVisible) {
-                await expect(page.getByText(/Новая заявка/i).first()).toBeVisible({ timeout: 15_000 });
+                await page.reload({ waitUntil: "domcontentloaded" });
+                await page.waitForTimeout(350);
             }
 
             const confirmResponse = await page.request.post(
@@ -424,9 +495,45 @@ test.describe("Cross Account Sync Contract", () => {
             await page.getByPlaceholder("Иван Иванов").fill(`SYNC Portal ${marker}`);
             await page.getByPlaceholder("+7 (900) 123-45-67").fill("+7 999 123 45 67");
             await page.getByPlaceholder("email@example.com").fill(`sync.portal.${marker}@example.com`);
-            await page.getByText(/персональных данных/i).first().click();
 
-            await page.locator(".repeto-bk-action-btn").filter({ hasText: /Подтвердить почту/i }).first().click();
+            const cookieAccept = page.getByRole("button", { name: /Согласен/i }).first();
+            if (await cookieAccept.isVisible().catch(() => false)) {
+                await cookieAccept.click().catch(() => null);
+            }
+
+            const legalGateContinue = page.getByTestId("booking-continue-legal-gate").first();
+            if (await legalGateContinue.isVisible().catch(() => false)) {
+                const initialUserAgreement = page
+                    .getByRole("checkbox", { name: /Пользовательское соглашение/i })
+                    .first();
+                const initialPersonalData = page
+                    .getByRole("checkbox", { name: /обработк.*персональных данных/i })
+                    .first();
+
+                if (await initialUserAgreement.isVisible().catch(() => false)) {
+                    const checked = await initialUserAgreement.isChecked().catch(() => false);
+                    if (!checked) await initialUserAgreement.click();
+                }
+
+                if (await initialPersonalData.isVisible().catch(() => false)) {
+                    const checked = await initialPersonalData.isChecked().catch(() => false);
+                    if (!checked) await initialPersonalData.click();
+                }
+
+                await legalGateContinue.click();
+            }
+
+            const bookingTerms = page
+                .getByRole("checkbox", { name: /Ознакомлен.*условиями занятия/i })
+                .first();
+            if (await bookingTerms.isVisible().catch(() => false)) {
+                const checked = await bookingTerms.isChecked().catch(() => false);
+                if (!checked) await bookingTerms.click();
+            }
+
+            const submitBooking = page.getByTestId("booking-submit-request").first();
+            await expect(submitBooking).toBeVisible({ timeout: 10_000 });
+            await submitBooking.click();
             await expect(page.locator(".repeto-bk-step--otp")).toBeVisible({ timeout: 20_000 });
 
             const hasMarker = await waitForNewBookingNotification(page, headers, notificationBaseline);

@@ -85,7 +85,7 @@
 .heroSurface {
     position: relative;
     overflow: hidden;
-    background: linear-gradient(108.51deg, #905de1 59.9%, #98e9ab 105.94%);
+    background: linear-gradient(108.51deg, #905de1 59.9%, #00aa8d 105.94%);
     min-height: 100vh;
     min-height: 100dvh;
 }
@@ -836,8 +836,8 @@
 }
 
 .capabilitiesCardGreen {
-    background: #e8f9ef;
-    border: 1px solid rgba(66, 200, 98, 0.18);
+    background: #e6f7f4;
+    border: 1px solid rgba(0, 170, 141, 0.18);
 }
 
 .capabilitiesCardDark {
@@ -865,8 +865,8 @@
 }
 
 .capabilitiesCardGreen .capabilitiesCardIcon {
-    background: linear-gradient(135deg, #68d983, #2fa84d);
-    box-shadow: 0 6px 16px rgba(47, 168, 77, 0.28);
+    background: linear-gradient(135deg, #33bfa4, #007a66);
+    box-shadow: 0 6px 16px rgba(0, 170, 141, 0.28);
 }
 
 .capabilitiesCardDark .capabilitiesCardIcon {
@@ -3347,7 +3347,7 @@
 }
 
 .bentoCardDark .bentoCardList li::before {
-    background: #98e9ab;
+    background: #00aa8d;
 }
 
 .bentoCardStudentScreenshot {

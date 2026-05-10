@@ -1,4 +1,4 @@
-import { test, expect, DEMO_EMAIL, DEMO_PASSWORD } from "./helpers/auth";
+import { test, expect, DEMO_EMAIL, DEMO_PASSWORD, getAuthToken } from "./helpers/auth";
 import type { Page } from "@playwright/test";
 
 const API_BASE = "http://127.0.0.1:3200/api";
@@ -29,6 +29,8 @@ type BookingSlot = {
   duration: number;
 };
 
+const tutorTokenCache = new Map<string, string>();
+
 function randomSuffix() {
   return `${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
 }
@@ -58,7 +60,22 @@ function formatHm(date: Date) {
   return `${hours}:${minutes}`;
 }
 
+function parseRateLimitDelayMs(headers: Record<string, string>, attempt: number) {
+  const retryAfterRaw = headers["retry-after"];
+  const retryAfterSeconds = Number.parseFloat(retryAfterRaw || "");
+  if (Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0) {
+    return Math.max(1_200, Math.ceil(retryAfterSeconds * 1000));
+  }
+
+  return Math.min(20_000, 1_500 * (attempt + 1));
+}
+
 async function authHeaders(page: Page) {
+  const refreshedToken = await getAuthToken(page).catch(() => null);
+  if (refreshedToken) {
+    return { Authorization: `Bearer ${refreshedToken}` };
+  }
+
   const token = await loginTutorWithCredentials(page, DEMO_EMAIL, DEMO_PASSWORD);
   expect(Boolean(token)).toBeTruthy();
   return { Authorization: `Bearer ${token!}` };
@@ -114,8 +131,32 @@ async function activateStudentAccount(
 }
 
 async function ensurePublicProfile(page: Page, headers: Record<string, string>, slugSeed: string) {
-  const settingsResponse = await page.request.get(`${API_BASE}/settings`, { headers });
-  expect(settingsResponse.ok()).toBeTruthy();
+  let currentHeaders = headers;
+  let settingsResponse = await page.request.get(`${API_BASE}/settings`, { headers: currentHeaders });
+
+  for (let attempt = 0; !settingsResponse.ok() && attempt < 8; attempt += 1) {
+    if (settingsResponse.status() === 401 || settingsResponse.status() === 403) {
+      currentHeaders = await authHeaders(page);
+      await page.waitForTimeout(300 * (attempt + 1));
+      settingsResponse = await page.request.get(`${API_BASE}/settings`, { headers: currentHeaders });
+      continue;
+    }
+
+    if (settingsResponse.status() === 429 || settingsResponse.status() >= 500) {
+      const delayMs = parseRateLimitDelayMs(settingsResponse.headers(), attempt);
+      await page.waitForTimeout(delayMs);
+      settingsResponse = await page.request.get(`${API_BASE}/settings`, { headers: currentHeaders });
+      continue;
+    }
+
+    break;
+  }
+
+  if (!settingsResponse.ok()) {
+    const settingsBody = await settingsResponse.text().catch(() => "");
+    throw new Error(`GET /settings failed: status=${settingsResponse.status()} body=${settingsBody}`);
+  }
+
   const settings = (await settingsResponse.json()) as {
     slug?: string | null;
     published?: boolean;
@@ -129,7 +170,7 @@ async function ensurePublicProfile(page: Page, headers: Record<string, string>, 
   let publicSlug = originalSlug.trim();
   if (!publicSlug) {
     const slugResponse = await page.request.get(`${API_BASE}/settings/account/slug`, {
-      headers,
+      headers: currentHeaders,
       params: { value: `${slugSeed}-${randomSuffix()}` },
     });
     expect(slugResponse.ok()).toBeTruthy();
@@ -150,7 +191,7 @@ async function ensurePublicProfile(page: Page, headers: Record<string, string>, 
     settings.showPublicPackages === false;
   if (shouldPatch) {
     const patch = await page.request.patch(`${API_BASE}/settings/account`, {
-      headers,
+      headers: currentHeaders,
       data: {
         slug: publicSlug,
         published: true,
@@ -182,7 +223,7 @@ async function ensurePublicProfile(page: Page, headers: Record<string, string>, 
       if (!shouldPatch) return;
       await page.request
         .patch(`${API_BASE}/settings/account`, {
-          headers,
+          headers: currentHeaders,
           data: {
             slug: originalSlug,
             published: originalPublished,
@@ -239,12 +280,26 @@ async function createPublicBooking(params: {
         clientPhone: params.phone,
         clientEmail: params.email,
         comment: `rwc-marker-${params.marker}`,
+        consents: {
+          lessonFor: "self",
+          bookingTermsConfirmed: true,
+        },
       },
     },
   );
-  expect(bookingResponse.ok()).toBeTruthy();
+  const bookingStatus = bookingResponse.status();
+  const bookingBody = await bookingResponse.text();
+  expect(
+    bookingResponse.ok(),
+    `Public booking failed slug=${params.slug} subject=${subject} date=${params.slot.date} start=${params.slot.time} status=${bookingStatus} body=${bookingBody}`,
+  ).toBeTruthy();
 
-  const payload = (await bookingResponse.json()) as { id?: string };
+  let payload: { id?: string } = {};
+  try {
+    payload = JSON.parse(bookingBody) as { id?: string };
+  } catch {
+    payload = {};
+  }
   return {
     bookingId: String(payload.id || ""),
     subject,
@@ -363,20 +418,44 @@ async function maybePickFileId(page: Page, headers: Record<string, string>) {
 }
 
 async function loginTutorWithCredentials(page: Page, email: string, password: string) {
-  const response = await page.request.post(`${API_BASE}/auth/login`, {
-    data: {
-      email,
-      password,
-    },
-  });
+  const cachedToken = tutorTokenCache.get(email);
+  if (cachedToken) {
+    return cachedToken;
+  }
 
-  if (!response.ok()) {
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    const response = await page.request.post(`${API_BASE}/auth/login`, {
+      data: {
+        email,
+        password,
+      },
+    });
+
+    if (response.ok()) {
+      const payload = (await response.json()) as { accessToken?: string };
+      const token = String(payload.accessToken || "").trim();
+      if (token) {
+        tutorTokenCache.set(email, token);
+        return token;
+      }
+      return null;
+    }
+
+    if (response.status() === 429) {
+      const delayMs = parseRateLimitDelayMs(response.headers(), attempt);
+      await page.waitForTimeout(delayMs);
+      continue;
+    }
+
+    if (response.status() === 401 || response.status() === 403 || response.status() >= 500) {
+      await page.waitForTimeout(300 * (attempt + 1));
+      continue;
+    }
+
     return null;
   }
 
-  const payload = (await response.json()) as { accessToken?: string };
-  const token = String(payload.accessToken || "").trim();
-  return token || null;
+  return null;
 }
 
 test.describe("Real World Chains", () => {

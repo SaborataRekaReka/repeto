@@ -7,7 +7,7 @@ import {
     Icon,
     Button,
 } from "@gravity-ui/uikit";
-import { Gear, Calendar, CircleInfo, FolderOpen, Receipt } from "@gravity-ui/icons";
+import { Calendar, CircleInfo, FolderOpen, Receipt } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import type { StudentPortalData } from "@/types/student-portal";
 import PublicTutorWidget, {
@@ -20,10 +20,10 @@ import MaterialsTab from "./MaterialsTab";
 import PaymentTab from "./PaymentTab";
 import SignUpBanner from "./SignUpBanner";
 import { PublicPageFooter, PublicPageHeader } from "../PublicPageChrome";
+import StudentHeaderAccountControls from "../StudentHeaderAccountControls";
 import StudentSettingsDialog from "../StudentSettingsDialog";
 
 import Image from "next/image";
-import StudentAvatar from "@/components/StudentAvatar";
 import { resolveApiAssetUrl } from "@/lib/api";
 import {
     formatCancelPolicyActionLabel,
@@ -266,26 +266,17 @@ const StudentPortalPage = ({
                 <PublicPageHeader
                     containerClassName="repeto-tp-container repeto-student-portal-container"
                     rightContent={
-                        <>
-                            <StudentAvatar
-                                student={{
-                                    name: data.studentName || "Ученик",
-                                    avatarUrl: studentAvatarSrc || undefined,
-                                }}
-                                size="s"
-                            />
-                            <Text variant="body-1" className="repeto-portal-header__student-name">
-                                {data.studentName}
-                            </Text>
-                            <Button
-                                view="flat"
-                                size="s"
-                                onClick={openSettings}
-                                aria-label="Настройки"
-                            >
-                                <Icon data={Gear as IconData} size={16} />
-                            </Button>
-                        </>
+                        <StudentHeaderAccountControls
+                            profile={{
+                                name: data.studentName || "Ученик",
+                                avatarUrl: studentAvatarSrc || undefined,
+                            }}
+                            onOpenSettings={openSettings}
+                            onLogout={onLogout}
+                            settingsAriaLabel="Настройки профиля ученика"
+                            logoutAriaLabel="Выйти из аккаунта ученика"
+                            dashboardAriaLabel="Перейти в личный кабинет ученика"
+                        />
                     }
                 />
 

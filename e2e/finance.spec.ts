@@ -7,11 +7,10 @@ import { test, expect } from './helpers/auth';
 test.describe('Финансы — обзор', () => {
   test('страница обзора загружается', async ({ authedPage: page }) => {
     await page.goto('/finance');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
-    // Stat-карточки или заголовок
-    const financeContent = page.getByText(/Доход|Баланс|Финансы|Ожидается/i).first();
-    await expect(financeContent).toBeVisible({ timeout: 10000 });
+    // Корневой контейнер финансового дашборда
+    await expect(page.locator('.repeto-tochka-finance').first()).toBeVisible({ timeout: 10000 });
   });
 
   test('график доходов отображается', async ({ authedPage: page }) => {

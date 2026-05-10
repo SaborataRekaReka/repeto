@@ -800,13 +800,13 @@ const BookingPage = ({ slug }: { slug: string }) => {
                 {/* Sub-header: back + tutor identity (personal content inside the shared shell) */}
                 <div className="repeto-tp-container repeto-bk-subheader">
                     {step > 0 && step <= 3 ? (
-                        <Button view="flat" size="m" onClick={goBack} className="repeto-bk-back-btn">
-                            <Icon data={ArrowLeft as IconData} size={18} />
+                        <Button view="outlined" size="m" onClick={goBack} className="repeto-bk-back-btn repeto-bk-icon-btn" aria-label="Назад">
+                            <Icon data={ArrowLeft as IconData} size={16} />
                         </Button>
                     ) : step === 0 ? (
                         <Link href={`/t/${slug}`} className="repeto-public-link-block">
-                            <Button view="flat" size="m" className="repeto-bk-back-btn">
-                                <Icon data={ArrowLeft as IconData} size={18} />
+                            <Button view="outlined" size="m" className="repeto-bk-back-btn repeto-bk-icon-btn" aria-label="Назад к профилю репетитора">
+                                <Icon data={ArrowLeft as IconData} size={16} />
                             </Button>
                         </Link>
                     ) : null}

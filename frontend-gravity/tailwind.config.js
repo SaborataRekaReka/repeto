@@ -42,19 +42,19 @@ module.exports = {
                     800: "#00294B",
                     900: "#001D35",
                 },
-                /* ═══ Brand accent — logo green #98E9AB ═══ */
+                /* ═══ Brand accent — logo green #00AA8D ═══ */
                 accent: {
-                    50:  "#F0FBF4",
-                    100: "#DBF5E3",
-                    200: "#B8ECC7",
-                    300: "#98E9AB",
-                    DEFAULT: "#98E9AB",
-                    400: "#68D983",
-                    500: "#42C862",
-                    600: "#2FA84D",
-                    700: "#27893F",
-                    800: "#216E35",
-                    900: "#1B5A2C",
+                    50:  "#E6F7F4",
+                    100: "#C2EFE7",
+                    200: "#95DFD1",
+                    300: "#00AA8D",
+                    DEFAULT: "#00AA8D",
+                    400: "#009A80",
+                    500: "#008A73",
+                    600: "#007A66",
+                    700: "#006A59",
+                    800: "#005A4C",
+                    900: "#004C41",
                 },
                 /* ═══ Backward-compat aliases (legacy kit naming) ═══ */
                 purple: {
@@ -71,8 +71,8 @@ module.exports = {
                     2: "#F8EAF0",
                 },
                 green: {
-                    1: "#73D8A8",
-                    2: "#EDF9F1",
+                    1: "#00AA8D",
+                    2: "#E6F7F4",
                 },
                 /* ═══ Neutrals ═══ */
                 n: {

@@ -264,7 +264,7 @@ html body.g-root_theme_dark {
     --repeto-surface-muted-soft: var(--surface-sunken);
     --repeto-line-subtle: var(--border-subtle);
     --repeto-line-soft: var(--border-strong);
-    --repeto-status-success: #73d8a8;
+    --repeto-status-success: #00aa8d;
     --repeto-on-brand: #ffffff;
     --repeto-widget-hover: color-mix(in srgb, var(--surface-card) 90%, #000 10%);
     --repeto-table-row-hover: color-mix(in srgb, var(--surface-subtle) 86%, #000 14%);
@@ -410,10 +410,6 @@ body.repeto-lp2-scroll-locked {
     .repeto-expiring-packages-card,
     .repeto-tp-widget,
     .repeto-tp-section__body,
-    .repeto-bk-step,
-    .repeto-bk-option,
-    .repeto-bk-time-slot,
-    .repeto-bk-chip,
     .repeto-portal-tabs,
     .repeto-portal-item-card,
     .repeto-portal-balance-hero,
@@ -437,10 +433,6 @@ body.repeto-lp2-scroll-locked {
     .repeto-expiring-packages-card:hover,
     .repeto-tp-widget:hover,
     .repeto-tp-section__body:hover,
-    .repeto-bk-step:hover,
-    .repeto-bk-option:hover,
-    .repeto-bk-time-slot:hover,
-    .repeto-bk-chip:hover,
     .repeto-portal-tabs:hover,
     .repeto-portal-item-card:hover,
     .repeto-portal-balance-hero:hover,
@@ -4579,6 +4571,11 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 }
 
 @media (max-width: 900px) {
+    .repeto-sl-table {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
     .repeto-sl-table-scroll {
         overflow-x: auto;
         overflow-y: hidden;
@@ -4864,6 +4861,26 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     .repeto-sl-list-header--packages-public,
     .repeto-sl-row--packages-public {
         min-width: 760px;
+    }
+}
+
+@media (max-width: 1024px) {
+    .repeto-context-sidebar__item,
+    .repeto-context-sidebar__item--quick:first-child,
+    .repeto-context-sidebar__item--create {
+        min-height: 44px !important;
+    }
+
+    .repeto-sl-row__menu-btn,
+    .repeto-fl-row__menu-btn,
+    .repeto-icon-action-btn.g-button,
+    .repeto-student-access-icon-btn.g-button,
+    .repeto-student-access-chevron {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        min-height: 44px;
+        border-radius: 12px;
     }
 }
 
@@ -5924,8 +5941,7 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     line-height: 1.25;
 }
 
-.repeto-tp-package-card__meta,
-.repeto-tp-package-card__per-lesson {
+.repeto-tp-package-card__meta {
     margin-top: 3px;
 }
 
@@ -5951,15 +5967,29 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     margin-top: auto;
 }
 
+.repeto-tp-package-card__price-main {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+    flex-wrap: wrap;
+}
+
 .repeto-tp-package-card__total {
     font-weight: 750;
     line-height: 1.1;
 }
 
 .repeto-tp-package-card__old-price {
+    margin-left: auto;
     color: var(--g-color-text-hint);
     font-size: 14px;
     text-decoration: line-through;
+}
+
+.repeto-tp-package-card__per-lesson {
+    margin-top: 0;
+    white-space: nowrap;
 }
 
 .repeto-tp-package-card__footer {
@@ -5967,12 +5997,30 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    padding-top: 10px;
-    border-top: 1px solid var(--g-color-line-generic);
+    margin: 2px -18px -18px;
+    padding: 10px 14px;
+    border-top: 1px solid var(--repeto-line-subtle);
+    border-radius: 0 0 16px 16px;
+    background: #ffffff;
+    color: var(--text-primary);
+}
+
+.repeto-tp-package-card__footer .g-text {
+    color: var(--text-primary) !important;
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tp-package-card__footer {
+    border-top-color: color-mix(in srgb, var(--border-subtle) 70%, transparent);
+    background: color-mix(in srgb, var(--surface-subtle) 86%, #ffffff 14%);
+    color: var(--text-primary);
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tp-package-card__footer .g-text {
+    color: var(--text-primary) !important;
 }
 
 .repeto-tp-reviews-market {
-    padding: 0;
+    padding: 0 0 8px;
 }
 
 .repeto-tp-reviews-market__top {
@@ -6032,15 +6080,25 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 }
 
 .repeto-tp-review-carousel {
-    display: grid;
-    grid-template-columns: repeat(var(--repeto-review-card-count, 3), minmax(0, 1fr));
-    gap: 16px;
+    --repeto-review-gap: 16px;
+    --repeto-review-card-width: calc((100% - 32px) / 3);
+    position: relative;
     overflow: hidden;
-    padding: 2px 0 0;
+    padding: 2px 2px 30px;
+}
+
+.repeto-tp-review-carousel__track {
+    display: flex;
+    gap: var(--repeto-review-gap);
+    width: 100%;
+    transform: translate3d(calc((var(--repeto-review-card-width) + var(--repeto-review-gap)) * var(--repeto-review-carousel-index, 0) * -1), 0, 0);
+    transition: transform 340ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
 }
 
 .repeto-tp-review-card {
     display: flex;
+    flex: 0 0 var(--repeto-review-card-width);
     min-width: 0;
     min-height: 184px;
     flex-direction: column;
@@ -6054,15 +6112,20 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 .repeto-tp-review-carousel__actions {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 2px;
     flex-shrink: 0;
 }
 
-.repeto-tp-review-carousel__arrow.g-button {
-    width: 40px;
-    height: 40px;
-    border-radius: 999px;
-    padding: 0;
+.repeto-tp-review-carousel__arrow.g-button:disabled {
+    opacity: 0.55;
+    color: var(--g-color-text-hint) !important;
+    cursor: default !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .repeto-tp-review-carousel__track {
+        transition: none;
+    }
 }
 
 .repeto-tp-review-card__head {
@@ -6458,7 +6521,7 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     width: 18px;
     height: 18px;
     flex-shrink: 0;
-    color: #16a34a;
+    color: #00AA8D;
 }
 
 .repeto-tp-experience-list {
@@ -6715,8 +6778,26 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     flex-shrink: 0;
 }
 
-.repeto-bk-back-btn:hover {
-    background: var(--g-color-base-simple-hover) !important;
+.repeto-bk-back-btn.g-button {
+    border-radius: 12px !important;
+    background: color-mix(in srgb, var(--g-color-line-generic) 34%, transparent) !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    color: var(--g-color-text-secondary) !important;
+    min-width: 36px !important;
+    width: 36px !important;
+    height: 36px !important;
+    padding: 0 !important;
+}
+
+.repeto-bk-back-btn.g-button:hover {
+    background: color-mix(in srgb, var(--g-color-line-generic) 44%, transparent) !important;
+    color: var(--g-color-text-primary) !important;
+}
+
+.repeto-bk-back-btn.g-button::before,
+.repeto-bk-back-btn.g-button::after {
+    display: none !important;
 }
 
 .repeto-bk-header-info {
@@ -6747,8 +6828,11 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 
 .repeto-bk-step {
     animation: repeto-fade-up 0.32s ease-out both;
-    padding: 20px;
-    border-radius: 20px;
+    padding: 14px 0 8px;
+    border-radius: 0;
+    max-width: 920px;
+    margin: 0 auto;
+    background: transparent !important;
     border: none;
     box-shadow: none;
 }
@@ -6774,19 +6858,20 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     padding: 15px 16px;
     text-align: left;
     border-radius: 16px;
-    border: none;
-    background: var(--repeto-surface-elevated);
+    border: 1px solid var(--repeto-bk-row-border);
+    background: var(--repeto-bk-row-bg);
     color: var(--repeto-control-text);
     cursor: pointer;
-    transition: background-color 0.14s ease;
+    transition: background-color 0.14s ease, border-color 0.14s ease;
 }
 
 .repeto-bk-option:hover {
-    background: rgba(38, 35, 45, 0.03);
+    background: var(--repeto-bk-row-hover);
 }
 
 .repeto-bk-option--active {
-    background: rgba(143, 119, 255, 0.14);
+    background: var(--repeto-bk-row-active);
+    border-color: color-mix(in srgb, var(--accent) 44%, transparent);
     box-shadow: none;
 }
 
@@ -6819,7 +6904,7 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     width: 22px;
     height: 22px;
     border-radius: 50%;
-    border: none;
+    border: 1px solid var(--repeto-bk-row-border);
     background: transparent;
     display: flex;
     align-items: center;
@@ -6960,21 +7045,22 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     min-width: 80px;
     padding: 0 16px;
     border-radius: 12px;
-    border: none;
-    background: var(--repeto-surface-elevated);
+    border: 1px solid var(--repeto-bk-row-border);
+    background: var(--repeto-bk-row-bg);
     color: var(--repeto-control-text);
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.14s ease, color 0.14s ease;
+    transition: background-color 0.14s ease, color 0.14s ease, border-color 0.14s ease;
 }
 
 .repeto-bk-time-slot:hover {
-    background: rgba(38, 35, 45, 0.03);
+    background: var(--repeto-bk-row-hover);
 }
 
 .repeto-bk-time-slot--active {
-    background: var(--repeto-option-active);
+    background: var(--repeto-bk-row-active);
+    border-color: color-mix(in srgb, var(--accent) 44%, transparent);
     color: var(--repeto-control-text);
 }
 
@@ -6994,11 +7080,27 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 }
 
 .repeto-bk-app-field .app-field__inner {
-    background: var(--repeto-line-subtle);
+    background: var(--repeto-bk-row-bg) !important;
+    border: 1px solid var(--repeto-bk-row-border);
 }
 
 .repeto-bk-app-field .app-field__inner:hover {
-    background: var(--repeto-line-subtle);
+    background: var(--repeto-bk-row-hover) !important;
+}
+
+.repeto-bk-app-field .app-field__inner:focus-within {
+    border-color: color-mix(in srgb, var(--accent) 44%, transparent);
+    background: var(--repeto-bk-row-hover) !important;
+}
+
+.repeto-bk-app-field--last .app-field__inner:has(.g-text-area),
+.repeto-bk-app-field--last .app-field__inner:has(.g-text-area):hover,
+.repeto-bk-app-field--last .app-field__inner:has(.g-text-area):focus-within {
+    background: var(--repeto-bk-row-bg) !important;
+}
+
+.repeto-bk-app-field--last .g-text-area__control::placeholder {
+    color: var(--repeto-bk-muted) !important;
 }
 
 .repeto-bk-app-field--otp {
@@ -7020,9 +7122,9 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     font-size: 12px;
     line-height: 1.4;
     font-weight: 500;
-    border: none;
+    border: 1px solid var(--repeto-bk-row-border);
     border-radius: 12px;
-    background: var(--repeto-surface-elevated);
+    background: var(--repeto-bk-row-bg);
     color: var(--repeto-control-text);
 }
 
@@ -7054,7 +7156,7 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 .repeto-bk-legal-text {
     font-size: 13px;
     line-height: 1.4;
-    color: var(--g-color-text-secondary);
+    color: var(--repeto-bk-muted);
 }
 
 /* Chips */
@@ -7074,15 +7176,15 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: none;
+    border: 1px solid var(--repeto-bk-row-border);
     border-radius: 12px;
     font-size: 14px;
     font-weight: 500;
     line-height: 1;
-    background: var(--repeto-surface-elevated);
+    background: var(--repeto-bk-row-bg);
     color: var(--repeto-control-text);
     cursor: pointer;
-    transition: background-color 0.14s ease, color 0.14s ease;
+    transition: background-color 0.14s ease, color 0.14s ease, border-color 0.14s ease;
 }
 
 .repeto-bk-chip--sm {
@@ -7091,8 +7193,17 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 }
 
 .repeto-bk-chip--active {
-    background: var(--repeto-option-active);
+    background: var(--repeto-bk-row-active);
+    border-color: color-mix(in srgb, var(--accent) 44%, transparent);
     color: var(--repeto-control-text);
+}
+
+.repeto-bk-chip:hover {
+    background: var(--repeto-bk-row-hover);
+}
+
+.repeto-bk-chip--active:hover {
+    background: var(--repeto-bk-row-active);
 }
 
 .repeto-bk-reminders {
@@ -7109,14 +7220,15 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 .repeto-bk-reminders__hint {
     display: block;
     margin-bottom: 12px;
+    color: var(--repeto-bk-muted) !important;
 }
 
 .repeto-bk-summary {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 14px 0;
-    border-top: none;
+    padding: 16px 0 8px;
+    border-top: 1px solid var(--repeto-bk-row-border);
     margin-bottom: 20px;
 }
 
@@ -7126,6 +7238,13 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     margin-bottom: 20px;
 }
 
+.repeto-bk-contact-info,
+.repeto-bk-otp-hint,
+.repeto-bk-auth-hint .g-text,
+.repeto-bk-option__text .g-text:not(.repeto-bk-option__title) {
+    color: var(--repeto-bk-muted) !important;
+}
+
 .repeto-bk-savings {
     margin-bottom: 16px;
 }
@@ -7133,7 +7252,7 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 .repeto-bk-summary__label {
     font-size: 14px;
     font-weight: 500;
-    color: var(--repeto-control-text-muted);
+    color: var(--repeto-bk-muted);
 }
 
 .repeto-bk-summary__price {
@@ -7178,7 +7297,12 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 }
 
 .repeto-booking-page {
-    background: var(--repeto-surface-elevated) !important;
+    --repeto-bk-row-bg: color-mix(in srgb, var(--surface-card) 92%, var(--surface-subtle) 8%);
+    --repeto-bk-row-hover: color-mix(in srgb, var(--surface-card) 84%, var(--surface-subtle) 16%);
+    --repeto-bk-row-active: color-mix(in srgb, var(--accent) 16%, var(--surface-card));
+    --repeto-bk-row-border: color-mix(in srgb, var(--border-subtle) 92%, transparent);
+    --repeto-bk-muted: color-mix(in srgb, var(--text-secondary) 90%, transparent);
+    background: var(--surface-page) !important;
 }
 
 .repeto-booking-page .repeto-portal-header {
@@ -7187,21 +7311,43 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     backdrop-filter: none;
 }
 
+.repeto-booking-page .repeto-tp-container.repeto-bk-subheader,
+.repeto-booking-page .repeto-tp-container.repeto-portal-main {
+    max-width: 920px;
+}
+
+.repeto-bk-action-btn.g-button:disabled {
+    opacity: 1;
+    background: color-mix(in srgb, var(--surface-subtle) 84%, var(--surface-card) 16%) !important;
+    color: var(--repeto-bk-muted) !important;
+}
+
 /* Booking sub-header sits inside the shared shell (below PublicPageHeader)
    and holds the back button + tutor identity — same width as tutor page. */
 .repeto-bk-subheader {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 0 8px;
+    padding: 12px 24px 8px;
+}
+
+@media (max-width: 960px) {
+    .repeto-bk-subheader {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
 }
 
 
 
 
 
-:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-bk-step, :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-bk-option, :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-bk-time-slot, :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-bk-chip, :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-bk-app-field .app-field__inner, :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-bk-autofill-hint {
-    background: var(--repeto-surface-elevated);
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-booking-page {
+    --repeto-bk-row-bg: color-mix(in srgb, var(--surface-card) 78%, var(--surface-subtle) 22%);
+    --repeto-bk-row-hover: color-mix(in srgb, var(--surface-card) 66%, var(--surface-subtle) 34%);
+    --repeto-bk-row-active: color-mix(in srgb, var(--accent) 28%, var(--surface-card));
+    --repeto-bk-row-border: color-mix(in srgb, var(--border-strong) 58%, transparent);
+    --repeto-bk-muted: color-mix(in srgb, var(--text-secondary) 95%, #fff 5%);
 }
 
 @media (max-width: 480px) {
@@ -7245,7 +7391,7 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     -webkit-overflow-scrolling: touch;
     background:
         radial-gradient(920px 380px at 84% -8%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 62%),
-        radial-gradient(780px 320px at 8% 0%, rgba(152, 233, 171, 0.16), rgba(152, 233, 171, 0) 58%),
+        radial-gradient(780px 320px at 8% 0%, rgba(0, 170, 141, 0.16), rgba(0, 170, 141, 0) 58%),
         linear-gradient(180deg, var(--surface-page) 0%, var(--surface-subtle) 100%);
 }
 
@@ -7714,6 +7860,28 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 .repeto-portal-icon-action .g-icon {
     width: 22px;
     height: 22px;
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-portal-icon-action {
+    color: var(--text-primary);
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-portal-icon-action:hover {
+    background: color-mix(in srgb, var(--surface-subtle) 78%, #000000 22%);
+    color: var(--text-primary);
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-portal-icon-action:focus-visible {
+    outline-color: color-mix(in srgb, var(--text-primary) 34%, transparent);
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-portal-icon-action--danger {
+    color: color-mix(in srgb, #ff6b6b 72%, #ffffff 28%);
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-portal-icon-action--danger:hover {
+    background: color-mix(in srgb, #ff4d4f 18%, var(--surface-subtle) 82%);
+    color: color-mix(in srgb, #ff7d7f 80%, #ffffff 20%);
 }
 
 .repeto-portal-note {
@@ -8267,7 +8435,7 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 :where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-portal-page {
     background:
         radial-gradient(920px 380px at 84% -8%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 62%),
-        radial-gradient(780px 320px at 8% 0%, rgba(152, 233, 171, 0.13), rgba(152, 233, 171, 0) 58%),
+        radial-gradient(780px 320px at 8% 0%, rgba(0, 170, 141, 0.13), rgba(0, 170, 141, 0) 58%),
         linear-gradient(180deg, var(--surface-page) 0%, var(--surface-sunken) 100%);
 }
 
@@ -9894,6 +10062,19 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 
 .tab-action-btn--primary .tab-action-btn__icon {
     color: var(--repeto-on-brand);
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .tab-action-btn:not(.tab-action-btn--primary) {
+    background: color-mix(in srgb, var(--surface-subtle) 86%, #000000 14%);
+    color: var(--text-primary);
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .tab-action-btn:not(.tab-action-btn--primary):hover {
+    background: color-mix(in srgb, var(--surface-subtle) 78%, #000000 22%);
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .tab-action-btn:not(.tab-action-btn--primary) .tab-action-btn__icon {
+    color: var(--text-primary);
 }
 
 .hw-material-upload-btn {
@@ -11643,13 +11824,34 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
         justify-content: center;
         gap: 3px;
         min-height: 50px;
-        min-width: calc(20% - 0.4px);
-        flex: 0 0 calc(20% - 0.4px);
+        min-width: 0;
+        flex: 1 1 0;
         border-radius: 10px;
         color: var(--text-secondary);
         font-size: 10px;
         font-weight: 600;
         transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    .repeto-header__mobile-profile-dropdown {
+        max-width: 44px;
+        min-width: 44px;
+    }
+
+    .repeto-header__profile-trigger {
+        width: 44px;
+        min-width: 44px;
+        max-width: 44px;
+        height: 44px;
+        padding: 0;
+        gap: 0;
+        justify-content: center;
+        border-radius: 12px;
+    }
+
+    .repeto-header__profile-trigger .repeto-top-header__profile-name,
+    .repeto-header__profile-trigger .repeto-top-header__profile-chevron {
+        display: none;
     }
 
     .repeto-mobile-nav__item:hover {
@@ -11817,6 +12019,26 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 
     .repeto-notifications-toolbar__tabs .g-segmented-radio-group {
         min-width: max-content;
+    }
+
+    .repeto-sl-tabs-row {
+        flex-wrap: wrap;
+        row-gap: 8px;
+    }
+
+    .repeto-sl-row__menu-btn,
+    .repeto-fl-row__menu-btn,
+    .repeto-icon-action-btn.g-button,
+    .repeto-student-access-icon-btn.g-button,
+    .repeto-student-access-chevron {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+        border-radius: 12px;
+    }
+
+    .repeto-fl-row {
+        min-height: 68px;
     }
 
     .repeto-files-cloud-grid {
@@ -12591,6 +12813,26 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
     font-weight: 500;
 }
 
+.repeto-portal-header__student-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 32px;
+    color: inherit;
+    text-decoration: none;
+    border-radius: 10px;
+    transition: color 0.12s ease;
+}
+
+.repeto-portal-header__student-link:hover {
+    color: var(--g-color-text-primary);
+}
+
+.repeto-portal-header__student-link:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--accent) 30%, transparent);
+    outline-offset: 2px;
+}
+
 .repeto-portal-error {
     display: block;
     margin-bottom: 12px;
@@ -12692,13 +12934,23 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 
 .repeto-tp-sidebar .page-overlay__nav--section,
 .repeto-student-portal-sidebar .page-overlay__nav--section {
-    --repeto-section-nav-item-padding-left: 0px;
+    --repeto-section-nav-item-padding-left: 8px;
     --repeto-section-nav-indicator-offset: 0px;
 }
 
 .repeto-tp-sidebar .page-overlay__nav-item,
 .repeto-student-portal-sidebar .page-overlay__nav-item {
-    padding-left: 0 !important;
+    padding-left: 8px !important;
+}
+
+.repeto-tp-sidebar .page-overlay__nav-item:hover,
+.repeto-student-portal-sidebar .page-overlay__nav-item:hover {
+    background: var(--surface-subtle, var(--repeto-control-surface)) !important;
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-tp-sidebar .page-overlay__nav-item:hover,
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-student-portal-sidebar .page-overlay__nav-item:hover {
+    background: color-mix(in srgb, var(--surface-subtle) 92%, #ffffff 8%) !important;
 }
 
 .repeto-tp-sidebar .page-overlay__nav-item--section::before,
@@ -13973,6 +14225,24 @@ body:not(.repeto-shell-context-sidebar-open) .repeto-top-header {
 .repeto-notif-banner__text {
     flex: 1;
     min-width: 0;
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-notif-banner {
+    background: color-mix(in srgb, var(--surface-subtle) 82%, #000000 18%);
+    border: 1px solid color-mix(in srgb, var(--border-subtle) 72%, transparent);
+    color: var(--text-primary);
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-notif-banner--warning {
+    background: color-mix(in srgb, #c89500 22%, var(--surface-subtle) 78%);
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-notif-banner__icon {
+    color: color-mix(in srgb, #f2c94c 72%, #ffffff 28%);
+}
+
+:where(html.dark, body.dark, .dark, .g-root_theme_dark, [data-theme="dark"]) .repeto-notif-banner--info .repeto-notif-banner__icon {
+    color: color-mix(in srgb, var(--text-secondary) 76%, #ffffff 24%);
 }
 
 /* Top header logo: show icon alongside wordmark. */

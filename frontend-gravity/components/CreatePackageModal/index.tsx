@@ -116,12 +116,14 @@ const CreatePackageModal = ({
         if (isPublicPackage) return;
         if (studentId.length && !packageData) {
             const matched = studentOptions.find((s) => s.value === studentId[0]);
-            if (matched?.data?.subject) setSubject(matched.data.subject);
+            if (matched?.data?.subject && !touched.subject) {
+                setSubject(matched.data.subject);
+            }
             if (matched?.data?.rate && !touched.pricePerLesson) {
                 setPricePerLesson(String(matched.data.rate));
             }
         }
-    }, [studentId, studentOptions, packageData, touched.pricePerLesson, isPublicPackage]);
+    }, [studentId, studentOptions, packageData, touched.subject, touched.pricePerLesson, isPublicPackage]);
 
     useEffect(() => {
         if (isPublicPackage && studentId.length) {
@@ -455,7 +457,12 @@ const CreatePackageModal = ({
                             size="l"
                             placeholder="Математика"
                             value={subject}
-                            onUpdate={setSubject}
+                            onUpdate={(value) => {
+                                setSubject(value);
+                                if (!touched.subject) {
+                                    markTouched("subject");
+                                }
+                            }}
                             onBlur={() => markTouched("subject")}
                         />
                     </Lp2Field>

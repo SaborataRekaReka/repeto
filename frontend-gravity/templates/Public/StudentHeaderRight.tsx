@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
-import { Button, Icon, Text } from "@gravity-ui/uikit";
+import { Button, Icon } from "@gravity-ui/uikit";
 import type { IconData } from "@gravity-ui/uikit";
-import { Gear, Person } from "@gravity-ui/icons";
+import { Person } from "@gravity-ui/icons";
 import AppDialog from "@/components/AppDialog";
-import StudentAvatar from "@/components/StudentAvatar";
 import StudentSignIn from "@/templates/RegistrationPage/StudentSignIn";
 import StudentSettingsDialog from "./StudentSettingsDialog";
+import StudentHeaderAccountControls from "./StudentHeaderAccountControls";
 import { resolveApiAssetUrl } from "@/lib/api";
-import { getStudentAccessToken, studentApi, studentLogout } from "@/lib/studentAuth";
+import { studentApi, studentLogout } from "@/lib/studentAuth";
 
 type StudentSetupResponse = {
     name?: string | null;
@@ -21,7 +21,7 @@ type StudentProfileInfo = {
 
 /**
  * Right-side content for the public shell header (PublicPageHeader).
- * Shows student avatar + name + settings link when the visitor has a
+ * Shows student avatar + name + dashboard link + settings/logout controls when the visitor has a
  * student portal session, or a sign-in icon otherwise.
  * Shared by TutorPublicPage and BookingPage so the shell looks identical.
  */
@@ -39,10 +39,6 @@ const StudentHeaderRight = () => {
         let canceled = false;
 
         const load = async () => {
-            if (!getStudentAccessToken()) {
-                if (!canceled) setProfile(null);
-                return;
-            }
             try {
                 const setup = await studentApi<StudentSetupResponse>("/student-portal/setup");
                 if (canceled) return;
@@ -87,34 +83,29 @@ const StudentHeaderRight = () => {
         };
     }, [triggerReload]);
 
+    const handleLogout = useCallback(async () => {
+        await studentLogout();
+        setSettingsOpen(false);
+        setProfile(null);
+    }, []);
+
     if (profile) {
         return (
             <>
-                <StudentAvatar
-                    student={{ name: profile.name, avatarUrl: profile.avatarUrl || undefined }}
-                    size="s"
+                <StudentHeaderAccountControls
+                    profile={{ name: profile.name, avatarUrl: profile.avatarUrl || undefined }}
+                    onOpenSettings={() => setSettingsOpen(true)}
+                    onLogout={handleLogout}
+                    settingsAriaLabel="Настройки профиля ученика"
+                    logoutAriaLabel="Выйти из аккаунта ученика"
+                    dashboardAriaLabel="Перейти в личный кабинет ученика"
                 />
-                <Text variant="body-1" style={{ fontWeight: 500 }}>
-                    {profile.name}
-                </Text>
-                <Button
-                    view="flat"
-                    size="s"
-                    onClick={() => setSettingsOpen(true)}
-                    aria-label="Настройки профиля ученика"
-                >
-                    <Icon data={Gear as IconData} size={16} />
-                </Button>
                 <StudentSettingsDialog
                     open={settingsOpen}
                     onClose={() => setSettingsOpen(false)}
                     fallbackProfile={profile}
                     onSaved={() => triggerReload()}
-                    onLogout={async () => {
-                        await studentLogout();
-                        setSettingsOpen(false);
-                        setProfile(null);
-                    }}
+                    onLogout={handleLogout}
                 />
             </>
         );

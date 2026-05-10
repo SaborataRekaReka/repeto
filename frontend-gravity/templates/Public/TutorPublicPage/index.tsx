@@ -338,9 +338,9 @@ const TutorPublicPage = () => {
     useEffect(() => {
         const updateCardsPerPage = () => {
             if (typeof window === "undefined") return;
-            if (window.innerWidth < 680) {
+            if (window.innerWidth < 560) {
                 setReviewCardsPerPage(1);
-            } else if (window.innerWidth < 1080) {
+            } else if (window.innerWidth < 980) {
                 setReviewCardsPerPage(2);
             } else {
                 setReviewCardsPerPage(3);
@@ -568,12 +568,13 @@ const TutorPublicPage = () => {
     const allReviews = t.reviews || [];
     const reviewsCount = Math.max(Number(t.reviewsCount || 0), allReviews.length);
     const maxReviewCarouselIndex = Math.max(0, allReviews.length - reviewCardsPerPage);
-    const visibleReviews = allReviews.slice(
-        reviewCarouselIndex,
-        reviewCarouselIndex + reviewCardsPerPage,
-    );
+    const reviewGapPx = 16;
+    const reviewCardWidthExpr = `calc((100% - ${Math.max(0, (reviewCardsPerPage - 1) * reviewGapPx)}px) / ${reviewCardsPerPage})`;
     const reviewCarouselStyle = {
         "--repeto-review-card-count": reviewCardsPerPage,
+        "--repeto-review-carousel-index": reviewCarouselIndex,
+        "--repeto-review-gap": `${reviewGapPx}px`,
+        "--repeto-review-card-width": reviewCardWidthExpr,
     } as CSSProperties;
     const canShowReviewArrows = allReviews.length > reviewCardsPerPage;
     const reviewTags = (t.reviewTags || []).slice(0, 3);
@@ -856,19 +857,21 @@ const TutorPublicPage = () => {
                                                 </div>
 
                                                 <div className="repeto-tp-package-card__price-row">
-                                                    <Text variant="header-1" as="div" className="repeto-tp-package-card__total">
-                                                        {pkg.totalPrice.toLocaleString("ru-RU")} ₽
-                                                    </Text>
+                                                    <div className="repeto-tp-package-card__price-main">
+                                                        <Text variant="header-1" as="div" className="repeto-tp-package-card__total">
+                                                            {pkg.totalPrice.toLocaleString("ru-RU")} ₽
+                                                        </Text>
+                                                        <Text variant="body-1" color="secondary" as="div" className="repeto-tp-package-card__per-lesson">
+                                                            {pkg.pricePerLesson.toLocaleString("ru-RU")} ₽ за занятие
+                                                        </Text>
+                                                    </div>
+
                                                     {pkg.originalTotalPrice ? (
                                                         <span className="repeto-tp-package-card__old-price">
                                                             {pkg.originalTotalPrice.toLocaleString("ru-RU")} ₽
                                                         </span>
                                                     ) : null}
                                                 </div>
-
-                                                <Text variant="body-1" color="secondary" as="div" className="repeto-tp-package-card__per-lesson">
-                                                    {pkg.pricePerLesson.toLocaleString("ru-RU")} ₽ за занятие
-                                                </Text>
 
                                                 {pkg.comment || validUntilLabel ? (
                                                     <div className="repeto-tp-package-card__footer">
@@ -919,7 +922,7 @@ const TutorPublicPage = () => {
                                     </div>
 
                                     {canShowReviewArrows && (
-                                        <div className="repeto-tp-review-carousel__actions">
+                                        <div className="repeto-tp-review-carousel__actions repeto-schedule-toolbar__nav">
                                             <Button
                                                 view="outlined"
                                                 size="m"
@@ -949,30 +952,33 @@ const TutorPublicPage = () => {
                                 </div>
 
                                 <div className="repeto-tp-review-carousel" style={reviewCarouselStyle}>
-                                    {visibleReviews.map((r, i) => (
-                                        <article key={`${r.studentName}-${r.date}-${reviewCarouselIndex + i}`} className="repeto-tp-review-card">
-                                            <div className="repeto-tp-review-card__head">
-                                                <div className="repeto-tp-review-card__author">
-                                                    <Text variant="body-2" as="div" className="repeto-tp-reviewer">
-                                                        {r.studentName}
-                                                    </Text>
-                                                    <Text variant="caption-2" color="secondary" as="div">
-                                                        {formatReviewDate(r.date)}
-                                                    </Text>
+                                    <div className="repeto-tp-review-carousel__track">
+                                        {allReviews.map((r, i) => (
+                                            <article key={`${r.studentName}-${r.date}-${i}`} className="repeto-tp-review-card">
+                                                <div className="repeto-tp-review-card__head">
+                                                    <div className="repeto-tp-review-card__author">
+                                                        <Text variant="body-2" as="div" className="repeto-tp-reviewer">
+                                                            {r.studentName}
+                                                        </Text>
+                                                        <Text variant="caption-2" color="secondary" as="div">
+                                                            {formatReviewDate(r.date)}
+                                                        </Text>
+                                                    </div>
+                                                    {renderStars(r.rating)}
                                                 </div>
-                                                {renderStars(r.rating)}
-                                            </div>
-                                            {r.feedback ? (
-                                                <Text variant="body-2" className="repeto-tp-review-text">
-                                                    {r.feedback}
-                                                </Text>
-                                            ) : (
-                                                <Text variant="body-2" color="secondary" className="repeto-tp-review-text">
-                                                    Оценка без текстового комментария
-                                                </Text>
-                                            )}
-                                        </article>
-                                    ))}
+
+                                                {r.feedback ? (
+                                                    <Text variant="body-2" className="repeto-tp-review-text">
+                                                        {r.feedback}
+                                                    </Text>
+                                                ) : (
+                                                    <Text variant="body-2" color="secondary" className="repeto-tp-review-text">
+                                                        Оценка без текстового комментария
+                                                    </Text>
+                                                )}
+                                            </article>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         </div>

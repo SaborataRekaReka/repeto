@@ -7,57 +7,44 @@ import { test, expect, waitForAPI, API_BASE } from './helpers/auth';
 test.describe('Ученики — список', () => {
   test('страница загружается и показывает список', async ({ authedPage: page }) => {
     await page.goto('/students');
-    await page.waitForLoadState('networkidle');
-    // Должен быть заголовок или таб "Все"
-    await expect(page.getByText('Все').first()).toBeVisible();
-    // Либо ученики в таблице, либо empty state
-    const hasStudents = await page.locator('table tbody tr').count().then(c => c > 0);
-    const hasEmpty = await page.getByText('Пока нет учеников').isVisible().catch(() => false);
-    expect(hasStudents || hasEmpty).toBeTruthy();
+    await page.waitForLoadState('domcontentloaded');
+    await expect(page.getByPlaceholder('Имя, предмет или класс')).toBeVisible();
+    await expect(page.locator('.repeto-sl-table--students')).toBeVisible();
+
+    // После загрузки данных рендерится либо список строк, либо empty state
+    await expect
+      .poll(async () => {
+        const rowCount = await page.locator('.repeto-sl-row--students').count();
+        const emptyCount = await page.locator('.repeto-sl-empty').count();
+        return rowCount > 0 || emptyCount > 0;
+      }, { timeout: 10000 })
+      .toBeTruthy();
   });
 
   test('табы фильтруют список', async ({ authedPage: page }) => {
     await page.goto('/students');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
-    // Кликаем "Активные"
-    const activeTab = page.getByRole('radio', { name: 'Активные' }).first();
-    if (await activeTab.isVisible().catch(() => false)) {
-      await activeTab.click();
-    } else {
-      await page.getByText('Активные').first().click();
-    }
-    await page.waitForLoadState('networkidle');
+    await page.getByRole('button', { name: /^Активные/i }).first().click();
+    await page.waitForTimeout(300);
 
-    // Кликаем «На паузе»
-    const pausedTab = page.getByRole('radio', { name: 'На паузе' }).first();
-    if (await pausedTab.isVisible().catch(() => false)) {
-      await pausedTab.click();
-    } else {
-      await page.getByText('На паузе').first().click();
-    }
-    await page.waitForLoadState('networkidle');
+    await page.getByRole('button', { name: /^На паузе/i }).first().click();
+    await page.waitForTimeout(300);
 
-    // Обратно на «Все»
-    const allTab = page.getByRole('radio', { name: 'Все' }).first();
-    if (await allTab.isVisible().catch(() => false)) {
-      await allTab.click();
-    } else {
-      await page.getByText('Все').first().click();
-    }
-    await page.waitForLoadState('networkidle');
+    await page.getByRole('button', { name: /^Все/i }).first().click();
+    await page.waitForTimeout(300);
   });
 
   test('поиск учеников работает', async ({ authedPage: page }) => {
     await page.goto('/students');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
-    const searchInput = page.getByPlaceholder('Поиск...');
+    const searchInput = page.getByPlaceholder('Имя, предмет или класс');
     if (await searchInput.isVisible()) {
       await searchInput.fill('ТестПоискНесуществующий');
       await page.waitForTimeout(500);
       // Should show empty or fewer results
-      const rows = await page.locator('table tbody tr').count();
+      await page.locator('.repeto-sl-row--students').count();
       // Clear
       await searchInput.clear();
       await page.waitForTimeout(500);
@@ -65,10 +52,9 @@ test.describe('Ученики — список', () => {
   });
 
   test('форма создания: класс и возраст разделены', async ({ authedPage: page }) => {
-    await page.goto('/students');
-    await page.waitForLoadState('networkidle');
+    await page.goto('/students?create=1');
+    await page.waitForLoadState('domcontentloaded');
 
-    await page.getByRole('button', { name: /Новый ученик|Добавить ученика/i }).first().click();
     const studentDialog = page.getByRole('dialog', { name: 'Новый ученик' }).first();
     await expect(studentDialog).toBeVisible({ timeout: 10000 });
 
@@ -85,14 +71,9 @@ test.describe('Ученики — создание (live update)', () => {
   const testStudentName = `Тест Ученик ${Date.now()}`;
 
   test('создание ученика через модал — виден без F5', async ({ authedPage: page }) => {
-    await page.goto('/students');
-    await page.waitForLoadState('networkidle');
+    await page.goto('/students?create=1');
+    await page.waitForLoadState('domcontentloaded');
 
-    // Запоминаем кол-во строк до
-    const rowsBefore = await page.locator('table tbody tr').count();
-
-    // Нажимаем "Новый ученик"
-    await page.getByRole('button', { name: /Новый ученик|Добавить ученика/i }).first().click();
     const studentDialog = page.getByRole('dialog', { name: 'Новый ученик' }).first();
     await expect(studentDialog).toBeVisible({ timeout: 10000 });
 
@@ -100,10 +81,11 @@ test.describe('Ученики — создание (live update)', () => {
     const nameInput = studentDialog.getByPlaceholder('Иванов Пётр Сергеевич');
     await nameInput.fill(testStudentName);
 
-    // Предмет — Gravity UI Select
-    await studentDialog.getByText('Выберите предмет').click();
-    await page.waitForTimeout(300);
-    await page.getByRole('option', { name: 'Математика' }).click();
+    // Предмет
+    const subjectInput = studentDialog.getByPlaceholder('Введите или выберите предмет');
+    await subjectInput.fill('Математика');
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter');
 
     // Ставка
     const rateInput = studentDialog.getByPlaceholder('2100');
@@ -156,10 +138,10 @@ test.describe('Ученики — создание (live update)', () => {
 test.describe('Ученики — детальная карточка', () => {
   test('открытие карточки ученика из списка', async ({ authedPage: page }) => {
     await page.goto('/students');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Если есть ученики, кликаем на первого
-    const firstRow = page.locator('table tbody tr').first();
+    const firstRow = page.locator('.repeto-sl-row--students').first();
     const hasStudents = await firstRow.isVisible().catch(() => false);
     if (!hasStudents) {
       test.skip();
@@ -167,7 +149,7 @@ test.describe('Ученики — детальная карточка', () => {
     }
 
     await firstRow.click();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Должны быть на странице ученика
     await expect(page).toHaveURL(/students\/[a-z0-9-]+/i);
@@ -175,21 +157,21 @@ test.describe('Ученики — детальная карточка', () => {
 
   test('табы карточки ученика переключаются', async ({ authedPage: page }) => {
     await page.goto('/students');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
-    const firstRow = page.locator('table tbody tr').first();
+    const firstRow = page.locator('.repeto-sl-row--students').first();
     if (!await firstRow.isVisible().catch(() => false)) {
       test.skip();
       return;
     }
 
     await firstRow.click();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Проверяем каждый таб (Gravity UI SegmentedRadioGroup → role="radio")
     const tabNames = ['Занятия', 'Профиль', 'Контакты', 'Оплаты', 'Заметки', 'Домашка'];
     for (const tabName of tabNames) {
-      const tab = page.getByRole('radio', { name: tabName });
+      const tab = page.getByRole('radio', { name: tabName }).or(page.getByRole('tab', { name: tabName })).first();
       if (await tab.isVisible().catch(() => false)) {
         await tab.click();
         await page.waitForTimeout(300);

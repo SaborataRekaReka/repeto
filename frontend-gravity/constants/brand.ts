@@ -3,7 +3,7 @@
  * Source of truth for all brand colors, derived from the logo.
  *
  * Logo Blue:   #005BAC  (primary)
- * Logo Green:  #98E9AB  (accent)
+ * Logo Green:  #00AA8D  (accent)
  *
  * Usage in inline styles:
  *   import { brand, accent, semantic } from "@/constants/brand";
@@ -26,18 +26,18 @@ export const brand = {
     900: "#001D35",
 } as const;
 
-/** Accent green scale — derived from logo #98E9AB */
+/** Accent green scale — derived from logo #00AA8D */
 export const accent = {
-    50: "#F0FBF4",
-    100: "#DBF5E3",
-    200: "#B8ECC7",
-    300: "#98E9AB",
-    400: "#68D983",
-    500: "#42C862",
-    600: "#2FA84D",
-    700: "#27893F",
-    800: "#216E35",
-    900: "#1B5A2C",
+    50: "#E6F7F4",
+    100: "#C2EFE7",
+    200: "#95DFD1",
+    300: "#00AA8D",
+    400: "#009A80",
+    500: "#008A73",
+    600: "#007A66",
+    700: "#006A59",
+    800: "#005A4C",
+    900: "#004C41",
 } as const;
 
 /** Semantic colors for statuses and feedback */

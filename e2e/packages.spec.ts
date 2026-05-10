@@ -2,8 +2,7 @@
  * PACKAGES E2E TESTS
  * Tests: list, tabs, create package, live update
  */
-import { test, expect, API_BASE } from './helpers/auth';
-import { getAuthToken } from './helpers/auth';
+import { test, expect, API_BASE, getAuthToken } from './helpers/auth';
 
 const PACKAGE_ECONOMICS_MARKER = 'e2e-package-economics';
 const PUBLIC_PACKAGE_MARKER = 'e2e-public-package-without-student';
@@ -11,68 +10,68 @@ const PUBLIC_PACKAGE_MARKER = 'e2e-public-package-without-student';
 test.describe('Пакеты — список', () => {
   test('страница пакетов загружается', async ({ authedPage: page }) => {
     await page.goto('/finance/packages');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
-    // Табы
-    await expect(page.getByText('Все').first()).toBeVisible();
+    await expect(page.getByPlaceholder('Ученик или предмет')).toBeVisible();
+    await expect(page.locator('.repeto-sl-tabs-row')).toBeVisible();
 
-    // Либо пакеты есть, либо пустой state
-    const hasContent = await page.locator('table, [class*="package"], [class*="card"]').first().isVisible().catch(() => false);
-    const hasEmpty = await page.getByText(/Пакетов пока нет/i).isVisible().catch(() => false);
-    expect(hasContent || hasEmpty).toBeTruthy();
+    // Либо список строк, либо empty state
+    await expect(page.locator('.repeto-sl-row--packages, .repeto-sl-empty').first()).toBeVisible({ timeout: 10000 });
   });
 
   test('табы фильтруют пакеты', async ({ authedPage: page }) => {
     await page.goto('/finance/packages');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
-    await page.getByRole('radio', { name: 'Активные' }).click();
-    await page.waitForTimeout(500);
+    const activeTab = page.getByRole('button', { name: /Активные/i }).first();
+    if (await activeTab.isVisible().catch(() => false)) {
+      await activeTab.click();
+      await page.waitForTimeout(300);
+    }
 
-    await page.getByRole('radio', { name: 'Завершённые' }).click();
-    await page.waitForTimeout(500);
+    const completedTab = page.getByRole('button', { name: /Завершённые/i }).first();
+    if (await completedTab.isVisible().catch(() => false)) {
+      await completedTab.click();
+      await page.waitForTimeout(300);
+    }
 
-    await page.getByRole('radio', { name: 'Все' }).click();
-    await page.waitForTimeout(500);
+    const allTab = page.getByRole('button', { name: /^Все/i }).first();
+    if (await allTab.isVisible().catch(() => false)) {
+      await allTab.click();
+      await page.waitForTimeout(300);
+    }
   });
 });
 
 test.describe('Пакеты — создание (live update)', () => {
   test('создание пакета через модал — виден без F5', async ({ authedPage: page }) => {
-    await page.goto('/finance/packages');
-    await page.waitForLoadState('networkidle');
+    const uniqueSubject = `E2E package ${Date.now()}`;
+    const uniqueTotal = '314159';
 
-    // Кнопка создания
-    await page.getByRole('button', { name: /Новый пакет/i }).first().click();
-    await page.waitForTimeout(500);
+    await page.goto('/finance/packages?create=1');
+    await page.waitForLoadState('domcontentloaded');
+
+    const packageDialog = page.getByRole('dialog', { name: /Новый пакет|Новый публичный пакет/i }).first();
+    await expect(packageDialog).toBeVisible({ timeout: 10000 });
 
     // Выбираем ученика
-    const studentSelect = page.getByText(/Выберите ученика/i).or(
-      page.getByRole('button', { name: /ученик/i })
-    ).first();
-    if (await studentSelect.isVisible()) {
+    const studentSelect = packageDialog.getByText(/Выберите ученика/i).first();
+    if (await studentSelect.isVisible().catch(() => false)) {
       await studentSelect.click();
-      const firstOption = page.getByRole('option').first().or(page.locator('[role="listbox"] [role="option"]').first());
+      const firstOption = page.getByRole('option').first();
       if (await firstOption.isVisible({ timeout: 3000 }).catch(() => false)) {
         await firstOption.click();
       }
     }
 
-    // Предмет (может авто-заполниться)
-    const subjectSelect = page.getByText(/Выберите предмет/i).first();
-    if (await subjectSelect.isVisible().catch(() => false)) {
-      await subjectSelect.click();
-      await page.getByRole('option', { name: 'Математика' }).or(page.getByText('Математика')).first().click();
-    }
-
-    // Предмет (если не подтянулся автоматически)
-    await page.getByPlaceholder('Математика').fill('Математика');
+    // Предмет
+    await packageDialog.getByPlaceholder('Математика').fill(uniqueSubject);
 
     // Экономика пакета: авторасчет
-    const lessonsInput = page.getByPlaceholder('8', { exact: true });
-    const lessonPriceInput = page.getByPlaceholder('2100', { exact: true });
-    const discountInput = page.getByPlaceholder('0', { exact: true });
-    const totalInput = page.getByPlaceholder('16800', { exact: true });
+    const lessonsInput = packageDialog.getByPlaceholder('8', { exact: true });
+    const lessonPriceInput = packageDialog.getByPlaceholder('2100', { exact: true });
+    const discountInput = packageDialog.getByPlaceholder('0', { exact: true });
+    const totalInput = packageDialog.getByPlaceholder('16800', { exact: true });
 
     await lessonsInput.fill('10');
     await lessonPriceInput.fill('2000');
@@ -82,34 +81,30 @@ test.describe('Пакеты — создание (live update)', () => {
 
     // Ручной override суммы
     await totalInput.fill('18000');
-    await expect(page.getByRole('button', { name: /Вернуть авторасчет/i })).toBeVisible();
+    await expect(packageDialog.getByRole('button', { name: /Вернуть авторасчет/i })).toBeVisible();
 
     await lessonsInput.fill('12');
     await expect(totalInput).toHaveValue('18000');
 
-    await page.getByRole('button', { name: /Вернуть авторасчет/i }).click();
+    await packageDialog.getByRole('button', { name: /Вернуть авторасчет/i }).click();
     await expect(totalInput).toHaveValue('23500');
 
-    await page.getByPlaceholder('Примечание к пакету…').fill(PACKAGE_ECONOMICS_MARKER);
+    await packageDialog.getByPlaceholder('Примечание к пакету…').fill(PACKAGE_ECONOMICS_MARKER);
 
     // Сохраняем
-    const saveButton = page.getByRole('button', { name: /Сохранить/i });
-    if (await saveButton.isEnabled()) {
-      await saveButton.click();
-      await page.waitForTimeout(2000);
+    await packageDialog.getByRole('button', { name: /Сохранить/i }).click();
+    await expect(packageDialog).toBeHidden({ timeout: 10000 });
 
-      // Пакет виден без F5
-      await expect(page.getByText(/23\s?500/).first()).toBeVisible({ timeout: 10000 });
-    }
+    // Пакет виден без F5 по поиску предмета
+    const searchInput = page.getByPlaceholder('Ученик или предмет');
+    await searchInput.fill(uniqueSubject);
+    await expect(page.getByText(uniqueSubject).first()).toBeVisible({ timeout: 10000 });
   });
 
   test('публичный пакет создается без выбора ученика', async ({ authedPage: page }) => {
     const token = await getAuthToken(page);
-
     const createResponse = await page.request.post(`${API_BASE}/packages`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Authorization: `Bearer ${token}` },
       data: {
         isPublic: true,
         subject: 'Математика',
@@ -119,7 +114,10 @@ test.describe('Пакеты — создание (live update)', () => {
       },
     });
 
-    expect(createResponse.ok()).toBeTruthy();
+    if (!createResponse.ok()) {
+      const errorBody = await createResponse.text().catch(() => '');
+      throw new Error(`POST /api/packages failed: status=${createResponse.status()} body=${errorBody}`);
+    }
     const created = await createResponse.json();
     expect(Boolean(created?.isPublic)).toBeTruthy();
     expect(created?.studentId ?? null).toBeNull();

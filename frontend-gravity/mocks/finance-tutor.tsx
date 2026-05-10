@@ -264,6 +264,6 @@ export const paymentMethodsData = [
         value: payments
             .filter((p) => p.method === "transfer" && p.status === "paid")
             .reduce((s, p) => s + p.amount, 0),
-        color: "#98E9AB",
+        color: "#00AA8D",
     },
 ];

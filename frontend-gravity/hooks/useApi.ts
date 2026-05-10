@@ -194,7 +194,11 @@ export function useApi<T>(
   );
 
   const refetch = useCallback(async () => {
-    if (cacheKey) CACHE.delete(cacheKey);
+    if (cacheKey) {
+      CACHE.delete(cacheKey);
+      // After mutations we need a fresh read, not a reused stale in-flight request.
+      INFLIGHT.delete(cacheKey);
+    }
     await doFetch(true);
   }, [doFetch, cacheKey]);
 
