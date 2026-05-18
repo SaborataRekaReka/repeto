@@ -8,13 +8,6 @@ import "@/styles/theme-navigation.css";
 import "@/styles/yandex-shell.css";
 import "@/styles/settings-public-preview.css";
 import type { AppProps } from "next/app";
-import { Inter } from "next/font/google";
-
-const inter = Inter({
-    subsets: ["latin", "cyrillic"],
-    variable: "--font-inter",
-    display: "swap",
-});
 import Head from "next/head";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
@@ -139,9 +132,7 @@ export default function App({ Component, pageProps }: AppProps) {
     return (
         <ThemeModeProvider>
             <ErrorBoundary>
-                <div className={inter.variable} style={{ display: "contents" }}>
-                    <AppContent Component={Component} pageProps={pageProps} />
-                </div>
+                <AppContent Component={Component} pageProps={pageProps} />
             </ErrorBoundary>
         </ThemeModeProvider>
     );

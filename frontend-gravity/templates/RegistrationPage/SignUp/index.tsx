@@ -11,6 +11,7 @@ import { TextInput, Button, Text, Checkbox, Icon } from "@gravity-ui/uikit";
 import { CircleCheck, Envelope, Clock } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import { useAuth } from "@/contexts/AuthContext";
+import AppField from "@/components/AppField";
 import { api, setAccessToken } from "@/lib/api";
 import { codedErrorMessage } from "@/lib/errorCodes";
 import {
@@ -21,14 +22,6 @@ import {
     TUTOR_PD_TEXT,
     TUTOR_PUBLICATION_TEXT,
 } from "@/lib/legal";
-
-const LABEL_STYLE: CSSProperties = {
-    display: "block",
-    marginBottom: 6,
-    fontSize: 13,
-    fontWeight: 600,
-    color: "var(--g-color-text-primary)",
-};
 
 const FIELD_STYLE: CSSProperties = { marginBottom: 14 };
 const CODE_LENGTH = 6;
@@ -1018,8 +1011,7 @@ const SignUp = ({
                 Заполните данные, затем подтвердите код и оплатите выбранный тариф.
             </Text>
 
-            <div style={FIELD_STYLE}>
-                <span style={LABEL_STYLE}>Ваше имя</span>
+            <AppField label="Ваше имя" style={FIELD_STYLE}>
                 <TextInput
                     size="l"
                     type="text"
@@ -1028,10 +1020,9 @@ const SignUp = ({
                     onUpdate={setName}
                     autoComplete="name"
                 />
-            </div>
+            </AppField>
 
-            <div style={FIELD_STYLE}>
-                <span style={LABEL_STYLE}>Email</span>
+            <AppField label="Email" style={FIELD_STYLE}>
                 <TextInput
                     size="l"
                     type="email"
@@ -1040,15 +1031,9 @@ const SignUp = ({
                     onUpdate={setEmail}
                     autoComplete="email"
                 />
-            </div>
+            </AppField>
 
-            <div style={FIELD_STYLE}>
-                <span style={LABEL_STYLE}>
-                    Телефон{" "}
-                    <span style={{ fontWeight: 400, color: "var(--g-color-text-secondary)" }}>
-                        (необязательно)
-                    </span>
-                </span>
+            <AppField label="Телефон (необязательно)" style={FIELD_STYLE}>
                 <TextInput
                     size="l"
                     type="tel"
@@ -1057,10 +1042,9 @@ const SignUp = ({
                     onUpdate={handlePhoneChange}
                     autoComplete="tel"
                 />
-            </div>
+            </AppField>
 
-            <div style={FIELD_STYLE}>
-                <span style={LABEL_STYLE}>Пароль</span>
+            <AppField label="Пароль" style={FIELD_STYLE}>
                 <TextInput
                     size="l"
                     type="password"
@@ -1084,10 +1068,9 @@ const SignUp = ({
                             : "Минимум 8 символов, буква и цифра"}
                     </span>
                 )}
-            </div>
+            </AppField>
 
-            <div style={{ ...FIELD_STYLE, marginBottom: 20 }}>
-                <span style={LABEL_STYLE}>Повторите пароль</span>
+            <AppField label="Повторите пароль" style={{ ...FIELD_STYLE, marginBottom: 20 }}>
                 <TextInput
                     size="l"
                     type="password"
@@ -1096,7 +1079,7 @@ const SignUp = ({
                     onUpdate={setPasswordConfirm}
                     autoComplete="new-password"
                 />
-            </div>
+            </AppField>
 
             <div style={{ marginBottom: 20, display: "grid", gap: 10 }}>
                 <Checkbox checked={tutorOfferAccepted} onUpdate={setTutorOfferAccepted} size="l">

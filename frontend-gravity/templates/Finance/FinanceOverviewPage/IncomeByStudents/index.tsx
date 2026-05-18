@@ -68,6 +68,7 @@ type LinkRibbon = {
     key: string;
     d: string;
     fill: string;
+    fillOpacity: number;
 };
 
 type IncomeByStudentsPayment = {
@@ -81,6 +82,7 @@ type IncomeByStudentsPayment = {
 type IncomeByStudentsProps = {
     paymentsOverride?: IncomeByStudentsPayment[];
     disableInteractions?: boolean;
+    ribbonAlpha?: number;
 };
 
 const ribbonsEqual = (a: LinkRibbon[], b: LinkRibbon[]): boolean => {
@@ -89,14 +91,16 @@ const ribbonsEqual = (a: LinkRibbon[], b: LinkRibbon[]): boolean => {
         if (a[i].key !== b[i].key) return false;
         if (a[i].d !== b[i].d) return false;
         if (a[i].fill !== b[i].fill) return false;
+        if (a[i].fillOpacity !== b[i].fillOpacity) return false;
     }
     return true;
 };
 
-const withAlpha = (color: string, alpha: number): string =>
-    `color-mix(in srgb, ${color} ${Math.round(alpha * 100)}%, transparent)`;
-
-const IncomeByStudents = ({ paymentsOverride, disableInteractions = false }: IncomeByStudentsProps) => {
+const IncomeByStudents = ({
+    paymentsOverride,
+    disableInteractions = false,
+    ribbonAlpha = 0.18,
+}: IncomeByStudentsProps) => {
     const router = useRouter();
     const [tooltip, setTooltip] = useState<TooltipState>(null);
     const [ribbons, setRibbons] = useState<LinkRibbon[]>([]);
@@ -260,16 +264,48 @@ const IncomeByStudents = ({ paymentsOverride, disableInteractions = false }: Inc
                 nextRibbons.push({
                     key: `${leftMonth.key}-${rightMonth.key}-${leftSeg.id}`,
                     d,
-                    fill: withAlpha(leftSeg.color, 0.18),
+                    fill: leftSeg.color,
+                    fillOpacity: ribbonAlpha,
                 });
             }
         }
 
         setRibbons((prev) => (ribbonsEqual(prev, nextRibbons) ? prev : nextRibbons));
-    }, [months]);
+    }, [months, ribbonAlpha]);
 
     useEffect(() => {
         recalcRibbons();
+    }, [recalcRibbons]);
+
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+
+        let rafOne = 0;
+        let rafTwo = 0;
+        let canceled = false;
+
+        rafOne = window.requestAnimationFrame(() => {
+            rafTwo = window.requestAnimationFrame(() => {
+                if (!canceled) {
+                    recalcRibbons();
+                }
+            });
+        });
+
+        const fontReady = (document as any)?.fonts?.ready;
+        if (fontReady && typeof fontReady.then === "function") {
+            void fontReady.then(() => {
+                if (!canceled) {
+                    recalcRibbons();
+                }
+            });
+        }
+
+        return () => {
+            canceled = true;
+            window.cancelAnimationFrame(rafOne);
+            window.cancelAnimationFrame(rafTwo);
+        };
     }, [recalcRibbons]);
 
     useEffect(() => {
@@ -348,6 +384,7 @@ const IncomeByStudents = ({ paymentsOverride, disableInteractions = false }: Inc
                                     key={ribbon.key}
                                     d={ribbon.d}
                                     fill={ribbon.fill}
+                                    fillOpacity={ribbon.fillOpacity}
                                 />
                             ))}
                         </svg>

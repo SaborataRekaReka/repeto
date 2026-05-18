@@ -1,0 +1,774 @@
+.page {
+    --v2-ink: #0a2540;
+    --v2-ink-soft: #425466;
+    --v2-muted: #6b7c93;
+    --v2-blue: #635bff;
+    --v2-cyan: #00d4ff;
+    --v2-green: #00c896;
+    --v2-line: rgba(10, 37, 64, 0.12);
+    --v2-inner: 1180px;
+    min-height: 100vh;
+    background: #f6f9fc;
+    color: var(--v2-ink);
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    overflow-x: hidden;
+}
+
+.heroSurface {
+    position: relative;
+    min-height: 760px;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at 18% 18%, rgba(122, 115, 255, 0.24), transparent 26%),
+        radial-gradient(circle at 78% 8%, rgba(0, 212, 255, 0.26), transparent 28%),
+        linear-gradient(120deg, #ffffff 0%, #f5f8ff 44%, #eaf8ff 100%);
+}
+
+.heroSurface::before {
+    content: "";
+    position: absolute;
+    inset: -180px -20vw auto -20vw;
+    height: 520px;
+    background: linear-gradient(105deg, #635bff 6%, #00d4ff 48%, #00c896 76%, #ffb45b 100%);
+    transform: skewY(-10deg);
+    transform-origin: 0 0;
+    animation: gradientDrift 12s ease-in-out infinite alternate;
+}
+
+.heroSurface::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(99, 91, 255, 0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(99, 91, 255, 0.08) 1px, transparent 1px);
+    background-size: 72px 72px;
+    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.65), transparent 64%);
+    pointer-events: none;
+}
+
+@keyframes gradientDrift {
+    from { transform: translate3d(-18px, -6px, 0) skewY(-10deg); }
+    to { transform: translate3d(34px, 18px, 0) skewY(-10deg); }
+}
+
+.header {
+    position: fixed;
+    top: 18px;
+    left: 50%;
+    z-index: 50;
+    width: min(var(--v2-inner), calc(100% - 32px));
+    min-height: 58px;
+    transform: translateX(-50%);
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 22px;
+    padding: 10px 12px 10px 18px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.headerSticky {
+    background: rgba(255, 255, 255, 0.88);
+    border-color: rgba(10, 37, 64, 0.1);
+    box-shadow: 0 18px 44px rgba(10, 37, 64, 0.12);
+    backdrop-filter: blur(16px);
+}
+
+.logoLink {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+}
+
+.navigation {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(16px, 3vw, 34px);
+}
+
+.navigationLink {
+    color: var(--v2-ink);
+    font-size: 14px;
+    line-height: 1;
+    font-weight: 650;
+    text-decoration: none;
+    opacity: 0.78;
+    transition: opacity 140ms ease, color 140ms ease;
+}
+
+.navigationLink:hover {
+    opacity: 1;
+    color: var(--v2-blue);
+}
+
+.headerActions,
+.heroActions,
+.modalActions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.headerButtonGhost,
+.headerButtonPrimary,
+.heroActionPrimary,
+.heroActionSecondary,
+.modalPrimaryAction,
+.modalGhostAction {
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 999px;
+    padding: 0 15px;
+    border: 0;
+    font: inherit;
+    font-size: 14px;
+    line-height: 1;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.headerButtonGhost,
+.heroActionSecondary,
+.modalGhostAction {
+    background: rgba(255, 255, 255, 0.68);
+    color: var(--v2-ink);
+    border: 1px solid rgba(10, 37, 64, 0.1);
+}
+
+.headerButtonPrimary,
+.heroActionPrimary,
+.modalPrimaryAction {
+    background: var(--v2-ink);
+    color: #ffffff;
+    box-shadow: 0 10px 24px rgba(10, 37, 64, 0.18);
+}
+
+.headerButtonGhost:hover,
+.headerButtonPrimary:hover,
+.heroActionPrimary:hover,
+.heroActionSecondary:hover,
+.modalPrimaryAction:hover,
+.modalGhostAction:hover {
+    transform: translateY(-1px);
+}
+
+.hero {
+    position: relative;
+    z-index: 1;
+    width: min(var(--v2-inner), calc(100% - 40px));
+    min-height: 760px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
+    gap: 44px;
+    align-items: center;
+    padding: 120px 0 78px;
+}
+
+.heroCopy {
+    max-width: 560px;
+    animation: heroCopyIn 620ms ease both;
+}
+
+@keyframes heroCopyIn {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.heroKicker {
+    width: fit-content;
+    margin: 0 0 18px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: rgba(99, 91, 255, 0.1);
+    color: #4f46e5;
+    font-size: 13px;
+    line-height: 1.2;
+    font-weight: 760;
+}
+
+.heroTitle {
+    margin: 0;
+    color: var(--v2-ink);
+    font-size: clamp(54px, 6.2vw, 88px);
+    line-height: 0.94;
+    letter-spacing: -0.045em;
+    font-weight: 760;
+}
+
+.heroSubtitle {
+    margin: 22px 0 0;
+    max-width: 520px;
+    color: var(--v2-ink-soft);
+    font-size: 18px;
+    line-height: 1.55;
+}
+
+.heroActions {
+    margin-top: 30px;
+}
+
+.heroActionPrimary,
+.heroActionSecondary {
+    min-height: 46px;
+    padding-inline: 20px;
+}
+
+.heroActionPrimary svg,
+.heroActionSecondary svg,
+.bentoOpenButton svg {
+    transition: transform 160ms ease;
+}
+
+.heroActionPrimary:hover svg,
+.heroActionSecondary:hover svg,
+.bentoOpenButton:hover svg {
+    transform: translateX(3px);
+}
+
+.heroStats {
+    margin-top: 34px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.heroStatCard {
+    min-height: 88px;
+    padding: 14px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.64);
+    border: 1px solid rgba(10, 37, 64, 0.09);
+    box-shadow: 0 12px 28px rgba(10, 37, 64, 0.06);
+    transition: transform 220ms ease, background 220ms ease, box-shadow 220ms ease;
+}
+
+.heroStatCard p {
+    margin: 0;
+    color: var(--v2-muted);
+    font-size: 12px;
+    line-height: 1.25;
+    font-weight: 650;
+}
+
+.heroStatCard strong {
+    display: block;
+    margin-top: 8px;
+    color: var(--v2-ink);
+    font-size: 24px;
+    line-height: 1;
+    font-weight: 760;
+    letter-spacing: -0.03em;
+}
+
+.heroStatCardActive {
+    transform: translateY(-5px);
+    background: #ffffff;
+    box-shadow: 0 22px 42px rgba(10, 37, 64, 0.14);
+}
+
+.heroVisual {
+    position: relative;
+    min-height: 620px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    overflow: visible;
+    animation: heroVisualIn 780ms 120ms ease both;
+}
+
+@keyframes heroVisualIn {
+    from { opacity: 0; transform: translateX(34px) translateY(20px); }
+    to { opacity: 1; transform: translateX(0) translateY(0); }
+}
+
+.heroVisualMain {
+    position: relative;
+    width: min(980px, 78vw);
+    flex: 0 0 auto;
+    transform: translateX(clamp(18px, 4vw, 96px));
+    border-radius: 30px;
+    background: rgba(255, 255, 255, 0.76);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 40px 90px -42px rgba(10, 37, 64, 0.56);
+    overflow: hidden;
+}
+
+.heroVisualImage {
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    opacity: 1 !important;
+}
+
+.heroFloat {
+    position: absolute;
+    z-index: 4;
+    width: 190px;
+    padding: 16px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(10, 37, 64, 0.08);
+    box-shadow: 0 24px 54px rgba(10, 37, 64, 0.16);
+    backdrop-filter: blur(14px);
+    animation: floatPulse 4.8s ease-in-out infinite;
+}
+
+.heroFloat span {
+    color: var(--v2-muted);
+    font-size: 12px;
+    line-height: 1.2;
+    font-weight: 700;
+}
+
+.heroFloat strong {
+    display: block;
+    margin-top: 8px;
+    color: var(--v2-ink);
+    font-size: 22px;
+    line-height: 1;
+    font-weight: 760;
+}
+
+.heroFloat p {
+    margin: 7px 0 0;
+    color: var(--v2-green);
+    font-size: 13px;
+    line-height: 1.2;
+    font-weight: 700;
+}
+
+.heroFloatTop {
+    top: 86px;
+    left: 0;
+}
+
+.heroFloatBottom {
+    right: -12px;
+    bottom: 96px;
+    animation-delay: -1.8s;
+}
+
+@keyframes floatPulse {
+    0%, 100% { transform: translate3d(0, 0, 0); }
+    50% { transform: translate3d(0, -12px, 0); }
+}
+
+.bentoSection {
+    position: relative;
+    overflow: hidden;
+    padding: 104px 20px 120px;
+    background: #0a2540;
+    color: #ffffff;
+}
+
+.bentoSection::before {
+    content: "";
+    position: absolute;
+    inset: -220px -20vw auto -20vw;
+    height: 420px;
+    background: linear-gradient(110deg, #00d4ff, #7a73ff 48%, #ffb45b);
+    transform: skewY(-7deg);
+    opacity: 0.72;
+}
+
+.bentoInner {
+    position: relative;
+    z-index: 1;
+    max-width: var(--v2-inner);
+    margin: 0 auto;
+}
+
+.bentoHead {
+    max-width: 760px;
+    margin-bottom: 44px;
+}
+
+.bentoKicker {
+    margin: 0 0 14px;
+    color: #00d4ff;
+    font-size: 14px;
+    line-height: 1;
+    font-weight: 760;
+}
+
+.bentoTitle {
+    margin: 0;
+    font-size: clamp(42px, 5vw, 70px);
+    line-height: 0.98;
+    letter-spacing: -0.045em;
+    font-weight: 760;
+}
+
+.bentoSubtitle {
+    margin: 18px 0 0;
+    max-width: 680px;
+    color: rgba(255, 255, 255, 0.72);
+    font-size: 18px;
+    line-height: 1.55;
+}
+
+.bentoGrid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.bentoCard {
+    position: relative;
+    min-height: 380px;
+    grid-column: span 4;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border-radius: 28px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.07));
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 28px 60px rgba(0, 0, 0, 0.18);
+    overflow: hidden;
+    transition: transform 220ms ease, border-color 220ms ease, background 220ms ease, box-shadow 220ms ease;
+}
+
+.bentoCard:hover {
+    transform: translateY(-8px);
+    border-color: rgba(255, 255, 255, 0.34);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.09));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 34px 76px rgba(0, 0, 0, 0.24);
+}
+
+.bentoCardWide {
+    grid-column: span 7;
+}
+
+.bentoCardTall {
+    grid-column: span 5;
+}
+
+.bentoCardTop {
+    position: relative;
+    z-index: 2;
+}
+
+.bentoCardEyebrow {
+    margin: 0 0 12px;
+    color: #7ddcff;
+    font-size: 13px;
+    line-height: 1;
+    font-weight: 760;
+}
+
+.bentoCardTitle {
+    margin: 0;
+    max-width: 520px;
+    color: #ffffff;
+    font-size: clamp(24px, 2.4vw, 36px);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    font-weight: 760;
+}
+
+.bentoCardText {
+    margin: 12px 0 0;
+    max-width: 480px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+.bentoCardVisual {
+    position: relative;
+    min-height: 148px;
+    margin: 28px -8px 18px;
+    border-radius: 22px;
+    background:
+        radial-gradient(circle at 15% 18%, rgba(0, 212, 255, 0.42), transparent 26%),
+        linear-gradient(145deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05));
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    overflow: hidden;
+}
+
+.bentoVisualLine {
+    position: absolute;
+    left: -20%;
+    right: -20%;
+    top: 52%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.9), rgba(255, 255, 255, 0.72), transparent);
+    animation: scanLine 2.8s ease-in-out infinite;
+}
+
+@keyframes scanLine {
+    0%, 100% { transform: translateY(-28px); opacity: 0.42; }
+    50% { transform: translateY(22px); opacity: 1; }
+}
+
+.bentoVisualBars {
+    position: absolute;
+    inset: auto 18px 18px 18px;
+    height: 84px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    align-items: end;
+    gap: 10px;
+}
+
+.bentoVisualBars span {
+    display: block;
+    border-radius: 999px 999px 8px 8px;
+    background: linear-gradient(180deg, #ffffff, rgba(0, 212, 255, 0.42));
+    animation: barRise 3.2s ease-in-out infinite;
+}
+
+.bentoVisualBars span:nth-child(2) { animation-delay: -0.7s; }
+.bentoVisualBars span:nth-child(3) { animation-delay: -1.3s; }
+.bentoVisualBars span:nth-child(4) { animation-delay: -2s; }
+
+@keyframes barRise {
+    0%, 100% { transform: scaleY(0.82); opacity: 0.72; }
+    50% { transform: scaleY(1); opacity: 1; }
+}
+
+.bentoVisualMetric {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    padding: 8px 10px;
+    border-radius: 999px;
+    background: rgba(10, 37, 64, 0.58);
+    color: #ffffff;
+    font-size: 12px;
+    line-height: 1;
+    font-weight: 760;
+    backdrop-filter: blur(10px);
+}
+
+.bentoOpenButton {
+    position: relative;
+    z-index: 2;
+    width: fit-content;
+    min-height: 38px;
+    padding: 0 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 0;
+    border-radius: 999px;
+    background: #ffffff;
+    color: var(--v2-ink);
+    font: inherit;
+    font-size: 13px;
+    line-height: 1;
+    font-weight: 760;
+    cursor: pointer;
+    transition: transform 160ms ease, background 160ms ease;
+}
+
+.bentoOpenButton:hover {
+    transform: translateY(-1px);
+    background: #eaf8ff;
+}
+
+.modalBody {
+    padding: 0 !important;
+}
+
+.modalContent {
+    padding: 4px 2px 2px;
+    display: grid;
+    gap: 16px;
+}
+
+.modalEyebrow {
+    margin: 0;
+    width: fit-content;
+    padding: 7px 10px;
+    border-radius: 999px;
+    background: rgba(99, 91, 255, 0.1);
+    color: var(--v2-blue);
+    font-size: 12px;
+    line-height: 1;
+    font-weight: 760;
+}
+
+.modalText {
+    margin: 0;
+    color: var(--v2-ink-soft);
+    font-size: 16px;
+    line-height: 1.55;
+}
+
+.modalMetric {
+    min-height: 120px;
+    border-radius: 24px;
+    padding: 22px;
+    display: flex;
+    align-items: flex-end;
+    color: #ffffff;
+    font-size: clamp(30px, 5vw, 56px);
+    line-height: 0.96;
+    letter-spacing: -0.045em;
+    font-weight: 780;
+    background:
+        radial-gradient(circle at 18% 24%, rgba(0, 212, 255, 0.72), transparent 30%),
+        linear-gradient(120deg, #0a2540, #635bff 64%, #00c896);
+    overflow: hidden;
+}
+
+.modalList {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    gap: 10px;
+}
+
+.modalList li {
+    position: relative;
+    padding-left: 18px;
+    color: var(--v2-ink);
+    font-size: 15px;
+    line-height: 1.45;
+}
+
+.modalList li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 8px;
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: var(--v2-green);
+}
+
+.modalActions {
+    padding-top: 4px;
+}
+
+@media (max-width: 1040px) {
+    .hero {
+        grid-template-columns: 1fr;
+        gap: 22px;
+        padding-top: 112px;
+    }
+
+    .heroCopy {
+        max-width: 760px;
+    }
+
+    .heroVisual {
+        min-height: 520px;
+    }
+
+    .heroVisualMain {
+        width: min(980px, 116vw);
+        transform: translateX(60px);
+    }
+
+    .bentoCard,
+    .bentoCardWide,
+    .bentoCardTall {
+        grid-column: span 6;
+    }
+}
+
+@media (max-width: 760px) {
+    .header {
+        position: absolute;
+        top: 14px;
+        grid-template-columns: 1fr auto;
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.82);
+        border-color: rgba(10, 37, 64, 0.08);
+        backdrop-filter: blur(14px);
+    }
+
+    .navigation,
+    .headerButtonGhost,
+    .heroFloat {
+        display: none;
+    }
+
+    .hero {
+        width: min(100% - 28px, var(--v2-inner));
+        min-height: auto;
+        padding: 104px 0 58px;
+    }
+
+    .heroTitle {
+        font-size: clamp(42px, 14vw, 58px);
+    }
+
+    .heroSubtitle,
+    .bentoSubtitle {
+        font-size: 16px;
+    }
+
+    .heroStats,
+    .bentoGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .heroVisual {
+        min-height: 360px;
+    }
+
+    .heroVisualMain {
+        width: min(820px, 190vw);
+        transform: translateX(78px);
+        border-radius: 22px;
+    }
+
+    .bentoSection {
+        padding: 72px 14px 84px;
+    }
+
+    .bentoGrid {
+        gap: 12px;
+    }
+
+    .bentoCard,
+    .bentoCardWide,
+    .bentoCardTall {
+        grid-column: auto;
+        min-height: 340px;
+        border-radius: 22px;
+        padding: 20px;
+    }
+
+    .bentoTitle {
+        font-size: clamp(34px, 11vw, 48px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .heroSurface::before,
+    .heroCopy,
+    .heroVisual,
+    .heroFloat,
+    .bentoVisualLine,
+    .bentoVisualBars span {
+        animation: none !important;
+    }
+
+    .header,
+    .bentoCard,
+    .bentoOpenButton,
+    .heroActionPrimary,
+    .heroActionSecondary {
+        transition: none !important;
+    }
+}

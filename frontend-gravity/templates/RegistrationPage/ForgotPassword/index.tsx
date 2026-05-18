@@ -3,19 +3,12 @@ import { TextInput, Button, Text, Icon } from "@gravity-ui/uikit";
 import { CircleCheck } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import { api } from "@/lib/api";
+import AppField from "@/components/AppField";
 import { codedErrorMessage } from "@/lib/errorCodes";
 
 type ForgotPasswordProps = {
     onBack: () => void;
     token?: string;
-};
-
-const LABEL_STYLE: React.CSSProperties = {
-    display: "block",
-    marginBottom: 6,
-    fontSize: 13,
-    fontWeight: 600,
-    color: "var(--g-color-text-primary)",
 };
 
 const ForgotPassword = ({ onBack, token }: ForgotPasswordProps) => {
@@ -158,8 +151,7 @@ const ForgotPassword = ({ onBack, token }: ForgotPasswordProps) => {
                     Установите новый пароль для вашего аккаунта.
                 </Text>
 
-                <div style={{ marginBottom: 16 }}>
-                    <span style={LABEL_STYLE}>Новый пароль</span>
+                <AppField label="Новый пароль" style={{ marginBottom: 16 }}>
                     <TextInput
                         size="l"
                         type="password"
@@ -168,10 +160,9 @@ const ForgotPassword = ({ onBack, token }: ForgotPasswordProps) => {
                         onUpdate={setPassword}
                         autoComplete="new-password"
                     />
-                </div>
+                </AppField>
 
-                <div style={{ marginBottom: 24 }}>
-                    <span style={LABEL_STYLE}>Повторите пароль</span>
+                <AppField label="Повторите пароль" style={{ marginBottom: 24 }}>
                     <TextInput
                         size="l"
                         type="password"
@@ -180,7 +171,7 @@ const ForgotPassword = ({ onBack, token }: ForgotPasswordProps) => {
                         onUpdate={setPasswordRepeat}
                         autoComplete="new-password"
                     />
-                </div>
+                </AppField>
 
                 {error && (
                     <div
@@ -228,8 +219,7 @@ const ForgotPassword = ({ onBack, token }: ForgotPasswordProps) => {
                 Введите email вашего аккаунта, и мы отправим инструкции по восстановлению.
             </Text>
 
-            <div style={{ marginBottom: 24 }}>
-                <span style={LABEL_STYLE}>Email</span>
+            <AppField label="Email" style={{ marginBottom: 24 }}>
                 <TextInput
                     size="l"
                     type="email"
@@ -238,7 +228,7 @@ const ForgotPassword = ({ onBack, token }: ForgotPasswordProps) => {
                     onUpdate={setEmail}
                     autoComplete="email"
                 />
-            </div>
+            </AppField>
 
             {error && (
                 <div

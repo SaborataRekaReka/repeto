@@ -1441,7 +1441,7 @@
         background: var(--surface-card) !important;
         border: 1px solid color-mix(in srgb, var(--border-subtle) 86%, transparent) !important;
         border-radius: var(--repeto-shell-floating-radius) !important;
-        box-shadow: var(--repeto-shell-floating-shadow) !important;
+        box-shadow: none !important;
     }
 
     .repeto-context-sidebar__inner {

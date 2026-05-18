@@ -3,22 +3,11 @@ import { TextInput, Button, Text, Icon } from "@gravity-ui/uikit";
 import { Eye, EyeSlash } from "@gravity-ui/icons";
 import type { IconData } from "@gravity-ui/uikit";
 import { useAuth } from "@/contexts/AuthContext";
+import AppField from "@/components/AppField";
 import { codedErrorMessage } from "@/lib/errorCodes";
 
 type SignInProps = {
     onRecover: () => void;
-};
-
-const LABEL_STYLE: React.CSSProperties = {
-    display: "block",
-    marginBottom: 6,
-    fontSize: 13,
-    fontWeight: 600,
-    color: "var(--g-color-text-primary)",
-};
-
-const FIELD_STYLE: React.CSSProperties = {
-    marginBottom: 16,
 };
 
 const SignIn = ({ onRecover }: SignInProps) => {
@@ -59,8 +48,7 @@ const SignIn = ({ onRecover }: SignInProps) => {
             </Text>
 
             {/* Email */}
-            <div style={FIELD_STYLE}>
-                <span style={LABEL_STYLE}>Email</span>
+            <AppField label="Email" style={{ marginBottom: 16 }}>
                 <TextInput
                     size="l"
                     type="email"
@@ -69,11 +57,10 @@ const SignIn = ({ onRecover }: SignInProps) => {
                     onUpdate={setEmail}
                     autoComplete="email"
                 />
-            </div>
+            </AppField>
 
             {/* Password */}
-            <div style={{ marginBottom: 8 }}>
-                <span style={LABEL_STYLE}>Пароль</span>
+            <AppField label="Пароль" style={{ marginBottom: 8 }}>
                 <TextInput
                     size="l"
                     type={showPassword ? "text" : "password"}
@@ -103,7 +90,7 @@ const SignIn = ({ onRecover }: SignInProps) => {
                         </button>
                     }
                 />
-            </div>
+            </AppField>
 
             {/* Forgot password */}
             <div style={{ textAlign: "right", marginBottom: 24 }}>
