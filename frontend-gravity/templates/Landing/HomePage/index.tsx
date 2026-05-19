@@ -725,37 +725,25 @@ function FeatureBentoModalVisual({ cardId }: { cardId: string }) {
     if (cardId === "students") {
         return (
             <div className={`${styles.featureBentoModalVisualStage} ${styles.featureBentoModalVisualStudents}`}>
-                <article className={styles.featureBentoModalVisualSplitColumn}>
-                    <div className={styles.featureBentoModalVisualSplitWidget}>
-                        <div className={`${styles.featureBentoModalStudentsWidget} ${styles.featureBentoModalStudentsWidgetHomework}`}>
-                            <HomeworkTab
-                                studentId="showcase-student"
-                                homeworks={showcaseStudentHomework}
-                                lessons={showcaseStudentLessonsHistory}
-                            />
-                        </div>
-                    </div>
+                <article className={`${styles.featureBentoModalVisualSplitColumn} ${styles.featureBentoModalStudentsWidgetHomework}`}>
+                    <HomeworkTab
+                        studentId="showcase-student"
+                        homeworks={showcaseStudentHomework}
+                        lessons={showcaseStudentLessonsHistory}
+                    />
                     <p className={styles.featureBentoModalVisualSplitCaption}>Домашка показывает дедлайн, статус и материалы прямо в карточке ученика.</p>
                 </article>
 
                 <article className={styles.featureBentoModalVisualSplitColumn}>
-                    <div className={styles.featureBentoModalVisualSplitWidget}>
-                        <div className={styles.featureBentoModalStudentsWidget}>
-                            <PaymentHistory
-                                payments={showcaseStudentPaymentsHistory}
-                                lessons={showcaseStudentLessonsHistory}
-                            />
-                        </div>
-                    </div>
+                    <PaymentHistory
+                        payments={showcaseStudentPaymentsHistory}
+                        lessons={showcaseStudentLessonsHistory}
+                    />
                     <p className={styles.featureBentoModalVisualSplitCaption}>Оплаты объединяют операции и начисления, чтобы баланс читался без отдельного раздела.</p>
                 </article>
 
                 <article className={styles.featureBentoModalVisualSplitColumn}>
-                    <div className={styles.featureBentoModalVisualSplitWidget}>
-                        <div className={styles.featureBentoModalStudentsWidget}>
-                            <LessonHistory lessons={showcaseStudentLessonsHistory} />
-                        </div>
-                    </div>
+                    <LessonHistory lessons={showcaseStudentLessonsHistory} />
                     <p className={styles.featureBentoModalVisualSplitCaption}>Занятия показывают дату, время, предмет и статус в том же формате, что в карточке ученика.</p>
                 </article>
             </div>
@@ -2205,6 +2193,7 @@ export default function LandingHomePage() {
     const [activeBentoId, setActiveBentoId] = useState<string | null>(null);
     const [isStickyVisible, setIsStickyVisible] = useState(false);
     const lastScrollYRef = useRef(0);
+    const paymentsBentoCardRef = useRef<HTMLElement | null>(null);
     const isAuthorized = Boolean(user);
     const profileName = user?.name?.trim() || "Профиль";
     const profileAvatarUrl = user?.avatar?.trim() || undefined;
@@ -2275,6 +2264,51 @@ export default function LandingHomePage() {
 
         window.addEventListener("scroll", onScroll, { passive: true });
         return () => window.removeEventListener("scroll", onScroll);
+    }, []);
+
+    useEffect(() => {
+        const card = paymentsBentoCardRef.current;
+
+        if (!card) {
+            return;
+        }
+
+        const applyGradientProgress = (progress: number) => {
+            const easedProgress = progress * progress * (3 - 2 * progress);
+
+            card.style.setProperty("--feature-bento-finance-gradient-green-x", `${2 + easedProgress * 38}%`);
+            card.style.setProperty("--feature-bento-finance-gradient-green-y", `${36 + easedProgress * 28}%`);
+            card.style.setProperty("--feature-bento-finance-gradient-blue-x", `${96 - easedProgress * 46}%`);
+            card.style.setProperty("--feature-bento-finance-gradient-blue-y", `${58 + easedProgress * 34}%`);
+            card.style.setProperty("--feature-bento-finance-gradient-flow-x", `${easedProgress * 100}%`);
+            card.style.setProperty("--feature-bento-finance-gradient-y", `${34 - easedProgress * 50}px`);
+            card.style.setProperty("--feature-bento-finance-gradient-scale", `${1.03 + easedProgress * 0.07}`);
+        };
+
+        const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+        if (prefersReducedMotion) {
+            applyGradientProgress(0.52);
+            return;
+        }
+
+        const updateGradientProgress = () => {
+            const rect = card.getBoundingClientRect();
+            const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+            const rawProgress = (viewportHeight - rect.top) / (viewportHeight + rect.height);
+            const progress = Math.min(1, Math.max(0, rawProgress));
+
+            applyGradientProgress(progress);
+        };
+
+        updateGradientProgress();
+        window.addEventListener("scroll", updateGradientProgress, { passive: true });
+        window.addEventListener("resize", updateGradientProgress);
+
+        return () => {
+            window.removeEventListener("scroll", updateGradientProgress);
+            window.removeEventListener("resize", updateGradientProgress);
+        };
     }, []);
 
     return (
@@ -2422,6 +2456,7 @@ export default function LandingHomePage() {
                             {featureBentoCards.map((card) => (
                                 <article
                                     key={card.id}
+                                    ref={card.id === "payments" ? paymentsBentoCardRef : undefined}
                                     className={`${styles.featureBentoCard} ${
                                         card.layout === "wide"
                                             ? styles.featureBentoCardWide

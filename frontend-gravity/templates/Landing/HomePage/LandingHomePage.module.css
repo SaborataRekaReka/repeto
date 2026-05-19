@@ -3661,52 +3661,63 @@
     padding: 0;
 }
 
-.featureBentoModalVisualStudents .featureBentoModalVisualSplitWidget {
-    overflow: hidden;
+.featureBentoModalVisualStudents .featureBentoModalVisualSplitColumn {
+    overflow: visible;
 }
 
-.featureBentoModalStudentsWidget {
+.featureBentoModalVisualStudents .featureBentoModalVisualSplitColumn > :first-child {
+    min-width: 0;
     min-height: 100%;
-    border-radius: 10px;
-    background: #ffffff;
-    padding: 10px 12px;
+    border-radius: 12px;
+    padding: 12px;
+    overflow: hidden;
+    background: #f8fafd;
 }
 
 .featureBentoModalStudentsWidgetHomework {
     pointer-events: none;
 }
 
-.featureBentoModalStudentsWidget :global(.tab-section),
-.featureBentoModalStudentsWidget :global(.repeto-portal-section--spaced) {
+.featureBentoModalVisualStudents .featureBentoModalVisualSplitColumn :global(.tab-section),
+.featureBentoModalVisualStudents .featureBentoModalVisualSplitColumn :global(.repeto-portal-section--spaced) {
     margin: 0;
 }
 
-.featureBentoModalStudentsWidget :global(.tab-list) {
+.featureBentoModalVisualStudents .featureBentoModalVisualSplitColumn :global(.tab-list) {
     gap: 6px;
 }
 
-.featureBentoModalStudentsWidget :global(.tab-list__item) {
+.featureBentoModalVisualStudents .featureBentoModalVisualSplitColumn :global(.tab-list__item) {
     padding: 10px 12px;
     border-radius: 10px;
 }
 
-.featureBentoModalStudentsWidget :global(.tab-list__row) {
+.featureBentoModalVisualStudents .featureBentoModalVisualSplitColumn :global(.tab-list__item),
+.featureBentoModalVisualStudents .featureBentoModalVisualSplitColumn :global(.lp2-hw-item),
+.featureBentoModalVisualStudents .featureBentoModalVisualSplitColumn :global(.student-payment-hero),
+.featureBentoModalVisualStudents .featureBentoModalVisualSplitColumn :global(.student-ledger-section),
+.featureBentoModalVisualStudents .featureBentoModalVisualSplitColumn :global(.hw-upload-row__icon) {
+    background: #ffffff;
+    box-shadow: inset 0 0 0 1px #edf2f7;
+}
+
+.featureBentoModalVisualStudents .featureBentoModalVisualSplitColumn :global(.tab-list__row) {
     gap: 10px;
 }
 
-.featureBentoModalStudentsWidget :global(.tab-list__label) {
+.featureBentoModalVisualStudents .featureBentoModalVisualSplitColumn :global(.tab-list__label) {
     font-size: 11px;
 }
 
-.featureBentoModalStudentsWidget :global(.tab-list__value) {
+.featureBentoModalVisualStudents .featureBentoModalVisualSplitColumn :global(.tab-list__value) {
     font-size: 12px;
 }
 
-.featureBentoModalStudentsWidget :global(.tab-list__chevron) {
+.featureBentoModalVisualStudents .featureBentoModalVisualSplitColumn :global(.tab-list__chevron) {
     display: none;
 }
 
-.featureBentoModalStudentsWidget :global(.repeto-schedule-status-chip) {
+.featureBentoModalVisualStudents .featureBentoModalVisualSplitColumn :global(.repeto-schedule-status-chip) {
     min-height: 20px;
     padding-inline: 8px;
     font-size: 10px;
@@ -3743,62 +3754,66 @@
     font-size: 11px;
 }
 
-.featureBentoModalStudentsWidget :global(.student-payment-ledger) {
+.featureBentoModalVisualStudents .featureBentoModalVisualSplitColumn :global(.student-payment-ledger) {
     gap: 8px;
 }
 
-.featureBentoModalStudentsWidget :global(.student-payment-hero) {
+.featureBentoModalVisualStudents .featureBentoModalVisualSplitColumn :global(.student-payment-hero) {
     padding: 12px 14px;
     border-radius: 10px;
     gap: 6px;
 }
 
-.featureBentoModalStudentsWidget :global(.student-payment-hero__caption) {
+.featureBentoModalVisualStudents .featureBentoModalVisualSplitColumn :global(.student-payment-hero__caption) {
     font-size: 12px;
 }
 
-.featureBentoModalStudentsWidget :global(.student-payment-hero__amount) {
+.featureBentoModalVisualStudents .featureBentoModalVisualSplitColumn :global(.student-payment-hero__amount) {
     font-size: 28px;
 }
 
-.featureBentoModalStudentsWidget :global(.student-payment-hero__metrics) {
+.featureBentoModalVisualStudents .featureBentoModalVisualSplitColumn :global(.student-payment-hero__metrics) {
     gap: 6px 10px;
     font-size: 11px;
 }
 
-.featureBentoModalStudentsWidget :global(.student-ledger-section) {
+.featureBentoModalVisualStudents .featureBentoModalVisualSplitColumn :global(.student-ledger-section) {
     padding: 12px 14px;
     border-radius: 10px;
 }
 
-.featureBentoModalStudentsWidget :global(.student-ledger-section__subtitle) {
+.featureBentoModalVisualStudents .featureBentoModalVisualSplitColumn :global(.student-ledger-section__subtitle) {
     display: none;
 }
 
-.featureBentoModalStudentsWidget :global(.student-ledger-row),
-.featureBentoModalStudentsWidget :global(.student-payment-due-row) {
+.featureBentoModalVisualStudents .featureBentoModalVisualSplitColumn :global(.student-ledger-row),
+.featureBentoModalVisualStudents .featureBentoModalVisualSplitColumn :global(.student-payment-due-row) {
     padding: 10px 0;
 }
 
-.featureBentoModalStudentsWidget :global(.student-ledger-row__icon) {
+.featureBentoModalVisualStudents .featureBentoModalVisualSplitColumn :global(.student-ledger-row__icon) {
     width: 30px;
     height: 30px;
     border-radius: 8px;
 }
 
-.featureBentoModalStudentsWidget :global(.student-ledger-row__title),
-.featureBentoModalStudentsWidget :global(.student-payment-due-row__copy > span:first-child) {
+.featureBentoModalVisualStudents .featureBentoModalVisualSplitColumn :global(.student-ledger-row__title),
+.featureBentoModalVisualStudents .featureBentoModalVisualSplitColumn :global(.student-payment-due-row__copy > span:first-child) {
     font-size: 13px;
 }
 
-.featureBentoModalStudentsWidget :global(.student-ledger-row__subtitle),
-.featureBentoModalStudentsWidget :global(.student-payment-due-row__copy > span:last-child) {
+.featureBentoModalVisualStudents .featureBentoModalVisualSplitColumn :global(.student-ledger-row__subtitle),
+.featureBentoModalVisualStudents .featureBentoModalVisualSplitColumn :global(.student-payment-due-row__copy > span:last-child) {
     font-size: 11px;
 }
 
-.featureBentoModalStudentsWidget :global(.student-ledger-row__amount),
-.featureBentoModalStudentsWidget :global(.student-payment-due-row__amount) {
+.featureBentoModalVisualStudents .featureBentoModalVisualSplitColumn :global(.student-ledger-row__amount),
+.featureBentoModalVisualStudents .featureBentoModalVisualSplitColumn :global(.student-payment-due-row__amount) {
     font-size: 12px;
+}
+
+.featureBentoModalVisualStudents .featureBentoModalVisualSplitColumn :global(.student-ledger-list .student-ledger-row:nth-of-type(n + 3)) {
+    display: none;
 }
 
 .featureBentoModalVisualStudents .featureBentoModalProfileRail,
@@ -4755,10 +4770,61 @@
     padding: 34px clamp(32px, 4.4vw, 68px) 0;
 }
 
+.featureBentoCardWide::before {
+    inset: calc(var(--feature-bento-preview-top-shared) + 34px) -36% -38% -12%;
+    height: auto;
+    border-radius: 0;
+    background:
+        linear-gradient(16deg, rgba(255, 255, 255, 0.7) 0 9%, rgba(255, 255, 255, 0) 9% 100%),
+        radial-gradient(circle at 82% 88%, rgb(0 91 172 / 98%), rgb(0 91 172 / 0%) 32%),
+        radial-gradient(circle at 17% 80%, rgb(0 170 141 / 96%), rgb(0 170 141 / 0%) 36%),
+        linear-gradient(111deg, #cafff2 0%, #00aa8d 22%, #0f9ec8 45%, var(--accent) 68%, var(--accent-pressed) 86%, #002f5c 100%);
+    clip-path: polygon(0 34%, 38% 15%, 100% 0, 100% 100%, 0 100%);
+    opacity: 0.98;
+    transform: translate3d(0, 12px, 0) skewY(-7deg);
+    transform-origin: 50% 50%;
+    filter: saturate(1.08);
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000000 9%, #000000 92%, transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0%, #000000 9%, #000000 92%, transparent 100%);
+}
+
 .featureBentoCardSide {
+    --feature-bento-finance-gradient-green-x: 8%;
+    --feature-bento-finance-gradient-green-y: 44%;
+    --feature-bento-finance-gradient-blue-x: 86%;
+    --feature-bento-finance-gradient-blue-y: 70%;
+    --feature-bento-finance-gradient-flow-x: 0%;
+    --feature-bento-finance-gradient-y: 18px;
+    --feature-bento-finance-gradient-scale: 1.04;
     grid-column: span 5;
     min-height: clamp(540px, 43vw, 680px);
     padding: 34px clamp(22px, 2.4vw, 34px) 32px;
+}
+
+.featureBentoCardSide::before {
+    inset: calc(var(--feature-bento-preview-top-shared) - 26px) -46% -48% -46%;
+    height: auto;
+    border-radius: 0;
+    background:
+        radial-gradient(ellipse 82% 58% at 18% 62%, rgb(0 170 141 / 78%) 0%, rgb(0 170 141 / 42%) 34%, rgb(0 170 141 / 12%) 66%, rgb(0 170 141 / 0%) 86%),
+        radial-gradient(ellipse 84% 62% at 84% 72%, rgb(0 91 172 / 78%) 0%, rgb(0 91 172 / 44%) 34%, rgb(0 91 172 / 14%) 66%, rgb(0 91 172 / 0%) 86%),
+        radial-gradient(ellipse 68% 52% at 52% 76%, rgb(43 176 204 / 48%) 0%, rgb(43 176 204 / 20%) 48%, rgb(43 176 204 / 0%) 82%),
+        radial-gradient(ellipse 128% 78% at 52% 110%, rgb(0 91 172 / 48%) 0%, rgb(0 170 141 / 22%) 44%, rgb(0 91 172 / 0%) 84%),
+        linear-gradient(180deg, rgb(255 255 255 / 0%) 0%, rgb(235 255 249 / 24%) 32%, rgb(33 164 194 / 28%) 66%, rgb(0 91 172 / 30%) 100%);
+    background-size: 178% 160%, 178% 166%, 132% 118%, 160% 134%, 100% 100%;
+    background-position:
+        var(--feature-bento-finance-gradient-green-x) var(--feature-bento-finance-gradient-green-y),
+        var(--feature-bento-finance-gradient-blue-x) var(--feature-bento-finance-gradient-blue-y),
+        52% 76%,
+        50% 100%,
+        0 0;
+    opacity: 0.98;
+    transform: translate3d(0, var(--feature-bento-finance-gradient-y), 0) scale(var(--feature-bento-finance-gradient-scale));
+    transform-origin: 50% 50%;
+    filter: blur(48px) saturate(1.1);
+    -webkit-mask-image: linear-gradient(180deg, transparent 0%, rgb(0 0 0 / 4%) 10%, rgb(0 0 0 / 22%) 30%, rgb(0 0 0 / 68%) 56%, #000000 100%);
+    mask-image: linear-gradient(180deg, transparent 0%, rgb(0 0 0 / 4%) 10%, rgb(0 0 0 / 22%) 30%, rgb(0 0 0 / 68%) 56%, #000000 100%);
+    transition: opacity 420ms ease, filter 240ms ease;
 }
 
 .featureBentoCardCompact {
@@ -4944,14 +5010,28 @@
 .featureBentoScheduleCalendar :global(.repeto-schedule-calendar-card) {
     width: 100%;
     border-radius: 14px !important;
+    background: rgb(255 255 255 / 68%) !important;
+    backdrop-filter: blur(12px) saturate(1.08);
 }
 
 .featureBentoScheduleCalendar :global(.repeto-calendar-shell) {
     overflow: hidden;
+    background: transparent;
 }
 
 .featureBentoScheduleCalendar :global(.repeto-calendar-shell__inner) {
     min-width: 0;
+}
+
+.featureBentoScheduleCalendar :global(.repeto-calendar-header),
+.featureBentoScheduleCalendar :global(.repeto-month-dow),
+.featureBentoScheduleCalendar :global(.repeto-month-cell),
+.featureBentoScheduleCalendar :global(.repeto-month-cell--today) {
+    background: rgb(255 255 255 / 58%) !important;
+}
+
+.featureBentoScheduleCalendar :global(.repeto-month-cell--outside) {
+    background: rgb(248 250 253 / 5%) !important;
 }
 
 .featureBentoFinancePreview {
@@ -4977,6 +5057,18 @@
 .featureBentoCard:focus-within::before {
     opacity: 1;
     transform: translate3d(0, -8px, 0) scale(1);
+}
+
+.featureBentoCardWide:hover::before,
+.featureBentoCardWide:focus-within::before {
+    opacity: 1;
+    transform: translate3d(0, 10px, 0) skewY(-7deg) scale(1.012);
+}
+
+.featureBentoCardSide:hover::before,
+.featureBentoCardSide:focus-within::before {
+    opacity: 1;
+    filter: blur(46px) saturate(1.14);
 }
 
 .featureBentoCard:hover::after,
@@ -5138,6 +5230,10 @@
 
 .featureBentoFinancePreview :global(.g-card) {
     border-radius: 12px;
+    background: rgb(255 255 255 / 92%) !important;
+    border-color: rgb(255 255 255 / 78%) !important;
+    box-shadow: 0 18px 44px -32px rgb(0 47 92 / 36%) !important;
+    backdrop-filter: blur(12px) saturate(1.04);
 }
 
 .featureBentoCardStudent {
@@ -9636,4 +9732,33 @@
 
 .bentoCardDark .bentoCardList li::before {
     background: var(--accent);
+}
+
+/* Stripe-style wavy brand background on the schedule bento card */
+.featureBentoCardWave {
+    position: relative;
+    isolation: isolate;
+    background:
+        radial-gradient(120% 80% at 100% 0%, color-mix(in srgb, var(--accent) 10%, #ffffff) 0%, #ffffff 60%),
+        #ffffff;
+}
+
+.featureBentoStripeWave {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    border-radius: inherit;
+    overflow: hidden;
+    color: var(--accent);
+    opacity: 0.95;
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 55%, rgba(0, 0, 0, 0.4) 80%, transparent 100%);
+            mask-image: linear-gradient(to bottom, #000 0%, #000 55%, rgba(0, 0, 0, 0.4) 80%, transparent 100%);
+}
+
+.featureBentoCardWave > :not(.featureBentoStripeWave) {
+    position: relative;
+    z-index: 1;
 }
