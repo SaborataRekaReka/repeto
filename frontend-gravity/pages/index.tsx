@@ -1,6 +1,6 @@
 import type { NextPage } from "next";
-import LandingHomePageV2 from "@/templates/Landing/HomePageV2";
+import LandingHomePage from "@/templates/Landing/HomePage";
 
-const Home: NextPage = () => <LandingHomePageV2 />;
+const Home: NextPage = () => <LandingHomePage />;
 
 export default Home;
