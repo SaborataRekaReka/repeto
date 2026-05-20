@@ -269,6 +269,7 @@ type MockStudentAccount = {
   id: string;
   email: string;
   name: string;
+  avatarUrl?: string | null;
   status: 'ACTIVE';
 };
 
@@ -1805,6 +1806,7 @@ function createInitialMockState(): MockState {
       id: 'student_account_showcase',
       email: SHOWCASE_STUDENT_EMAIL,
       name: students.find((student) => student.id === featuredStudentId)?.name || 'Ученик',
+      avatarUrl: students.find((student) => student.id === featuredStudentId)?.avatarUrl || null,
       status: 'ACTIVE',
     },
     studentPortalStudentId: featuredStudentId || students[0]?.id || '1',
