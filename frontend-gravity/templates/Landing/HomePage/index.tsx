@@ -2507,11 +2507,27 @@ export default function LandingHomePage() {
 
                                     {card.id === "schedule" ? (
                                         <div className={styles.featureBentoSchedulePreview} aria-hidden="true">
-                                            <div className={styles.featureBentoScheduleCalendar}>
-                                                <ScheduleMonthPreview
-                                                    currentDate={featureBentoSchedulePreviewDate}
-                                                    lessons={featureBentoScheduleLessons}
-                                                />
+                                            <div className={styles.featureBentoScheduleBrowserFrame}>
+                                                <div className={styles.featureBentoScheduleBrowserTopBar}>
+                                                    <div className={styles.featureBentoScheduleBrowserDots}>
+                                                        <span />
+                                                        <span />
+                                                        <span />
+                                                    </div>
+                                                    <div className={styles.featureBentoScheduleBrowserAddress}>
+                                                        <span className={styles.featureBentoScheduleBrowserLock} />
+                                                        <span>app.repeto.com/schedule</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className={styles.featureBentoScheduleBrowserBody}>
+                                                    <div className={styles.featureBentoScheduleCalendar}>
+                                                        <ScheduleMonthPreview
+                                                            currentDate={featureBentoSchedulePreviewDate}
+                                                            lessons={featureBentoScheduleLessons}
+                                                        />
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     ) : null}
