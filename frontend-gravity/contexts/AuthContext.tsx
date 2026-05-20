@@ -128,7 +128,7 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 const PUBLIC_ROUTE_PREFIXES = ['/auth', '/registration', '/t', '/student'];
-const PUBLIC_ROUTE_EXACT = ['/', '/legal'];
+const PUBLIC_ROUTE_EXACT = ['/', '/home-v2', '/legal'];
 
 let refreshInFlight: Promise<void> | null = null;
 
