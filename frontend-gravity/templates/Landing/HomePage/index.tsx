@@ -843,150 +843,667 @@ function FeatureBentoModalVisual({ cardId }: { cardId: string }) {
 function StudentCardBentoPreview() {
     return (
         <div className={styles.featureBentoStudentPreview} aria-hidden="true">
-            <aside className={styles.featureBentoStudentSidebar}>
-                <div className={styles.featureBentoStudentCurrent}>
-                    <span>Иванов П. С.</span>
-                    <b>«</b>
-                </div>
-
-                <div className={styles.featureBentoStudentCreate}>Создать</div>
-
-                <nav className={styles.featureBentoStudentNav}>
-                    <span className={styles.featureBentoStudentNavTrack} />
-                    {studentBentoNavItems.map((item) => (
-                        <span key={item} className={styles.featureBentoStudentNavItem}>
-                            <i />
-                            {item}
-                        </span>
-                    ))}
-                </nav>
-            </aside>
-
-            <section className={styles.featureBentoStudentMain}>
-                <div className={styles.featureBentoStudentSearch}>Поиск учеников...</div>
-
-                <div className={styles.featureBentoStudentProfileHead}>
-                    <div className={styles.featureBentoStudentAvatar}>ПИ</div>
-                    <div>
-                        <strong>Иванов Петр Сергеевич</strong>
-                        <span>Математика · 11 кл. · 17 лет</span>
-                        <div className={styles.featureBentoStudentStatusRow}>
-                            <em>Активен · -7 600 ₽</em>
-                            <span className={styles.featureBentoStudentReminder}>Напомнить</span>
-                        </div>
+            <div className={`${styles.featureBentoScheduleBrowserFrame} ${styles.featureBentoStudentBrowserFrame}`}>
+                <div className={styles.featureBentoScheduleBrowserTopBar}>
+                    <div className={styles.featureBentoScheduleBrowserDots}>
+                        <span />
+                        <span />
+                        <span />
+                    </div>
+                    <div className={styles.featureBentoScheduleBrowserAddress}>
+                        <span className={styles.featureBentoScheduleBrowserLock} />
+                        <span>app.repeto.com/students</span>
                     </div>
                 </div>
 
-                <div className={styles.featureBentoStudentPanels}>
-                    <section className={`${styles.featureBentoStudentPanel} ${styles.featureBentoStudentPanelProfile}`}>
-                        <h4>Основное</h4>
-                        <div className={styles.featureBentoStudentFields}>
-                            <span>
-                                <b>ФИО</b>
-                                Иванов Петр Сергеевич
-                            </span>
-                            <span>
-                                <b>Предмет</b>
-                                Математика
-                            </span>
-                            <span>
-                                <b>Класс</b>
-                                11
-                            </span>
-                        </div>
-                    </section>
+                <div className={`${styles.featureBentoScheduleBrowserBody} ${styles.featureBentoStudentBrowserBody}`}>
+                    <div className={styles.featureBentoStudentWindow}>
+                        <aside className={styles.featureBentoStudentSidebar}>
+                            <div className={styles.featureBentoStudentCurrent}>
+                                <span>Иванов П. С.</span>
+                                <b>«</b>
+                            </div>
 
-                    <section className={`${styles.featureBentoStudentPanel} ${styles.featureBentoStudentPanelLessons}`}>
-                        <h4>Занятия</h4>
-                        <div className={styles.featureBentoStudentRows}>
-                            <span>
-                                <b>Сегодня, 17:00-18:00</b>
-                                Математика · Производная и графики
-                            </span>
-                            <span>
-                                <b>Ср, 19:30</b>
-                                Пробник ЕГЭ · онлайн
-                            </span>
-                            <span>
-                                <b>Пт, 18:00</b>
-                                Разбор ошибок · запланировано
-                            </span>
-                        </div>
-                    </section>
+                            <div className={styles.featureBentoStudentCreate}>Создать</div>
 
-                    <section className={`${styles.featureBentoStudentPanel} ${styles.featureBentoStudentPanelPayments}`}>
-                        <h4>Оплаты</h4>
-                        <div className={styles.featureBentoStudentRows}>
-                            <span>
-                                <b>Баланс</b>
-                                <em className={styles.featureBentoStudentDebt}>-7 600 ₽</em>
-                            </span>
-                            <span>
-                                <b>Пакет</b>
-                                Осталось 3 из 8 занятий
-                            </span>
-                            <span>
-                                <b>Последний платеж</b>
-                                12 мая · 9 600 ₽
-                            </span>
-                        </div>
-                    </section>
+                            <nav className={styles.featureBentoStudentNav}>
+                                <span className={styles.featureBentoStudentNavTrack} />
+                                {studentBentoNavItems.map((item) => (
+                                    <span key={item} className={styles.featureBentoStudentNavItem}>
+                                        <i />
+                                        {item}
+                                    </span>
+                                ))}
+                            </nav>
+                        </aside>
 
-                    <section className={`${styles.featureBentoStudentPanel} ${styles.featureBentoStudentPanelNotes}`}>
-                        <h4>Заметки</h4>
-                        <div className={styles.featureBentoStudentRows}>
-                            <span>
-                                <b>Цель</b>
-                                80+ баллов по профильной математике
-                            </span>
-                            <span>
-                                <b>Сложности</b>
-                                Тригонометрия и параметры
-                            </span>
-                            <span>
-                                <b>Контакт родителя</b>
-                                Елена · Telegram
-                            </span>
-                        </div>
-                    </section>
+                        <section className={styles.featureBentoStudentMain}>
+                            <div className={styles.featureBentoStudentSearch}>Поиск учеников...</div>
 
-                    <section className={`${styles.featureBentoStudentPanel} ${styles.featureBentoStudentPanelHomework}`}>
-                        <h4>Домашка</h4>
-                        <div className={styles.featureBentoStudentHomework}>
-                            <span>
-                                <b>12 задач</b>
-                                к следующему занятию
-                            </span>
-                            <span>
-                                <b>Файл</b>
-                                варианты-егэ.pdf
-                            </span>
-                            <span>
-                                <b>Статус</b>
-                                ожидает проверки
-                            </span>
-                        </div>
-                    </section>
+                            <div className={styles.featureBentoStudentProfileHead}>
+                                <div className={styles.featureBentoStudentAvatar}>ПИ</div>
+                                <div>
+                                    <strong>Иванов Петр Сергеевич</strong>
+                                    <span>Математика · 11 кл. · 17 лет</span>
+                                    <div className={styles.featureBentoStudentStatusRow}>
+                                        <em>Активен · -7 600 ₽</em>
+                                        <span className={styles.featureBentoStudentReminder}>Напомнить</span>
+                                    </div>
+                                </div>
+                            </div>
 
-                    <section className={`${styles.featureBentoStudentPanel} ${styles.featureBentoStudentPanelHistory}`}>
-                        <h4>История</h4>
-                        <div className={styles.featureBentoStudentRows}>
-                            <span>
-                                <b>14 мая</b>
-                                Проведено занятие · +2 400 ₽
-                            </span>
-                            <span>
-                                <b>12 мая</b>
-                                Родитель оплатил пакет
-                            </span>
-                            <span>
-                                <b>10 мая</b>
-                                Домашка отправлена на проверку
-                            </span>
-                        </div>
-                    </section>
+                            <div className={styles.featureBentoStudentPanels}>
+                                <section className={`${styles.featureBentoStudentPanel} ${styles.featureBentoStudentPanelProfile}`}>
+                                    <h4>Основное</h4>
+                                    <div className={styles.featureBentoStudentFields}>
+                                        <span>
+                                            <b>ФИО</b>
+                                            Иванов Петр Сергеевич
+                                        </span>
+                                        <span>
+                                            <b>Предмет</b>
+                                            Математика
+                                        </span>
+                                        <span>
+                                            <b>Класс</b>
+                                            11
+                                        </span>
+                                    </div>
+                                </section>
+
+                                <section className={`${styles.featureBentoStudentPanel} ${styles.featureBentoStudentPanelLessons}`}>
+                                    <h4>Занятия</h4>
+                                    <div className={styles.featureBentoStudentRows}>
+                                        <span>
+                                            <b>Сегодня, 17:00-18:00</b>
+                                            Математика · Производная и графики
+                                        </span>
+                                        <span>
+                                            <b>Ср, 19:30</b>
+                                            Пробник ЕГЭ · онлайн
+                                        </span>
+                                        <span>
+                                            <b>Пт, 18:00</b>
+                                            Разбор ошибок · запланировано
+                                        </span>
+                                    </div>
+                                </section>
+
+                                <section className={`${styles.featureBentoStudentPanel} ${styles.featureBentoStudentPanelPayments}`}>
+                                    <h4>Оплаты</h4>
+                                    <div className={styles.featureBentoStudentRows}>
+                                        <span>
+                                            <b>Баланс</b>
+                                            <em className={styles.featureBentoStudentDebt}>-7 600 ₽</em>
+                                        </span>
+                                        <span>
+                                            <b>Пакет</b>
+                                            Осталось 3 из 8 занятий
+                                        </span>
+                                        <span>
+                                            <b>Последний платеж</b>
+                                            12 мая · 9 600 ₽
+                                        </span>
+                                    </div>
+                                </section>
+
+                                <section className={`${styles.featureBentoStudentPanel} ${styles.featureBentoStudentPanelNotes}`}>
+                                    <h4>Заметки</h4>
+                                    <div className={styles.featureBentoStudentRows}>
+                                        <span>
+                                            <b>Цель</b>
+                                            80+ баллов по профильной математике
+                                        </span>
+                                        <span>
+                                            <b>Сложности</b>
+                                            Тригонометрия и параметры
+                                        </span>
+                                        <span>
+                                            <b>Контакт родителя</b>
+                                            Елена · Telegram
+                                        </span>
+                                    </div>
+                                </section>
+
+                                <section className={`${styles.featureBentoStudentPanel} ${styles.featureBentoStudentPanelHomework}`}>
+                                    <h4>Домашка</h4>
+                                    <div className={styles.featureBentoStudentHomework}>
+                                        <span>
+                                            <b>12 задач</b>
+                                            к следующему занятию
+                                        </span>
+                                        <span>
+                                            <b>Файл</b>
+                                            варианты-егэ.pdf
+                                        </span>
+                                        <span>
+                                            <b>Статус</b>
+                                            ожидает проверки
+                                        </span>
+                                    </div>
+                                </section>
+
+                                <section className={`${styles.featureBentoStudentPanel} ${styles.featureBentoStudentPanelHistory}`}>
+                                    <h4>История</h4>
+                                    <div className={styles.featureBentoStudentRows}>
+                                        <span>
+                                            <b>14 мая</b>
+                                            Проведено занятие · +2 400 ₽
+                                        </span>
+                                        <span>
+                                            <b>12 мая</b>
+                                            Родитель оплатил пакет
+                                        </span>
+                                        <span>
+                                            <b>10 мая</b>
+                                            Домашка отправлена на проверку
+                                        </span>
+                                    </div>
+                                </section>
+                            </div>
+                        </section>
+                    </div>
                 </div>
-            </section>
+            </div>
+        </div>
+    );
+}
+
+function StudentCardBentoLiveBackground() {
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) {
+            return;
+        }
+
+        const host = canvas.parentElement;
+        if (!host) {
+            return;
+        }
+
+        const context = canvas.getContext("2d", { alpha: true });
+        if (!context) {
+            canvas.style.display = "none";
+            return;
+        }
+
+        canvas.dataset.engine = "2d-feather-v1";
+
+        type FeatherBand = {
+            baseY: number;
+            ampY: number;
+            width: number;
+            speed: number;
+            phase: number;
+            glowColor: string;
+            glowBlur: number;
+            fillStops: Array<[number, string]>;
+        };
+
+        const bands: FeatherBand[] = [
+            {
+                baseY: 0.36,
+                ampY: 0.016,
+                width: 0.096,
+                speed: 0.18,
+                phase: 0.3,
+                glowColor: "rgba(0, 170, 141, 0.1)",
+                glowBlur: 0.018,
+                fillStops: [
+                    [0, "rgba(0, 170, 141, 0)"],
+                    [0.24, "rgba(0, 170, 141, 0.14)"],
+                    [0.58, "rgba(0, 170, 141, 0.1)"],
+                    [1, "rgba(0, 170, 141, 0)"],
+                ],
+            },
+            {
+                baseY: 0.44,
+                ampY: 0.018,
+                width: 0.092,
+                speed: 0.2,
+                phase: 1.1,
+                glowColor: "rgba(0, 170, 141, 0.09)",
+                glowBlur: 0.017,
+                fillStops: [
+                    [0, "rgba(0, 170, 141, 0)"],
+                    [0.24, "rgba(0, 170, 141, 0.11)"],
+                    [0.62, "rgba(0, 170, 141, 0.08)"],
+                    [1, "rgba(0, 170, 141, 0)"],
+                ],
+            },
+            {
+                baseY: 0.54,
+                ampY: 0.02,
+                width: 0.088,
+                speed: 0.22,
+                phase: 2.2,
+                glowColor: "rgba(15, 158, 200, 0.09)",
+                glowBlur: 0.016,
+                fillStops: [
+                    [0, "rgba(15, 158, 200, 0)"],
+                    [0.2, "rgba(15, 158, 200, 0.12)"],
+                    [0.54, "rgba(15, 158, 200, 0.09)"],
+                    [1, "rgba(15, 158, 200, 0)"],
+                ],
+            },
+            {
+                baseY: 0.62,
+                ampY: 0.019,
+                width: 0.086,
+                speed: 0.21,
+                phase: 2.95,
+                glowColor: "rgba(15, 158, 200, 0.08)",
+                glowBlur: 0.016,
+                fillStops: [
+                    [0, "rgba(15, 158, 200, 0)"],
+                    [0.26, "rgba(15, 158, 200, 0.1)"],
+                    [0.62, "rgba(15, 158, 200, 0.07)"],
+                    [1, "rgba(15, 158, 200, 0)"],
+                ],
+            },
+            {
+                baseY: 0.71,
+                ampY: 0.017,
+                width: 0.082,
+                speed: 0.2,
+                phase: 3.8,
+                glowColor: "rgba(0, 91, 172, 0.08)",
+                glowBlur: 0.014,
+                fillStops: [
+                    [0, "rgba(0, 91, 172, 0)"],
+                    [0.26, "rgba(0, 91, 172, 0.1)"],
+                    [0.6, "rgba(0, 91, 172, 0.07)"],
+                    [1, "rgba(0, 91, 172, 0)"],
+                ],
+            },
+            {
+                baseY: 0.79,
+                ampY: 0.015,
+                width: 0.078,
+                speed: 0.18,
+                phase: 4.5,
+                glowColor: "rgba(0, 60, 115, 0.08)",
+                glowBlur: 0.014,
+                fillStops: [
+                    [0, "rgba(0, 60, 115, 0)"],
+                    [0.24, "rgba(0, 60, 115, 0.1)"],
+                    [0.56, "rgba(0, 60, 115, 0.07)"],
+                    [1, "rgba(0, 60, 115, 0)"],
+                ],
+            },
+        ];
+
+        const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+        let width = 1;
+        let height = 1;
+        let dpr = 1;
+        let frameId = 0;
+
+        const drawStripePath = (centerY: number, curveTension: number) => {
+            const startX = -0.36 * width;
+            const endX = 1.36 * width;
+            const diagonalLift = height * (0.24 + curveTension * 0.55);
+            const startY = centerY + diagonalLift;
+            const endY = centerY - diagonalLift;
+
+            context.beginPath();
+            context.moveTo(startX, startY);
+            context.bezierCurveTo(
+                0.02 * width,
+                startY - curveTension * 0.82 * height,
+                0.58 * width,
+                endY + curveTension * 0.62 * height,
+                endX,
+                endY,
+            );
+        };
+
+        const drawBand = (band: FeatherBand, timeSec: number) => {
+            const wave = Math.sin(timeSec * band.speed + band.phase);
+            const y = height * (band.baseY + wave * band.ampY);
+
+            const gradient = context.createLinearGradient(-0.2 * width, y + 0.28 * height, 1.18 * width, y - 0.24 * height);
+            for (const [offset, color] of band.fillStops) {
+                gradient.addColorStop(offset, color);
+            }
+
+            context.save();
+            context.strokeStyle = gradient;
+            context.lineCap = "round";
+            context.lineJoin = "round";
+            context.shadowColor = band.glowColor;
+            context.shadowBlur = height * band.glowBlur;
+
+            // Stripe-like feather trails: several thin lanes instead of one solid ribbon.
+            const laneOffsets = [-0.42, -0.26, -0.1, 0.08, 0.24, 0.4];
+            for (let laneIndex = 0; laneIndex < laneOffsets.length; laneIndex += 1) {
+                const laneOffset = laneOffsets[laneIndex];
+                context.globalAlpha = Math.max(0.09, 0.36 - laneIndex * 0.036);
+                context.lineWidth = Math.max(1.8, height * band.width * (0.27 - laneIndex * 0.024));
+                drawStripePath(y + height * band.width * laneOffset, 0.2 + band.width * (0.05 - laneIndex * 0.006));
+                context.stroke();
+            }
+
+            const highlight = context.createLinearGradient(-0.1 * width, y + 0.18 * height, 1.1 * width, y - 0.18 * height);
+            highlight.addColorStop(0, "rgba(255, 255, 255, 0)");
+            highlight.addColorStop(0.42, "rgba(255, 255, 255, 0.5)");
+            highlight.addColorStop(0.58, "rgba(255, 255, 255, 0.28)");
+            highlight.addColorStop(1, "rgba(255, 255, 255, 0)");
+
+            context.shadowBlur = 0;
+            context.strokeStyle = highlight;
+            context.globalAlpha = 0.28;
+            context.lineWidth = Math.max(1.1, height * band.width * 0.08);
+            drawStripePath(y - height * 0.008, 0.21 + band.width * 0.08);
+            context.stroke();
+
+            context.globalAlpha = 0.16;
+            context.lineWidth = Math.max(0.9, height * band.width * 0.05);
+            drawStripePath(y + height * 0.005, 0.2 + band.width * 0.06);
+            context.stroke();
+            context.restore();
+        };
+
+        const drawFrame = (timeMs: number) => {
+            const timeSec = timeMs * 0.001;
+
+            context.clearRect(0, 0, width, height);
+
+            const base = context.createLinearGradient(0, 0, width, height);
+            base.addColorStop(0, "rgba(255, 255, 255, 0.98)");
+            base.addColorStop(0.5, "rgba(250, 253, 255, 0.96)");
+            base.addColorStop(1, "rgba(246, 250, 255, 0.98)");
+            context.fillStyle = base;
+            context.fillRect(0, 0, width, height);
+
+            const haze = context.createRadialGradient(width * 0.06, height * 0.92, 0, width * 0.08, height * 0.92, width * 0.8);
+            haze.addColorStop(0, "rgba(0, 170, 141, 0.045)");
+            haze.addColorStop(0.4, "rgba(15, 158, 200, 0.03)");
+            haze.addColorStop(1, "rgba(15, 158, 200, 0)");
+            context.fillStyle = haze;
+            context.fillRect(0, 0, width, height);
+
+            for (const band of bands) {
+                drawBand(band, timeSec);
+            }
+        };
+
+        const restart = () => {
+            cancelAnimationFrame(frameId);
+            drawFrame(performance.now());
+            if (!mediaQuery.matches) {
+                const tick = (timeMs: number) => {
+                    drawFrame(timeMs);
+                    frameId = requestAnimationFrame(tick);
+                };
+                frameId = requestAnimationFrame(tick);
+            }
+        };
+
+        const resize = () => {
+            const rect = host.getBoundingClientRect();
+            width = Math.max(1, Math.round(rect.width));
+            height = Math.max(1, Math.round(rect.height));
+            dpr = Math.min(2, window.devicePixelRatio || 1);
+
+            canvas.width = Math.max(1, Math.round(width * dpr));
+            canvas.height = Math.max(1, Math.round(height * dpr));
+            canvas.style.width = `${width}px`;
+            canvas.style.height = `${height}px`;
+            context.setTransform(dpr, 0, 0, dpr, 0, 0);
+            restart();
+        };
+
+        const onMotionChange = () => {
+            restart();
+        };
+
+        let resizeObserver: ResizeObserver | null = null;
+        if (typeof ResizeObserver !== "undefined") {
+            resizeObserver = new ResizeObserver(() => {
+                resize();
+            });
+            resizeObserver.observe(host);
+        }
+
+        window.addEventListener("resize", resize);
+        if (typeof mediaQuery.addEventListener === "function") {
+            mediaQuery.addEventListener("change", onMotionChange);
+        } else {
+            mediaQuery.addListener(onMotionChange);
+        }
+
+        resize();
+
+        return () => {
+            cancelAnimationFrame(frameId);
+            resizeObserver?.disconnect();
+            window.removeEventListener("resize", resize);
+            if (typeof mediaQuery.removeEventListener === "function") {
+                mediaQuery.removeEventListener("change", onMotionChange);
+            } else {
+                mediaQuery.removeListener(onMotionChange);
+            }
+        };
+    }, []);
+
+    return (
+        <div className={styles.featureBentoStudentLiveBackground} aria-hidden="true">
+            <canvas ref={canvasRef} className={styles.featureBentoStudentLiveBackgroundCanvas} />
+            <span className={styles.featureBentoStudentLiveBackgroundFallback} />
+        </div>
+    );
+}
+
+function PublicCardBentoLiveBackground() {
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) {
+            return;
+        }
+
+        const host = canvas.parentElement;
+        if (!host) {
+            return;
+        }
+
+        const context = canvas.getContext("2d", { alpha: true });
+        if (!context) {
+            canvas.style.display = "none";
+            return;
+        }
+
+        canvas.dataset.engine = "2d-brand-lines-static-v3";
+
+        let width = 1;
+        let height = 1;
+        let dpr = 1;
+
+        const drawPath = (centerY: number, curve: number) => {
+            const startX = -0.3 * width;
+            const endX = 1.3 * width;
+            const diagonalLift = height * (0.24 + curve * 0.5);
+            const startY = centerY + diagonalLift;
+            const endY = centerY - diagonalLift;
+
+            context.beginPath();
+            context.moveTo(startX, startY);
+            context.bezierCurveTo(
+                0.06 * width,
+                startY - curve * 0.7 * height,
+                0.62 * width,
+                endY + curve * 0.54 * height,
+                endX,
+                endY,
+            );
+        };
+
+        const drawLineField = () => {
+            const lineCount = 34;
+            const lineSpacing = height * 0.0088;
+            const firstY = height * 0.47;
+            const centerLine = (lineCount - 1) / 2;
+
+            context.save();
+            context.lineCap = "round";
+            context.lineJoin = "round";
+            context.shadowColor = "rgba(0, 91, 172, 0.24)";
+            context.shadowBlur = height * 0.006;
+
+            for (let lineIndex = 0; lineIndex < lineCount; lineIndex += 1) {
+                const y = firstY + lineIndex * lineSpacing;
+                const edgeDistance = Math.abs(lineIndex - centerLine) / centerLine;
+                const lineAlpha = 0.9 - edgeDistance * 0.32;
+                const gradient = context.createLinearGradient(
+                    -0.24 * width,
+                    y + 0.3 * height,
+                    1.16 * width,
+                    y - 0.28 * height,
+                );
+                gradient.addColorStop(0, "rgba(0, 170, 141, 0)");
+                gradient.addColorStop(0.2, "rgba(0, 170, 141, 0.74)");
+                gradient.addColorStop(0.5, "rgba(15, 158, 200, 0.82)");
+                gradient.addColorStop(0.78, "rgba(0, 91, 172, 0.86)");
+                gradient.addColorStop(1, "rgba(0, 60, 115, 0)");
+
+                context.globalAlpha = lineAlpha;
+                context.strokeStyle = gradient;
+                context.lineWidth = 0.92;
+                drawPath(y, 0.152);
+                context.stroke();
+            }
+
+            const highlightY = firstY + centerLine * lineSpacing;
+            const highlight = context.createLinearGradient(-0.12 * width, highlightY + 0.2 * height, 1.08 * width, highlightY - 0.18 * height);
+            highlight.addColorStop(0, "rgba(255, 255, 255, 0)");
+            highlight.addColorStop(0.42, "rgba(255, 255, 255, 0.46)");
+            highlight.addColorStop(0.6, "rgba(255, 255, 255, 0.24)");
+            highlight.addColorStop(1, "rgba(255, 255, 255, 0)");
+
+            context.shadowBlur = 0;
+            context.strokeStyle = highlight;
+            context.globalAlpha = 0.28;
+            context.lineWidth = 0.74;
+            drawPath(highlightY - height * 0.004, 0.19);
+            context.stroke();
+
+            context.restore();
+        };
+
+        const drawFrame = () => {
+
+            context.clearRect(0, 0, width, height);
+
+            const base = context.createLinearGradient(0, 0, width, height);
+            base.addColorStop(0, "rgba(248, 253, 255, 0.99)");
+            base.addColorStop(0.5, "rgba(241, 249, 253, 0.96)");
+            base.addColorStop(1, "rgba(236, 246, 252, 0.98)");
+            context.fillStyle = base;
+            context.fillRect(0, 0, width, height);
+
+            const leftGlow = context.createRadialGradient(
+                width * 0.08,
+                height * 0.9,
+                0,
+                width * 0.08,
+                height * 0.9,
+                width * 0.68,
+            );
+            leftGlow.addColorStop(0, "rgba(0, 170, 141, 0.22)");
+            leftGlow.addColorStop(0.48, "rgba(0, 170, 141, 0.08)");
+            leftGlow.addColorStop(1, "rgba(0, 170, 141, 0)");
+            context.fillStyle = leftGlow;
+            context.fillRect(0, 0, width, height);
+
+            const rightGlow = context.createRadialGradient(
+                width * 0.92,
+                height * 0.1,
+                0,
+                width * 0.92,
+                height * 0.1,
+                width * 0.72,
+            );
+            rightGlow.addColorStop(0, "rgba(0, 91, 172, 0.22)");
+            rightGlow.addColorStop(0.5, "rgba(15, 158, 200, 0.08)");
+            rightGlow.addColorStop(1, "rgba(0, 91, 172, 0)");
+            context.fillStyle = rightGlow;
+            context.fillRect(0, 0, width, height);
+
+            drawLineField();
+
+            // Stripe-like white corners: top-left and bottom-right.
+            const topLeftWhite = context.createRadialGradient(
+                width * 0.02,
+                height * 0.02,
+                0,
+                width * 0.02,
+                height * 0.02,
+                width * 0.45,
+            );
+            topLeftWhite.addColorStop(0, "rgba(255, 255, 255, 0.98)");
+            topLeftWhite.addColorStop(0.46, "rgba(255, 255, 255, 0.86)");
+            topLeftWhite.addColorStop(0.74, "rgba(255, 255, 255, 0.34)");
+            topLeftWhite.addColorStop(1, "rgba(255, 255, 255, 0)");
+            context.fillStyle = topLeftWhite;
+            context.fillRect(0, 0, width, height);
+
+            const bottomRightWhite = context.createRadialGradient(
+                width * 0.98,
+                height * 0.98,
+                0,
+                width * 0.98,
+                height * 0.98,
+                width * 0.54,
+            );
+            bottomRightWhite.addColorStop(0, "rgba(255, 255, 255, 0.98)");
+            bottomRightWhite.addColorStop(0.44, "rgba(255, 255, 255, 0.9)");
+            bottomRightWhite.addColorStop(0.72, "rgba(255, 255, 255, 0.38)");
+            bottomRightWhite.addColorStop(1, "rgba(255, 255, 255, 0)");
+            context.fillStyle = bottomRightWhite;
+            context.fillRect(0, 0, width, height);
+        };
+
+        const resize = () => {
+            const rect = host.getBoundingClientRect();
+            width = Math.max(1, Math.round(rect.width));
+            height = Math.max(1, Math.round(rect.height));
+            dpr = Math.min(2, window.devicePixelRatio || 1);
+
+            canvas.width = Math.max(1, Math.round(width * dpr));
+            canvas.height = Math.max(1, Math.round(height * dpr));
+            canvas.style.width = `${width}px`;
+            canvas.style.height = `${height}px`;
+            context.setTransform(dpr, 0, 0, dpr, 0, 0);
+            drawFrame();
+        };
+
+        let resizeObserver: ResizeObserver | null = null;
+        if (typeof ResizeObserver !== "undefined") {
+            resizeObserver = new ResizeObserver(() => {
+                resize();
+            });
+            resizeObserver.observe(host);
+        }
+
+        window.addEventListener("resize", resize);
+
+        resize();
+
+        return () => {
+            resizeObserver?.disconnect();
+            window.removeEventListener("resize", resize);
+        };
+    }, []);
+
+    return (
+        <div className={styles.featureBentoPublicLiveBackground} aria-hidden="true">
+            <canvas ref={canvasRef} className={styles.featureBentoPublicLiveBackgroundCanvas} />
+            <span className={styles.featureBentoPublicLiveBackgroundFallback} />
         </div>
     );
 }
@@ -1197,18 +1714,22 @@ function TutorPageScreenshotBentoPreview() {
 function PublicTutorPageBentoPreview() {
     return (
         <div className={styles.featureBentoPublicPreview} aria-hidden="true">
-            <div className={styles.featureBentoPublicShell}>
-                <header className={styles.featureBentoPublicTopbar}>
-                    <strong>Repeto</strong>
-                    <div>
-                        <span className={styles.featureBentoPublicUserAvatar}>ИП</span>
-                        <span>Иванов Пётр Сергеевич</span>
-                        <i />
-                        <i />
+            <div className={`${styles.featureBentoScheduleBrowserFrame} ${styles.featureBentoPublicBrowserFrame}`}>
+                <div className={styles.featureBentoScheduleBrowserTopBar}>
+                    <div className={styles.featureBentoScheduleBrowserDots}>
+                        <span />
+                        <span />
+                        <span />
                     </div>
-                </header>
+                    <div className={styles.featureBentoScheduleBrowserAddress}>
+                        <span className={styles.featureBentoScheduleBrowserLock} />
+                        <span>repeto.com/anna-belova</span>
+                    </div>
+                </div>
 
-                <div className={styles.featureBentoPublicLayout}>
+                <div className={`${styles.featureBentoScheduleBrowserBody} ${styles.featureBentoPublicBrowserBody}`}>
+                    <div className={styles.featureBentoPublicShell}>
+                        <div className={styles.featureBentoPublicLayout}>
                     <aside className={styles.featureBentoPublicSidebar}>
                         <h4>Профиль</h4>
                         <nav>
@@ -1332,6 +1853,8 @@ function PublicTutorPageBentoPreview() {
                     </main>
                 </div>
             </div>
+        </div>
+    </div>
 
             <div className={styles.featureBentoPublicConnector} aria-hidden="true">
                 <span className={styles.featureBentoPublicConnectorDot} />
@@ -2276,13 +2799,13 @@ export default function LandingHomePage() {
         const applyGradientProgress = (progress: number) => {
             const easedProgress = progress * progress * (3 - 2 * progress);
 
-            card.style.setProperty("--feature-bento-finance-gradient-green-x", `${2 + easedProgress * 38}%`);
-            card.style.setProperty("--feature-bento-finance-gradient-green-y", `${36 + easedProgress * 28}%`);
-            card.style.setProperty("--feature-bento-finance-gradient-blue-x", `${96 - easedProgress * 46}%`);
-            card.style.setProperty("--feature-bento-finance-gradient-blue-y", `${58 + easedProgress * 34}%`);
+            card.style.setProperty("--feature-bento-finance-gradient-green-x", `${8 + easedProgress * 28}%`);
+            card.style.setProperty("--feature-bento-finance-gradient-green-y", `${40 + easedProgress * 22}%`);
+            card.style.setProperty("--feature-bento-finance-gradient-blue-x", `${80 - easedProgress * 30}%`);
+            card.style.setProperty("--feature-bento-finance-gradient-blue-y", `${48 + easedProgress * 20}%`);
             card.style.setProperty("--feature-bento-finance-gradient-flow-x", `${easedProgress * 100}%`);
-            card.style.setProperty("--feature-bento-finance-gradient-y", `${34 - easedProgress * 50}px`);
-            card.style.setProperty("--feature-bento-finance-gradient-scale", `${1.03 + easedProgress * 0.07}`);
+            card.style.setProperty("--feature-bento-finance-gradient-y", `${24 - easedProgress * 34}px`);
+            card.style.setProperty("--feature-bento-finance-gradient-scale", `${1.01 + easedProgress * 0.05}`);
         };
 
         const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -2495,6 +3018,9 @@ export default function LandingHomePage() {
                                         </span>
                                     </button>
 
+                                    {card.id === "students" ? <StudentCardBentoLiveBackground /> : null}
+                                    {card.id === "public-page" ? <PublicCardBentoLiveBackground /> : null}
+
                                     <div className={styles.featureBentoCopy}>
                                         {card.layout === "compact" && card.id !== "students" && card.id !== "reminders" && card.id !== "public-page" ? (
                                             <span className={styles.featureBentoTag}>{card.tag}</span>
@@ -2507,6 +3033,26 @@ export default function LandingHomePage() {
 
                                     {card.id === "schedule" ? (
                                         <div className={styles.featureBentoSchedulePreview} aria-hidden="true">
+                                            <svg
+                                                className={styles.featureBentoScheduleCurve}
+                                                viewBox="0 0 1200 620"
+                                                preserveAspectRatio="none"
+                                                aria-hidden="true"
+                                                focusable="false"
+                                            >
+                                                <defs>
+                                                    <linearGradient id="feature-bento-schedule-curve-gradient" x1="0" y1="1" x2="1" y2="0">
+                                                        <stop offset="0%" stopColor="#00aa8d" />
+                                                        <stop offset="48%" stopColor="#0f9ec8" />
+                                                        <stop offset="76%" stopColor="#005BAC" />
+                                                        <stop offset="100%" stopColor="#003C73" />
+                                                    </linearGradient>
+                                                </defs>
+                                                <path
+                                                    d="M -90 500 C 20 420 150 386 302 374 C 438 364 552 348 642 268 C 720 198 754 96 844 54 C 940 8 1056 18 1290 -72 L 1290 700 L -90 700 Z"
+                                                    fill="url(#feature-bento-schedule-curve-gradient)"
+                                                />
+                                            </svg>
                                             <div className={styles.featureBentoScheduleBrowserFrame}>
                                                 <div className={styles.featureBentoScheduleBrowserTopBar}>
                                                     <div className={styles.featureBentoScheduleBrowserDots}>

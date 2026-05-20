@@ -4771,20 +4771,21 @@
 }
 
 .featureBentoCardWide::before {
-    inset: calc(var(--feature-bento-preview-top-shared) - 12px) -48% -40% -28%;
+    inset: calc(var(--feature-bento-preview-top-shared) - 24px) -48% -40% -28%;
     height: auto;
     border-radius: 0;
     background:
         radial-gradient(160% 144% at -4% 110%, rgb(0 170 141 / 100%) 0%, rgb(0 170 141 / 84%) 32%, rgb(0 170 141 / 36%) 60%, rgb(0 170 141 / 0%) 84%),
         radial-gradient(96% 78% at 20% 94%, rgb(0 170 141 / 58%) 0%, rgb(0 170 141 / 20%) 46%, rgb(0 170 141 / 0%) 76%),
-        radial-gradient(138% 114% at 114% 68%, rgb(0 91 172 / 100%) 0%, rgb(0 91 172 / 76%) 34%, rgb(0 91 172 / 26%) 62%, rgb(0 91 172 / 0%) 86%),
+        radial-gradient(112% 96% at 108% 34%, rgb(0 170 141 / 88%) 0%, rgb(0 170 141 / 42%) 36%, rgb(0 170 141 / 0%) 72%),
+        radial-gradient(142% 118% at 116% 50%, rgb(0 91 172 / 100%) 0%, rgb(0 91 172 / 78%) 34%, rgb(0 91 172 / 28%) 62%, rgb(0 91 172 / 0%) 86%),
         radial-gradient(106% 82% at 58% 108%, rgb(15 158 200 / 80%) 0%, rgb(15 158 200 / 34%) 42%, rgb(15 158 200 / 0%) 84%),
         linear-gradient(111deg, #cafff2 0%, #00aa8d 22%, #0f9ec8 45%, var(--accent) 68%, var(--accent-pressed) 86%, #002f5c 100%);
-    background-size: 172% 146%, 122% 104%, 164% 140%, 140% 118%, 100% 100%;
-    background-position: -8% 102%, 8% 96%, 100% 80%, 56% 105%, 0 0;
-    clip-path: polygon(-14% 52%, -8% 48%, 0 45%, 10% 43%, 21% 41%, 33% 39%, 44% 36%, 53% 31%, 61% 23%, 69% 15%, 78% 9%, 87% 4%, 96% 0%, 104% -9%, 108% 9%, 109% 38%, 109% 74%, 106% 102%, -14% 102%);
+    background-size: 172% 146%, 122% 104%, 118% 106%, 164% 140%, 140% 118%, 100% 100%;
+    background-position: -8% 102%, 8% 96%, 102% 36%, 102% 64%, 56% 105%, 0 0;
+    clip-path: polygon(-14% 56%, -6% 48%, 4% 43%, 16% 42%, 29% 42%, 42% 41%, 54% 37%, 64% 30%, 73% 20%, 81% 9%, 88% 0%, 94% -10%, 100% -20%, 106% -30%, 111% -16%, 113% 10%, 114% 46%, 113% 72%, 107% 102%, -14% 102%);
     opacity: 0.98;
-    transform: translate3d(0, 9px, 0) scale(1.024);
+    transform: translate3d(0, 8px, 0) scale(1.024);
     transform-origin: 50% 50%;
     filter: blur(0.9px) saturate(1.09);
     -webkit-mask-image: none;
@@ -4792,39 +4793,39 @@
 }
 
 .featureBentoCardSide {
-    --feature-bento-finance-gradient-green-x: 8%;
-    --feature-bento-finance-gradient-green-y: 44%;
-    --feature-bento-finance-gradient-blue-x: 86%;
-    --feature-bento-finance-gradient-blue-y: 70%;
+    --feature-bento-finance-gradient-green-x: 14%;
+    --feature-bento-finance-gradient-green-y: 46%;
+    --feature-bento-finance-gradient-blue-x: 72%;
+    --feature-bento-finance-gradient-blue-y: 58%;
     --feature-bento-finance-gradient-flow-x: 0%;
-    --feature-bento-finance-gradient-y: 18px;
-    --feature-bento-finance-gradient-scale: 1.04;
+    --feature-bento-finance-gradient-y: 14px;
+    --feature-bento-finance-gradient-scale: 1.03;
     grid-column: span 5;
     min-height: clamp(540px, 43vw, 680px);
     padding: 34px clamp(22px, 2.4vw, 34px) 32px;
 }
 
 .featureBentoCardSide::before {
-    inset: calc(var(--feature-bento-preview-top-shared) - 26px) -46% -48% -46%;
+    inset: calc(var(--feature-bento-preview-top-shared) - 26px) -36% -34% -36%;
     height: auto;
     border-radius: 0;
     background:
-        radial-gradient(ellipse 82% 58% at 18% 62%, rgb(0 170 141 / 78%) 0%, rgb(0 170 141 / 42%) 34%, rgb(0 170 141 / 12%) 66%, rgb(0 170 141 / 0%) 86%),
-        radial-gradient(ellipse 84% 62% at 84% 72%, rgb(0 91 172 / 78%) 0%, rgb(0 91 172 / 44%) 34%, rgb(0 91 172 / 14%) 66%, rgb(0 91 172 / 0%) 86%),
-        radial-gradient(ellipse 68% 52% at 52% 76%, rgb(43 176 204 / 48%) 0%, rgb(43 176 204 / 20%) 48%, rgb(43 176 204 / 0%) 82%),
-        radial-gradient(ellipse 128% 78% at 52% 110%, rgb(0 91 172 / 48%) 0%, rgb(0 170 141 / 22%) 44%, rgb(0 91 172 / 0%) 84%),
-        linear-gradient(180deg, rgb(255 255 255 / 0%) 0%, rgb(235 255 249 / 24%) 32%, rgb(33 164 194 / 28%) 66%, rgb(0 91 172 / 30%) 100%);
-    background-size: 178% 160%, 178% 166%, 132% 118%, 160% 134%, 100% 100%;
+        radial-gradient(ellipse 86% 62% at var(--feature-bento-finance-gradient-green-x) var(--feature-bento-finance-gradient-green-y), rgb(4 230 124 / 82%) 0%, rgb(8 218 151 / 52%) 34%, rgb(8 218 151 / 14%) 66%, rgb(8 218 151 / 0%) 88%),
+        radial-gradient(ellipse 88% 64% at var(--feature-bento-finance-gradient-blue-x) var(--feature-bento-finance-gradient-blue-y), rgb(40 124 255 / 94%) 0%, rgb(37 103 246 / 70%) 34%, rgb(37 103 246 / 22%) 66%, rgb(37 103 246 / 0%) 88%),
+        radial-gradient(ellipse 72% 60% at 60% 86%, rgb(25 78 216 / 78%) 0%, rgb(25 78 216 / 36%) 44%, rgb(25 78 216 / 0%) 84%),
+        radial-gradient(ellipse 120% 84% at 60% 106%, rgb(9 122 194 / 46%) 0%, rgb(9 122 194 / 14%) 48%, rgb(9 122 194 / 0%) 86%),
+        linear-gradient(110deg, #12e677 0%, #11d89b 24%, #12b1d1 50%, #2f78ef 74%, #1f4fcf 100%);
+    background-size: 162% 148%, 166% 152%, 132% 118%, 160% 132%, 100% 100%;
     background-position:
         var(--feature-bento-finance-gradient-green-x) var(--feature-bento-finance-gradient-green-y),
         var(--feature-bento-finance-gradient-blue-x) var(--feature-bento-finance-gradient-blue-y),
-        52% 76%,
-        50% 100%,
+        60% 86%,
+        60% 106%,
         0 0;
-    opacity: 0.98;
+    opacity: 0.94;
     transform: translate3d(0, var(--feature-bento-finance-gradient-y), 0) scale(var(--feature-bento-finance-gradient-scale));
     transform-origin: 50% 50%;
-    filter: blur(48px) saturate(1.1);
+    filter: blur(40px) saturate(1.13);
     -webkit-mask-image: linear-gradient(180deg, transparent 0%, rgb(0 0 0 / 4%) 10%, rgb(0 0 0 / 22%) 30%, rgb(0 0 0 / 68%) 56%, #000000 100%);
     mask-image: linear-gradient(180deg, transparent 0%, rgb(0 0 0 / 4%) 10%, rgb(0 0 0 / 22%) 30%, rgb(0 0 0 / 68%) 56%, #000000 100%);
     transition: opacity 420ms ease, filter 240ms ease;
@@ -5002,12 +5003,28 @@
     margin-top: 0;
     width: auto;
     pointer-events: none;
+    isolation: isolate;
     transform-origin: 12% 0;
     transition: transform 440ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.featureBentoScheduleCurve {
+    position: absolute;
+    z-index: 0;
+    left: -18%;
+    right: -10%;
+    top: -166px;
+    bottom: -16%;
+    width: auto;
+    height: auto;
+    opacity: 0.98;
+    filter: blur(1.2px) saturate(1.1);
+    pointer-events: none;
+}
+
 .featureBentoScheduleBrowserFrame {
     position: relative;
+    z-index: 1;
     width: clamp(980px, 78vw, 1240px);
     border-radius: 24px;
     overflow: hidden;
@@ -5024,7 +5041,7 @@
     display: flex;
     align-items: center;
     background: rgb(255 255 255 / 54%);
-    border-bottom: 1px solid rgb(204 213 227 / 62%);
+    border-bottom: 0;
 }
 
 .featureBentoScheduleBrowserDots {
@@ -5034,11 +5051,13 @@
 }
 
 .featureBentoScheduleBrowserDots span {
-    width: 13px;
-    height: 13px;
-    border-radius: 999px;
-    background: #c1cbda;
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 76%);
+    display: block;
+    flex: 0 0 12px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #d0d7e3;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 78%);
 }
 
 .featureBentoScheduleBrowserAddress {
@@ -5050,7 +5069,7 @@
     min-width: min(386px, 54%);
     padding: 0 16px;
     border-radius: 999px;
-    border: 1px solid rgb(194 203 218 / 66%);
+    border: 0;
     background: rgb(255 255 255 / 74%);
     color: #7b879c;
     font-size: 12px;
@@ -5060,19 +5079,21 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 8px;
     white-space: nowrap;
 }
 
 .featureBentoScheduleBrowserLock {
     position: relative;
-    width: 8px;
-    height: 6px;
-    margin-right: 8px;
-    border: 1.4px solid #96a3b9;
+    width: 9px;
+    height: 7px;
+    margin-right: 0;
+    border: 1.4px solid #9ca8bc;
     border-top: 0;
     border-radius: 2px;
     box-sizing: border-box;
     flex: 0 0 auto;
+    transform: translateY(1px);
 }
 
 .featureBentoScheduleBrowserLock::before {
@@ -5080,9 +5101,9 @@
     position: absolute;
     left: 50%;
     top: -5px;
-    width: 6px;
-    height: 4px;
-    border: 1.4px solid #96a3b9;
+    width: 7px;
+    height: 5px;
+    border: 1.4px solid #9ca8bc;
     border-bottom: 0;
     border-radius: 6px 6px 0 0;
     transform: translateX(-50%);
@@ -5097,14 +5118,14 @@
 .featureBentoScheduleCalendar {
     width: 100%;
     overflow: hidden;
-    border-radius: 14px;
-    border: 1px solid rgb(214 223 236 / 86%);
+    border-radius: 0;
+    border: 0;
     background: #ffffff;
 }
 
 .featureBentoScheduleCalendar :global(.repeto-schedule-calendar-card) {
     width: 100%;
-    border-radius: 14px !important;
+    border-radius: 0 !important;
     border: 0 !important;
     background: #ffffff !important;
     backdrop-filter: none;
@@ -5147,7 +5168,7 @@
 .featureBentoCard:focus-within {
     transform: translate3d(0, -6px, 0) scale(1.014);
     border-color: rgba(15, 23, 40, 0.14);
-    box-shadow: 0 28px 44px -30px rgba(11, 24, 45, 0.5), 0 12px 26px -20px rgba(15, 23, 40, 0.34);
+    box-shadow: none;
 }
 
 .featureBentoCard:hover::before,
@@ -5165,7 +5186,7 @@
 .featureBentoCardSide:hover::before,
 .featureBentoCardSide:focus-within::before {
     opacity: 1;
-    filter: blur(46px) saturate(1.14);
+    filter: blur(42px) saturate(1.15);
 }
 
 .featureBentoCard:hover::after,
@@ -5338,6 +5359,73 @@
     min-height: clamp(560px, 44vw, 660px);
     padding: 34px clamp(34px, 4vw, 58px) 0;
     display: block;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+}
+
+.featureBentoCardStudent::before {
+    content: none;
+}
+
+.featureBentoStudentLiveBackground {
+    position: absolute;
+    inset: -12% -10% -18% -10%;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+    transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.featureBentoStudentLiveBackgroundCanvas,
+.featureBentoStudentLiveBackgroundFallback {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.featureBentoStudentLiveBackgroundCanvas {
+    display: block;
+    opacity: 0.93;
+    filter: saturate(1.06);
+    transform: translate3d(0, 0, 0) scale(1.02);
+}
+
+.featureBentoStudentLiveBackgroundFallback {
+    z-index: -1;
+    background:
+        radial-gradient(136% 112% at 8% 100%, rgb(0 170 141 / 16%) 0%, rgb(0 170 141 / 0%) 64%),
+        radial-gradient(126% 102% at 92% 90%, rgb(15 158 200 / 16%) 0%, rgb(15 158 200 / 0%) 66%),
+        linear-gradient(to top right,
+            transparent 0%,
+            transparent 34%,
+            rgb(0 170 141 / 14%) 40%,
+            rgb(15 158 200 / 13%) 45%,
+            transparent 52%,
+            transparent 60%,
+            rgb(0 91 172 / 12%) 66%,
+            rgb(0 60 115 / 9%) 70%,
+            transparent 76%,
+            transparent 100%),
+        linear-gradient(to top right,
+            transparent 0%,
+            transparent 56%,
+            rgb(255 255 255 / 48%) 60%,
+            rgb(255 255 255 / 0%) 64%,
+            transparent 100%);
+    background-size: 172% 144%, 164% 138%, 230% 194%, 220% 188%;
+    background-position: -10% 104%, 104% 92%, -22% 72%, -20% 78%;
+    opacity: 0.82;
+    filter: blur(10px) saturate(1.02);
+}
+
+.featureBentoCardStudent:hover .featureBentoStudentLiveBackground,
+.featureBentoCardStudent:focus-within .featureBentoStudentLiveBackground {
+    transform: translate3d(0, -2px, 0) scale(1.012);
+}
+
+.featureBentoCardStudent:hover .featureBentoStudentLiveBackgroundCanvas,
+.featureBentoCardStudent:focus-within .featureBentoStudentLiveBackgroundCanvas {
+    filter: saturate(1.12);
 }
 
 .featureBentoCardStudent .featureBentoCopy {
@@ -5382,6 +5470,76 @@
     background: #f0f0f4;
 }
 
+.featureBentoCardPublicPage::before {
+    content: none;
+}
+
+.featureBentoCardPublicPage::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border-radius: inherit;
+    background:
+        radial-gradient(58% 76% at 0% 0%, rgb(255 255 255 / 100%) 0%, rgb(255 255 255 / 92%) 38%, rgb(255 255 255 / 0%) 74%),
+        radial-gradient(54% 72% at 100% 100%, rgb(255 255 255 / 100%) 0%, rgb(255 255 255 / 88%) 42%, rgb(255 255 255 / 0%) 78%);
+    opacity: 1;
+    transform: none;
+    transition: none;
+    pointer-events: none;
+}
+
+.featureBentoPublicLiveBackground {
+    position: absolute;
+    inset: -16% -12% -26% -12%;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.featureBentoPublicLiveBackgroundCanvas,
+.featureBentoPublicLiveBackgroundFallback {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.featureBentoPublicLiveBackgroundCanvas {
+    display: block;
+    opacity: 0.98;
+    filter: saturate(1.28) contrast(1.08);
+    transform: translate3d(0, 0, 0) scale(1.01);
+}
+
+.featureBentoPublicLiveBackgroundFallback {
+    z-index: -1;
+    background:
+        radial-gradient(74% 86% at 0% 0%, rgb(255 255 255 / 96%) 0%, rgb(255 255 255 / 82%) 42%, rgb(255 255 255 / 0%) 76%),
+        radial-gradient(82% 92% at 100% 100%, rgb(255 255 255 / 98%) 0%, rgb(255 255 255 / 88%) 42%, rgb(255 255 255 / 0%) 78%),
+        radial-gradient(140% 120% at 8% 96%, rgb(0 170 141 / 34%) 0%, rgb(0 170 141 / 0%) 66%),
+        radial-gradient(132% 112% at 96% 8%, rgb(0 91 172 / 34%) 0%, rgb(0 91 172 / 0%) 68%),
+        linear-gradient(to top right,
+            transparent 0%,
+            transparent 36%,
+            rgb(0 170 141 / 46%) 40%,
+            rgb(15 158 200 / 52%) 45%,
+            rgb(0 91 172 / 48%) 51%,
+            transparent 57%,
+            transparent 100%),
+        linear-gradient(to top right,
+            transparent 0%,
+            transparent 52%,
+            rgb(255 255 255 / 7%) 54%,
+            rgb(255 255 255 / 72%) 58%,
+            rgb(255 255 255 / 0%) 64%,
+            transparent 100%);
+    background-size: 100% 100%, 100% 100%, 170% 146%, 166% 142%, 226% 196%, 216% 184%;
+    background-position: 0 0, 0 0, -10% 102%, 104% -4%, -20% 76%, -18% 84%;
+    opacity: 0.92;
+    filter: blur(4px) saturate(1.22) contrast(1.04);
+}
+
 .featureBentoCardPublicPage .featureBentoCopy {
     max-width: 360px;
     padding-right: 74px;
@@ -5414,6 +5572,21 @@
     transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.featureBentoPublicBrowserFrame {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-rows: 48px minmax(0, 1fr);
+    border-radius: 24px 24px 0 0;
+    border-bottom: 0;
+}
+
+.featureBentoPublicBrowserBody {
+    min-height: 0;
+    overflow: hidden;
+    padding: 10px 10px 0 12px;
+}
+
 .featureBentoCard:hover .featureBentoPublicPreview,
 .featureBentoCard:focus-within .featureBentoPublicPreview {
     transform: translate3d(0, -2px, 0) scale(1.008);
@@ -5421,11 +5594,11 @@
 
 .featureBentoPublicShell {
     height: 100%;
-    border: 1px solid rgba(15, 23, 40, 0.08);
-    border-radius: 10px 0 0 0;
+    border: 0;
+    border-radius: 0;
     overflow: hidden;
     display: grid;
-    grid-template-rows: 42px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
     background: #ececf1;
 }
 
@@ -5924,18 +6097,30 @@
     right: -92px;
     top: var(--feature-bento-preview-top-shared);
     bottom: -34px;
-    display: grid;
-    grid-template-columns: 232px minmax(380px, 1fr);
-    overflow: hidden;
-    border: 1px solid rgba(15, 23, 40, 0.08);
-    border-radius: 14px;
-    background: #ffffff;
     color: #172133;
-    box-shadow: 0 1px 0 rgba(15, 23, 40, 0.03);
     pointer-events: none;
     transform: scale(var(--feature-student-preview-scale));
     transform-origin: 18% 0;
     transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.featureBentoStudentBrowserFrame {
+    width: 100%;
+    height: 100%;
+}
+
+.featureBentoStudentBrowserBody {
+    height: calc(100% - 48px);
+}
+
+.featureBentoStudentWindow {
+    height: 100%;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 232px minmax(380px, 1fr);
+    overflow: hidden;
+    background: #ffffff;
+    color: #172133;
 }
 
 .featureBentoCard:hover .featureBentoStudentPreview,
@@ -7055,6 +7240,14 @@
         min-height: 720px;
     }
 
+    .featureBentoStudentLiveBackground {
+        inset: -32% -36% -54% -38%;
+    }
+
+    .featureBentoPublicLiveBackground {
+        inset: -26% -30% -44% -30%;
+    }
+
     .featureBentoCardStudent .featureBentoCardTitle {
         max-width: 360px;
         font-size: 24px;
@@ -7105,8 +7298,12 @@
         bottom: 0;
     }
 
+    .featureBentoPublicBrowserBody {
+        padding: 8px 8px 0 10px;
+    }
+
     .featureBentoPublicShell {
-        grid-template-rows: 38px minmax(0, 1fr);
+        grid-template-rows: minmax(0, 1fr);
     }
 
     .featureBentoPublicLayout {
@@ -7155,9 +7352,12 @@
         right: auto;
         top: var(--feature-bento-preview-top-shared);
         width: 640px;
-        height: 390px;
-        grid-template-columns: 178px 462px;
+        height: 430px;
         transform-origin: 0 0;
+    }
+
+    .featureBentoStudentWindow {
+        grid-template-columns: 178px 462px;
     }
 
     .featureBentoSchedulePreview {
@@ -7169,6 +7369,10 @@
 
     .featureBentoScheduleBrowserFrame {
         width: clamp(920px, 108vw, 1180px);
+    }
+
+    .featureBentoStudentBrowserFrame {
+        width: 100%;
     }
 
     .featureBentoFinancePreview {
@@ -7214,6 +7418,14 @@
         min-height: 500px;
     }
 
+    .featureBentoStudentLiveBackground {
+        inset: -36% -40% -58% -40%;
+    }
+
+    .featureBentoPublicLiveBackground {
+        inset: -32% -36% -52% -34%;
+    }
+
     .featureBentoCardReminder {
         grid-column: span 12;
         min-height: 620px;
@@ -7257,6 +7469,14 @@
         right: -118px;
         top: var(--feature-bento-preview-top-public);
         bottom: 0;
+    }
+
+    .featureBentoPublicBrowserFrame {
+        border-radius: 22px 22px 0 0;
+    }
+
+    .featureBentoPublicBrowserBody {
+        padding: 8px 8px 0;
     }
 
     .featureBentoPublicLayout {
@@ -7376,9 +7596,16 @@
         top: var(--feature-bento-preview-top-shared);
         bottom: auto;
         width: 640px;
-        height: 390px;
-        grid-template-columns: 178px 462px;
+        height: 430px;
         transform-origin: 0 0;
+    }
+
+    .featureBentoStudentBrowserFrame {
+        width: 100%;
+    }
+
+    .featureBentoStudentWindow {
+        grid-template-columns: 178px 462px;
     }
 
     .featureBentoStudentSidebar {
