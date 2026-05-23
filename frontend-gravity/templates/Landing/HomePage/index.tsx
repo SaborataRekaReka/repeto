@@ -1,23 +1,20 @@
-import { useEffect, useRef, useState } from "react";
+import { type MouseEvent as ReactMouseEvent, type ReactNode, useEffect, useRef, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { Avatar, Card, DropdownMenu, Icon, Label, Text } from "@gravity-ui/uikit";
 import type { IconData } from "@gravity-ui/uikit";
-import { ChevronRight, CreditCard, Envelope, FolderOpen } from "@gravity-ui/icons";
+import { Calendar, ChevronRight, Clock, Comment, CreditCard, Envelope, FileText, FolderOpen, Person, Receipt } from "@gravity-ui/icons";
 import AppDialog from "@/components/AppDialog";
 import AnimatedSidebarIcon from "@/components/AnimatedSidebarIcon";
 import Image from "@/components/Image";
+import StudentAvatar from "@/components/StudentAvatar";
+import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 import { useAuth } from "@/contexts/AuthContext";
 import { getInitials, shortName } from "@/lib/formatters";
 import { formatBalance } from "@/mocks/students";
-import StudentAvatar from "@/components/StudentAvatar";
-import StudentNameWithBadge from "@/components/StudentNameWithBadge";
 import IncomeByStudents from "@/templates/Finance/FinanceOverviewPage/IncomeByStudents";
 import ScheduleMonthPreview from "@/templates/Schedule/CalendarPage/Month";
-import HomeworkTab, { type Homework as StudentHomework } from "@/templates/Students/StudentDetailPage/HomeworkTab";
-import PaymentHistory from "@/templates/Students/StudentDetailPage/PaymentHistory";
-import LessonHistory from "@/templates/Students/StudentDetailPage/LessonHistory";
 import type { Payment } from "@/types/finance";
 import type { Lesson } from "@/types/schedule";
 import styles from "./LandingHomePage.module.css";
@@ -28,12 +25,6 @@ const navigation = [
     { href: "#features", label: "Возможности" },
     { href: "#pricing", label: "Тарифы" },
     { href: "#reviews", label: "Отзывы" },
-];
-
-const heroMetrics = [
-    { label: "Уроков сегодня", value: "6", tone: "dark" },
-    { label: "Ожидают оплату", value: "18 400 ₽", tone: "brand" },
-    { label: "Поздних отмен", value: "2", tone: "green" },
 ];
 
 type FeatureBentoCard = {
@@ -64,9 +55,7 @@ const discoveryIconSources: Record<string, string> = {
     "Контекст урока": "/icons/sidebar-animated/book-open.json",
     "Синхронизация": "/icons/sidebar-animated/folder-connection.json",
     "Баланс ученика": "/icons/sidebar-animated/wallet.json",
-    "Пакеты и скидки": "/icons/sidebar-animated/box.json",
     "Пакеты и остаток": "/icons/sidebar-animated/box.json",
-    "Отчеты": "/icons/sidebar-animated/chart-square.json",
     "Чистый обзор": "/icons/sidebar-animated/chart-square.json",
     "Профиль": "/icons/sidebar-animated/profile.json",
     "История": "/icons/sidebar-animated/note-text.json",
@@ -100,12 +89,8 @@ const featureBentoCards: FeatureBentoCard[] = [
         title: "Занятия, переносы, отмены и свободные окна в одном календаре",
         shortText: "Постоянные уроки, переносы, отмены и свободные окна видны в одном календаре.",
         modalTitle: "Расписание без ручной сверки",
-        modalText: "Repeto держит в порядке регулярные занятия, разовые уроки, переносы и отмены. Вы видите неделю целиком и не собираете расписание заново после каждого изменения.",
-        details: [
-            "Повторяющиеся и разовые занятия",
-            "Переносы, отмены и неявки",
-            "Свободные окна и синхронизация календаря",
-        ],
+        modalText: "Repeto держит в порядке регулярные занятия, разовые уроки, переносы и отмены.",
+        details: ["Повторяющиеся и разовые занятия", "Переносы, отмены и неявки", "Свободные окна и синхронизация календаря"],
         layout: "wide",
     },
     {
@@ -114,40 +99,28 @@ const featureBentoCards: FeatureBentoCard[] = [
         title: "Доход, долги и баланс по каждому ученику",
         shortText: "Доход, пакеты, баланс и задолженности собираются по каждому ученику без Excel.",
         modalTitle: "Оплаты видно до конца месяца",
-        modalText: "Система показывает, кто оплатил, кто должен и сколько занятий осталось в пакете. Поздние отмены и задолженности не теряются в переписке.",
-        details: [
-            "Баланс по каждому ученику",
-            "Пакеты и остаток занятий",
-            "Долги и история платежей",
-        ],
+        modalText: "Уроки создают начисления, оплаты закрывают долг, а остаток пакета обновляется автоматически.",
+        details: ["Баланс по каждому ученику", "Пакеты и остаток занятий", "Долги и история платежей"],
         layout: "side",
     },
     {
         id: "students",
         tag: "База",
         title: "Все важное в карточке ученика",
-        shortText: "Контакты, родители, предмет, тариф и история занятий в одной карточке.",
+        shortText: "Контакты, родители, предмет, тариф и история занятий лежат в одной карточке.",
         modalTitle: "Карточка ученика вместо разрозненных заметок",
-        modalText: "Все важное по ученику хранится рядом: контакты, родитель, предмет, ставка, история занятий, оплат и заметок. Быстрее найти контекст перед уроком или разговором с семьей.",
-        details: [
-            "Контакты ученика и родителя",
-            "Предмет, ставка и условия",
-            "История занятий, оплат и заметок",
-        ],
+        modalText: "Контакты, родитель, предмет, ставка, история занятий, оплат и заметок хранятся рядом.",
+        details: ["Контакты ученика и родителя", "Предмет, ставка и условия", "История занятий, оплат и заметок"],
         layout: "compact",
     },
     {
         id: "reminders",
         tag: "Напоминания",
-        title: "Напоминайте об уроках и оплатах",
-        shortText: "Уроки и оплаты уходят в нужный канал в нужное время.",
+        title: "Напоминайте об уроках, оплатах и домашке автоматически",
+        shortText: "Уроки, оплаты и домашние задания уходят в нужный канал в нужное время.",
         modalTitle: "Напоминания уходят без ручных сообщений",
-        modalText: "Repeto напоминает об уроках, переносах и оплатах по вашим правилам. Это снижает забытые занятия и убирает вечернюю рассылку сообщений вручную.",
-        details: [
-            "Напоминания перед уроком",
-            "Сообщения об оплатах",
-            "Каналы: push, email и мессенджеры",
-        ],
+        modalText: "Правила отправки помогают не забывать об уроках, долгах и заданиях.",
+        details: ["Напоминания перед уроком", "Сообщения об оплатах", "Каналы: push, email и мессенджеры"],
         layout: "compact",
     },
     {
@@ -156,26 +129,18 @@ const featureBentoCards: FeatureBentoCard[] = [
         title: "Публичная страница репетитора",
         shortText: "Личная ссылка с предметами, ценами, контактами и записью на занятие.",
         modalTitle: "Публичная страница для новых учеников",
-        modalText: "У репетитора есть аккуратная страница, которую можно отправить из профиля, Авито, VK или мессенджера. На ней видны предметы, стоимость, контакты, правила занятий и кнопка записи.",
-        details: [
-            "Персональная ссылка на профиль",
-            "Предметы, цены и контакты",
-            "Запись на занятие без лишней переписки",
-        ],
+        modalText: "У репетитора есть аккуратная страница, которую можно отправить из профиля, Авито, VK или мессенджера.",
+        details: ["Персональная ссылка на профиль", "Предметы, цены и контакты", "Запись на занятие без лишней переписки"],
         layout: "compact",
     },
     {
         id: "homework",
         tag: "Журнал",
-        title: "Домашка и заметки",
-        shortText: "Что прошли, что задали и какие файлы нужны - рядом с уроком.",
+        title: "Домашка, заметки и материалы рядом с уроком",
+        shortText: "Что прошли, что задали и какие файлы нужны - рядом с конкретным занятием.",
         modalTitle: "Домашка и заметки не теряются после занятия",
-        modalText: "После урока можно зафиксировать тему, ошибки, задание и материалы. Ученик и родитель видят актуальную информацию в одном месте, а не ищут ее в переписке.",
-        details: [
-            "Заметки к занятию",
-            "Домашние задания и статус",
-            "Файлы и материалы рядом с уроком",
-        ],
+        modalText: "После урока можно зафиксировать тему, ошибки, задание и материалы.",
+        details: ["Заметки к занятиям", "Домашние задания и статусы", "Файлы и материалы рядом с уроком"],
         layout: "compact",
     },
 ];
@@ -246,11 +211,7 @@ const featureBentoModalShowcases: Record<string, FeatureBentoModalShowcase> = {
             "Долги и оплаты можно отправлять родителю из контекста ученика",
             "Шаблоны сохраняют тон общения и снижают ручной труд",
         ],
-        metrics: [
-            { value: "15 мин", label: "до урока", caption: "типовое правило" },
-            { value: "3", label: "канала", caption: "push, email, мессенджеры" },
-            { value: "1", label: "клик", caption: "из карточки ученика" },
-        ],
+        metrics: [],
         discovery: [
             { icon: "⏱", title: "Сценарии", text: "Урок, оплата, домашка и перенос используют разные тексты и условия отправки." },
             { icon: "@", title: "Получатели", text: "Сообщение можно адресовать ученику, родителю или обоим участникам." },
@@ -258,25 +219,25 @@ const featureBentoModalShowcases: Record<string, FeatureBentoModalShowcase> = {
         ],
     },
     "public-page": {
-        eyebrow: "Публичная страница",
-        title: "Профиль репетитора превращает входящий интерес в понятную запись на занятие",
-        text: "Публичная страница показывает специализацию, образование, опыт, предметы, цены, пакеты и отзывы. Новый ученик сразу видит доверие, условия и свободные окна для записи.",
+        eyebrow: "",
+        title: "Личная страница превращает интерес в запись на занятие",
+        text: "Отправьте одну ссылку в объявлении, профиле или мессенджере. Новый ученик увидит опыт, отзывы, цены, пакеты и правила занятий, выберет свободное окно и оставит заявку без длинной переписки.",
         primaryAction: "Открыть витрину",
         secondaryAction: "Как работает запись",
         benefits: [
-            "Личная ссылка подходит для профиля, объявлений и мессенджеров",
-            "Цены, предметы, пакеты и правила отмен видны до переписки",
-            "Запись ведет к выбранному окну, а не к хаотичному диалогу",
+            "Одна ссылка подходит для рекомендаций, объявлений и соцсетей",
+            "Цены, предметы, пакеты и отмены понятны до переписки",
+            "Заявка сразу привязана к свободному времени и контакту ученика",
         ],
         metrics: [
-            { value: "4.9", label: "рейтинг", caption: "показывает доверие" },
-            { value: "3", label: "шага", caption: "до заявки" },
-            { value: "1", label: "ссылка", caption: "для всех каналов" },
+            { value: "1", label: "ссылка", caption: "для объявлений, рекомендаций и профилей" },
+            { value: "3", label: "шага", caption: "предмет, время и контакты" },
+            { value: "24/7", label: "витрина", caption: "работает, пока вы ведете уроки" },
         ],
         discovery: [
-            { icon: "★", title: "Доверие", text: "Образование, опыт, отзывы и документы собраны в структуре, которую легко просмотреть." },
-            { icon: "₽", title: "Условия", text: "Предметы, цены, пакеты и политика отмен снижают лишние вопросы перед записью." },
-            { icon: "→", title: "Заявка", text: "Виджет бронирования переводит интерес в выбранное время и понятный следующий шаг." },
+            { icon: "★", title: "Доверие", text: "Фото, опыт, образование, документы и отзывы собраны в странице, которую родителю легко просмотреть перед записью." },
+            { icon: "₽", title: "Условия", text: "Предметы, длительность, цены, пакеты и политика отмен видны заранее, поэтому меньше повторяющихся вопросов." },
+            { icon: "→", title: "Заявка", text: "Выбор времени и контакты превращают входящий интерес в понятное действие для репетитора." },
         ],
     },
     homework: {
@@ -303,7 +264,95 @@ const featureBentoModalShowcases: Record<string, FeatureBentoModalShowcase> = {
     },
 };
 
-const studentBentoNavItems = ["Профиль", "Занятия", "Оплаты", "Заметки", "Домашка", "История"];
+const studentBentoNavItems: Array<{ label: string; icon: IconData }> = [
+    { label: "Профиль", icon: Person as IconData },
+    { label: "Занятия", icon: Calendar as IconData },
+    { label: "Оплаты", icon: CreditCard as IconData },
+    { label: "Заметки", icon: FileText as IconData },
+    { label: "Домашка", icon: FolderOpen as IconData },
+    { label: "История", icon: Clock as IconData },
+];
+
+const publicBentoNavItems: Array<{ label: string; icon: IconData }> = [
+    { label: "О специалисте", icon: Person as IconData },
+    { label: "Образование", icon: FileText as IconData },
+    { label: "Опыт", icon: Clock as IconData },
+    { label: "Документы", icon: FolderOpen as IconData },
+    { label: "Предметы и цены", icon: Receipt as IconData },
+    { label: "Пакеты", icon: CreditCard as IconData },
+    { label: "Отзывы", icon: Comment as IconData },
+];
+
+type ReminderPlaybackRow = {
+    id: string;
+    label: string;
+    desc: string;
+    enabled: boolean;
+    value?: string;
+    options?: Array<{ value: string; content: string }>;
+};
+
+const reminderChannelOptions = [
+    { value: "email", content: "Email" },
+    { value: "push", content: "Push" },
+    { value: "telegram", content: "Telegram" },
+    { value: "max", content: "MAX" },
+];
+
+const reminderHoursOptions = [
+    { value: "1", content: "1 час" },
+    { value: "2", content: "2 часа" },
+    { value: "4", content: "4 часа" },
+    { value: "24", content: "24 часа" },
+];
+
+const selfReminderMinutesOptions = [
+    { value: "15", content: "15 мин" },
+    { value: "30", content: "30 мин" },
+    { value: "60", content: "1 час" },
+];
+
+const paymentDaysOptions = [
+    { value: "1", content: "1 день" },
+    { value: "3", content: "3 дня" },
+    { value: "7", content: "7 дней" },
+];
+
+const reminderPrimarySidebarItems = ["dashboard", "schedule", "students", "finance", "settings", "files"];
+const reminderSettingsSidebarItems = ["profile", "schedule", "payments", "notifications", "integrations", "security"];
+
+const reminderPlaybackRows: ReminderPlaybackRow[] = [
+    {
+        id: "student",
+        label: "Напоминание ученику о занятии",
+        desc: "За сколько часов до занятия отправить",
+        enabled: true,
+        value: "2",
+        options: reminderHoursOptions,
+    },
+    {
+        id: "self",
+        label: "Напоминание репетитору",
+        desc: "За сколько до занятия напомнить вам",
+        enabled: true,
+        value: "30",
+        options: selfReminderMinutesOptions,
+    },
+    {
+        id: "payment",
+        label: "Напоминание об оплате",
+        desc: "Через сколько дней после занятия",
+        enabled: true,
+        value: "3",
+        options: paymentDaysOptions,
+    },
+    {
+        id: "cancel",
+        label: "Уведомление об отменах",
+        desc: "Получать уведомления при отмене занятий",
+        enabled: true,
+    },
+];
 
 const getFeatureBentoModalToneClass = (cardId: string) => {
     switch (cardId) {
@@ -324,8 +373,47 @@ const getFeatureBentoModalToneClass = (cardId: string) => {
     }
 };
 
+function DeferredMount({ children, rootMargin = "220px" }: { children: ReactNode; rootMargin?: string }) {
+    const hostRef = useRef<HTMLDivElement | null>(null);
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        if (isMounted) {
+            return;
+        }
+
+        const host = hostRef.current;
+        if (!host) {
+            return;
+        }
+
+        if (typeof IntersectionObserver === "undefined") {
+            setIsMounted(true);
+            return;
+        }
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries.some((entry) => entry.isIntersecting)) {
+                    setIsMounted(true);
+                    observer.disconnect();
+                }
+            },
+            { rootMargin },
+        );
+
+        observer.observe(host);
+
+        return () => {
+            observer.disconnect();
+        };
+    }, [isMounted, rootMargin]);
+
+    return <div ref={hostRef}>{isMounted ? children : null}</div>;
+}
+
 function FeatureBentoModalContent({ cardId, showcase }: { cardId: string; showcase: FeatureBentoModalShowcase }) {
-    const useUnifiedLandingCta = cardId === "schedule" || cardId === "payments" || cardId === "students";
+    const useUnifiedLandingCta = cardId === "schedule" || cardId === "payments" || cardId === "students" || cardId === "public-page";
 
     return (
         <div className={`${styles.featureBentoModalShell} ${getFeatureBentoModalToneClass(cardId)}`}>
@@ -413,6 +501,101 @@ function FeatureBentoModalContent({ cardId, showcase }: { cardId: string; showca
                     </a>
                 </div>
             </section>
+        </div>
+    );
+}
+
+function FeatureBentoModalRemindersPlayback() {
+    return (
+        <div className={styles.featureBentoModalNotificationsShell}>
+            <aside className={styles.featureBentoModalNotificationsProductSidebar} aria-hidden="true">
+                <span className={styles.featureBentoModalNotificationsProductLogo} />
+                <nav>
+                    {reminderPrimarySidebarItems.map((item) => (
+                        <span
+                            key={item}
+                            className={item === "settings" ? styles.featureBentoModalNotificationsProductNavActive : undefined}
+                        />
+                    ))}
+                </nav>
+                <span className={styles.featureBentoModalNotificationsProductAvatar} />
+            </aside>
+
+            <aside className={styles.featureBentoModalNotificationsSettingsSidebar} aria-hidden="true">
+                <div className={styles.featureBentoModalNotificationsSettingsSidebarHead}>
+                    <strong />
+                    <span />
+                </div>
+                <nav>
+                    {reminderSettingsSidebarItems.map((item) => (
+                        <span
+                            key={item}
+                            className={item === "notifications" ? styles.featureBentoModalNotificationsSettingsNavActive : undefined}
+                        >
+                            <i />
+                            <b />
+                        </span>
+                    ))}
+                </nav>
+            </aside>
+
+            <main className={styles.featureBentoModalNotificationsMain}>
+                <div className={styles.featureBentoModalNotificationsHeader}>
+                    <h4>Уведомления</h4>
+                    <span>Каналы, интервалы и автоматические напоминания</span>
+                </div>
+
+                <section className={styles.featureBentoModalNotificationsCard}>
+                    <h5>Каналы и напоминания</h5>
+                    <span className={styles.featureBentoModalNotificationsCaption}>Что отправлять ученикам, родителям и самому репетитору.</span>
+
+                    <div className={styles.featureBentoModalNotificationsPills}>
+                        {reminderChannelOptions.map((option, index) => (
+                            <span
+                                key={option.value}
+                                className={`${styles.featureBentoModalNotificationsPill} ${index === 0 ? styles.featureBentoModalNotificationsPillActive : ""}`}
+                            >
+                                {option.content}
+                            </span>
+                        ))}
+                    </div>
+
+                    <p className={styles.featureBentoModalNotificationsHint}>Можно выбрать несколько каналов одновременно.</p>
+
+                    <div className={styles.featureBentoModalNotificationsList}>
+                        {reminderPlaybackRows.map((row, index) => {
+                            const activeOption = row.options?.find((option) => option.value === row.value);
+
+                            return (
+                                <div
+                                    key={row.id}
+                                    className={`${styles.featureBentoModalNotificationsItem} ${index < reminderPlaybackRows.length - 1 ? styles.featureBentoModalNotificationsItemDivided : ""}`}
+                                >
+                                    <div className={styles.featureBentoModalNotificationsMeta}>
+                                        <strong>{row.label}</strong>
+                                        <span>{row.desc}</span>
+                                    </div>
+
+                                    <div className={styles.featureBentoModalNotificationsControls}>
+                                        {activeOption ? (
+                                            <span className={styles.featureBentoModalNotificationsSelectFake}>
+                                                <b>Интервал</b>
+                                                <span>{activeOption.content}</span>
+                                                <i className={styles.featureBentoModalNotificationsSelectChevron} />
+                                            </span>
+                                        ) : null}
+                                        <span className={styles.featureBentoModalNotificationsSwitchFake} />
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    <div className={styles.featureBentoModalNotificationsSavebar}>
+                        <span className={styles.featureBentoModalNotificationsSaveButton}>Сохранить</span>
+                    </div>
+                </section>
+            </main>
         </div>
     );
 }
@@ -725,59 +908,53 @@ function FeatureBentoModalVisual({ cardId }: { cardId: string }) {
     if (cardId === "students") {
         return (
             <div className={`${styles.featureBentoModalVisualStage} ${styles.featureBentoModalVisualStudents}`}>
-                <article className={`${styles.featureBentoModalVisualSplitColumn} ${styles.featureBentoModalStudentsWidgetHomework}`}>
-                    <HomeworkTab
-                        studentId="showcase-student"
-                        homeworks={showcaseStudentHomework}
-                        lessons={showcaseStudentLessonsHistory}
-                    />
-                    <p className={styles.featureBentoModalVisualSplitCaption}>Домашка показывает дедлайн, статус и материалы прямо в карточке ученика.</p>
-                </article>
+                <div className={`${styles.featureBentoScheduleBrowserFrame} ${styles.featureBentoModalStudentsBrowserFrame}`}>
+                    <div className={styles.featureBentoScheduleBrowserTopBar}>
+                        <div className={styles.featureBentoScheduleBrowserDots}>
+                            <span />
+                            <span />
+                            <span />
+                        </div>
+                        <div className={styles.featureBentoScheduleBrowserAddress}>
+                            <span className={styles.featureBentoScheduleBrowserLock} />
+                            <span>app.repeto.com/students/ivanov-petr</span>
+                        </div>
+                    </div>
 
-                <article className={styles.featureBentoModalVisualSplitColumn}>
-                    <PaymentHistory
-                        payments={showcaseStudentPaymentsHistory}
-                        lessons={showcaseStudentLessonsHistory}
-                    />
-                    <p className={styles.featureBentoModalVisualSplitCaption}>Оплаты объединяют операции и начисления, чтобы баланс читался без отдельного раздела.</p>
-                </article>
-
-                <article className={styles.featureBentoModalVisualSplitColumn}>
-                    <LessonHistory lessons={showcaseStudentLessonsHistory} />
-                    <p className={styles.featureBentoModalVisualSplitCaption}>Занятия показывают дату, время, предмет и статус в том же формате, что в карточке ученика.</p>
-                </article>
+                    <div className={styles.featureBentoModalStudentsScreenshotViewport}>
+                        <Image
+                            src="/images/landing/screen-student-portal.png?v=2026050701"
+                            width={2048}
+                            height={1111}
+                            alt="Скриншот карточки ученика в Repeto"
+                            className={styles.featureBentoModalStudentsScreenshotImage}
+                            unoptimized
+                        />
+                    </div>
+                </div>
             </div>
         );
     }
 
     if (cardId === "reminders") {
-        const flow = ["Урок", "Правило", "Канал", "Сообщение"];
-
         return (
             <div className={`${styles.featureBentoModalVisualStage} ${styles.featureBentoModalVisualReminders}`}>
-                <div className={styles.featureBentoModalAutomationFlow}>
-                    {flow.map((item, index) => (
-                        <span key={item}>
-                            <b>{String(index + 1).padStart(2, "0")}</b>
-                            {item}
-                        </span>
-                    ))}
-                </div>
-                <div className={styles.featureBentoModalMessageCard}>
-                    <header>
-                        <span>Об оплате</span>
-                        <strong>родителю</strong>
-                    </header>
-                    <p>Здравствуйте! Напоминаю про оплату двух занятий: 4 800 ₽. Ссылка на кабинет ниже.</p>
-                    <div>
-                        <i>Push</i>
-                        <i>Email</i>
-                        <i>Telegram</i>
+                <div className={`${styles.featureBentoScheduleBrowserFrame} ${styles.featureBentoModalRemindersBrowserFrame}`}>
+                    <div className={styles.featureBentoScheduleBrowserTopBar}>
+                        <div className={styles.featureBentoScheduleBrowserDots}>
+                            <span />
+                            <span />
+                            <span />
+                        </div>
+                        <div className={styles.featureBentoScheduleBrowserAddress}>
+                            <span className={styles.featureBentoScheduleBrowserLock} />
+                            <span>app.repeto.com/settings/notifications</span>
+                        </div>
                     </div>
-                </div>
-                <div className={styles.featureBentoModalReminderRule}>
-                    <span>Отправить за 15 минут до урока</span>
-                    <b />
+
+                    <div className={styles.featureBentoModalRemindersViewport}>
+                        <FeatureBentoModalRemindersPlayback />
+                    </div>
                 </div>
             </div>
         );
@@ -786,36 +963,19 @@ function FeatureBentoModalVisual({ cardId }: { cardId: string }) {
     if (cardId === "public-page") {
         return (
             <div className={`${styles.featureBentoModalVisualStage} ${styles.featureBentoModalVisualPublic}`}>
-                <div className={styles.featureBentoModalPublicPage}>
-                    <aside>
-                        <strong>Профиль</strong>
-                        <span>О специалисте</span>
-                        <span>Предметы и цены</span>
-                        <span>Отзывы</span>
-                    </aside>
-                    <main>
-                        <div className={styles.featureBentoModalPublicHero}>
-                            <span>АБ</span>
-                            <div>
-                                <b>Анна Белова</b>
-                                <em>Математика · ЕГЭ · 4.9</em>
-                            </div>
-                        </div>
-                        <div className={styles.featureBentoModalPublicRows}>
-                            <span>Математика · 60 мин <b>2 500 ₽</b></span>
-                            <span>Подготовка к ЕГЭ · 90 мин <b>3 600 ₽</b></span>
-                        </div>
-                    </main>
-                </div>
-                <div className={styles.featureBentoModalBookingMini}>
-                    <strong>Выберите время</strong>
-                    <div>
-                        <span>14:00</span>
-                        <span>16:30</span>
-                        <span>18:00</span>
+                <article className={styles.featureBentoModalVisualSplitColumn}>
+                    <div className={styles.featureBentoModalVisualSplitWidget}>
+                        <PublicTutorPageBrowserMockup className={styles.featureBentoModalPublicBrowserFrame} />
                     </div>
-                    <button type="button">Записаться</button>
-                </div>
+                    <p className={styles.featureBentoModalVisualSplitCaption}>Новый ученик видит доверие, специализацию и условия до первого сообщения.</p>
+                </article>
+
+                <article className={`${styles.featureBentoModalVisualSplitColumn} ${styles.featureBentoModalPublicBookingColumn}`}>
+                    <div className={styles.featureBentoModalVisualSplitWidget}>
+                        <PublicBentoBookingCard className={styles.featureBentoModalPublicBookingCard} />
+                    </div>
+                    <p className={styles.featureBentoModalVisualSplitCaption}>Брониратор показывает тот же шаг выбора даты и времени, который ученик видит после кнопки «Записаться».</p>
+                </article>
             </div>
         );
     }
@@ -869,9 +1029,11 @@ function StudentCardBentoPreview() {
                             <nav className={styles.featureBentoStudentNav}>
                                 <span className={styles.featureBentoStudentNavTrack} />
                                 {studentBentoNavItems.map((item) => (
-                                    <span key={item} className={styles.featureBentoStudentNavItem}>
-                                        <i />
-                                        {item}
+                                    <span key={item.label} className={styles.featureBentoStudentNavItem}>
+                                        <span className={styles.featureBentoStudentNavIcon}>
+                                            <Icon data={item.icon} size={12} />
+                                        </span>
+                                        {item.label}
                                     </span>
                                 ))}
                             </nav>
@@ -1135,12 +1297,9 @@ function StudentCardBentoLiveBackground() {
             },
         ];
 
-        const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-
         let width = 1;
         let height = 1;
         let dpr = 1;
-        let frameId = 0;
 
         const drawStripePath = (centerY: number, curveTension: number) => {
             const startX = -0.36 * width;
@@ -1232,15 +1391,7 @@ function StudentCardBentoLiveBackground() {
         };
 
         const restart = () => {
-            cancelAnimationFrame(frameId);
             drawFrame(performance.now());
-            if (!mediaQuery.matches) {
-                const tick = (timeMs: number) => {
-                    drawFrame(timeMs);
-                    frameId = requestAnimationFrame(tick);
-                };
-                frameId = requestAnimationFrame(tick);
-            }
         };
 
         const resize = () => {
@@ -1257,10 +1408,6 @@ function StudentCardBentoLiveBackground() {
             restart();
         };
 
-        const onMotionChange = () => {
-            restart();
-        };
-
         let resizeObserver: ResizeObserver | null = null;
         if (typeof ResizeObserver !== "undefined") {
             resizeObserver = new ResizeObserver(() => {
@@ -1270,23 +1417,12 @@ function StudentCardBentoLiveBackground() {
         }
 
         window.addEventListener("resize", resize);
-        if (typeof mediaQuery.addEventListener === "function") {
-            mediaQuery.addEventListener("change", onMotionChange);
-        } else {
-            mediaQuery.addListener(onMotionChange);
-        }
 
         resize();
 
         return () => {
-            cancelAnimationFrame(frameId);
             resizeObserver?.disconnect();
             window.removeEventListener("resize", resize);
-            if (typeof mediaQuery.removeEventListener === "function") {
-                mediaQuery.removeEventListener("change", onMotionChange);
-            } else {
-                mediaQuery.removeListener(onMotionChange);
-            }
         };
     }, []);
 
@@ -1711,150 +1847,178 @@ function TutorPageScreenshotBentoPreview() {
     );
 }
 
-function PublicTutorPageBentoPreview() {
+function PublicTutorPageBrowserMockup({ className = "" }: { className?: string }) {
     return (
-        <div className={styles.featureBentoPublicPreview} aria-hidden="true">
-            <div className={`${styles.featureBentoScheduleBrowserFrame} ${styles.featureBentoPublicBrowserFrame}`}>
-                <div className={styles.featureBentoScheduleBrowserTopBar}>
-                    <div className={styles.featureBentoScheduleBrowserDots}>
-                        <span />
-                        <span />
-                        <span />
-                    </div>
-                    <div className={styles.featureBentoScheduleBrowserAddress}>
-                        <span className={styles.featureBentoScheduleBrowserLock} />
-                        <span>repeto.com/anna-belova</span>
-                    </div>
+        <div className={[styles.featureBentoScheduleBrowserFrame, styles.featureBentoPublicBrowserFrame, className].filter(Boolean).join(" ")}>
+            <div className={styles.featureBentoScheduleBrowserTopBar}>
+                <div className={styles.featureBentoScheduleBrowserDots}>
+                    <span />
+                    <span />
+                    <span />
                 </div>
+                <div className={styles.featureBentoScheduleBrowserAddress}>
+                    <span className={styles.featureBentoScheduleBrowserLock} />
+                    <span>repeto.com/anna-belova</span>
+                </div>
+            </div>
 
-                <div className={`${styles.featureBentoScheduleBrowserBody} ${styles.featureBentoPublicBrowserBody}`}>
-                    <div className={styles.featureBentoPublicShell}>
-                        <div className={styles.featureBentoPublicLayout}>
-                    <aside className={styles.featureBentoPublicSidebar}>
-                        <h4>Профиль</h4>
-                        <nav>
-                            {[
-                                "О специалисте",
-                                "Образование",
-                                "Опыт",
-                                "Документы",
-                                "Предметы и цены",
-                                "Пакеты",
-                                "Отзывы",
-                            ].map((item, index) => (
-                                <span key={item} className={index === 0 ? styles.featureBentoPublicNavActive : undefined}>
-                                    <i />
-                                    {item}
-                                </span>
-                            ))}
-                        </nav>
-                        <b>Записаться</b>
-                    </aside>
+            <div className={`${styles.featureBentoScheduleBrowserBody} ${styles.featureBentoPublicBrowserBody}`}>
+                <div className={styles.featureBentoPublicShell}>
+                    <div className={styles.featureBentoPublicLayout}>
+                        <aside className={styles.featureBentoPublicSidebar}>
+                            <h4>Профиль</h4>
+                            <nav>
+                                {publicBentoNavItems.map((item, index) => (
+                                    <span key={item.label} className={index === 0 ? styles.featureBentoPublicNavActive : undefined}>
+                                        <span className={styles.featureBentoPublicNavIcon}>
+                                            <Icon data={item.icon} size={10} />
+                                        </span>
+                                        {item.label}
+                                    </span>
+                                ))}
+                            </nav>
+                            <b>Записаться</b>
+                        </aside>
 
-                    <main className={styles.featureBentoPublicPageWindow}>
-                        <div className={styles.featureBentoPublicPageTrack}>
-                            <section className={styles.featureBentoPublicHeroWidget}>
-                                <div className={styles.featureBentoPublicTutorAvatar}>АБ</div>
-                                <div className={styles.featureBentoPublicTutorMain}>
-                                    <h4>Анна Белова</h4>
-                                    <p>Математика, Английский, Физика</p>
-                                    <div className={styles.featureBentoPublicRatingRow}>
-                                        <strong>☆ 4.9</strong>
-                                        <span>6 отзывов</span>
+                        <main className={styles.featureBentoPublicPageWindow}>
+                            <div className={styles.featureBentoPublicPageTrack}>
+                                <section className={styles.featureBentoPublicHeroWidget}>
+                                    <div className={styles.featureBentoPublicTutorAvatar}>АБ</div>
+                                    <div className={styles.featureBentoPublicTutorMain}>
+                                        <h4>Анна Белова</h4>
+                                        <p>Математика, Английский, Физика</p>
+                                        <div className={styles.featureBentoPublicRatingRow}>
+                                            <strong>☆ 4.9</strong>
+                                            <span>6 отзывов</span>
+                                        </div>
+                                        <div className={styles.featureBentoPublicContactRow}>
+                                            <i />
+                                            <i />
+                                            <i />
+                                            <i />
+                                            <i />
+                                        </div>
                                     </div>
-                                    <div className={styles.featureBentoPublicContactRow}>
-                                        <i />
-                                        <i />
-                                        <i />
-                                        <i />
-                                        <i />
+                                    <span className={styles.featureBentoPublicPolicy}>Политика отмен</span>
+                                </section>
+
+                                <section className={styles.featureBentoPublicSection}>
+                                    <h4>О репетиторе</h4>
+                                    <p>
+                                        Помогаю школьникам и студентам системно закрывать пробелы и уверенно выходить на высокий результат.
+                                        Работаю по индивидуальному учебному плану и веду регулярную обратную связь для родителей.
+                                    </p>
+                                </section>
+
+                                <section className={styles.featureBentoPublicSection}>
+                                    <h4>Образование</h4>
+                                    <div className={styles.featureBentoPublicRows}>
+                                        <span>
+                                            <b>МГУ им. М.В. Ломоносова</b>
+                                            <em>Математика, специалист · 2012-2017</em>
+                                        </span>
+                                        <span>
+                                            <b>НИУ ВШЭ</b>
+                                            <em>Педагогический дизайн · 2019-2020</em>
+                                        </span>
                                     </div>
-                                </div>
-                                <span className={styles.featureBentoPublicPolicy}>Политика отмен</span>
-                            </section>
+                                </section>
 
-                            <section className={styles.featureBentoPublicSection}>
-                                <h4>О репетиторе</h4>
-                                <p>
-                                    Помогаю школьникам и студентам системно закрывать пробелы и уверенно выходить на высокий результат.
-                                    Работаю по индивидуальному учебному плану и веду регулярную обратную связь для родителей.
-                                </p>
-                            </section>
+                                <section className={styles.featureBentoPublicSection}>
+                                    <h4>Опыт</h4>
+                                    <div className={styles.featureBentoPublicTimeline}>
+                                        <span>9 лет индивидуальной подготовки к ЕГЭ и ОГЭ</span>
+                                        <span>1560+ проведённых занятий в онлайн и офлайн формате</span>
+                                        <span>Регулярные отчёты для родителей после каждого блока</span>
+                                    </div>
+                                </section>
 
-                            <section className={styles.featureBentoPublicSection}>
-                                <h4>Образование</h4>
-                                <div className={styles.featureBentoPublicRows}>
-                                    <span>
-                                        <b>МГУ им. М.В. Ломоносова</b>
-                                        <em>Математика, специалист · 2012-2017</em>
-                                    </span>
-                                    <span>
-                                        <b>НИУ ВШЭ</b>
-                                        <em>Педагогический дизайн · 2019-2020</em>
-                                    </span>
-                                </div>
-                            </section>
+                                <section className={styles.featureBentoPublicSection}>
+                                    <h4>Предметы и цены</h4>
+                                    <div className={styles.featureBentoPublicPriceRows}>
+                                        <span>
+                                            <b>Математика</b>
+                                            <em>60 минут</em>
+                                            <strong>2 500 ₽</strong>
+                                        </span>
+                                        <span>
+                                            <b>Подготовка к ЕГЭ</b>
+                                            <em>90 минут</em>
+                                            <strong>3 600 ₽</strong>
+                                        </span>
+                                    </div>
+                                </section>
 
-                            <section className={styles.featureBentoPublicSection}>
-                                <h4>Опыт</h4>
-                                <div className={styles.featureBentoPublicTimeline}>
-                                    <span>9 лет индивидуальной подготовки к ЕГЭ и ОГЭ</span>
-                                    <span>1560+ проведённых занятий в онлайн и офлайн формате</span>
-                                    <span>Регулярные отчёты для родителей после каждого блока</span>
-                                </div>
-                            </section>
+                                <section className={styles.featureBentoPublicSection}>
+                                    <h4>Пакеты занятий</h4>
+                                    <div className={styles.featureBentoPublicPackages}>
+                                        <span>
+                                            <b>8 занятий</b>
+                                            <em>Математика</em>
+                                            <strong>18 400 ₽</strong>
+                                        </span>
+                                        <span>
+                                            <b>12 занятий</b>
+                                            <em>ЕГЭ</em>
+                                            <strong>38 900 ₽</strong>
+                                        </span>
+                                    </div>
+                                </section>
 
-                            <section className={styles.featureBentoPublicSection}>
-                                <h4>Предметы и цены</h4>
-                                <div className={styles.featureBentoPublicPriceRows}>
-                                    <span>
-                                        <b>Математика</b>
-                                        <em>60 минут</em>
-                                        <strong>2 500 ₽</strong>
-                                    </span>
-                                    <span>
-                                        <b>Подготовка к ЕГЭ</b>
-                                        <em>90 минут</em>
-                                        <strong>3 600 ₽</strong>
-                                    </span>
-                                </div>
-                            </section>
-
-                            <section className={styles.featureBentoPublicSection}>
-                                <h4>Пакеты занятий</h4>
-                                <div className={styles.featureBentoPublicPackages}>
-                                    <span>
-                                        <b>8 занятий</b>
-                                        <em>Математика</em>
-                                        <strong>18 400 ₽</strong>
-                                    </span>
-                                    <span>
-                                        <b>12 занятий</b>
-                                        <em>ЕГЭ</em>
-                                        <strong>38 900 ₽</strong>
-                                    </span>
-                                </div>
-                            </section>
-
-                            <section className={styles.featureBentoPublicSection}>
-                                <h4>Отзывы</h4>
-                                <div className={styles.featureBentoPublicReviews}>
-                                    <span>
-                                        <b>Мария</b>
-                                        <em>Стало понятнее, ушёл страх задач второй части.</em>
-                                    </span>
-                                    <span>
-                                        <b>Илья</b>
-                                        <em>Удобная запись и понятные материалы после урока.</em>
-                                    </span>
-                                </div>
-                            </section>
-                        </div>
-                    </main>
+                                <section className={styles.featureBentoPublicSection}>
+                                    <h4>Отзывы</h4>
+                                    <div className={styles.featureBentoPublicReviews}>
+                                        <span>
+                                            <b>Мария</b>
+                                            <em>Стало понятнее, ушёл страх задач второй части.</em>
+                                        </span>
+                                        <span>
+                                            <b>Илья</b>
+                                            <em>Удобная запись и понятные материалы после урока.</em>
+                                        </span>
+                                    </div>
+                                </section>
+                            </div>
+                        </main>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    );
+}
+
+function PublicBentoBookingCard({ className = "" }: { className?: string }) {
+    return (
+        <div className={[styles.featureBentoPublicBookingCard, className].filter(Boolean).join(" ")}>
+            <header>
+                <span>‹</span>
+                <div>
+                    <b>Анна Сергеевна Белова</b>
+                    <em>Математика, Английский, Физика</em>
+                </div>
+            </header>
+            <strong>Май</strong>
+            <div className={styles.featureBentoPublicCalendarGrid}>
+                {Array.from({ length: 21 }).map((_, index) => (
+                    <span key={index} className={index === 17 ? styles.featureBentoPublicCalendarActive : undefined}>
+                        {index + 4}
+                    </span>
+                ))}
+            </div>
+            <div className={styles.featureBentoPublicTimes}>
+                <span>14:00</span>
+                <span>16:30</span>
+                <span>18:00</span>
+            </div>
+            <button type="button" tabIndex={-1}>Продолжить</button>
+        </div>
+    );
+}
+
+function PublicTutorPageBentoPreview() {
+    return (
+        <div className={styles.featureBentoPublicPreview} aria-hidden="true">
+            <PublicTutorPageBrowserMockup />
 
             <div className={styles.featureBentoPublicConnector} aria-hidden="true">
                 <span className={styles.featureBentoPublicConnectorDot} />
@@ -1862,29 +2026,7 @@ function PublicTutorPageBentoPreview() {
                 <span className={styles.featureBentoPublicConnectorHorizontal} />
             </div>
 
-            <div className={styles.featureBentoPublicBookingCard}>
-                <header>
-                    <span>‹</span>
-                    <div>
-                        <b>Анна Сергеевна Белова</b>
-                        <em>Математика, Английский, Физика</em>
-                    </div>
-                </header>
-                <strong>Май</strong>
-                <div className={styles.featureBentoPublicCalendarGrid}>
-                    {Array.from({ length: 21 }).map((_, index) => (
-                        <span key={index} className={index === 17 ? styles.featureBentoPublicCalendarActive : undefined}>
-                            {index + 4}
-                        </span>
-                    ))}
-                </div>
-                <div className={styles.featureBentoPublicTimes}>
-                    <span>14:00</span>
-                    <span>16:30</span>
-                    <span>18:00</span>
-                </div>
-                <button type="button" tabIndex={-1}>Продолжить</button>
-            </div>
+            <PublicBentoBookingCard />
         </div>
     );
 }
@@ -1969,136 +2111,6 @@ const showcaseIncomePayments = [
     { id: "pay-4", studentId: "student-pavel", studentName: "Павел К.", amount: 7100, date: relativeRuDate(-1, 22) },
     { id: "pay-5", studentId: "student-anna", studentName: "Анна К.", amount: 9800, date: relativeRuDate(0, 4) },
     { id: "pay-6", studentId: "student-pavel", studentName: "Павел К.", amount: 8300, date: relativeRuDate(0, 18) },
-];
-
-const showcaseStudentLessonsHistory: Lesson[] = [
-    {
-        id: "showcase-lesson-1",
-        studentId: "showcase-student",
-        studentName: "Sofia Gorina",
-        studentAccountId: "showcase-account-sofia",
-        subject: "Информатика",
-        date: "2026-05-14",
-        startTime: "16:30",
-        endTime: "17:30",
-        duration: 60,
-        format: "online",
-        status: "completed",
-        rate: 2400,
-    },
-    {
-        id: "showcase-lesson-2",
-        studentId: "showcase-student",
-        studentName: "Sofia Gorina",
-        studentAccountId: "showcase-account-sofia",
-        subject: "Информатика",
-        date: "2026-05-16",
-        startTime: "15:00",
-        endTime: "16:00",
-        duration: 60,
-        format: "online",
-        status: "completed",
-        rate: 2400,
-    },
-    {
-        id: "showcase-lesson-3",
-        studentId: "showcase-student",
-        studentName: "Sofia Gorina",
-        studentAccountId: "showcase-account-sofia",
-        subject: "Информатика",
-        date: "2026-05-19",
-        startTime: "17:00",
-        endTime: "18:00",
-        duration: 60,
-        format: "online",
-        status: "planned",
-        rate: 2400,
-    },
-];
-
-const showcaseStudentPaymentsHistory: Payment[] = [
-    {
-        id: "showcase-payment-1",
-        studentId: "showcase-student",
-        studentName: "Sofia Gorina",
-        studentAccountId: "showcase-account-sofia",
-        lessonId: "showcase-lesson-1",
-        amount: 2400,
-        date: "16.05.2026",
-        method: "sbp",
-        status: "paid",
-        comment: "Оплата за проведенный урок",
-    },
-    {
-        id: "showcase-payment-2",
-        studentId: "showcase-student",
-        studentName: "Sofia Gorina",
-        studentAccountId: "showcase-account-sofia",
-        amount: 2400,
-        date: "14.05.2026",
-        method: "transfer",
-        status: "paid",
-        comment: "Предоплата",
-    },
-    {
-        id: "showcase-payment-3",
-        studentId: "showcase-student",
-        studentName: "Sofia Gorina",
-        studentAccountId: "showcase-account-sofia",
-        amount: 1200,
-        date: "12.05.2026",
-        method: "cash",
-        status: "paid",
-        comment: "Частичная оплата",
-    },
-];
-
-const showcaseStudentHomework: StudentHomework[] = [
-    {
-        id: "showcase-homework-1",
-        date: "14.05.2026",
-        task: "Разобрать задания 7 и 12 из пробника ЕГЭ, подготовить короткое объяснение решения.",
-        dueDate: "20.05.2026",
-        status: "not_done",
-        lessonId: "showcase-lesson-2",
-        linkedFiles: [
-            {
-                id: "showcase-homework-file-1",
-                name: "Вариант-23.pdf",
-                url: "#",
-                type: "file",
-            },
-        ],
-        studentUploads: [],
-    },
-    {
-        id: "showcase-homework-2",
-        date: "11.05.2026",
-        task: "Повторить формулы логарифмов и решить 10 заданий из блока B.",
-        dueDate: "15.05.2026",
-        status: "overdue",
-        lessonId: "showcase-lesson-1",
-        linkedFiles: [],
-        studentUploads: [],
-    },
-    {
-        id: "showcase-homework-3",
-        date: "08.05.2026",
-        task: "Сделать конспект по теме «Системы счисления» и загрузить решение.",
-        dueDate: "12.05.2026",
-        status: "done",
-        lessonId: "showcase-lesson-1",
-        linkedFiles: [],
-        studentUploads: [
-            {
-                id: "showcase-upload-1",
-                name: "Решение-12.pdf",
-                size: "380 КБ",
-                uploadedAt: "12 мая",
-                url: "#",
-            },
-        ],
-    },
 ];
 
 const featureBentoSchedulePreviewDate = new Date(2026, 4, 1);
@@ -2715,6 +2727,7 @@ export default function LandingHomePage() {
     const [yearly, setYearly] = useState(false);
     const [activeBentoId, setActiveBentoId] = useState<string | null>(null);
     const [isStickyVisible, setIsStickyVisible] = useState(false);
+    const [isFeatureBentoLiteMotion, setIsFeatureBentoLiteMotion] = useState(false);
     const lastScrollYRef = useRef(0);
     const paymentsBentoCardRef = useRef<HTMLElement | null>(null);
     const isAuthorized = Boolean(user);
@@ -2723,6 +2736,12 @@ export default function LandingHomePage() {
     const profileInitials = getInitials(profileName || "U");
     const activeFeatureBento = featureBentoCards.find((card) => card.id === activeBentoId) || null;
     const activeFeatureBentoModal = activeFeatureBento ? featureBentoModalShowcases[activeFeatureBento.id] : null;
+    const isFeatureBentoHeaderlessModal =
+        activeFeatureBento?.id === "schedule" ||
+        activeFeatureBento?.id === "payments" ||
+        activeFeatureBento?.id === "students" ||
+        activeFeatureBento?.id === "reminders" ||
+        activeFeatureBento?.id === "public-page";
 
     const renderHeaderActions = (isSticky: boolean) => {
         const actionsClassName = isSticky ? styles.stickyHeaderActions : styles.headerActions;
@@ -2769,7 +2788,11 @@ export default function LandingHomePage() {
     useEffect(() => {
         lastScrollYRef.current = window.scrollY;
 
-        const onScroll = () => {
+        let frameId = 0;
+
+        const updateStickyVisibility = () => {
+            frameId = 0;
+
             const currentY = window.scrollY;
             const previousY = lastScrollYRef.current;
             const delta = 6;
@@ -2785,8 +2808,79 @@ export default function LandingHomePage() {
             lastScrollYRef.current = currentY;
         };
 
+        const onScroll = () => {
+            if (frameId !== 0) {
+                return;
+            }
+
+            frameId = window.requestAnimationFrame(updateStickyVisibility);
+        };
+
+        onScroll();
         window.addEventListener("scroll", onScroll, { passive: true });
-        return () => window.removeEventListener("scroll", onScroll);
+
+        return () => {
+            window.removeEventListener("scroll", onScroll);
+            if (frameId !== 0) {
+                window.cancelAnimationFrame(frameId);
+            }
+        };
+    }, []);
+
+    const updateFeatureBentoBorderPointer = (event: ReactMouseEvent<HTMLElement>) => {
+        const cardElement = event.currentTarget;
+        const bounds = cardElement.getBoundingClientRect();
+
+        cardElement.style.setProperty("--feature-bento-pointer-x", `${event.clientX - bounds.left}px`);
+        cardElement.style.setProperty("--feature-bento-pointer-y", `${event.clientY - bounds.top}px`);
+    };
+
+    const resetFeatureBentoBorderPointer = (event: ReactMouseEvent<HTMLElement>) => {
+        const cardElement = event.currentTarget;
+
+        cardElement.style.removeProperty("--feature-bento-pointer-x");
+        cardElement.style.removeProperty("--feature-bento-pointer-y");
+    };
+
+    useEffect(() => {
+        const reducedMotionMedia = window.matchMedia("(prefers-reduced-motion: reduce)");
+        const noHoverMedia = window.matchMedia("(hover: none)");
+        const coarsePointerMedia = window.matchMedia("(pointer: coarse)");
+
+        const updateLiteMotion = () => {
+            const nav = window.navigator as Navigator & { deviceMemory?: number };
+            const hasStrongCpu = typeof nav.hardwareConcurrency === "number" && nav.hardwareConcurrency >= 8;
+            const hasStrongMemory = typeof nav.deviceMemory === "number" && nav.deviceMemory >= 8;
+            const allowFullMotion =
+                !reducedMotionMedia.matches &&
+                !noHoverMedia.matches &&
+                !coarsePointerMedia.matches &&
+                (hasStrongCpu || hasStrongMemory);
+
+            setIsFeatureBentoLiteMotion(!allowFullMotion);
+        };
+
+        const subscribe = (mediaQuery: MediaQueryList, handler: () => void) => {
+            if (typeof mediaQuery.addEventListener === "function") {
+                mediaQuery.addEventListener("change", handler);
+                return () => mediaQuery.removeEventListener("change", handler);
+            }
+
+            mediaQuery.addListener(handler);
+            return () => mediaQuery.removeListener(handler);
+        };
+
+        updateLiteMotion();
+
+        const unsubscribers = [
+            subscribe(reducedMotionMedia, updateLiteMotion),
+            subscribe(noHoverMedia, updateLiteMotion),
+            subscribe(coarsePointerMedia, updateLiteMotion),
+        ];
+
+        return () => {
+            unsubscribers.forEach((unsubscribe) => unsubscribe());
+        };
     }, []);
 
     useEffect(() => {
@@ -2815,6 +2909,10 @@ export default function LandingHomePage() {
             return;
         }
 
+        let frameId = 0;
+        let isCardNearViewport = true;
+        let observer: IntersectionObserver | null = null;
+
         const updateGradientProgress = () => {
             const rect = card.getBoundingClientRect();
             const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
@@ -2824,13 +2922,43 @@ export default function LandingHomePage() {
             applyGradientProgress(progress);
         };
 
+        const scheduleGradientUpdate = () => {
+            if (!isCardNearViewport || frameId !== 0) {
+                return;
+            }
+
+            frameId = window.requestAnimationFrame(() => {
+                frameId = 0;
+                updateGradientProgress();
+            });
+        };
+
+        if (typeof IntersectionObserver !== "undefined") {
+            observer = new IntersectionObserver(
+                (entries) => {
+                    isCardNearViewport = entries.some((entry) => entry.isIntersecting);
+
+                    if (isCardNearViewport) {
+                        scheduleGradientUpdate();
+                    }
+                },
+                { rootMargin: "240px" },
+            );
+
+            observer.observe(card);
+        }
+
         updateGradientProgress();
-        window.addEventListener("scroll", updateGradientProgress, { passive: true });
-        window.addEventListener("resize", updateGradientProgress);
+        window.addEventListener("scroll", scheduleGradientUpdate, { passive: true });
+        window.addEventListener("resize", scheduleGradientUpdate);
 
         return () => {
-            window.removeEventListener("scroll", updateGradientProgress);
-            window.removeEventListener("resize", updateGradientProgress);
+            window.removeEventListener("scroll", scheduleGradientUpdate);
+            window.removeEventListener("resize", scheduleGradientUpdate);
+            observer?.disconnect();
+            if (frameId !== 0) {
+                window.cancelAnimationFrame(frameId);
+            }
         };
     }, []);
 
@@ -2859,8 +2987,7 @@ export default function LandingHomePage() {
                             width={160}
                             height={23}
                             alt="Repeto"
-                            priority
-                            unoptimized
+                            sizes="160px"
                         />
                     </Link>
 
@@ -2884,8 +3011,7 @@ export default function LandingHomePage() {
                                     width={160}
                                     height={23}
                                     alt="Repeto"
-                                    priority
-                                    unoptimized
+                                    sizes="160px"
                                 />
                             </Link>
 
@@ -2924,56 +3050,17 @@ export default function LandingHomePage() {
 
                                 <p className={styles.heroTrust}>Бесплатно до 5 учеников навсегда, без карты и скрытых ограничений</p>
                             </div>
-
-                            <div className={styles.productStage} aria-label="Интерфейс Repeto">
-                                <div className={styles.productHalo} aria-hidden="true" />
-                                <div className={styles.productScreen}>
-                                    <Image
-                                        src="/images/landing/screen-dashboard.png?v=2026050701"
-                                        width={1440}
-                                        height={1000}
-                                        alt="Дашборд Repeto"
-                                        className={styles.productScreenImage}
-                                        priority
-                                        unoptimized
-                                    />
-                                </div>
-
-                                <div className={`${styles.productFloatCard} ${styles.productFloatCardTop}`}>
-                                    <span className={styles.floatLabel}>Баланс ученика</span>
-                                    <strong>+4 800 ₽</strong>
-                                    <span className={styles.floatHint}>2 урока к оплате</span>
-                                </div>
-
-                                <div className={`${styles.productFloatCard} ${styles.productFloatCardBottom}`}>
-                                    <span className={styles.floatLabel}>Родительский портал</span>
-                                    <strong>Открыт доступ</strong>
-                                    <span className={styles.floatHint}>Расписание, домашка, пакет</span>
-                                </div>
-
-                                <div className={styles.productMetrics}>
-                                    {heroMetrics.map((metric) => (
-                                        <div
-                                            key={metric.label}
-                                            className={`${styles.productMetric} ${
-                                                metric.tone === "brand"
-                                                    ? styles.productMetricBrand
-                                                    : metric.tone === "green"
-                                                      ? styles.productMetricGreen
-                                                      : ""
-                                            }`}
-                                        >
-                                            <span>{metric.label}</span>
-                                            <strong>{metric.value}</strong>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
                         </section>
                     </div>
                 </div>
 
-                <section id="features" className={styles.featureBentoSection} aria-label="Возможности Repeto">
+                <section
+                    id="features"
+                    className={[styles.featureBentoSection, isFeatureBentoLiteMotion ? styles.featureBentoSectionLite : ""]
+                        .filter(Boolean)
+                        .join(" ")}
+                    aria-label="Возможности Repeto"
+                >
                     <div className={styles.featureBentoInner}>
                         <div className={styles.featureBentoGrid}>
                             {featureBentoCards.map((card) => (
@@ -2990,6 +3077,9 @@ export default function LandingHomePage() {
                                         card.id === "reminders" ? styles.featureBentoCardReminder : ""
                                     } ${card.id === "public-page" ? styles.featureBentoCardPublicPage : ""
                                     }`}
+                                    onMouseEnter={updateFeatureBentoBorderPointer}
+                                    onMouseMove={updateFeatureBentoBorderPointer}
+                                    onMouseLeave={resetFeatureBentoBorderPointer}
                                     onClick={() => setActiveBentoId(card.id)}
                                 >
                                     <button
@@ -3018,8 +3108,18 @@ export default function LandingHomePage() {
                                         </span>
                                     </button>
 
-                                    {card.id === "students" ? <StudentCardBentoLiveBackground /> : null}
-                                    {card.id === "public-page" ? <PublicCardBentoLiveBackground /> : null}
+                                    <div className={styles.featureBentoScaleLock}>
+
+                                    {card.id === "students" ? (
+                                        <DeferredMount>
+                                            <StudentCardBentoLiveBackground />
+                                        </DeferredMount>
+                                    ) : null}
+                                    {card.id === "public-page" ? (
+                                        <DeferredMount>
+                                            <PublicCardBentoLiveBackground />
+                                        </DeferredMount>
+                                    ) : null}
 
                                     <div className={styles.featureBentoCopy}>
                                         {card.layout === "compact" && card.id !== "students" && card.id !== "reminders" && card.id !== "public-page" ? (
@@ -3218,6 +3318,7 @@ export default function LandingHomePage() {
                                             ))}
                                         </ul>
                                     ) : null}
+                                    </div>
                                 </article>
                             ))}
                         </div>
@@ -3228,9 +3329,9 @@ export default function LandingHomePage() {
                     open={Boolean(activeFeatureBento)}
                     onClose={() => setActiveBentoId(null)}
                     size="xl"
-                    hasCloseButton
-                    caption={activeFeatureBento?.id === "schedule" || activeFeatureBento?.id === "payments" || activeFeatureBento?.id === "students" ? undefined : activeFeatureBentoModal?.eyebrow || activeFeatureBento?.title || "Возможность Repeto"}
-                    className={[styles.featureBentoDialog, activeFeatureBento?.id === "schedule" || activeFeatureBento?.id === "payments" || activeFeatureBento?.id === "students" ? styles.featureBentoDialogNoHeader : ""]
+                    hasCloseButton={!isFeatureBentoHeaderlessModal}
+                    caption={isFeatureBentoHeaderlessModal ? undefined : activeFeatureBentoModal?.eyebrow || activeFeatureBento?.title || "Возможность Repeto"}
+                    className={[styles.featureBentoDialog, isFeatureBentoHeaderlessModal ? styles.featureBentoDialogNoHeader : ""]
                         .filter(Boolean)
                         .join(" ")}
                     modalClassName={styles.featureBentoDialogModal}
@@ -3240,241 +3341,6 @@ export default function LandingHomePage() {
                         <FeatureBentoModalContent cardId={activeFeatureBento.id} showcase={activeFeatureBentoModal} />
                     ) : null}
                 </AppDialog>
-
-                <section className={styles.featuresContinuation}>
-                    <div className={styles.featuresContinuationInner}>
-                        {featureBlocks.map((block) => {
-                            const isExpandedFeatureBlock = block.id === "payments" || block.id === "portal";
-                            const isRealScreenFeature = realScreenFeatureIds.has(block.id);
-
-                            return (
-                                <article
-                                    key={block.id}
-                                    className={`${styles.featureRow} ${isExpandedFeatureBlock ? styles.featureRowExpandedRight : ""}`}
-                                >
-                                    <div className={styles.scheduleContent}>
-                                        <span className={styles.scheduleTag}>{block.tag}</span>
-                                        <h3 className={styles.scheduleTitle}>{block.title}</h3>
-                                        <p className={styles.scheduleText}>{block.text}</p>
-                                        <ul className={styles.schedulePointList}>
-                                            {block.points.map((point) => (
-                                                <li key={point} className={styles.schedulePointItem}>
-                                                    {point}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-
-                                    <div
-                                        className={`${styles.featureVisualWrap} ${isRealScreenFeature ? styles.featureVisualWrapScreen : ""} ${
-                                            isExpandedFeatureBlock ? styles.featureVisualWrapExpanded : ""
-                                        }`}
-                                    >
-                                        <Image
-                                            src={block.imageSrc}
-                                            width={isRealScreenFeature ? 1440 : 960}
-                                            height={isRealScreenFeature ? 1000 : 640}
-                                            alt={block.imageAlt || block.title}
-                                            className={`${styles.featureVisualImage} ${isRealScreenFeature ? styles.featureVisualImageScreen : ""} ${
-                                                isExpandedFeatureBlock ? styles.featureVisualImageExpanded : ""
-                                            }`}
-                                            unoptimized
-                                        />
-                                    </div>
-                                </article>
-                            );
-                        })}
-                    </div>
-                </section>
-
-                <section className={styles.showcaseSection} aria-labelledby="showcase-title">
-                    <div className={styles.showcaseInner}>
-                        <p className={styles.showcaseLabel}>Остальное уже внутри Repeto</p>
-                        <h2 id="showcase-title" className={styles.showcaseTitle}>
-                            Напоминания, домашка, материалы, аналитика и доступ для родителей в одном продукте
-                        </h2>
-                        <p className={styles.showcaseSubtitle}>
-                            Здесь не нужно растягивать лендинг на ещё несколько широких экранов: все вторичные возможности собраны в один бенто-блок с быстрым считыванием.
-                        </p>
-
-                        <div className={styles.showcaseGrid}>
-                            <article className={`${styles.showcaseCard} ${styles.showcaseCardIncome}`}>
-                                <header className={styles.showcaseCardHead}>
-                                    <div>
-                                        <p className={styles.showcaseCardKicker}>Доход по месяцам</p>
-                                        <p className={styles.showcaseCardSubvalue}>Сегментированный виджет из раздела «Финансы»</p>
-                                    </div>
-                                    <div className={styles.showcaseChip}>Финансы</div>
-                                </header>
-                                <div className={styles.showcaseIncomeWidget}>
-                                    <IncomeByStudents paymentsOverride={showcaseIncomePayments} disableInteractions />
-                                </div>
-                                <div className={styles.showcaseCardCopy}>
-                                    <h3 className={styles.showcaseCardCopyTitle}>Доход по месяцам, как в Финансах</h3>
-                                    <p className={styles.showcaseCardCopyText}>Сегменты показывают вклад каждого ученика по месяцам и общий итог.</p>
-                                </div>
-                            </article>
-
-                            <article className={`${styles.showcaseCard} ${styles.showcaseCardToday}`}>
-                                <header className={styles.showcaseCardHead}>
-                                    <div>
-                                        <p className={styles.showcaseCardKicker}>Занятия сегодня</p>
-                                        <p className={styles.showcaseCardSubvalue}>Копия дашборд-виджета с 2 учениками</p>
-                                    </div>
-                                    <div className={styles.showcaseChip}>Дашборд</div>
-                                </header>
-                                <div className={styles.showcaseTodaySchedule}>
-                                    <Card view="outlined" style={{ overflow: "hidden", background: "#f2f3f6" }}>
-                                        <div className="repeto-card-header">
-                                            <Text variant="subheader-2">Ближайшие занятия</Text>
-                                            <span className={`repeto-card-chevron ${styles.showcaseTodayChevron}`} aria-hidden="true">
-                                                <Icon data={ChevronRight as IconData} size={18} />
-                                            </span>
-                                        </div>
-                                        <div>
-                                            {showcaseTodayLessons.map((lesson) => (
-                                                <div
-                                                    key={lesson.id}
-                                                    className="repeto-week-lesson-row"
-                                                    style={{
-                                                        display: "flex",
-                                                        alignItems: "center",
-                                                        width: "100%",
-                                                        background: "transparent",
-                                                        cursor: "default",
-                                                        textAlign: "left",
-                                                    }}
-                                                >
-                                                    <StudentAvatar
-                                                        student={{ name: lesson.studentName, avatarUrl: undefined }}
-                                                        size="s"
-                                                    />
-                                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                                        <div
-                                                            style={{
-                                                                display: "flex",
-                                                                justifyContent: "space-between",
-                                                                alignItems: "center",
-                                                                marginBottom: 2,
-                                                            }}
-                                                        >
-                                                            <Text variant="body-2" ellipsis className="repeto-dashboard-entity-name">
-                                                                <StudentNameWithBadge
-                                                                    name={shortName(lesson.studentName)}
-                                                                    hasRepetoAccount={lesson.hasRepetoAccount}
-                                                                    truncate
-                                                                />
-                                                            </Text>
-                                                            <Text
-                                                                variant="body-1"
-                                                                color="secondary"
-                                                                style={{ flexShrink: 0, marginLeft: 8, fontVariantNumeric: "tabular-nums" }}
-                                                            >
-                                                                {lesson.startTime} - {lesson.endTime}
-                                                            </Text>
-                                                        </div>
-                                                        <div
-                                                            style={{
-                                                                display: "flex",
-                                                                justifyContent: "space-between",
-                                                                alignItems: "center",
-                                                            }}
-                                                        >
-                                                            <Text variant="body-1" color="secondary">
-                                                                {lesson.subject}
-                                                            </Text>
-                                                            <Label theme={showcaseStatusTheme(lesson.status)} size="xs">
-                                                                {showcaseStatusLabel(lesson.status)}
-                                                            </Label>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </Card>
-                                </div>
-                                <div className={styles.showcaseCardCopy}>
-                                    <h3 className={styles.showcaseCardCopyTitle}>Тот же виджет, как на дашборде</h3>
-                                    <p className={styles.showcaseCardCopyText}>Два ученика, время урока, предмет и статус в компактной карточке.</p>
-                                </div>
-                            </article>
-
-                            {bentoCards.map((card) => (
-                                <article
-                                    key={card.id}
-                                    className={`${styles.showcaseCard} ${
-                                        card.variant === "wide"
-                                            ? styles.bentoCardWide
-                                            : card.variant === "tall"
-                                              ? styles.bentoCardTall
-                                              : styles.bentoCardCompact
-                                    } ${card.tone === "dark" ? styles.bentoCardDark : ""} ${
-                                        card.id === "homework" ? styles.bentoCardStudentScreenshot : ""
-                                    } ${
-                                        card.id === "materials" ? styles.bentoCardMaterials : ""
-                                    } ${
-                                        card.id === "analytics" ? styles.bentoCardAnalytics : ""
-                                    }`}
-                                >
-                                    <div className={styles.bentoCardMeta}>
-                                        <span className={styles.bentoCardTag}>{card.tag}</span>
-                                        <h3 className={styles.bentoCardTitle}>{card.title}</h3>
-                                        <p className={styles.bentoCardText}>{card.text}</p>
-                                    </div>
-
-                                    <div className={styles.bentoCardVisual}>
-                                        {card.id === "analytics" ? (
-                                            <div className={styles.showcaseIncomeWidget}>
-                                                <IncomeByStudents paymentsOverride={showcaseIncomePayments} />
-                                            </div>
-                                        ) : card.id === "materials" ? (
-                                            <div className={styles.showcaseFilesWidget}>
-                                                <div className={styles.showcaseFilesSimpleHead}>
-                                                    <span className={styles.showcaseFilesSimpleProvider}>Яндекс.Диск</span>
-                                                    <span className={styles.showcaseFilesSimpleCount}>3 файла</span>
-                                                </div>
-                                                <ul className={styles.showcaseFilesSimpleList}>
-                                                    {showcaseFilesRows.slice(0, 3).map((item) => (
-                                                        <li key={item.id} className={styles.showcaseFilesSimpleItem}>
-                                                            <span className={styles.showcaseFilesSimpleIcon}>
-                                                                {item.type === "folder" ? (
-                                                                    <Icon data={FolderOpen as IconData} size={16} style={{ color: "var(--g-color-text-brand)" }} />
-                                                                ) : (
-                                                                    <Image src={showcaseFileIcon(item.extension)} width={14} height={14} alt="" unoptimized />
-                                                                )}
-                                                            </span>
-                                                            <span className={styles.showcaseFilesSimpleMain}>
-                                                                <span className={styles.showcaseFilesSimpleName}>{item.name}</span>
-                                                                <span className={styles.showcaseFilesSimpleMeta}>
-                                                                    {item.type === "folder" ? item.subtitle : `${item.size} · ${item.modifiedAt}`}
-                                                                </span>
-                                                            </span>
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        ) : (
-                                            <Image
-                                                src={card.imageSrc}
-                                                width={card.imageWidth}
-                                                height={card.imageHeight}
-                                                alt={card.imageAlt}
-                                                className={styles.bentoCardImage}
-                                                unoptimized
-                                            />
-                                        )}
-                                    </div>
-
-                                    <ul className={styles.bentoCardList}>
-                                        {card.points.map((point) => (
-                                            <li key={point}>{point}</li>
-                                        ))}
-                                    </ul>
-                                </article>
-                            ))}
-                        </div>
-                    </div>
-                </section>
 
                 <section className={styles.integrationsSection} aria-labelledby="integrations-title">
                     <div className={styles.integrationsInner}>
